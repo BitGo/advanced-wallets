@@ -30,7 +30,10 @@ describe('Routes', () => {
     it('should return 404 for non-existent routes', async () => {
       const response = await request(app).get('/non-existent-route');
       expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty('error', 'Route not found or not supported in enclaved mode');
+      expect(response.body).toHaveProperty(
+        'error',
+        'Route not found or not supported in enclaved mode',
+      );
     });
   });
-}); 
+});

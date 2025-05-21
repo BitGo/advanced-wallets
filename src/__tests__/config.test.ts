@@ -6,6 +6,9 @@ describe('Configuration', () => {
   beforeEach(() => {
     jest.resetModules();
     process.env = { ...originalEnv };
+    // Explicitly clear MTLS-related environment variables
+    delete process.env.MTLS_ENABLED;
+    delete process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS;
   });
 
   afterAll(() => {
@@ -37,6 +40,12 @@ describe('Configuration', () => {
     expect(cfg.tlsMode).toBe(TlsMode.MTLS);
   });
 
+  it('should throw error when both TLS disabled and mTLS enabled', () => {
+    process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'true';
+    process.env.MTLS_ENABLED = 'true';
+    expect(() => config()).toThrow('Cannot have both TLS disabled and mTLS enabled');
+  });
+
   it('should read mTLS settings from environment variables', () => {
     process.env.MTLS_ENABLED = 'true';
     process.env.MTLS_REQUEST_CERT = 'true';
@@ -48,4 +57,4 @@ describe('Configuration', () => {
     expect(cfg.mtlsRejectUnauthorized).toBe(true);
     expect(cfg.mtlsAllowedClientFingerprints).toEqual(['ABC123', 'DEF456']);
   });
-}); 
+});

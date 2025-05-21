@@ -2,22 +2,22 @@
  * @prettier
  */
 import express from 'express';
-import * as path from 'path';
+import path from 'path';
 import debug from 'debug';
-import * as https from 'https';
-import * as http from 'http';
+import https from 'https';
+import http from 'http';
 import morgan from 'morgan';
-import * as fs from 'fs';
+import fs from 'fs';
 import timeout from 'connect-timeout';
-import * as bodyParser from 'body-parser';
-import * as _ from 'lodash';
+import bodyParser from 'body-parser';
+import _ from 'lodash';
 import { SSL_OP_NO_TLSv1 } from 'constants';
+import pjson from '../package.json';
 
 import { Config, config, TlsMode } from './config';
 import * as routes from './routes';
 
 const debugLogger = debug('enclaved:express');
-const pjson = require('../package.json');
 
 /**
  * Set up the logging middleware provided by morgan
@@ -80,7 +80,8 @@ function isTLS(config: Config): boolean {
 }
 
 async function createHttpsServer(app: express.Application, config: Config): Promise<https.Server> {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert, mtlsRejectUnauthorized } = config;
+  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert, mtlsRejectUnauthorized } =
+    config;
   let key: string;
   let cert: string;
   if (tlsKey && tlsCert) {
@@ -88,8 +89,8 @@ async function createHttpsServer(app: express.Application, config: Config): Prom
     cert = tlsCert;
     console.log('Using TLS key and cert from environment variables');
   } else if (keyPath && crtPath) {
-    const privateKeyPromise = require('fs').promises.readFile(keyPath, 'utf8');
-    const certificatePromise = require('fs').promises.readFile(crtPath, 'utf8');
+    const privateKeyPromise = fs.promises.readFile(keyPath, 'utf8');
+    const certificatePromise = fs.promises.readFile(crtPath, 'utf8');
     [key, cert] = await Promise.all([privateKeyPromise, certificatePromise]);
     console.log(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
   } else {
@@ -133,7 +134,10 @@ function createHttpServer(app: express.Application): http.Server {
   return http.createServer(app);
 }
 
-export async function createServer(config: Config, app: express.Application): Promise<https.Server | http.Server> {
+export async function createServer(
+  config: Config,
+  app: express.Application,
+): Promise<https.Server | http.Server> {
   const server = isTLS(config) ? await createHttpsServer(app, config) : createHttpServer(app);
   if (config.keepAliveTimeout !== undefined) {
     server.keepAliveTimeout = config.keepAliveTimeout;
@@ -155,7 +159,12 @@ export function createBaseUri(config: Config): string {
  * Create error handling middleware
  */
 function errorHandler() {
-  return function (err: any, req: express.Request, res: express.Response, _next: express.NextFunction) {
+  return function (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction,
+  ) {
     debugLogger('Error: ' + (err && err.message ? err.message : String(err)));
     const statusCode = err && err.status ? err.status : 500;
     const result = {
@@ -191,7 +200,11 @@ export function app(cfg: Config): express.Application {
   }
 
   // Be more robust about accepting URLs with double slashes
-  app.use(function replaceUrlSlashes(req: express.Request, res: express.Response, next: express.NextFunction) {
+  app.use(function replaceUrlSlashes(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) {
     req.url = req.url.replace(/\/{2,}/g, '/');
     next();
   });

@@ -3,6 +3,7 @@
  */
 import express from 'express';
 import debug from 'debug';
+import pjson from '../package.json';
 
 const debugLogger = debug('enclaved:routes');
 
@@ -21,7 +22,6 @@ function handlePingExpress(_req: express.Request) {
  * Handler for version info
  */
 function handleVersionInfo(_req: express.Request) {
-  const pjson = require('../package.json');
   return {
     version: pjson.version,
     name: pjson.name,
@@ -37,7 +37,7 @@ function setupPingRoutes(app: express.Application) {
   app.get('/version', promiseWrapper(handleVersionInfo));
 }
 
-function setupKeyGenRoutes(app: express.Application) {
+function setupKeyGenRoutes() {
   // Register additional routes here as needed
   debugLogger('KeyGen routes configured');
 }
@@ -51,7 +51,7 @@ export function setupRoutes(app: express.Application): void {
   setupPingRoutes(app);
 
   // Register keygen routes
-  setupKeyGenRoutes(app);
+  setupKeyGenRoutes();
 
   // Add a catch-all for unsupported routes
   app.use('*', (_req, res) => {
