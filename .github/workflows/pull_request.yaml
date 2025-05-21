@@ -1,0 +1,17 @@
+name: on_pr
+run-name: "on_pr: ${{ github.event.pull_request.number }}"
+
+on:
+  pull_request:
+
+permissions:
+  actions: read # required by BitGo/build-system
+  contents: read # required by BitGo/build-system
+  id-token: write # required by BitGo/build-system
+  pull-requests: write # required by Grype PR commenter
+  packages: read # required for ArgoCD deploy
+
+jobs:
+  build-and-test:
+    name: Build & Test (CI)
+    uses: ./.github/workflows/build-and-test.yaml

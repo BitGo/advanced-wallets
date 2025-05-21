@@ -1,10 +1,12 @@
 name: Build & Test (CI)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        type: string
+        default: '20.18.0'
 
 jobs:
   build:
@@ -17,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.0'
+          node-version: ${{ inputs.node-version }}
           cache: 'yarn'
 
       - name: Install dependencies
@@ -36,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.0'
+          node-version: ${{ inputs.node-version }}
           cache: 'yarn'
 
       - name: Install dependencies
@@ -55,7 +57,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.0'
+          node-version: ${{ inputs.node-version }}
           cache: 'yarn'
 
       - name: Install dependencies
