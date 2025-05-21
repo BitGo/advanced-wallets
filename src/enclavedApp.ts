@@ -1,14 +1,14 @@
 /**
  * @prettier
  */
-import * as express from 'express';
+import express from 'express';
 import * as path from 'path';
 import debug from 'debug';
 import * as https from 'https';
 import * as http from 'http';
-import * as morgan from 'morgan';
+import morgan from 'morgan';
 import * as fs from 'fs';
-import * as timeout from 'connect-timeout';
+import timeout from 'connect-timeout';
 import * as bodyParser from 'body-parser';
 import * as _ from 'lodash';
 import { SSL_OP_NO_TLSv1 } from 'constants';
@@ -56,7 +56,7 @@ function setupLogging(app: express.Application, config: Config): void {
 export function startup(config: Config, baseUri: string): () => void {
   return function () {
     /* eslint-disable no-console */
-    console.log('BitGo-Enclaved-Express running');
+    console.log('BitGo-enclaved-bitgo-express running');
     console.log(`Base URI: ${baseUri}`);
     console.log(`TLS Mode: ${config.tlsMode}`);
     console.log(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
@@ -197,7 +197,7 @@ export function app(cfg: Config): express.Application {
   });
 
   // Set timeout
-  app.use(timeout(cfg.timeout));
+  app.use(timeout(cfg.timeout) as any);
 
   // Add body parser
   app.use(bodyParser.json({ limit: '20mb' }));

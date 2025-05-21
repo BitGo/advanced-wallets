@@ -1,9 +1,8 @@
 /**
  * @prettier
  */
-import * as express from 'express';
+import express from 'express';
 import debug from 'debug';
-import { handleV2Sign } from './signing/multisig';
 
 const debugLogger = debug('enclaved:routes');
 
@@ -77,7 +76,8 @@ export function promiseWrapper(promiseRequestHandler: any) {
         res.status(200).send(result);
       }
     } catch (e) {
-      res.status(500).json({ error: e.message || String(e) });
+      const err = e as any;
+      res.status(500).json({ error: err.message || String(err) });
     }
   };
 }
