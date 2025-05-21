@@ -2,15 +2,16 @@
   "compilerOptions": {
     "target": "es2018",
     "module": "commonjs",
+    "lib": ["es2018"],
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "test/**/*", "package.json"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
