@@ -1,4 +1,4 @@
-import { config, TlsMode } from '../config';
+import { config, isEnclavedConfig, TlsMode } from '../config';
 
 describe('Configuration', () => {
   const originalEnv = process.env;
@@ -15,46 +15,76 @@ describe('Configuration', () => {
     process.env = originalEnv;
   });
 
-  it('should use default configuration when no environment variables are set', () => {
-    const cfg = config();
-    expect(cfg.port).toBe(3080);
-    expect(cfg.bind).toBe('localhost');
-    expect(cfg.tlsMode).toBe(TlsMode.ENABLED);
-    expect(cfg.timeout).toBe(305 * 1000);
+  it('should throw error when APP_MODE is not set', () => {
+    expect(() => config()).toThrow('APP_MODE environment variable is required');
   });
 
-  it('should read port from environment variable', () => {
-    process.env.MASTER_BITGO_EXPRESS_PORT = '4000';
-    const cfg = config();
-    expect(cfg.port).toBe(4000);
+  it('should throw error when APP_MODE is invalid', () => {
+    process.env.APP_MODE = 'invalid';
+    expect(() => config()).toThrow('Invalid APP_MODE: invalid');
   });
 
-  it('should read TLS mode from environment variables', () => {
-    process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'true';
-    let cfg = config();
-    expect(cfg.tlsMode).toBe(TlsMode.DISABLED);
+  describe('Enclaved Mode', () => {
+    beforeEach(() => {
+      process.env.APP_MODE = 'enclaved';
+    });
 
-    process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'false';
-    process.env.MTLS_ENABLED = 'true';
-    cfg = config();
-    expect(cfg.tlsMode).toBe(TlsMode.MTLS);
-  });
+    it('should use default configuration when no environment variables are set', () => {
+      const cfg = config();
+      expect(isEnclavedConfig(cfg)).toBe(true);
+      if (isEnclavedConfig(cfg)) {
+        expect(cfg.port).toBe(3080);
+        expect(cfg.bind).toBe('localhost');
+        expect(cfg.tlsMode).toBe(TlsMode.ENABLED);
+        expect(cfg.timeout).toBe(305 * 1000);
+      }
+    });
 
-  it('should throw error when both TLS disabled and mTLS enabled', () => {
-    process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'true';
-    process.env.MTLS_ENABLED = 'true';
-    expect(() => config()).toThrow('Cannot have both TLS disabled and mTLS enabled');
-  });
+    it('should read port from environment variable', () => {
+      process.env.MASTER_BITGO_EXPRESS_PORT = '4000';
+      const cfg = config();
+      expect(isEnclavedConfig(cfg)).toBe(true);
+      if (isEnclavedConfig(cfg)) {
+        expect(cfg.port).toBe(4000);
+      }
+    });
 
-  it('should read mTLS settings from environment variables', () => {
-    process.env.MTLS_ENABLED = 'true';
-    process.env.MTLS_REQUEST_CERT = 'true';
-    process.env.MTLS_REJECT_UNAUTHORIZED = 'true';
-    process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
+    it('should read TLS mode from environment variables', () => {
+      process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'true';
+      let cfg = config();
+      expect(isEnclavedConfig(cfg)).toBe(true);
+      if (isEnclavedConfig(cfg)) {
+        expect(cfg.tlsMode).toBe(TlsMode.DISABLED);
+      }
 
-    const cfg = config();
-    expect(cfg.mtlsRequestCert).toBe(true);
-    expect(cfg.mtlsRejectUnauthorized).toBe(true);
-    expect(cfg.mtlsAllowedClientFingerprints).toEqual(['ABC123', 'DEF456']);
+      process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'false';
+      process.env.MTLS_ENABLED = 'true';
+      cfg = config();
+      expect(isEnclavedConfig(cfg)).toBe(true);
+      if (isEnclavedConfig(cfg)) {
+        expect(cfg.tlsMode).toBe(TlsMode.MTLS);
+      }
+    });
+
+    it('should throw error when both TLS disabled and mTLS enabled', () => {
+      process.env.MASTER_BITGO_EXPRESS_DISABLE_TLS = 'true';
+      process.env.MTLS_ENABLED = 'true';
+      expect(() => config()).toThrow('Cannot have both TLS disabled and mTLS enabled');
+    });
+
+    it('should read mTLS settings from environment variables', () => {
+      process.env.MTLS_ENABLED = 'true';
+      process.env.MTLS_REQUEST_CERT = 'true';
+      process.env.MTLS_REJECT_UNAUTHORIZED = 'true';
+      process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
+
+      const cfg = config();
+      expect(isEnclavedConfig(cfg)).toBe(true);
+      if (isEnclavedConfig(cfg)) {
+        expect(cfg.mtlsRequestCert).toBe(true);
+        expect(cfg.mtlsRejectUnauthorized).toBe(true);
+        expect(cfg.mtlsAllowedClientFingerprints).toEqual(['ABC123', 'DEF456']);
+      }
+    });
   });
 });
