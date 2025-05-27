@@ -22,7 +22,8 @@
     "debug": "^3.1.0",
     "express": "4.17.3",
     "lodash": "^4.17.20",
-    "morgan": "^1.9.1"
+    "morgan": "^1.9.1",
+    "superagent": "^8.0.9"
   },
   "devDependencies": {
     "@types/body-parser": "^1.17.0",

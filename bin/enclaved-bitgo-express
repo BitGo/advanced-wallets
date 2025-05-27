@@ -8,7 +8,7 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error(reason);
 });
 
-const { init } = require('../dist/src/enclavedApp');
+const { init } = require('../dist/src/app');
 
 if (require.main === module) {
   init().catch((err) => {

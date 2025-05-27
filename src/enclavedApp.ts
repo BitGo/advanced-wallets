@@ -2,61 +2,34 @@
  * @prettier
  */
 import express from 'express';
-import path from 'path';
 import debug from 'debug';
 import https from 'https';
 import http from 'http';
 import morgan from 'morgan';
-import fs from 'fs';
-import timeout from 'connect-timeout';
-import bodyParser from 'body-parser';
-import _ from 'lodash';
 import { SSL_OP_NO_TLSv1 } from 'constants';
-import pjson from '../package.json';
 
-import { Config, config, TlsMode } from './config';
+import { EnclavedConfig, config, TlsMode, isEnclavedConfig } from './config';
 import * as routes from './routes';
+import {
+  setupLogging,
+  setupDebugNamespaces,
+  setupCommonMiddleware,
+  createErrorHandler,
+  createHttpServer,
+  configureServerTimeouts,
+  prepareIpc,
+  readCertificates,
+} from './shared/appUtils';
 
 const debugLogger = debug('enclaved:express');
 
 /**
- * Set up the logging middleware provided by morgan
- *
- * @param app
- * @param config
- */
-function setupLogging(app: express.Application, config: Config): void {
-  // Set up morgan for logging, with optional logging into a file
-  let middleware;
-  if (config.logFile) {
-    // create a write stream (in append mode)
-    const accessLogPath = path.resolve(config.logFile);
-    const accessLogStream = fs.createWriteStream(accessLogPath, { flags: 'a' });
-    /* eslint-disable-next-line no-console */
-    console.log('Log location: ' + accessLogPath);
-    // setup the logger
-    middleware = morgan('combined', { stream: accessLogStream });
-  } else {
-    middleware = morgan('combined');
-  }
-
-  app.use(middleware);
-  morgan.token('remote-user', function (req: express.Request) {
-    return (req as any).clientCert ? (req as any).clientCert.subject.CN : 'unknown';
-  });
-}
-
-/**
  * Create a startup function which will be run upon server initialization
- *
- * @param config
- * @param baseUri
- * @return {Function}
  */
-export function startup(config: Config, baseUri: string): () => void {
+export function startup(config: EnclavedConfig, baseUri: string): () => void {
   return function () {
     /* eslint-disable no-console */
-    console.log('BitGo-enclaved-bitgo-express running');
+    console.log('BitGo Enclaved Express running');
     console.log(`Base URI: ${baseUri}`);
     console.log(`TLS Mode: ${config.tlsMode}`);
     console.log(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
@@ -66,7 +39,7 @@ export function startup(config: Config, baseUri: string): () => void {
   };
 }
 
-function isTLS(config: Config): boolean {
+function isTLS(config: EnclavedConfig): boolean {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
   console.log('TLS Configuration:', {
     tlsMode,
@@ -79,19 +52,23 @@ function isTLS(config: Config): boolean {
   return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
 }
 
-async function createHttpsServer(app: express.Application, config: Config): Promise<https.Server> {
+async function createHttpsServer(
+  app: express.Application,
+  config: EnclavedConfig,
+): Promise<https.Server> {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert, mtlsRejectUnauthorized } =
     config;
   let key: string;
   let cert: string;
+
   if (tlsKey && tlsCert) {
     key = tlsKey;
     cert = tlsCert;
     console.log('Using TLS key and cert from environment variables');
   } else if (keyPath && crtPath) {
-    const privateKeyPromise = fs.promises.readFile(keyPath, 'utf8');
-    const certificatePromise = fs.promises.readFile(crtPath, 'utf8');
-    [key, cert] = await Promise.all([privateKeyPromise, certificatePromise]);
+    const certificates = await readCertificates(keyPath, crtPath);
+    key = certificates.key;
+    cert = certificates.cert;
     console.log(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
   } else {
     throw new Error('Failed to get TLS key and certificate');
@@ -130,25 +107,16 @@ async function createHttpsServer(app: express.Application, config: Config): Prom
   return server;
 }
 
-function createHttpServer(app: express.Application): http.Server {
-  return http.createServer(app);
-}
-
 export async function createServer(
-  config: Config,
+  config: EnclavedConfig,
   app: express.Application,
 ): Promise<https.Server | http.Server> {
   const server = isTLS(config) ? await createHttpsServer(app, config) : createHttpServer(app);
-  if (config.keepAliveTimeout !== undefined) {
-    server.keepAliveTimeout = config.keepAliveTimeout;
-  }
-  if (config.headersTimeout !== undefined) {
-    server.headersTimeout = config.headersTimeout;
-  }
+  configureServerTimeouts(server, config);
   return server;
 }
 
-export function createBaseUri(config: Config): string {
+export function createBaseUri(config: EnclavedConfig): string {
   const { bind, port } = config;
   const tls = isTLS(config);
   const isStandardPort = (port === 80 && !tls) || (port === 443 && tls);
@@ -156,31 +124,9 @@ export function createBaseUri(config: Config): string {
 }
 
 /**
- * Create error handling middleware
- */
-function errorHandler() {
-  return function (
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction,
-  ) {
-    debugLogger('Error: ' + (err && err.message ? err.message : String(err)));
-    const statusCode = err && err.status ? err.status : 500;
-    const result = {
-      error: err && err.message ? err.message : String(err),
-      name: err && err.name ? err.name : 'Error',
-      code: err && err.code ? err.code : undefined,
-      version: pjson.version,
-    };
-    return res.status(statusCode).json(result);
-  };
-}
-
-/**
  * Create and configure the express application
  */
-export function app(cfg: Config): express.Application {
+export function app(cfg: EnclavedConfig): express.Application {
   debugLogger('app is initializing');
 
   const app = express();
@@ -188,62 +134,33 @@ export function app(cfg: Config): express.Application {
   setupLogging(app, cfg);
   debugLogger('logging setup');
 
-  const { debugNamespace } = cfg;
-
-  // enable specified debug namespaces
-  if (_.isArray(debugNamespace)) {
-    for (const ns of debugNamespace) {
-      if (ns && !debug.enabled(ns)) {
-        debug.enable(ns);
-      }
-    }
-  }
-
-  // Be more robust about accepting URLs with double slashes
-  app.use(function replaceUrlSlashes(
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
-  ) {
-    req.url = req.url.replace(/\/{2,}/g, '/');
-    next();
+  // Add custom morgan token for mTLS client certificate
+  morgan.token('remote-user', function (req: express.Request) {
+    return (req as any).clientCert ? (req as any).clientCert.subject.CN : 'unknown';
   });
 
-  // Set timeout
-  app.use(timeout(cfg.timeout) as any);
-
-  // Add body parser
-  app.use(bodyParser.json({ limit: '20mb' }));
+  setupDebugNamespaces(cfg.debugNamespace);
+  setupCommonMiddleware(app, cfg);
 
   // Setup routes
   routes.setupRoutes(app);
 
   // Add error handler
-  app.use(errorHandler());
+  app.use(createErrorHandler(debugLogger));
 
   return app;
 }
 
-// Add prepareIpc function
-async function prepareIpc(ipcSocketFilePath: string) {
-  if (process.platform === 'win32') {
-    throw new Error(`IPC option is not supported on platform ${process.platform}`);
-  }
-  try {
-    const stat = fs.statSync(ipcSocketFilePath);
-    if (!stat.isSocket()) {
-      throw new Error('IPC socket is not actually a socket');
-    }
-    fs.unlinkSync(ipcSocketFilePath);
-  } catch (e: any) {
-    if (e.code !== 'ENOENT') {
-      throw e;
-    }
-  }
-}
-
 export async function init(): Promise<void> {
   const cfg = config();
+
+  // Type-safe validation that we're in enclaved mode
+  if (!isEnclavedConfig(cfg)) {
+    throw new Error(
+      `This application only supports enclaved mode. Current mode: ${cfg.appMode}. Set APP_MODE=enclaved to use this application.`,
+    );
+  }
+
   const expressApp = app(cfg);
   const server = await createServer(cfg, expressApp);
   const { port, bind, ipc } = cfg;
