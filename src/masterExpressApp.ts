@@ -7,8 +7,11 @@ import https from 'https';
 import http from 'http';
 import superagent from 'superagent';
 import { BitGo, BitGoOptions } from 'bitgo';
+import { BitGoBase } from '@bitgo/sdk-core';
+import { version } from 'bitgo/package.json';
 
 import { MasterExpressConfig, config, isMasterExpressConfig } from './config';
+import { BitGoRequest } from './types/request';
 import {
   setupLogging,
   setupDebugNamespaces,
@@ -25,17 +28,10 @@ import bodyParser from 'body-parser';
 import { ProxyAgent } from 'proxy-agent';
 import { promiseWrapper } from './routes';
 import pjson from '../package.json';
-import { createEnclavedExpressClient } from './masterBitgoExpress/enclavedExpressClient';
+import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
 
 const debugLogger = debug('master-express:express');
-const { version } = require('bitgo/package.json');
 const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version}`;
-
-// Add this interface before the startup function
-interface BitGoRequest extends express.Request {
-  bitgo: BitGo;
-  config: MasterExpressConfig;
-}
 
 /**
  * Create a startup function which will be run upon server initialization
@@ -56,16 +52,6 @@ function isSSL(config: MasterExpressConfig): boolean {
   const { keyPath, crtPath, sslKey, sslCert } = config;
   if (!config.enableSSL) return false;
   return Boolean((keyPath && crtPath) || (sslKey && sslCert));
-}
-
-/**
- *
- * @param status
- * @param result
- * @param message
- */
-function apiResponse(status: number, result: any, message: string): ApiResponseError {
-  return new ApiResponseError(message, status, result);
 }
 
 const expressJSONParser = bodyParser.json({ limit: '20mb' });
@@ -120,7 +106,7 @@ function prepareBitGo(config: MasterExpressConfig) {
         : {}),
     };
 
-    (req as BitGoRequest).bitgo = new BitGo(bitgoConstructorParams);
+    (req as BitGoRequest).bitgo = new BitGo(bitgoConstructorParams) as unknown as BitGoBase;
     (req as BitGoRequest).config = config;
 
     next();
@@ -179,16 +165,18 @@ function setupMasterExpressRoutes(app: express.Application): void {
   // Setup common health check routes
   setupHealthCheckRoutes(app, 'master express');
 
+  const cfg = config() as MasterExpressConfig;
+  console.log('SSL Enabled:', cfg.enableSSL);
+  console.log('Enclaved Express URL:', cfg.enclavedExpressUrl);
+  console.log('Certificate exists:', Boolean(cfg.enclavedExpressSSLCert));
+  console.log('Certificate length:', cfg.enclavedExpressSSLCert.length);
+  console.log('Certificate content:', cfg.enclavedExpressSSLCert);
+
   // Add enclaved express ping route
   app.get('/ping/enclavedExpress', async (req, res) => {
-    const cfg = config() as MasterExpressConfig;
     try {
       console.log('Pinging enclaved express');
-      console.log('SSL Enabled:', cfg.enableSSL);
-      console.log('Enclaved Express URL:', cfg.enclavedExpressUrl);
-      console.log('Certificate exists:', Boolean(cfg.enclavedExpressSSLCert));
-      console.log('Certificate length:', cfg.enclavedExpressSSLCert.length);
-      console.log('Certificate content:', cfg.enclavedExpressSSLCert);
+
       const response = await superagent
         .get(`${cfg.enclavedExpressUrl}/ping`)
         .ca(cfg.enclavedExpressSSLCert)
@@ -212,6 +200,14 @@ function setupMasterExpressRoutes(app: express.Application): void {
       });
     }
   });
+
+  // TODO: Add api-ts to these new API routes
+  app.post(
+    '/api/:coin/wallet/generate',
+    parseBody,
+    prepareBitGo(config() as MasterExpressConfig),
+    promiseWrapper(handleGenerateWalletOnPrem),
+  );
 
   // Add a catch-all for unsupported routes
   app.use('*', (_req, res) => {
