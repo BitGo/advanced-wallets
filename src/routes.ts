@@ -66,7 +66,7 @@ export function setupRoutes(app: express.Application): void {
 // promiseWrapper implementation
 export function promiseWrapper(promiseRequestHandler: any) {
   return async function promWrapper(req: any, res: any, next: any) {
-    debug(`handle: ${req.method} ${req.originalUrl}`);
+    debugLogger(`handle: ${req.method} ${req.originalUrl}`);
     try {
       const result = await promiseRequestHandler(req, res, next);
       if (typeof result === 'object' && result !== null && 'body' in result && 'status' in result) {

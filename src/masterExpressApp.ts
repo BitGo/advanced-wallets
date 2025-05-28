@@ -6,6 +6,7 @@ import debug from 'debug';
 import https from 'https';
 import http from 'http';
 import superagent from 'superagent';
+import { BitGo, BitGoOptions } from 'bitgo';
 
 import { MasterExpressConfig, config, isMasterExpressConfig } from './config';
 import {
@@ -19,8 +20,22 @@ import {
   readCertificates,
   setupHealthCheckRoutes,
 } from './shared/appUtils';
+import { ApiResponseError } from './errors';
+import bodyParser from 'body-parser';
+import { ProxyAgent } from 'proxy-agent';
+import { promiseWrapper } from './routes';
+import pjson from '../package.json';
+import { createEnclavedExpressClient } from './masterBitgoExpress/enclavedExpressClient';
 
 const debugLogger = debug('master-express:express');
+const { version } = require('bitgo/package.json');
+const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version}`;
+
+// Add this interface before the startup function
+interface BitGoRequest extends express.Request {
+  bitgo: BitGo;
+  config: MasterExpressConfig;
+}
 
 /**
  * Create a startup function which will be run upon server initialization
@@ -41,6 +56,75 @@ function isSSL(config: MasterExpressConfig): boolean {
   const { keyPath, crtPath, sslKey, sslCert } = config;
   if (!config.enableSSL) return false;
   return Boolean((keyPath && crtPath) || (sslKey && sslCert));
+}
+
+/**
+ *
+ * @param status
+ * @param result
+ * @param message
+ */
+function apiResponse(status: number, result: any, message: string): ApiResponseError {
+  return new ApiResponseError(message, status, result);
+}
+
+const expressJSONParser = bodyParser.json({ limit: '20mb' });
+
+/**
+ * Perform body parsing here only on routes we want
+ */
+function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
+  // Set the default Content-Type, in case the client doesn't set it.  If
+  // Content-Type isn't specified, Express silently refuses to parse the
+  // request body.
+  req.headers['content-type'] = req.headers['content-type'] || 'application/json';
+  return expressJSONParser(req, res, next);
+}
+
+/**
+ * Create the bitgo object in the request
+ * @param config
+ */
+function prepareBitGo(config: MasterExpressConfig) {
+  const { env, customRootUri } = config;
+
+  return function prepBitGo(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) {
+    // Get access token
+    let accessToken;
+    if (req.headers.authorization) {
+      const authSplit = req.headers.authorization.split(' ');
+      if (authSplit.length === 2 && authSplit[0].toLowerCase() === 'bearer') {
+        accessToken = authSplit[1];
+      }
+    }
+    const userAgent = req.headers['user-agent']
+      ? BITGOEXPRESS_USER_AGENT + ' ' + req.headers['user-agent']
+      : BITGOEXPRESS_USER_AGENT;
+
+    const useProxyUrl = process.env.BITGO_USE_PROXY;
+    const bitgoConstructorParams: BitGoOptions = {
+      env,
+      customRootURI: customRootUri,
+      accessToken,
+      userAgent,
+      ...(useProxyUrl
+        ? {
+            customProxyAgent: new ProxyAgent({
+              getProxyForUrl: () => useProxyUrl,
+            }),
+          }
+        : {}),
+    };
+
+    (req as BitGoRequest).bitgo = new BitGo(bitgoConstructorParams);
+    (req as BitGoRequest).config = config;
+
+    next();
+  };
 }
 
 async function createHttpsServer(
@@ -98,7 +182,6 @@ function setupMasterExpressRoutes(app: express.Application): void {
   // Add enclaved express ping route
   app.get('/ping/enclavedExpress', async (req, res) => {
     const cfg = config() as MasterExpressConfig;
-
     try {
       console.log('Pinging enclaved express');
       console.log('SSL Enabled:', cfg.enableSSL);
