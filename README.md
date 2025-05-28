@@ -21,6 +21,10 @@ Currently, the following operations are supported:
 
 Configuration is done via environment variables:
 
+### Required Settings
+
+- `APP_MODE` - Application mode (required, must be either "enclaved" or "master-express")
+
 ### Network Settings
 
 - `PORT` - Port to listen on (default: 3080)
@@ -36,10 +40,20 @@ Configuration is done via environment variables:
 - `MTLS_REJECT_UNAUTHORIZED` - Whether to reject unauthorized connections (default: false)
 - `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed client certificate fingerprints (optional)
 
+### Master Express Settings
+
+- `BITGO_PORT` - Port to listen on (default: 3080)
+- `BITGO_BIND` - Address to bind to (default: localhost)
+- `BITGO_ENV` - Environment name (default: test)
+- `BITGO_ENABLE_SSL` - Enable SSL and certificate verification (default: true)
+- `BITGO_ENABLE_PROXY` - Enable proxy (default: true)
+- `ENCLAVED_EXPRESS_URL` - URL of the enclaved express server (required)
+- `ENCLAVED_EXPRESS_SSL_CERT` - Path to the enclaved express server's SSL certificate (required)
+
 ### Other Settings
 
 - `LOGFILE` - Path to log file (optional)
-- `DEBUG` - Debug namespaces to enable (e.g., 'enclaved:*')
+- `DEBUG` - Debug namespaces to enable (e.g., 'enclaved:\*')
 
 ## Running Enclaved Express
 
@@ -54,34 +68,44 @@ yarn start --port 3080
 For testing purposes, you can use self-signed certificates with relaxed verification:
 
 ```bash
+APP_MODE=enclaved \
+MASTER_BITGO_EXPRESS_PORT=3080 \
+MASTER_BITGO_EXPRESS_BIND=localhost \
 MASTER_BITGO_EXPRESS_KEYPATH=./test-ssl-key.pem \
 MASTER_BITGO_EXPRESS_CRTPATH=./test-ssl-cert.pem \
 MTLS_ENABLED=true \
 MTLS_REQUEST_CERT=true \
 MTLS_REJECT_UNAUTHORIZED=false \
-yarn start --port 3080
+yarn start
 ```
 
-### Connecting from Regular Express
+### Connecting from Master Express
 
-To connect to Enclaved Express from the regular Express server:
+To connect to Enclaved Express from the Master Express server:
 
 ```bash
-yarn start --port 4000 \
-  --enclavedExpressUrl='https://localhost:3080' \
-  --enclavedExpressSSLCert='./test-ssl-cert.pem' \
-  --disableproxy \
-  --debug
+APP_MODE=master-express \
+BITGO_PORT=3080 \
+BITGO_BIND=localhost \
+BITGO_ENV=test \
+BITGO_KEYPATH=./test-ssl-key.pem \
+BITGO_CRTPATH=./test-ssl-cert.pem \
+ENCLAVED_EXPRESS_URL=https://localhost:4000 \
+ENCLAVED_EXPRESS_SSL_CERT=./enclaved-express-cert.pem \
+BITGO_ENABLE_SSL=false \
+yarn start
 ```
 
 ## Understanding mTLS Configuration
 
 ### Server Side (Enclaved Express)
+
 - Uses both certificate and key files
 - The key file (`test-ssl-key.pem`) is used to prove the server's identity
 - The certificate file (`test-ssl-cert.pem`) is what the server presents to clients
 
 ### Client Side (Regular Express)
+
 - For testing, only needs the server's certificate
 - `rejectUnauthorized: false` allows testing without strict certificate verification
 - In production, proper client certificates should be used
@@ -101,11 +125,13 @@ yarn start --port 4000 \
 ### Common Issues
 
 1. **Certificate Errors**
+
    - Ensure paths to certificate files are correct
    - Check file permissions on certificate files
    - Verify certificate format is correct
 
 2. **Connection Issues**
+
    - Verify ports are not in use
    - Check firewall settings
    - Ensure URLs are correct (including https:// prefix)
@@ -117,4 +143,4 @@ yarn start --port 4000 \
 
 ## License
 
-MIT 
+MIT
