@@ -33,7 +33,7 @@ function handleVersionInfo(_req: express.Request) {
  * @param app Express application
  */
 function setupPingRoutes(app: express.Application) {
-  app.get('/ping', promiseWrapper(handlePingExpress));
+  app.post('/ping', promiseWrapper(handlePingExpress));
   app.get('/version', promiseWrapper(handleVersionInfo));
 }
 

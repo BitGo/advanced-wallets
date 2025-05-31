@@ -173,7 +173,7 @@ function setupMasterExpressRoutes(app: express.Application): void {
   console.log('Certificate content:', cfg.enclavedExpressSSLCert);
 
   // Add enclaved express ping route
-  app.get('/ping/enclavedExpress', async (req, res) => {
+  app.post('/ping/enclavedExpress', async (req, res) => {
     try {
       console.log('Pinging enclaved express');
 
