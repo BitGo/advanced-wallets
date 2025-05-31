@@ -23,7 +23,6 @@ import {
   readCertificates,
   setupHealthCheckRoutes,
 } from './shared/appUtils';
-import { ApiResponseError } from './errors';
 import bodyParser from 'body-parser';
 import { ProxyAgent } from 'proxy-agent';
 import { promiseWrapper } from './routes';

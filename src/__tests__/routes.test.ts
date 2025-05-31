@@ -12,7 +12,7 @@ describe('Routes', () => {
 
   describe('Health Check Routes', () => {
     it('should return 200 and status message for /ping', async () => {
-      const response = await request(app).get('/ping');
+      const response = await request(app).post('/ping');
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'enclaved express server is ok!');
       expect(response.body).toHaveProperty('timestamp');

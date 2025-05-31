@@ -2,6 +2,7 @@ import * as superagent from 'superagent';
 import debug from 'debug';
 import { config } from '../config';
 import { isMasterExpressConfig } from '../types';
+import https from 'https';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -25,6 +26,7 @@ export class EnclavedExpressClient {
   private readonly url: string;
   private readonly sslCert: string;
   private readonly coin?: string;
+  private readonly enableSSL: boolean;
 
   constructor(coin?: string) {
     const cfg = config();
@@ -41,6 +43,7 @@ export class EnclavedExpressClient {
     this.url = cfg.enclavedExpressUrl;
     this.sslCert = cfg.enclavedExpressSSLCert;
     this.coin = coin;
+    this.enableSSL = !!cfg.enableSSL;
     debugLogger('EnclavedExpressClient initialized with URL: %s', this.url);
   }
 
@@ -69,6 +72,12 @@ export class EnclavedExpressClient {
       const { body: keychain } = await superagent
         .post(`${this.url}/api/${this.coin}/key/independent`)
         .ca(this.sslCert)
+        .agent(
+          new https.Agent({
+            rejectUnauthorized: this.enableSSL,
+            ca: this.sslCert,
+          }),
+        )
         .type('json')
         .send(params);
       return keychain;
