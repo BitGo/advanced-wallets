@@ -209,7 +209,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     timeout: Number(readEnvVar('BITGO_TIMEOUT')),
     keepAliveTimeout: Number(readEnvVar('BITGO_KEEP_ALIVE_TIMEOUT')),
     headersTimeout: Number(readEnvVar('BITGO_HEADERS_TIMEOUT')),
-    // BitGo API settings
+    // BitGo MasterExpressApi settings
     env: readEnvVar('BITGO_ENV') as EnvironmentName,
     customRootUri: readEnvVar('BITGO_CUSTOM_ROOT_URI'),
     enableSSL: readEnvVar('BITGO_ENABLE_SSL') !== 'false', // Default to true unless explicitly set to false

@@ -6,6 +6,14 @@ import debug from 'debug';
 import https from 'https';
 import http from 'http';
 import superagent from 'superagent';
+import bodyParser from 'body-parser';
+
+import {
+  createServer as createExpressApp,
+  routeHandler,
+  ServiceFunction,
+} from '@api-ts/express-wrapper';
+import { Response } from '@api-ts/response';
 import { BitGo, BitGoOptions } from 'bitgo';
 import { BitGoBase } from '@bitgo/sdk-core';
 import { version } from 'bitgo/package.json';
@@ -21,13 +29,11 @@ import {
   configureServerTimeouts,
   prepareIpc,
   readCertificates,
-  setupHealthCheckRoutes,
 } from './shared/appUtils';
-import bodyParser from 'body-parser';
 import { ProxyAgent } from 'proxy-agent';
-import { promiseWrapper } from './routes';
 import pjson from '../package.json';
-import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
+import { generateMultiSigOnPremWallet } from './masterBitgoExpress/generateWallet';
+import { MasterExpressApi, EnclavedPingResponse, GenerateWalletRequest } from './masterExpressApi';
 
 const debugLogger = debug('master-express:express');
 const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version}`;
@@ -70,6 +76,8 @@ function parseBody(req: express.Request, res: express.Response, next: express.Ne
  * Create the bitgo object in the request
  * @param config
  */
+// TODO update to use in middleware
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function prepareBitGo(config: MasterExpressConfig) {
   const { env, customRootUri } = config;
 
@@ -157,66 +165,89 @@ export function createBaseUri(config: MasterExpressConfig): string {
   return `http${ssl ? 's' : ''}://${bind}${!isStandardPort ? ':' + port : ''}`;
 }
 
-/**
- * Setup master express specific routes
- */
-function setupMasterExpressRoutes(app: express.Application): void {
-  // Setup common health check routes
-  setupHealthCheckRoutes(app, 'master express');
-
+const handlePingEnclavedExpress = async () => {
   const cfg = config() as MasterExpressConfig;
-  console.log('SSL Enabled:', cfg.enableSSL);
-  console.log('Enclaved Express URL:', cfg.enclavedExpressUrl);
-  console.log('Certificate exists:', Boolean(cfg.enclavedExpressSSLCert));
-  console.log('Certificate length:', cfg.enclavedExpressSSLCert.length);
-  console.log('Certificate content:', cfg.enclavedExpressSSLCert);
+  try {
+    console.log('Pinging enclaved express');
 
-  // Add enclaved express ping route
-  app.post('/ping/enclavedExpress', async (req, res) => {
-    try {
-      console.log('Pinging enclaved express');
+    const response = await superagent
+      .post(`${cfg.enclavedExpressUrl}/ping`)
+      .ca(cfg.enclavedExpressSSLCert)
+      .agent(
+        new https.Agent({
+          rejectUnauthorized: cfg.enableSSL,
+          ca: cfg.enclavedExpressSSLCert,
+        }),
+      )
+      .send();
 
-      const response = await superagent
-        .get(`${cfg.enclavedExpressUrl}/ping`)
-        .ca(cfg.enclavedExpressSSLCert)
-        .agent(
-          new https.Agent({
-            rejectUnauthorized: cfg.enableSSL,
-            ca: cfg.enclavedExpressSSLCert,
+    return Response.ok({
+      status: 'Successfully pinged enclaved express',
+      enclavedResponse: response.body as EnclavedPingResponse,
+    });
+  } catch (error) {
+    debugLogger('Failed to ping enclaved express:', error);
+    return Response.internalError({
+      error: 'Failed to ping enclaved express',
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+// Add a new handler for wallet generation
+const handleGenerateWallet: ServiceFunction<typeof GenerateWalletRequest> = async ({
+  coin,
+  enterprise,
+  label,
+  Authorization,
+  multiSigType,
+  'user-agent': userAgent,
+}) => {
+  try {
+    const cfg = config() as MasterExpressConfig;
+
+    // Create BitGo instance using request parameters
+    const bitgo = new BitGo({
+      env: cfg.env,
+      customRootURI: cfg.customRootUri,
+      accessToken: Authorization?.startsWith('Bearer ') ? Authorization.substring(7) : undefined,
+      userAgent: userAgent ? BITGOEXPRESS_USER_AGENT + ' ' + userAgent : BITGOEXPRESS_USER_AGENT,
+    });
+
+    switch (multiSigType) {
+      case 'onchain': {
+        // Call the existing implementation
+        return Response.ok(
+          await generateMultiSigOnPremWallet({
+            bitgo,
+            params: {
+              coin,
+              label,
+              enterprise,
+            },
           }),
-        )
-        .send();
-
-      res.json({
-        status: 'Successfully pinged enclaved express',
-        enclavedResponse: response.body,
-      });
-    } catch (error) {
-      debugLogger('Failed to ping enclaved express:', error);
-      res.status(500).json({
-        error: 'Failed to ping enclaved express',
-        details: error instanceof Error ? error.message : String(error),
+        );
+      }
+      default:
+        return Response.notImplemented({
+          error: `Not Implemented for ${multiSigType}`,
+          details: undefined,
+        });
+    }
+  } catch (error) {
+    debugLogger('Failed to generate wallet:', error);
+    if (error instanceof Error && error.message.includes('Bad Request')) {
+      return Response.invalidRequest({
+        error: 'Failed to generate wallet',
+        details: error.message,
       });
     }
-  });
-
-  // TODO: Add api-ts to these new API routes
-  app.post(
-    '/api/:coin/wallet/generate',
-    parseBody,
-    prepareBitGo(config() as MasterExpressConfig),
-    promiseWrapper(handleGenerateWalletOnPrem),
-  );
-
-  // Add a catch-all for unsupported routes
-  app.use('*', (_req, res) => {
-    res.status(404).json({
-      error: 'Route not found or not supported in master express mode',
+    return Response.internalError({
+      error: 'Failed to generate wallet',
+      details: error instanceof Error ? error.message : String(error),
     });
-  });
-
-  debugLogger('Master express routes configured');
-}
+  }
+};
 
 /**
  * Create and configure the express application for master express mode
@@ -224,16 +255,53 @@ function setupMasterExpressRoutes(app: express.Application): void {
 export function app(cfg: MasterExpressConfig): express.Application {
   debugLogger('master express app is initializing');
 
-  const app = express();
+  console.log('SSL Enabled:', cfg.enableSSL);
+  console.log('Enclaved Express URL:', cfg.enclavedExpressUrl);
+  console.log('Certificate exists:', Boolean(cfg.enclavedExpressSSLCert));
+  console.log('Certificate length:', cfg.enclavedExpressSSLCert.length);
+  console.log('Certificate content:', cfg.enclavedExpressSSLCert);
+
+  const app = createExpressApp(MasterExpressApi, (app) => {
+    app.use(parseBody);
+    return {
+      'api.v1.health.pingMasterExpress': {
+        post: routeHandler({
+          handler: () =>
+            Response.ok({
+              status: 'Master Express server is ok',
+              timeStamp: new Date().toISOString(),
+            }),
+        }),
+      },
+      'api.v1.health.getVersion': {
+        get: routeHandler({
+          handler: () =>
+            Response.ok({
+              version: pjson.version,
+              name: pjson.name,
+            }),
+        }),
+      },
+      'api.v1.pingEnclavedExpress': {
+        post: routeHandler({
+          handler: handlePingEnclavedExpress,
+        }),
+      },
+      'api.v1.generateWallet': {
+        post: routeHandler({
+          handler: handleGenerateWallet,
+        }),
+      },
+    };
+  });
+
+  debugLogger('Master express routes configured');
 
   setupLogging(app, cfg);
   debugLogger('logging setup');
 
   setupDebugNamespaces(cfg.debugNamespace);
   setupCommonMiddleware(app, cfg);
-
-  // Setup master express routes
-  setupMasterExpressRoutes(app);
 
   // Add error handler
   app.use(createErrorHandler(debugLogger));

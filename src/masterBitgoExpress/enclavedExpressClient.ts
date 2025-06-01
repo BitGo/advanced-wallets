@@ -70,7 +70,7 @@ export class EnclavedExpressClient {
     try {
       debugLogger('Creating independent keychain for coin: %s', this.coin);
       const { body: keychain } = await superagent
-        .post(`${this.url}/api/${this.coin}/key/independent`)
+        .post(`${this.url}/${this.coin}/key/independentkey`)
         .ca(this.sslCert)
         .agent(
           new https.Agent({

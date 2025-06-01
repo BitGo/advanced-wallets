@@ -47,7 +47,7 @@ export interface EnclavedConfig extends BaseConfig {
 // Master Express mode specific configuration
 export interface MasterExpressConfig extends BaseConfig {
   appMode: AppMode.MASTER_EXPRESS;
-  // BitGo API settings
+  // BitGo MasterExpressApi settings
   env: EnvironmentName;
   customRootUri?: string;
   enableSSL?: boolean;

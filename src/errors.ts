@@ -17,7 +17,7 @@ export class EnclavedError extends Error {
 }
 
 /**
- * Error for API responses
+ * Error for MasterExpressApi responses
  */
 export class ApiResponseError extends EnclavedError {
   public result: any;

@@ -48,7 +48,7 @@ function prepBitGo(req: express.Request, res: express.Response, next: express.Ne
 
 function setupKeyGenRoutes(app: express.Application) {
   // Register additional routes here as needed
-  app.post('/:coin/key/independentKey', prepBitGo, promiseWrapper(postIndependentKey));
+  app.post('/:coin/key/independentkey', prepBitGo, promiseWrapper(postIndependentKey));
   debugLogger('KeyGen routes configured');
 }
 

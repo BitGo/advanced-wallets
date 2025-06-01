@@ -1,68 +1,60 @@
 import {
-  GenerateWalletOptions,
+  AddKeychainOptions,
+  Keychain,
+  KeychainsTriplet,
   promiseProps,
   RequestTracer,
   SupplementGenerateWalletOptions,
-  Keychain,
-  KeychainsTriplet,
-  Wallet,
   WalletWithKeychains,
-  AddKeychainOptions,
+  type Wallet,
 } from '@bitgo/sdk-core';
 import { createEnclavedExpressClient } from './enclavedExpressClient';
-import _ from 'lodash';
-import { BitGoRequest } from '../types/request';
+import { BitGo } from 'bitgo';
+
+export type GenerateMultiSigOnPremWalletParams = {
+  coin: string;
+  label: string;
+  enterprise?: string;
+};
 
 /**
- * This route is used to generate a multisig wallet when enclaved express is enabled
+ * Generate multisig wallet keys using enclaved express and create the wallet in BitGo
+ * @param {BitGo} bitgo the sdk instance
+ * @param {GenerateMultiSigOnPremWalletParams} params
  */
-export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
-  const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
+export async function generateMultiSigOnPremWallet({
+  bitgo,
+  params,
+}: {
+  bitgo: BitGo;
+  params: GenerateMultiSigOnPremWalletParams;
+}): Promise<WalletWithKeychains> {
+  const baseCoin = bitgo.coin(params.coin);
 
-  const enclavedExpressClient = createEnclavedExpressClient(req.params.coin);
+  const enclavedExpressClient = createEnclavedExpressClient(params.coin);
   if (!enclavedExpressClient) {
     throw new Error(
       'Enclaved express client not configured - enclaved express features will be disabled',
     );
   }
 
-  const params = req.body as GenerateWalletOptions;
   const reqId = new RequestTracer();
-
-  // Assign the default multiSig type value based on the coin
-  if (!params.multisigType) {
-    params.multisigType = baseCoin.getDefaultMultisigType();
-  }
-
-  if (typeof params.label !== 'string') {
-    throw new Error('missing required string parameter label');
-  }
-
-  const { label, enterprise } = params;
 
   // Create wallet parameters with type assertion to allow 'onprem' subtype
   const walletParams = {
-    label: label,
+    label: params.label,
     m: 2,
     n: 3,
     keys: [],
     type: 'cold',
-    subType: 'onprem',
+    subType: 'onPrem',
     multisigType: 'onchain',
   } as unknown as SupplementGenerateWalletOptions; // TODO: Add onprem to the SDK subType and remove "unknown" type casting
-
-  if (!_.isUndefined(enterprise)) {
-    if (!_.isString(enterprise)) {
-      throw new Error('invalid enterprise argument, expecting string');
-    }
-    walletParams.enterprise = enterprise;
-  }
 
   const userKeychainPromise = async (): Promise<Keychain> => {
     const userKeychain = await enclavedExpressClient.createIndependentKeychain({
       source: 'user',
-      coin: req.params.coin,
+      coin: params.coin,
       type: 'independent',
     });
     const userKeychainParams: AddKeychainOptions = {
@@ -73,13 +65,13 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
     };
 
     const newUserKeychain = await baseCoin.keychains().add(userKeychainParams);
-    return _.extend({}, newUserKeychain, userKeychain);
+    return { ...newUserKeychain, ...userKeychain };
   };
 
   const backupKeychainPromise = async (): Promise<Keychain> => {
     const backupKeychain = await enclavedExpressClient.createIndependentKeychain({
       source: 'backup',
-      coin: req.params.coin,
+      coin: params.coin,
       type: 'independent',
     });
     const backupKeychainParams: AddKeychainOptions = {
@@ -90,7 +82,7 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
     };
 
     const newBackupKeychain = await baseCoin.keychains().add(backupKeychainParams);
-    return _.extend({}, newBackupKeychain, backupKeychain);
+    return { ...newBackupKeychain, ...backupKeychain };
   };
 
   const { userKeychain, backupKeychain, bitgoKeychain }: KeychainsTriplet = await promiseProps({
@@ -99,7 +91,8 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
     bitgoKeychain: baseCoin.keychains().createBitGo({
       enterprise: params.enterprise,
       reqId,
-      isDistributedCustody: params.isDistributedCustody,
+      // not applicable for onPrem wallets
+      isDistributedCustody: false,
     }),
   });
 
@@ -114,15 +107,19 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
   const finalWalletParams = await baseCoin.supplementGenerateWallet(walletParams, keychains);
 
   bitgo.setRequestTracer(reqId);
-  const newWallet = await bitgo.post(baseCoin.url('/wallet/add')).send(finalWalletParams).result();
+  const wallet = (await baseCoin.wallets().add({
+    ...finalWalletParams,
+    enterprise: params.enterprise,
+    reqId,
+    // Not valid for onPrem wallets
+    isDistributedCustody: false,
+  })) as Wallet;
 
-  const result: WalletWithKeychains = {
-    wallet: new Wallet(bitgo, baseCoin, newWallet),
+  return {
+    wallet: wallet,
     userKeychain: userKeychain,
     backupKeychain: backupKeychain,
     bitgoKeychain: bitgoKeychain,
     responseType: 'WalletWithKeychains',
   };
-
-  return { ...result, wallet: result.wallet.toJSON() };
 }

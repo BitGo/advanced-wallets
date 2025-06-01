@@ -1,0 +1,300 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "@bitgo/enclaved-bitgo-express",
+    "version": "1.0.0",
+    "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS"
+  },
+  "paths": {
+    "/api/{coin}/wallet/generate": {
+      "post": {
+        "summary": "Request to generate a new wallet",
+        "operationId": "api.v1.generateWallet",
+        "parameters": [
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user-agent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "enterprise": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "label",
+                  "enterprise"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletGenerateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping": {
+      "post": {
+        "summary": "Request to ping the server to check if it is alive",
+        "operationId": "api.v1.health.pingMasterExpress",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PingResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping/enclavedExpress": {
+      "post": {
+        "summary": "Request to ping the enclaved express server",
+        "operationId": "api.v1.pingEnclavedExpress",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "enclavedResponse": {
+                      "$ref": "#/components/schemas/enclavedPingResponse"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "enclavedResponse"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "summary": "Request to get the version of the server",
+        "operationId": "api.v1.health.getVersion",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetVersionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "InternalErrorResponse": {
+        "title": "InternalErrorResponse",
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "details"
+        ]
+      },
+      "WalletGenerateResponse": {
+        "title": "WalletGenerateResponse",
+        "type": "object",
+        "properties": {
+          "wallet": {},
+          "userKeychain": {},
+          "backupKeychain": {},
+          "bitgoKeychain": {}
+        },
+        "required": [
+          "wallet",
+          "userKeychain",
+          "backupKeychain",
+          "bitgoKeychain"
+        ]
+      },
+      "enclavedPingResponse": {
+        "title": "enclavedPingResponse",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "timeStamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "timeStamp"
+        ]
+      },
+      "GetVersionResponse": {
+        "title": "GetVersionResponse",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "name"
+        ]
+      },
+      "PingResponse": {
+        "title": "PingResponse",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "timeStamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "timeStamp"
+        ]
+      }
+    }
+  }
+}
