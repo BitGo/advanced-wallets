@@ -49,6 +49,7 @@ const defaultEnclavedConfig: EnclavedConfig = {
   bind: 'localhost',
   timeout: 305 * 1000,
   logFile: '',
+  kmsUrl: '', // Will be overridden by environment variable
   tlsMode: TlsMode.ENABLED,
   mtlsRequestCert: false,
   mtlsRejectUnauthorized: false,
@@ -68,6 +69,12 @@ function determineTlsMode(): TlsMode {
 }
 
 function enclavedEnvConfig(): Partial<EnclavedConfig> {
+  const kmsUrl = readEnvVar('KMS_URL');
+
+  if (!kmsUrl) {
+    throw new Error('KMS_URL environment variable is required and cannot be empty');
+  }
+
   return {
     appMode: AppMode.ENCLAVED,
     port: Number(readEnvVar('MASTER_BITGO_EXPRESS_PORT')),
@@ -80,6 +87,8 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     timeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_TIMEOUT')),
     keepAliveTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_KEEP_ALIVE_TIMEOUT')),
     headersTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_HEADERS_TIMEOUT')),
+    // KMS settings
+    kmsUrl,
     // TLS settings
     keyPath: readEnvVar('MASTER_BITGO_EXPRESS_KEYPATH'),
     crtPath: readEnvVar('MASTER_BITGO_EXPRESS_CRTPATH'),
@@ -112,6 +121,7 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     timeout: get('timeout'),
     keepAliveTimeout: get('keepAliveTimeout'),
     headersTimeout: get('headersTimeout'),
+    kmsUrl: get('kmsUrl'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
     tlsKey: get('tlsKey'),

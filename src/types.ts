@@ -30,6 +30,8 @@ interface BaseConfig {
 // Enclaved mode specific configuration
 export interface EnclavedConfig extends BaseConfig {
   appMode: AppMode.ENCLAVED;
+  // KMS settings
+  kmsUrl: string;
   // TLS settings
   keyPath?: string;
   crtPath?: string;
