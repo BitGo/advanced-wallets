@@ -4,6 +4,8 @@
 import express from 'express';
 import debug from 'debug';
 import pjson from '../package.json';
+import { BitGo, BitGoOptions } from 'bitgo';
+import { postIndependentKey } from './api/enclaved/postIndependentKey';
 
 const debugLogger = debug('enclaved:routes');
 
@@ -37,8 +39,16 @@ function setupPingRoutes(app: express.Application) {
   app.get('/version', promiseWrapper(handleVersionInfo));
 }
 
-function setupKeyGenRoutes() {
+function prepBitGo(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const bitgoConstructorParams: BitGoOptions = {};
+  req.body.bitgo = new BitGo(bitgoConstructorParams);
+
+  next();
+}
+
+function setupKeyGenRoutes(app: express.Application) {
   // Register additional routes here as needed
+  app.post('/:coin/key/independentKey', prepBitGo, promiseWrapper(postIndependentKey));
   debugLogger('KeyGen routes configured');
 }
 
@@ -51,7 +61,7 @@ export function setupRoutes(app: express.Application): void {
   setupPingRoutes(app);
 
   // Register keygen routes
-  setupKeyGenRoutes();
+  setupKeyGenRoutes(app);
 
   // Add a catch-all for unsupported routes
   app.use('*', (_req, res) => {
