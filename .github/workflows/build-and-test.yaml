@@ -69,8 +69,9 @@ jobs:
       - name: Test
         run: yarn test
         env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
           MASTER_BITGO_EXPRESS_KEYPATH: ./test-ssl-key.pem
           MASTER_BITGO_EXPRESS_CRTPATH: ./test-ssl-cert.pem
           MTLS_ENABLED: true
           MTLS_REQUEST_CERT: true
-          MTLS_REJECT_UNAUTHORIZED: false 
+          MTLS_REJECT_UNAUTHORIZED: false

@@ -64,3 +64,13 @@ export interface MasterExpressConfig extends BaseConfig {
 
 // Union type for the configuration
 export type Config = EnclavedConfig | MasterExpressConfig;
+
+// Type guard for MasterExpressConfig
+export function isMasterExpressConfig(config: Config): config is MasterExpressConfig {
+  return config.appMode === AppMode.MASTER_EXPRESS;
+}
+
+// Type guard for EnclavedConfig
+export function isEnclavedConfig(config: Config): config is EnclavedConfig {
+  return config.appMode === AppMode.ENCLAVED;
+}
