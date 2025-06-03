@@ -2,7 +2,6 @@
  * @prettier
  */
 import express from 'express';
-import debug from 'debug';
 import https from 'https';
 import http from 'http';
 import superagent from 'superagent';
@@ -28,8 +27,8 @@ import { ProxyAgent } from 'proxy-agent';
 import { promiseWrapper } from './routes';
 import pjson from '../package.json';
 import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
+import logger from './logger';
 
-const debugLogger = debug('master-express:express');
 const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version}`;
 
 /**
@@ -37,13 +36,11 @@ const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version
  */
 export function startup(config: MasterExpressConfig, baseUri: string): () => void {
   return function () {
-    /* eslint-disable no-console */
-    console.log('BitGo Master Express running');
-    console.log(`Base URI: ${baseUri}`);
-    console.log(`Environment: ${config.env}`);
-    console.log(`SSL Enabled: ${config.enableSSL}`);
-    console.log(`Proxy Enabled: ${config.enableProxy}`);
-    /* eslint-enable no-console */
+    logger.info('BitGo Master Express running');
+    logger.info(`Base URI: ${baseUri}`);
+    logger.info(`Environment: ${config.env}`);
+    logger.info(`SSL Enabled: ${config.enableSSL}`);
+    logger.info(`Proxy Enabled: ${config.enableProxy}`);
   };
 }
 
@@ -123,12 +120,12 @@ async function createHttpsServer(
   if (sslKey && sslCert) {
     key = sslKey;
     cert = sslCert;
-    console.log('Using SSL key and cert from environment variables');
+    logger.info('Using SSL key and cert from environment variables');
   } else if (keyPath && crtPath) {
     const certificates = await readCertificates(keyPath, crtPath);
     key = certificates.key;
     cert = certificates.cert;
-    console.log(`Using SSL key and cert from files: ${keyPath}, ${crtPath}`);
+    logger.info(`Using SSL key and cert from files: ${keyPath}, ${crtPath}`);
   } else {
     throw new Error('Failed to get SSL key and certificate');
   }
@@ -165,16 +162,17 @@ function setupMasterExpressRoutes(app: express.Application): void {
   setupHealthCheckRoutes(app, 'master express');
 
   const cfg = config() as MasterExpressConfig;
-  console.log('SSL Enabled:', cfg.enableSSL);
-  console.log('Enclaved Express URL:', cfg.enclavedExpressUrl);
-  console.log('Certificate exists:', Boolean(cfg.enclavedExpressSSLCert));
-  console.log('Certificate length:', cfg.enclavedExpressSSLCert.length);
-  console.log('Certificate content:', cfg.enclavedExpressSSLCert);
+  logger.debug('SSL Configuration:', {
+    sslEnabled: cfg.enableSSL,
+    enclavedExpressUrl: cfg.enclavedExpressUrl,
+    hasCertificate: Boolean(cfg.enclavedExpressSSLCert),
+    certificateLength: cfg.enclavedExpressSSLCert.length,
+  });
 
   // Add enclaved express ping route
   app.post('/ping/enclavedExpress', async (req, res) => {
     try {
-      console.log('Pinging enclaved express');
+      logger.debug('Pinging enclaved express');
 
       const response = await superagent
         .get(`${cfg.enclavedExpressUrl}/ping`)
@@ -192,7 +190,7 @@ function setupMasterExpressRoutes(app: express.Application): void {
         enclavedResponse: response.body,
       });
     } catch (error) {
-      debugLogger('Failed to ping enclaved express:', error);
+      logger.error('Failed to ping enclaved express:', { error });
       res.status(500).json({
         error: 'Failed to ping enclaved express',
         details: error instanceof Error ? error.message : String(error),
@@ -215,19 +213,19 @@ function setupMasterExpressRoutes(app: express.Application): void {
     });
   });
 
-  debugLogger('Master express routes configured');
+  logger.debug('Master express routes configured');
 }
 
 /**
  * Create and configure the express application for master express mode
  */
 export function app(cfg: MasterExpressConfig): express.Application {
-  debugLogger('master express app is initializing');
+  logger.debug('master express app is initializing');
 
   const app = express();
 
   setupLogging(app, cfg);
-  debugLogger('logging setup');
+  logger.debug('logging setup');
 
   setupDebugNamespaces(cfg.debugNamespace);
   setupCommonMiddleware(app, cfg);
@@ -236,7 +234,7 @@ export function app(cfg: MasterExpressConfig): express.Application {
   setupMasterExpressRoutes(app);
 
   // Add error handler
-  app.use(createErrorHandler(debugLogger));
+  app.use(createErrorHandler());
 
   return app;
 }

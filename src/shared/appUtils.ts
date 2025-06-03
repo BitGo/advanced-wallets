@@ -3,7 +3,6 @@
  */
 import express from 'express';
 import path from 'path';
-import debug from 'debug';
 import https from 'https';
 import http from 'http';
 import morgan from 'morgan';
@@ -12,6 +11,7 @@ import timeout from 'connect-timeout';
 import bodyParser from 'body-parser';
 import _ from 'lodash';
 import pjson from '../../package.json';
+import logger from '../logger';
 
 import { Config } from '../config';
 
@@ -25,8 +25,7 @@ export function setupLogging(app: express.Application, config: Config): void {
     // create a write stream (in append mode)
     const accessLogPath = path.resolve(config.logFile);
     const accessLogStream = fs.createWriteStream(accessLogPath, { flags: 'a' });
-    /* eslint-disable-next-line no-console */
-    console.log('Log location: ' + accessLogPath);
+    logger.info(`Log location: ${accessLogPath}`);
     // setup the logger
     middleware = morgan('combined', { stream: accessLogStream });
   } else {
@@ -42,8 +41,8 @@ export function setupLogging(app: express.Application, config: Config): void {
 export function setupDebugNamespaces(debugNamespace?: string[]): void {
   if (_.isArray(debugNamespace)) {
     for (const ns of debugNamespace) {
-      if (ns && !debug.enabled(ns)) {
-        debug.enable(ns);
+      if (ns) {
+        logger.debug(`Enabling debug namespace: ${ns}`);
       }
     }
   }
@@ -73,14 +72,14 @@ export function setupCommonMiddleware(app: express.Application, config: Config):
 /**
  * Create error handling middleware
  */
-export function createErrorHandler(debugLogger: debug.Debugger) {
+export function createErrorHandler() {
   return function (
     err: any,
     req: express.Request,
     res: express.Response,
     _next: express.NextFunction,
   ) {
-    debugLogger('Error: ' + (err && err.message ? err.message : String(err)));
+    logger.error('Error:', { error: err && err.message ? err.message : String(err) });
     const statusCode = err && err.status ? err.status : 500;
     const result = {
       error: err && err.message ? err.message : String(err),
