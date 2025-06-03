@@ -142,7 +142,7 @@ export function app(cfg: EnclavedConfig): express.Application {
   routes.setupRoutes(app);
 
   // Add error handler
-  app.use(createErrorHandler(logger));
+  app.use(createErrorHandler());
 
   return app;
 }
