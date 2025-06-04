@@ -57,9 +57,22 @@ const defaultEnclavedConfig: EnclavedConfig = {
 };
 
 function determineTlsMode(): TlsMode {
-  const disableTls = readEnvVar('MASTER_BITGO_EXPRESS_DISABLE_TLS') === 'true';
-  if (disableTls) return TlsMode.DISABLED;
-  return TlsMode.MTLS;
+  const tlsMode = readEnvVar('TLS_MODE')?.toLowerCase();
+
+  if (!tlsMode) {
+    logger.warn('TLS_MODE not set, defaulting to MTLS. Set TLS_MODE=disabled to disable TLS.');
+    return TlsMode.MTLS;
+  }
+
+  if (tlsMode === 'disabled') {
+    return TlsMode.DISABLED;
+  }
+
+  if (tlsMode === 'mtls') {
+    return TlsMode.MTLS;
+  }
+
+  throw new Error(`Invalid TLS_MODE: ${tlsMode}. Must be either "disabled" or "mtls"`);
 }
 
 function enclavedEnvConfig(): Partial<EnclavedConfig> {
@@ -129,33 +142,36 @@ function configureEnclavedMode(): EnclavedConfig {
   const env = enclavedEnvConfig();
   let config = mergeEnclavedConfigs(env);
 
-  // Handle file loading for TLS certificates
-  if (!config.tlsKey && config.keyPath) {
-    try {
-      config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
-      logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+  // Only load certificates if TLS is enabled
+  if (config.tlsMode !== TlsMode.DISABLED) {
+    // Handle file loading for TLS certificates
+    if (!config.tlsKey && config.keyPath) {
+      try {
+        config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+      }
+    } else if (config.tlsKey) {
+      logger.debug('Using TLS private key from environment variable');
     }
-  } else if (config.tlsKey) {
-    logger.debug('Using TLS private key from environment variable');
-  }
 
-  if (!config.tlsCert && config.crtPath) {
-    try {
-      config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
-      logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+    if (!config.tlsCert && config.crtPath) {
+      try {
+        config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+      }
+    } else if (config.tlsCert) {
+      logger.debug('Using TLS certificate from environment variable');
     }
-  } else if (config.tlsCert) {
-    logger.debug('Using TLS certificate from environment variable');
-  }
 
-  // Validate that certificates are properly loaded when TLS is enabled
-  validateTlsCertificates(config);
+    // Validate that certificates are properly loaded when TLS is enabled
+    validateTlsCertificates(config);
+  }
 
   return config;
 }
@@ -289,32 +305,38 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   }
   config = { ...config, ...updates };
 
-  // Handle file loading for TLS certificates
-  if (!config.tlsKey && config.keyPath) {
-    try {
-      config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
-      logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+  // Only load certificates if TLS is enabled
+  if (config.tlsMode !== TlsMode.DISABLED) {
+    // Handle file loading for TLS certificates
+    if (!config.tlsKey && config.keyPath) {
+      try {
+        config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+      }
+    } else if (config.tlsKey) {
+      logger.debug('Using TLS private key from environment variable');
     }
-  } else if (config.tlsKey) {
-    logger.debug('Using TLS private key from environment variable');
+
+    if (!config.tlsCert && config.crtPath) {
+      try {
+        config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+      }
+    } else if (config.tlsCert) {
+      logger.debug('Using TLS certificate from environment variable');
+    }
+
+    // Validate that certificates are properly loaded when TLS is enabled
+    validateTlsCertificates(config);
   }
 
-  if (!config.tlsCert && config.crtPath) {
-    try {
-      config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
-      logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
-    }
-  } else if (config.tlsCert) {
-    logger.debug('Using TLS certificate from environment variable');
-  }
-
-  // Handle cert loading
+  // Handle cert loading for Enclaved Express (always required for Master Express)
   if (config.enclavedExpressCert) {
     try {
       if (fs.existsSync(config.enclavedExpressCert)) {
@@ -336,9 +358,6 @@ export function configureMasterExpressMode(): MasterExpressConfig {
       throw new Error(`Failed to read enclaved express cert: ${err.message}`);
     }
   }
-
-  // Validate that certificates are properly loaded when TLS is enabled
-  validateTlsCertificates(config);
 
   // Validate Master Express configuration
   validateMasterExpressConfig(config);

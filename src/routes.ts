@@ -1,7 +1,7 @@
 import express from 'express';
 import debug from 'debug';
 import pjson from '../package.json';
-import { BitGo, BitGoOptions } from 'bitgo';
+import type { BitGoOptions } from 'bitgo';
 import { postIndependentKey } from './api/enclaved/postIndependentKey';
 
 const debugLogger = debug('enclaved:routes');
@@ -10,7 +10,6 @@ const debugLogger = debug('enclaved:routes');
  * Handler for express ping to check service health
  */
 function handlePingExpress(_req: express.Request) {
-  console.log('handlePingExpress');
   return {
     status: 'enclaved express server is ok!',
     timestamp: new Date().toISOString(),
@@ -36,16 +35,24 @@ function setupPingRoutes(app: express.Application) {
   app.get('/version', promiseWrapper(handleVersionInfo));
 }
 
-function prepBitGo(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const bitgoConstructorParams: BitGoOptions = {};
-  req.body.bitgo = new BitGo(bitgoConstructorParams);
-
-  next();
+async function prepBitGo(req: express.Request, res: express.Response, next: express.NextFunction) {
+  try {
+    // Lazy load BitGo only when needed
+    const { BitGo } = await import('bitgo');
+    const bitgoConstructorParams: BitGoOptions = {};
+    req.body.bitgo = new BitGo(bitgoConstructorParams);
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
 
 function setupKeyGenRoutes(app: express.Application) {
-  // Register additional routes here as needed
-  app.post('/:coin/key/independentKey', prepBitGo, promiseWrapper(postIndependentKey));
+  app.post(
+    '/:coin/key/independentKey',
+    promiseWrapper(prepBitGo),
+    promiseWrapper(postIndependentKey),
+  );
   debugLogger('KeyGen routes configured');
 }
 
@@ -72,19 +79,25 @@ export function setupRoutes(app: express.Application): void {
 
 // promiseWrapper implementation
 export function promiseWrapper(promiseRequestHandler: any) {
-  return async function promWrapper(req: any, res: any, next: any) {
+  return async function promWrapper(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) {
     debugLogger(`handle: ${req.method} ${req.originalUrl}`);
     try {
       const result = await promiseRequestHandler(req, res, next);
-      if (typeof result === 'object' && result !== null && 'body' in result && 'status' in result) {
-        const { status, body } = result as { status: number; body: unknown };
-        res.status(status).send(body);
-      } else {
-        res.status(200).send(result);
+      if (result && typeof result === 'object') {
+        if ('status' in result && 'body' in result) {
+          const { status, body } = result as { status: number; body: unknown };
+          return res.status(status).json(body);
+        }
+        return res.status(200).json(result);
       }
+      return res.status(200).json(result);
     } catch (e) {
-      const err = e as any;
-      res.status(500).json({ error: err.message || String(err) });
+      const err = e as Error;
+      return res.status(500).json({ error: err.message || String(err) });
     }
   };
 }

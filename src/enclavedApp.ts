@@ -39,13 +39,6 @@ export function startup(config: EnclavedConfig, baseUri: string): () => void {
 
 function isTLS(config: EnclavedConfig): boolean {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
-  logger.debug('TLS Configuration:', {
-    tlsMode,
-    hasKeyPath: Boolean(keyPath),
-    hasCrtPath: Boolean(crtPath),
-    hasTlsKey: Boolean(tlsKey),
-    hasTlsCert: Boolean(tlsCert),
-  });
   if (tlsMode === TlsMode.DISABLED) return false;
   return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
 }

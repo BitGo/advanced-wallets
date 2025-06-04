@@ -51,7 +51,11 @@ Configuration is managed through environment variables:
 
 Both modes use the same TLS configuration variables:
 
-#### Certificate Configuration (choose one approach)
+#### TLS Mode
+
+- `TLS_MODE` - Set to either "mtls" or "disabled" (defaults to "mtls" if not set)
+
+#### Certificate Configuration (required when TLS_MODE=mtls)
 
 **Option 1: Certificate Files**
 
@@ -63,12 +67,11 @@ Both modes use the same TLS configuration variables:
 - `TLS_KEY` - Private key content (PEM format)
 - `TLS_CERT` - Certificate content (PEM format)
 
-#### mTLS Settings
+#### mTLS Settings (when TLS_MODE=mtls)
 
 - `MTLS_REQUEST_CERT` - Request client certificates (default: true)
 - `ALLOW_SELF_SIGNED` - Allow self-signed certificates (default: false)
 - `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed client certificate fingerprints (optional)
-- `MASTER_BITGO_EXPRESS_DISABLE_TLS` - Disable TLS completely (default: false)
 
 ### Logging and Debug
 

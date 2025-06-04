@@ -49,13 +49,6 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
 
 function isTLS(config: MasterExpressConfig): boolean {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
-  logger.debug('TLS Configuration:', {
-    tlsMode,
-    hasKeyPath: Boolean(keyPath),
-    hasCrtPath: Boolean(crtPath),
-    hasTlsKey: Boolean(tlsKey),
-    hasTlsCert: Boolean(tlsCert),
-  });
   if (tlsMode === TlsMode.DISABLED) return false;
   return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
 }
@@ -158,13 +151,6 @@ export function createBaseUri(config: MasterExpressConfig): string {
 function setupMasterExpressRoutes(app: express.Application, cfg: MasterExpressConfig): void {
   // Setup common health check routes
   setupHealthCheckRoutes(app, 'master express');
-
-  logger.debug('TLS Configuration:', {
-    tlsMode: cfg.tlsMode,
-    enclavedExpressUrl: cfg.enclavedExpressUrl,
-    hasCertificate: Boolean(cfg.enclavedExpressCert),
-    certificateLength: cfg.enclavedExpressCert.length,
-  });
 
   // Add enclaved express ping route
   app.post('/ping/enclavedExpress', async (req, res) => {
