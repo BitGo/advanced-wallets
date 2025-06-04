@@ -2,7 +2,6 @@
  * @prettier
  */
 import express from 'express';
-import debug from 'debug';
 import https from 'https';
 import http from 'http';
 import morgan from 'morgan';
@@ -20,28 +19,25 @@ import {
   prepareIpc,
   readCertificates,
 } from './shared/appUtils';
-
-const debugLogger = debug('enclaved:express');
+import logger from './logger';
 
 /**
  * Create a startup function which will be run upon server initialization
  */
 export function startup(config: EnclavedConfig, baseUri: string): () => void {
   return function () {
-    /* eslint-disable no-console */
-    console.log('BitGo Enclaved Express running');
-    console.log(`Base URI: ${baseUri}`);
-    console.log(`TLS Mode: ${config.tlsMode}`);
-    console.log(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
-    console.log(`Request Client Cert: ${config.mtlsRequestCert}`);
-    console.log(`Reject Unauthorized: ${config.mtlsRejectUnauthorized}`);
-    /* eslint-enable no-console */
+    logger.info('BitGo Enclaved Express running');
+    logger.info(`Base URI: ${baseUri}`);
+    logger.info(`TLS Mode: ${config.tlsMode}`);
+    logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
+    logger.info(`Request Client Cert: ${config.mtlsRequestCert}`);
+    logger.info(`Reject Unauthorized: ${config.mtlsRejectUnauthorized}`);
   };
 }
 
 function isTLS(config: EnclavedConfig): boolean {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
-  console.log('TLS Configuration:', {
+  logger.debug('TLS Configuration:', {
     tlsMode,
     hasKeyPath: Boolean(keyPath),
     hasCrtPath: Boolean(crtPath),
@@ -64,12 +60,12 @@ async function createHttpsServer(
   if (tlsKey && tlsCert) {
     key = tlsKey;
     cert = tlsCert;
-    console.log('Using TLS key and cert from environment variables');
+    logger.info('Using TLS key and cert from environment variables');
   } else if (keyPath && crtPath) {
     const certificates = await readCertificates(keyPath, crtPath);
     key = certificates.key;
     cert = certificates.cert;
-    console.log(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
+    logger.info(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
   } else {
     throw new Error('Failed to get TLS key and certificate');
   }
@@ -127,12 +123,12 @@ export function createBaseUri(config: EnclavedConfig): string {
  * Create and configure the express application
  */
 export function app(cfg: EnclavedConfig): express.Application {
-  debugLogger('app is initializing');
+  logger.debug('app is initializing');
 
   const app = express();
 
   setupLogging(app, cfg);
-  debugLogger('logging setup');
+  logger.debug('logging setup');
 
   // Add custom morgan token for mTLS client certificate
   morgan.token('remote-user', function (req: express.Request) {
@@ -146,7 +142,7 @@ export function app(cfg: EnclavedConfig): express.Application {
   routes.setupRoutes(app);
 
   // Add error handler
-  app.use(createErrorHandler(debugLogger));
+  app.use(createErrorHandler());
 
   return app;
 }
