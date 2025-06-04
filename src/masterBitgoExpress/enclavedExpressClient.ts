@@ -1,8 +1,7 @@
-import * as superagent from 'superagent';
-import debug from 'debug';
-import { config } from '../config';
-import { isMasterExpressConfig } from '../types';
+import superagent from 'superagent';
 import https from 'https';
+import debug from 'debug';
+import { MasterExpressConfig, TlsMode } from '../types';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -23,38 +22,31 @@ export interface IndependentKeychainResponse {
 }
 
 export class EnclavedExpressClient {
-  private readonly url: string;
+  private readonly baseUrl: string;
   private readonly sslCert: string;
+  private readonly tlsMode: TlsMode;
   private readonly coin?: string;
-  private readonly enableSSL: boolean;
 
-  constructor(coin?: string) {
-    const cfg = config();
-    if (!isMasterExpressConfig(cfg)) {
-      throw new Error('Configuration is not in master express mode');
+  constructor(cfg: MasterExpressConfig, coin?: string) {
+    if (!cfg.enclavedExpressUrl || !cfg.enclavedExpressCert) {
+      throw new Error('enclavedExpressUrl and enclavedExpressCert are required');
     }
 
-    if (!cfg.enclavedExpressUrl || !cfg.enclavedExpressSSLCert) {
-      throw new Error(
-        'Enclaved Express URL not configured. Please set BITGO_ENCLAVED_EXPRESS_URL and BITGO_ENCLAVED_EXPRESS_SSL_CERT in your environment.',
-      );
-    }
-
-    this.url = cfg.enclavedExpressUrl;
-    this.sslCert = cfg.enclavedExpressSSLCert;
+    this.baseUrl = cfg.enclavedExpressUrl;
+    this.sslCert = cfg.enclavedExpressCert;
+    this.tlsMode = cfg.tlsMode;
     this.coin = coin;
-    this.enableSSL = !!cfg.enableSSL;
-    debugLogger('EnclavedExpressClient initialized with URL: %s', this.url);
+    debugLogger('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
   }
 
   async ping(): Promise<void> {
     try {
-      debugLogger('Pinging enclaved express at %s', this.url);
-      await superagent.get(`${this.url}/ping`).ca(this.sslCert).send();
+      debugLogger('Pinging enclaved express at %s', this.baseUrl);
+      await superagent.get(`${this.baseUrl}/ping`).ca(this.sslCert).send();
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to ping enclaved express: %s', err.message);
-      throw new Error(`Failed to ping enclaved express: ${err.message}`);
+      throw err;
     }
   }
 
@@ -65,26 +57,28 @@ export class EnclavedExpressClient {
     params: CreateIndependentKeychainParams,
   ): Promise<IndependentKeychainResponse> {
     if (!this.coin) {
-      throw new Error('Coin not configured');
+      throw new Error('Coin must be specified to create an independent keychain');
     }
+
     try {
       debugLogger('Creating independent keychain for coin: %s', this.coin);
       const { body: keychain } = await superagent
-        .post(`${this.url}/api/${this.coin}/key/independent`)
+        .post(`${this.baseUrl}/api/${this.coin}/key/independent`)
         .ca(this.sslCert)
         .agent(
           new https.Agent({
-            rejectUnauthorized: this.enableSSL,
+            rejectUnauthorized: this.tlsMode === TlsMode.MTLS,
             ca: this.sslCert,
           }),
         )
         .type('json')
         .send(params);
+
       return keychain;
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to create independent keychain: %s', err.message);
-      throw new Error(`Failed to create independent keychain: ${err.message}`);
+      throw err;
     }
   }
 }
@@ -92,16 +86,15 @@ export class EnclavedExpressClient {
 /**
  * Create an enclaved express client if the configuration is present
  */
-export function createEnclavedExpressClient(coin?: string): EnclavedExpressClient | undefined {
+export function createEnclavedExpressClient(
+  cfg: MasterExpressConfig,
+  coin?: string,
+): EnclavedExpressClient | undefined {
   try {
-    return new EnclavedExpressClient(coin);
+    return new EnclavedExpressClient(cfg, coin);
   } catch (error) {
     const err = error as Error;
-    // If URL isn't configured, return undefined instead of throwing
-    if (err.message.includes('URL not configured')) {
-      debugLogger('Enclaved express URL not configured, returning undefined');
-      return undefined;
-    }
-    throw err;
+    debugLogger('Failed to create enclaved express client: %s', err.message);
+    return undefined;
   }
 }

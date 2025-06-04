@@ -7,6 +7,7 @@ import {
   AppMode,
   EnvironmentName,
 } from './types';
+import logger from './logger';
 
 export { Config, EnclavedConfig, MasterExpressConfig, TlsMode, AppMode, EnvironmentName };
 
@@ -62,30 +63,29 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
   const kmsUrl = readEnvVar('KMS_URL');
 
   if (!kmsUrl) {
+    logger.error('KMS_URL environment variable is required and cannot be empty');
     throw new Error('KMS_URL environment variable is required and cannot be empty');
   }
 
   return {
     appMode: AppMode.ENCLAVED,
     port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
-    bind: readEnvVar('MASTER_BITGO_EXPRESS_BIND'),
-    ipc: readEnvVar('MASTER_BITGO_EXPRESS_IPC'),
-    debugNamespace: (readEnvVar('MASTER_BITGO_EXPRESS_DEBUG_NAMESPACE') || '')
-      .split(',')
-      .filter(Boolean),
-    logFile: readEnvVar('MASTER_BITGO_EXPRESS_LOGFILE'),
-    timeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_TIMEOUT')),
-    keepAliveTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_KEEP_ALIVE_TIMEOUT')),
-    headersTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_HEADERS_TIMEOUT')),
+    bind: readEnvVar('BIND'),
+    ipc: readEnvVar('IPC'),
+    debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
+    logFile: readEnvVar('LOGFILE'),
+    timeout: Number(readEnvVar('TIMEOUT')),
+    keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
+    headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
     // KMS settings
     kmsUrl,
     // mTLS settings
-    keyPath: readEnvVar('MASTER_BITGO_EXPRESS_KEYPATH'),
-    crtPath: readEnvVar('MASTER_BITGO_EXPRESS_CRTPATH'),
-    tlsKey: readEnvVar('MASTER_BITGO_EXPRESS_TLS_KEY'),
-    tlsCert: readEnvVar('MASTER_BITGO_EXPRESS_TLS_CERT'),
+    keyPath: readEnvVar('TLS_KEY_PATH'),
+    crtPath: readEnvVar('TLS_CERT_PATH'),
+    tlsKey: readEnvVar('TLS_KEY'),
+    tlsCert: readEnvVar('TLS_CERT'),
     tlsMode: determineTlsMode(),
-    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT') !== 'false',
+    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT')?.toLowerCase() !== 'false',
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
   };
@@ -187,16 +187,22 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required and cannot be empty');
   }
 
+  // Debug mTLS environment variables
+  const mtlsRequestCertRaw = readEnvVar('MTLS_REQUEST_CERT');
+  const allowSelfSignedRaw = readEnvVar('ALLOW_SELF_SIGNED');
+  const mtlsRequestCert = mtlsRequestCertRaw?.toLowerCase() !== 'false';
+  const allowSelfSigned = allowSelfSignedRaw === 'true';
+
   return {
     appMode: AppMode.MASTER_EXPRESS,
     port: Number(readEnvVar('MASTER_EXPRESS_PORT')),
-    bind: readEnvVar('BITGO_BIND'),
-    ipc: readEnvVar('BITGO_IPC'),
-    debugNamespace: (readEnvVar('BITGO_DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
-    logFile: readEnvVar('BITGO_LOGFILE'),
-    timeout: Number(readEnvVar('BITGO_TIMEOUT')),
-    keepAliveTimeout: Number(readEnvVar('BITGO_KEEP_ALIVE_TIMEOUT')),
-    headersTimeout: Number(readEnvVar('BITGO_HEADERS_TIMEOUT')),
+    bind: readEnvVar('BIND'),
+    ipc: readEnvVar('IPC'),
+    debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
+    logFile: readEnvVar('LOGFILE'),
+    timeout: Number(readEnvVar('TIMEOUT')),
+    keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
+    headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
     // BitGo API settings
     env: readEnvVar('BITGO_ENV') as EnvironmentName,
     customRootUri: readEnvVar('BITGO_CUSTOM_ROOT_URI'),
@@ -206,14 +212,14 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     enclavedExpressCert,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS settings
-    keyPath: readEnvVar('BITGO_KEYPATH'),
-    crtPath: readEnvVar('BITGO_CRTPATH'),
-    tlsKey: readEnvVar('BITGO_TLS_KEY'),
-    tlsCert: readEnvVar('BITGO_TLS_CERT'),
+    keyPath: readEnvVar('TLS_KEY_PATH'),
+    crtPath: readEnvVar('TLS_CERT_PATH'),
+    tlsKey: readEnvVar('TLS_KEY'),
+    tlsCert: readEnvVar('TLS_CERT'),
     tlsMode: determineTlsMode(),
-    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT') !== 'false',
+    mtlsRequestCert,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
-    allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
+    allowSelfSigned,
   };
 }
 
@@ -269,6 +275,24 @@ export function configureMasterExpressMode(): MasterExpressConfig {
     updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl);
   }
   config = { ...config, ...updates };
+
+  // Handle file loading for TLS certificates
+  if (!config.tlsKey && config.keyPath) {
+    try {
+      config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+    }
+  }
+  if (!config.tlsCert && config.crtPath) {
+    try {
+      config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+    }
+  }
 
   // Handle cert loading
   if (config.enclavedExpressCert) {

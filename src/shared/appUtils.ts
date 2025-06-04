@@ -10,7 +10,7 @@ import _ from 'lodash';
 import pjson from '../../package.json';
 import logger from '../logger';
 
-import { Config } from '../config';
+import { Config, TlsMode } from '../config';
 
 /**
  * Set up the logging middleware provided by morgan
@@ -157,4 +157,61 @@ export function setupHealthCheckRoutes(app: express.Application, serverType: str
       name: pjson.name,
     });
   });
+}
+
+/**
+ * Create mTLS middleware for validating client certificates
+ */
+export function createMtlsMiddleware(config: {
+  tlsMode: TlsMode;
+  mtlsRequestCert: boolean;
+  allowSelfSigned?: boolean;
+  mtlsAllowedClientFingerprints?: string[];
+}): express.RequestHandler {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const clientCert = (req as any).socket?.getPeerCertificate();
+
+    // Check if client certificate is actually present (not just an empty object)
+    const hasValidClientCert =
+      clientCert && Object.keys(clientCert).length > 0 && clientCert.subject;
+
+    // If client cert is required but not provided
+    if (config.mtlsRequestCert && !hasValidClientCert) {
+      return res.status(403).json({
+        error: 'mTLS Authentication Failed',
+        message: 'Client certificate is required for this endpoint',
+        details: 'Please provide a valid client certificate in your request',
+      });
+    }
+
+    // If client cert is provided, validate it
+    if (hasValidClientCert) {
+      // Check if self-signed certificates are allowed
+      if (!config.allowSelfSigned && clientCert.issuer.CN === clientCert.subject.CN) {
+        return res.status(403).json({
+          error: 'mTLS Authentication Failed',
+          message: 'Self-signed certificates are not allowed',
+          details: 'Please use a certificate issued by a trusted CA',
+        });
+      }
+
+      // Check fingerprint restrictions if configured
+      if (config.mtlsAllowedClientFingerprints?.length) {
+        const fingerprint = clientCert.fingerprint256?.replace(/:/g, '').toUpperCase();
+        if (!fingerprint || !config.mtlsAllowedClientFingerprints?.includes(fingerprint)) {
+          return res.status(403).json({
+            error: 'mTLS Authentication Failed',
+            message: 'Client certificate fingerprint not authorized',
+            details: `Certificate fingerprint ${fingerprint} is not in the allowed list`,
+          });
+        }
+      }
+    }
+
+    // Store client certificate info for logging
+    if (hasValidClientCert) {
+      (req as any).clientCert = clientCert;
+    }
+    next();
+  };
 }

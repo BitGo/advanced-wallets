@@ -19,6 +19,7 @@ import {
   prepareIpc,
   readCertificates,
   setupHealthCheckRoutes,
+  createMtlsMiddleware,
 } from './shared/appUtils';
 import bodyParser from 'body-parser';
 import { promiseWrapper } from './routes';
@@ -40,6 +41,11 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
     logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
     logger.info(`Request Client Cert: ${config.mtlsRequestCert}`);
     logger.info(`Allow Self-Signed: ${config.allowSelfSigned}`);
+    if (config.mtlsAllowedClientFingerprints?.length) {
+      logger.info(
+        `Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.length} configured`,
+      );
+    }
   };
 }
 
@@ -132,31 +138,13 @@ async function createHttpsServer(
     secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
     key,
     cert,
-    // Add mTLS options if in mTLS mode
+    // Only request cert if mTLS is enabled AND we want to request certs
+    // This prevents TLS handshake failures when no cert is provided
     requestCert: tlsMode === TlsMode.MTLS && mtlsRequestCert,
-    rejectUnauthorized: tlsMode === TlsMode.MTLS,
+    rejectUnauthorized: false, // Handle authorization in middleware
   };
 
   const server = https.createServer(httpsOptions, app);
-
-  // Add middleware to validate client certificate fingerprints if in mTLS mode
-  if (tlsMode === TlsMode.MTLS && config.mtlsAllowedClientFingerprints?.length) {
-    app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const clientCert = (req as any).socket?.getPeerCertificate();
-      if (!clientCert) {
-        return res.status(403).json({ error: 'Client certificate required' });
-      }
-
-      const fingerprint = clientCert.fingerprint256?.replace(/:/g, '').toUpperCase();
-      if (!fingerprint || !config.mtlsAllowedClientFingerprints?.includes(fingerprint)) {
-        return res.status(403).json({ error: 'Invalid client certificate fingerprint' });
-      }
-
-      // Store client certificate info for logging
-      (req as any).clientCert = clientCert;
-      next();
-    });
-  }
 
   return server;
 }
@@ -180,11 +168,10 @@ export function createBaseUri(config: MasterExpressConfig): string {
 /**
  * Setup master express specific routes
  */
-function setupMasterExpressRoutes(app: express.Application): void {
+function setupMasterExpressRoutes(app: express.Application, cfg: MasterExpressConfig): void {
   // Setup common health check routes
   setupHealthCheckRoutes(app, 'master express');
 
-  const cfg = config() as MasterExpressConfig;
   logger.debug('TLS Configuration:', {
     tlsMode: cfg.tlsMode,
     enclavedExpressUrl: cfg.enclavedExpressUrl,
@@ -197,15 +184,19 @@ function setupMasterExpressRoutes(app: express.Application): void {
     try {
       logger.debug('Pinging enclaved express');
 
+      // Use Master Express's own certificate as client cert when connecting to Enclaved Express
+      const httpsAgent = new https.Agent({
+        rejectUnauthorized: cfg.tlsMode === TlsMode.MTLS && !cfg.allowSelfSigned,
+        ca: cfg.enclavedExpressCert,
+        // Provide client certificate for mTLS
+        key: cfg.tlsKey,
+        cert: cfg.tlsCert,
+      });
+
       const response = await superagent
-        .get(`${cfg.enclavedExpressUrl}/ping`)
+        .post(`${cfg.enclavedExpressUrl}/ping`)
         .ca(cfg.enclavedExpressCert)
-        .agent(
-          new https.Agent({
-            rejectUnauthorized: cfg.tlsMode === TlsMode.MTLS,
-            ca: cfg.enclavedExpressCert,
-          }),
-        )
+        .agent(httpsAgent)
         .send();
 
       res.json({
@@ -225,7 +216,7 @@ function setupMasterExpressRoutes(app: express.Application): void {
   app.post(
     '/api/:coin/wallet/generate',
     parseBody,
-    prepareBitGo(config() as MasterExpressConfig),
+    prepareBitGo(cfg),
     promiseWrapper(handleGenerateWalletOnPrem),
   );
 
@@ -253,8 +244,13 @@ export function app(cfg: MasterExpressConfig): express.Application {
   setupDebugNamespaces(cfg.debugNamespace);
   setupCommonMiddleware(app, cfg);
 
+  // Add mTLS middleware before routes if in mTLS mode
+  if (cfg.tlsMode === TlsMode.MTLS) {
+    app.use(createMtlsMiddleware(cfg));
+  }
+
   // Setup master express routes
-  setupMasterExpressRoutes(app);
+  setupMasterExpressRoutes(app, cfg);
 
   // Add error handler
   app.use(createErrorHandler());
