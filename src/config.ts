@@ -74,7 +74,7 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
 
   return {
     appMode: AppMode.ENCLAVED,
-    port: Number(readEnvVar('MASTER_BITGO_EXPRESS_PORT')),
+    port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
     bind: readEnvVar('MASTER_BITGO_EXPRESS_BIND'),
     ipc: readEnvVar('MASTER_BITGO_EXPRESS_IPC'),
     debugNamespace: (readEnvVar('MASTER_BITGO_EXPRESS_DEBUG_NAMESPACE') || '')
@@ -161,7 +161,7 @@ function configureEnclavedMode(): EnclavedConfig {
 
 const defaultMasterExpressConfig: MasterExpressConfig = {
   appMode: AppMode.MASTER_EXPRESS,
-  port: 3080,
+  port: 3081,
   bind: 'localhost',
   timeout: 305 * 1000,
   logFile: '',
@@ -198,7 +198,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
 
   return {
     appMode: AppMode.MASTER_EXPRESS,
-    port: Number(readEnvVar('BITGO_PORT')),
+    port: Number(readEnvVar('MASTER_EXPRESS_PORT')),
     bind: readEnvVar('BITGO_BIND'),
     ipc: readEnvVar('BITGO_IPC'),
     debugNamespace: (readEnvVar('BITGO_DEBUG_NAMESPACE') || '').split(',').filter(Boolean),

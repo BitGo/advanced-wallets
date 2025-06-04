@@ -27,9 +27,17 @@ Configuration is done via environment variables:
 
 ### Network Settings
 
-- `PORT` - Port to listen on (default: 3080)
-- `BIND` - Address to bind to (default: localhost)
-- `TIMEOUT` - Request timeout in milliseconds (default: 305000)
+#### Enclaved Mode
+
+- `ENCLAVED_EXPRESS_PORT` - Port to listen on (default: 3080)
+- `MASTER_BITGO_EXPRESS_BIND` - Address to bind to (default: localhost)
+- `MASTER_BITGO_EXPRESS_TIMEOUT` - Request timeout in milliseconds (default: 305000)
+
+#### Master Express Mode
+
+- `MASTER_EXPRESS_PORT` - Port to listen on (default: 3081)
+- `BITGO_BIND` - Address to bind to (default: localhost)
+- `BITGO_TIMEOUT` - Request timeout in milliseconds (default: 305000)
 
 ### TLS Settings
 
@@ -42,8 +50,6 @@ Configuration is done via environment variables:
 
 ### Master Express Settings
 
-- `BITGO_PORT` - Port to listen on (default: 3080)
-- `BITGO_BIND` - Address to bind to (default: localhost)
 - `BITGO_ENV` - Environment name (default: test)
 - `BITGO_ENABLE_SSL` - Enable SSL and certificate verification (default: true)
 - `BITGO_ENABLE_PROXY` - Enable proxy (default: true)
@@ -69,7 +75,7 @@ For testing purposes, you can use self-signed certificates with relaxed verifica
 
 ```bash
 APP_MODE=enclaved \
-MASTER_BITGO_EXPRESS_PORT=3080 \
+ENCLAVED_EXPRESS_PORT=3080 \
 MASTER_BITGO_EXPRESS_BIND=localhost \
 MASTER_BITGO_EXPRESS_KEYPATH=./test-ssl-key.pem \
 MASTER_BITGO_EXPRESS_CRTPATH=./test-ssl-cert.pem \
@@ -85,12 +91,12 @@ To connect to Enclaved Express from the Master Express server:
 
 ```bash
 APP_MODE=master-express \
-BITGO_PORT=3080 \
+MASTER_EXPRESS_PORT=3081 \
 BITGO_BIND=localhost \
 BITGO_ENV=test \
 BITGO_KEYPATH=./test-ssl-key.pem \
 BITGO_CRTPATH=./test-ssl-cert.pem \
-ENCLAVED_EXPRESS_URL=https://localhost:4000 \
+ENCLAVED_EXPRESS_URL=https://localhost:3080 \
 ENCLAVED_EXPRESS_SSL_CERT=./enclaved-express-cert.pem \
 BITGO_ENABLE_SSL=false \
 yarn start
