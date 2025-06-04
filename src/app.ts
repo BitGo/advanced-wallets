@@ -1,4 +1,4 @@
-import { config, isEnclavedConfig, isMasterExpressConfig } from './config';
+import { determineAppMode, AppMode } from './config';
 import * as enclavedApp from './enclavedApp';
 import * as masterExpressApp from './masterExpressApp';
 
@@ -6,16 +6,16 @@ import * as masterExpressApp from './masterExpressApp';
  * Main application entry point that determines the mode and starts the appropriate app
  */
 export async function init(): Promise<void> {
-  const cfg = config();
+  const appMode = determineAppMode();
 
-  if (isEnclavedConfig(cfg)) {
+  if (appMode === AppMode.ENCLAVED) {
     console.log('Starting in Enclaved mode...');
     await enclavedApp.init();
-  } else if (isMasterExpressConfig(cfg)) {
+  } else if (appMode === AppMode.MASTER_EXPRESS) {
     console.log('Starting in Master Express mode...');
     await masterExpressApp.init();
   } else {
-    throw new Error(`Unknown app mode: ${(cfg as any).appMode}`);
+    throw new Error(`Unknown app mode: ${appMode}`);
   }
 }
 

@@ -11,13 +11,11 @@ import { MasterExpressConfig, config, isMasterExpressConfig, TlsMode } from './c
 import { BitGoRequest } from './types/request';
 import {
   setupLogging,
-  setupDebugNamespaces,
   setupCommonMiddleware,
   createErrorHandler,
   createHttpServer,
   configureServerTimeouts,
   prepareIpc,
-  readCertificates,
   setupHealthCheckRoutes,
   createMtlsMiddleware,
 } from './shared/appUtils';
@@ -117,27 +115,16 @@ async function createHttpsServer(
   app: express.Application,
   config: MasterExpressConfig,
 ): Promise<https.Server> {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
-  let key: string;
-  let cert: string;
+  const { tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
 
-  if (tlsKey && tlsCert) {
-    key = tlsKey;
-    cert = tlsCert;
-    logger.info('Using TLS key and cert from environment variables');
-  } else if (keyPath && crtPath) {
-    const certificates = await readCertificates(keyPath, crtPath);
-    key = certificates.key;
-    cert = certificates.cert;
-    logger.info(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
-  } else {
-    throw new Error('Failed to get TLS key and certificate');
+  if (!tlsKey || !tlsCert) {
+    throw new Error('TLS key and certificate must be provided for HTTPS server');
   }
 
   const httpsOptions: https.ServerOptions = {
     secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
-    key,
-    cert,
+    key: tlsKey,
+    cert: tlsCert,
     // Only request cert if mTLS is enabled AND we want to request certs
     // This prevents TLS handshake failures when no cert is provided
     requestCert: tlsMode === TlsMode.MTLS && mtlsRequestCert,
@@ -241,7 +228,6 @@ export function app(cfg: MasterExpressConfig): express.Application {
   setupLogging(app, cfg);
   logger.debug('logging setup');
 
-  setupDebugNamespaces(cfg.debugNamespace);
   setupCommonMiddleware(app, cfg);
 
   // Add mTLS middleware before routes if in mTLS mode

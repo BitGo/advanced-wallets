@@ -6,7 +6,6 @@ import morgan from 'morgan';
 import fs from 'fs';
 import timeout from 'connect-timeout';
 import bodyParser from 'body-parser';
-import _ from 'lodash';
 import pjson from '../../package.json';
 import logger from '../logger';
 
@@ -30,19 +29,6 @@ export function setupLogging(app: express.Application, config: Config): void {
   }
 
   app.use(middleware);
-}
-
-/**
- * Setup debug namespaces
- */
-export function setupDebugNamespaces(debugNamespace?: string[]): void {
-  if (_.isArray(debugNamespace)) {
-    for (const ns of debugNamespace) {
-      if (ns) {
-        logger.debug(`Enabling debug namespace: ${ns}`);
-      }
-    }
-  }
 }
 
 /**
@@ -214,4 +200,34 @@ export function createMtlsMiddleware(config: {
     }
     next();
   };
+}
+
+/**
+ * Validate that TLS certificates are properly loaded when TLS is enabled
+ */
+export function validateTlsCertificates(config: {
+  tlsMode: TlsMode;
+  tlsKey?: string;
+  tlsCert?: string;
+}): void {
+  if (config.tlsMode !== TlsMode.DISABLED) {
+    if (!config.tlsKey || !config.tlsCert) {
+      throw new Error('TLS is enabled but certificates are not properly loaded');
+    }
+  }
+}
+
+/**
+ * Validate Master Express configuration
+ */
+export function validateMasterExpressConfig(config: {
+  enclavedExpressUrl: string;
+  enclavedExpressCert: string;
+}): void {
+  if (!config.enclavedExpressUrl) {
+    throw new Error('ENCLAVED_EXPRESS_URL is required for Master Express mode');
+  }
+  if (!config.enclavedExpressCert) {
+    throw new Error('ENCLAVED_EXPRESS_CERT is required for Master Express mode');
+  }
 }
