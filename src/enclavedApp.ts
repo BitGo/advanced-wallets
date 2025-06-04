@@ -2,7 +2,7 @@ import express from 'express';
 import https from 'https';
 import http from 'http';
 import morgan from 'morgan';
-import { SSL_OP_NO_TLSv1 } from 'constants';
+import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
 import { EnclavedConfig, config, TlsMode, isEnclavedConfig } from './config';
 import * as routes from './routes';
@@ -28,7 +28,6 @@ export function startup(config: EnclavedConfig, baseUri: string): () => void {
     logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
     logger.info(`Request Client Cert: ${config.mtlsRequestCert}`);
-    logger.info(`Reject Unauthorized: ${config.mtlsRejectUnauthorized}`);
   };
 }
 
@@ -49,8 +48,7 @@ async function createHttpsServer(
   app: express.Application,
   config: EnclavedConfig,
 ): Promise<https.Server> {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert, mtlsRejectUnauthorized } =
-    config;
+  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
   let key: string;
   let cert: string;
 
@@ -68,12 +66,12 @@ async function createHttpsServer(
   }
 
   const httpsOptions: https.ServerOptions = {
-    secureOptions: SSL_OP_NO_TLSv1,
+    secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
     key,
     cert,
     // Add mTLS options if in mTLS mode
     requestCert: tlsMode === TlsMode.MTLS && mtlsRequestCert,
-    rejectUnauthorized: tlsMode === TlsMode.MTLS && mtlsRejectUnauthorized,
+    rejectUnauthorized: tlsMode === TlsMode.MTLS,
   };
 
   const server = https.createServer(httpsOptions, app);

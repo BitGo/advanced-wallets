@@ -5,8 +5,9 @@ import superagent from 'superagent';
 import { BitGo, BitGoOptions } from 'bitgo';
 import { BitGoBase } from '@bitgo/sdk-core';
 import { version } from 'bitgo/package.json';
+import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
-import { MasterExpressConfig, config, isMasterExpressConfig } from './config';
+import { MasterExpressConfig, config, isMasterExpressConfig, TlsMode } from './config';
 import { BitGoRequest } from './types/request';
 import {
   setupLogging,
@@ -20,7 +21,6 @@ import {
   setupHealthCheckRoutes,
 } from './shared/appUtils';
 import bodyParser from 'body-parser';
-import { ProxyAgent } from 'proxy-agent';
 import { promiseWrapper } from './routes';
 import pjson from '../package.json';
 import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
@@ -36,15 +36,24 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
     logger.info('BitGo Master Express running');
     logger.info(`Base URI: ${baseUri}`);
     logger.info(`Environment: ${config.env}`);
-    logger.info(`SSL Enabled: ${config.enableSSL}`);
-    logger.info(`Proxy Enabled: ${config.enableProxy}`);
+    logger.info(`TLS Mode: ${config.tlsMode}`);
+    logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
+    logger.info(`Request Client Cert: ${config.mtlsRequestCert}`);
+    logger.info(`Allow Self-Signed: ${config.allowSelfSigned}`);
   };
 }
 
-function isSSL(config: MasterExpressConfig): boolean {
-  const { keyPath, crtPath, sslKey, sslCert } = config;
-  if (!config.enableSSL) return false;
-  return Boolean((keyPath && crtPath) || (sslKey && sslCert));
+function isTLS(config: MasterExpressConfig): boolean {
+  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
+  logger.debug('TLS Configuration:', {
+    tlsMode,
+    hasKeyPath: Boolean(keyPath),
+    hasCrtPath: Boolean(crtPath),
+    hasTlsKey: Boolean(tlsKey),
+    hasTlsCert: Boolean(tlsCert),
+  });
+  if (tlsMode === TlsMode.DISABLED) return false;
+  return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
 }
 
 const expressJSONParser = bodyParser.json({ limit: '20mb' });
@@ -84,19 +93,11 @@ function prepareBitGo(config: MasterExpressConfig) {
       ? BITGOEXPRESS_USER_AGENT + ' ' + req.headers['user-agent']
       : BITGOEXPRESS_USER_AGENT;
 
-    const useProxyUrl = process.env.BITGO_USE_PROXY;
     const bitgoConstructorParams: BitGoOptions = {
       env,
       customRootURI: customRootUri,
       accessToken,
       userAgent,
-      ...(useProxyUrl
-        ? {
-            customProxyAgent: new ProxyAgent({
-              getProxyForUrl: () => useProxyUrl,
-            }),
-          }
-        : {}),
     };
 
     (req as BitGoRequest).bitgo = new BitGo(bitgoConstructorParams) as unknown as BitGoBase;
@@ -110,43 +111,68 @@ async function createHttpsServer(
   app: express.Application,
   config: MasterExpressConfig,
 ): Promise<https.Server> {
-  const { keyPath, crtPath, sslKey, sslCert } = config;
+  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
   let key: string;
   let cert: string;
 
-  if (sslKey && sslCert) {
-    key = sslKey;
-    cert = sslCert;
-    logger.info('Using SSL key and cert from environment variables');
+  if (tlsKey && tlsCert) {
+    key = tlsKey;
+    cert = tlsCert;
+    logger.info('Using TLS key and cert from environment variables');
   } else if (keyPath && crtPath) {
     const certificates = await readCertificates(keyPath, crtPath);
     key = certificates.key;
     cert = certificates.cert;
-    logger.info(`Using SSL key and cert from files: ${keyPath}, ${crtPath}`);
+    logger.info(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
   } else {
-    throw new Error('Failed to get SSL key and certificate');
+    throw new Error('Failed to get TLS key and certificate');
   }
 
   const httpsOptions: https.ServerOptions = {
+    secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
     key,
     cert,
+    // Add mTLS options if in mTLS mode
+    requestCert: tlsMode === TlsMode.MTLS && mtlsRequestCert,
+    rejectUnauthorized: tlsMode === TlsMode.MTLS,
   };
 
-  return https.createServer(httpsOptions, app);
+  const server = https.createServer(httpsOptions, app);
+
+  // Add middleware to validate client certificate fingerprints if in mTLS mode
+  if (tlsMode === TlsMode.MTLS && config.mtlsAllowedClientFingerprints?.length) {
+    app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+      const clientCert = (req as any).socket?.getPeerCertificate();
+      if (!clientCert) {
+        return res.status(403).json({ error: 'Client certificate required' });
+      }
+
+      const fingerprint = clientCert.fingerprint256?.replace(/:/g, '').toUpperCase();
+      if (!fingerprint || !config.mtlsAllowedClientFingerprints?.includes(fingerprint)) {
+        return res.status(403).json({ error: 'Invalid client certificate fingerprint' });
+      }
+
+      // Store client certificate info for logging
+      (req as any).clientCert = clientCert;
+      next();
+    });
+  }
+
+  return server;
 }
 
 export async function createServer(
   config: MasterExpressConfig,
   app: express.Application,
 ): Promise<https.Server | http.Server> {
-  const server = isSSL(config) ? await createHttpsServer(app, config) : createHttpServer(app);
+  const server = isTLS(config) ? await createHttpsServer(app, config) : createHttpServer(app);
   configureServerTimeouts(server, config);
   return server;
 }
 
 export function createBaseUri(config: MasterExpressConfig): string {
   const { bind, port } = config;
-  const ssl = isSSL(config);
+  const ssl = isTLS(config);
   const isStandardPort = (port === 80 && !ssl) || (port === 443 && ssl);
   return `http${ssl ? 's' : ''}://${bind}${!isStandardPort ? ':' + port : ''}`;
 }
@@ -159,11 +185,11 @@ function setupMasterExpressRoutes(app: express.Application): void {
   setupHealthCheckRoutes(app, 'master express');
 
   const cfg = config() as MasterExpressConfig;
-  logger.debug('SSL Configuration:', {
-    sslEnabled: cfg.enableSSL,
+  logger.debug('TLS Configuration:', {
+    tlsMode: cfg.tlsMode,
     enclavedExpressUrl: cfg.enclavedExpressUrl,
-    hasCertificate: Boolean(cfg.enclavedExpressSSLCert),
-    certificateLength: cfg.enclavedExpressSSLCert.length,
+    hasCertificate: Boolean(cfg.enclavedExpressCert),
+    certificateLength: cfg.enclavedExpressCert.length,
   });
 
   // Add enclaved express ping route
@@ -173,11 +199,11 @@ function setupMasterExpressRoutes(app: express.Application): void {
 
       const response = await superagent
         .get(`${cfg.enclavedExpressUrl}/ping`)
-        .ca(cfg.enclavedExpressSSLCert)
+        .ca(cfg.enclavedExpressCert)
         .agent(
           new https.Agent({
-            rejectUnauthorized: cfg.enableSSL,
-            ca: cfg.enclavedExpressSSLCert,
+            rejectUnauthorized: cfg.tlsMode === TlsMode.MTLS,
+            ca: cfg.enclavedExpressCert,
           }),
         )
         .send();

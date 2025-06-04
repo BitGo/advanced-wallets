@@ -47,22 +47,15 @@ const defaultEnclavedConfig: EnclavedConfig = {
   timeout: 305 * 1000,
   logFile: '',
   kmsUrl: '', // Will be overridden by environment variable
-  tlsMode: TlsMode.ENABLED,
-  mtlsRequestCert: false,
-  mtlsRejectUnauthorized: false,
+  tlsMode: TlsMode.MTLS,
+  mtlsRequestCert: true,
+  allowSelfSigned: false,
 };
 
 function determineTlsMode(): TlsMode {
   const disableTls = readEnvVar('MASTER_BITGO_EXPRESS_DISABLE_TLS') === 'true';
-  const mtlsEnabled = readEnvVar('MTLS_ENABLED') === 'true';
-
-  if (disableTls && mtlsEnabled) {
-    throw new Error('Cannot have both TLS disabled and mTLS enabled');
-  }
-
   if (disableTls) return TlsMode.DISABLED;
-  if (mtlsEnabled) return TlsMode.MTLS;
-  return TlsMode.ENABLED;
+  return TlsMode.MTLS;
 }
 
 function enclavedEnvConfig(): Partial<EnclavedConfig> {
@@ -86,16 +79,15 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     headersTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_HEADERS_TIMEOUT')),
     // KMS settings
     kmsUrl,
-    // TLS settings
+    // mTLS settings
     keyPath: readEnvVar('MASTER_BITGO_EXPRESS_KEYPATH'),
     crtPath: readEnvVar('MASTER_BITGO_EXPRESS_CRTPATH'),
     tlsKey: readEnvVar('MASTER_BITGO_EXPRESS_TLS_KEY'),
     tlsCert: readEnvVar('MASTER_BITGO_EXPRESS_TLS_CERT'),
     tlsMode: determineTlsMode(),
-    // mTLS settings
-    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT') === 'true',
-    mtlsRejectUnauthorized: readEnvVar('MTLS_REJECT_UNAUTHORIZED') === 'true',
+    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT') !== 'false',
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
+    allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
   };
 }
 
@@ -125,8 +117,8 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
     mtlsRequestCert: get('mtlsRequestCert'),
-    mtlsRejectUnauthorized: get('mtlsRejectUnauthorized'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
+    allowSelfSigned: get('allowSelfSigned'),
   };
 }
 
@@ -166,12 +158,13 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   timeout: 305 * 1000,
   logFile: '',
   env: 'test',
-  enableSSL: true,
-  enableProxy: true,
   disableEnvCheck: true,
   authVersion: 2,
   enclavedExpressUrl: '', // Will be overridden by environment variable
-  enclavedExpressSSLCert: '', // Will be overridden by environment variable
+  enclavedExpressCert: '', // Will be overridden by environment variable
+  tlsMode: TlsMode.MTLS,
+  mtlsRequestCert: true,
+  allowSelfSigned: false,
 };
 
 function forceSecureUrl(url: string): string {
@@ -184,16 +177,14 @@ function forceSecureUrl(url: string): string {
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const enclavedExpressUrl = readEnvVar('ENCLAVED_EXPRESS_URL');
-  const enclavedExpressSSLCert = readEnvVar('ENCLAVED_EXPRESS_SSL_CERT');
+  const enclavedExpressCert = readEnvVar('ENCLAVED_EXPRESS_CERT');
 
   if (!enclavedExpressUrl) {
     throw new Error('ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty');
   }
 
-  if (!enclavedExpressSSLCert) {
-    throw new Error(
-      'ENCLAVED_EXPRESS_SSL_CERT environment variable is required and cannot be empty',
-    );
+  if (!enclavedExpressCert) {
+    throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required and cannot be empty');
   }
 
   return {
@@ -209,18 +200,20 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     // BitGo API settings
     env: readEnvVar('BITGO_ENV') as EnvironmentName,
     customRootUri: readEnvVar('BITGO_CUSTOM_ROOT_URI'),
-    enableSSL: readEnvVar('BITGO_ENABLE_SSL') !== 'false', // Default to true unless explicitly set to false
-    enableProxy: readEnvVar('BITGO_ENABLE_PROXY') !== 'false', // Default to true unless explicitly set to false
     disableEnvCheck: readEnvVar('BITGO_DISABLE_ENV_CHECK') === 'true',
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
     enclavedExpressUrl,
-    enclavedExpressSSLCert,
+    enclavedExpressCert,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
-    // SSL settings
+    // mTLS settings
     keyPath: readEnvVar('BITGO_KEYPATH'),
     crtPath: readEnvVar('BITGO_CRTPATH'),
-    sslKey: readEnvVar('BITGO_SSL_KEY'),
-    sslCert: readEnvVar('BITGO_SSL_CERT'),
+    tlsKey: readEnvVar('BITGO_TLS_KEY'),
+    tlsCert: readEnvVar('BITGO_TLS_CERT'),
+    tlsMode: determineTlsMode(),
+    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT') !== 'false',
+    mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
+    allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
   };
 }
 
@@ -247,50 +240,50 @@ function mergeMasterExpressConfigs(
     headersTimeout: get('headersTimeout'),
     env: get('env'),
     customRootUri: get('customRootUri'),
-    enableSSL: get('enableSSL'),
-    enableProxy: get('enableProxy'),
     disableEnvCheck: get('disableEnvCheck'),
     authVersion: get('authVersion'),
     enclavedExpressUrl: get('enclavedExpressUrl'),
-    enclavedExpressSSLCert: get('enclavedExpressSSLCert'),
+    enclavedExpressCert: get('enclavedExpressCert'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
-    sslKey: get('sslKey'),
-    sslCert: get('sslCert'),
+    tlsKey: get('tlsKey'),
+    tlsCert: get('tlsCert'),
+    tlsMode: get('tlsMode'),
+    mtlsRequestCert: get('mtlsRequestCert'),
+    mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
+    allowSelfSigned: get('allowSelfSigned'),
   };
 }
 
-function configureMasterExpressMode(): MasterExpressConfig {
+export function configureMasterExpressMode(): MasterExpressConfig {
   const env = masterExpressEnvConfig();
   let config = mergeMasterExpressConfigs(env);
 
-  // Post-process URLs if SSL is enabled
-  if (config.enableSSL) {
-    const updates: Partial<MasterExpressConfig> = {};
-    if (config.customRootUri) {
-      updates.customRootUri = forceSecureUrl(config.customRootUri);
-    }
-    if (config.enclavedExpressUrl) {
-      updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl);
-    }
-    config = { ...config, ...updates };
+  // Post-process URLs to ensure they use HTTPS
+  const updates: Partial<MasterExpressConfig> = {};
+  if (config.customRootUri) {
+    updates.customRootUri = forceSecureUrl(config.customRootUri);
   }
+  if (config.enclavedExpressUrl) {
+    updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl);
+  }
+  config = { ...config, ...updates };
 
-  // Handle SSL cert loading
-  if (config.enclavedExpressSSLCert) {
+  // Handle cert loading
+  if (config.enclavedExpressCert) {
     try {
-      if (fs.existsSync(config.enclavedExpressSSLCert)) {
+      if (fs.existsSync(config.enclavedExpressCert)) {
         config = {
           ...config,
-          enclavedExpressSSLCert: fs.readFileSync(config.enclavedExpressSSLCert, 'utf-8'),
+          enclavedExpressCert: fs.readFileSync(config.enclavedExpressCert, 'utf-8'),
         };
       } else {
-        throw new Error(`Certificate file not found: ${config.enclavedExpressSSLCert}`);
+        throw new Error(`Certificate file not found: ${config.enclavedExpressCert}`);
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read enclaved express SSL cert: ${err.message}`);
+      throw new Error(`Failed to read enclaved express cert: ${err.message}`);
     }
   }
 
