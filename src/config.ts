@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 import fs from 'fs';
 import {
   Config,

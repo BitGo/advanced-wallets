@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 export enum TlsMode {
   DISABLED = 'disabled', // No TLS (plain HTTP)
   ENABLED = 'enabled', // TLS with server cert only

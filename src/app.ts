@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 import { config, isEnclavedConfig, isMasterExpressConfig } from './config';
 import * as enclavedApp from './enclavedApp';
 import * as masterExpressApp from './masterExpressApp';

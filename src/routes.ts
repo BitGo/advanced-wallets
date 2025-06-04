@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 import express from 'express';
 import debug from 'debug';
 import pjson from '../package.json';
