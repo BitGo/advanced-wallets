@@ -23,7 +23,6 @@ export class KmsClient {
   }
 
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
-    console.log('postKey', params);
     debugLogger('Posting key to KMS: %O', params);
 
     let kmsResponse: any;

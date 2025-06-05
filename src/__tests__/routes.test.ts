@@ -1,6 +1,6 @@
 import express from 'express';
 import request from 'supertest';
-import { setupRoutes } from '../routes';
+import { setupRoutes } from '../routes/enclaved';
 
 describe('Routes', () => {
   let app: express.Application;
