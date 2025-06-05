@@ -1,7 +1,6 @@
 import express from 'express';
 import https from 'https';
 import http from 'http';
-import { BitGoOptions } from 'bitgo';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
 import { MasterExpressConfig, config, isMasterExpressConfig, TlsMode } from './config';
@@ -103,6 +102,7 @@ export function app(cfg: MasterExpressConfig): express.Application {
   }
 
   // Setup master express routes
+  setupRoutes(app, cfg);
   setupRoutes(app, cfg);
 
   // Add error handler
