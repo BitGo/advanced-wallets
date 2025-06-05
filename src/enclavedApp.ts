@@ -1,23 +1,19 @@
-/**
- * @prettier
- */
 import express from 'express';
 import https from 'https';
 import http from 'http';
 import morgan from 'morgan';
-import { SSL_OP_NO_TLSv1 } from 'constants';
+import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
 import { EnclavedConfig, config, TlsMode, isEnclavedConfig } from './config';
 import * as routes from './routes';
 import {
   setupLogging,
-  setupDebugNamespaces,
   setupCommonMiddleware,
   createErrorHandler,
   createHttpServer,
   configureServerTimeouts,
   prepareIpc,
-  readCertificates,
+  createMtlsMiddleware,
 } from './shared/appUtils';
 import logger from './logger';
 
@@ -31,19 +27,18 @@ export function startup(config: EnclavedConfig, baseUri: string): () => void {
     logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
     logger.info(`Request Client Cert: ${config.mtlsRequestCert}`);
-    logger.info(`Reject Unauthorized: ${config.mtlsRejectUnauthorized}`);
+    logger.info(`Allow Self-Signed: ${config.allowSelfSigned}`);
+    logger.info(`KMS URL: ${config.kmsUrl}`);
+    if (config.mtlsAllowedClientFingerprints?.length) {
+      logger.info(
+        `Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.length} configured`,
+      );
+    }
   };
 }
 
 function isTLS(config: EnclavedConfig): boolean {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
-  logger.debug('TLS Configuration:', {
-    tlsMode,
-    hasKeyPath: Boolean(keyPath),
-    hasCrtPath: Boolean(crtPath),
-    hasTlsKey: Boolean(tlsKey),
-    hasTlsCert: Boolean(tlsCert),
-  });
   if (tlsMode === TlsMode.DISABLED) return false;
   return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
 }
@@ -52,53 +47,23 @@ async function createHttpsServer(
   app: express.Application,
   config: EnclavedConfig,
 ): Promise<https.Server> {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode, mtlsRequestCert, mtlsRejectUnauthorized } =
-    config;
-  let key: string;
-  let cert: string;
+  const { tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
 
-  if (tlsKey && tlsCert) {
-    key = tlsKey;
-    cert = tlsCert;
-    logger.info('Using TLS key and cert from environment variables');
-  } else if (keyPath && crtPath) {
-    const certificates = await readCertificates(keyPath, crtPath);
-    key = certificates.key;
-    cert = certificates.cert;
-    logger.info(`Using TLS key and cert from files: ${keyPath}, ${crtPath}`);
-  } else {
-    throw new Error('Failed to get TLS key and certificate');
+  if (!tlsKey || !tlsCert) {
+    throw new Error('TLS key and certificate must be provided for HTTPS server');
   }
 
   const httpsOptions: https.ServerOptions = {
-    secureOptions: SSL_OP_NO_TLSv1,
-    key,
-    cert,
-    // Add mTLS options if in mTLS mode
+    secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
+    key: tlsKey,
+    cert: tlsCert,
+    // Only request cert if mTLS is enabled AND we want to request certs
+    // This prevents TLS handshake failures when no cert is provided
     requestCert: tlsMode === TlsMode.MTLS && mtlsRequestCert,
-    rejectUnauthorized: tlsMode === TlsMode.MTLS && mtlsRejectUnauthorized,
+    rejectUnauthorized: false, // Handle authorization in middleware
   };
 
   const server = https.createServer(httpsOptions, app);
-
-  // Add middleware to validate client certificate fingerprints if in mTLS mode
-  if (tlsMode === TlsMode.MTLS && config.mtlsAllowedClientFingerprints?.length) {
-    app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const clientCert = (req as any).socket?.getPeerCertificate();
-      if (!clientCert) {
-        return res.status(403).json({ error: 'Client certificate required' });
-      }
-
-      const fingerprint = clientCert.fingerprint256?.replace(/:/g, '').toUpperCase();
-      if (!fingerprint || !config.mtlsAllowedClientFingerprints?.includes(fingerprint)) {
-        return res.status(403).json({ error: 'Invalid client certificate fingerprint' });
-      }
-
-      // Store client certificate info for logging
-      (req as any).clientCert = clientCert;
-      next();
-    });
-  }
 
   return server;
 }
@@ -135,8 +100,12 @@ export function app(cfg: EnclavedConfig): express.Application {
     return (req as any).clientCert ? (req as any).clientCert.subject.CN : 'unknown';
   });
 
-  setupDebugNamespaces(cfg.debugNamespace);
   setupCommonMiddleware(app, cfg);
+
+  // Add mTLS middleware before routes if in mTLS mode
+  if (cfg.tlsMode === TlsMode.MTLS) {
+    app.use(createMtlsMiddleware(cfg));
+  }
 
   // Setup routes
   routes.setupRoutes(app);

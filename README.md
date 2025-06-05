@@ -1,145 +1,229 @@
-# Enclaved Express
+# Enclaved BitGo Express
 
-Enclaved Express is a secure signer implementation for cryptocurrency operations. It's designed to run in a secure enclave environment with flexible security options.
+A secure, mTLS-enabled cryptocurrency signing server with two operational modes: Enclaved Express (dedicated signer) and Master Express (API gateway with integrated signing capabilities).
 
 ## Overview
 
-This module provides a lightweight, dedicated signing server with these features:
+This application provides secure cryptocurrency operations with mutual TLS (mTLS) authentication:
 
-- Focused on signing operations only - no BitGo API dependencies
-- Optional TLS security for secure connections
-- Client certificate validation when operating in mTLS mode
-- Simple configuration and deployment
+- **Enclaved Mode**: Lightweight signing server for secure key operations
+- **Master Express Mode**: Full BitGo Express functionality with integrated signing
+- **mTLS Security**: Client certificate validation for secure communications
+- **Flexible Configuration**: Environment-based setup with file or variable-based certificates
 
-## Supported Operations
+## Architecture
 
-Currently, the following operations are supported:
-
-- `/ping` - Health check endpoint
+- **Enclaved Express** (Port 3080): Focused signing operations with KMS integration
+- **Master Express** (Port 3081): Full BitGo API functionality with secure communication to Enclaved Express
 
 ## Configuration
 
-Configuration is done via environment variables:
+Configuration is managed through environment variables:
 
 ### Required Settings
 
-- `APP_MODE` - Application mode (required, must be either "enclaved" or "master-express")
+- `APP_MODE` - Application mode (required: "enclaved" or "master-express")
 
 ### Network Settings
 
-- `PORT` - Port to listen on (default: 3080)
 - `BIND` - Address to bind to (default: localhost)
 - `TIMEOUT` - Request timeout in milliseconds (default: 305000)
+- `KEEP_ALIVE_TIMEOUT` - Keep-alive timeout (optional)
+- `HEADERS_TIMEOUT` - Headers timeout (optional)
 
-### TLS Settings
+#### Enclaved Mode Specific
 
-- `MASTER_BITGO_EXPRESS_KEYPATH` - Path to server key file (required for TLS)
-- `MASTER_BITGO_EXPRESS_CRTPATH` - Path to server certificate file (required for TLS)
-- `MTLS_ENABLED` - Enable mTLS mode (default: false)
-- `MTLS_REQUEST_CERT` - Whether to request client certificates (default: false)
-- `MTLS_REJECT_UNAUTHORIZED` - Whether to reject unauthorized connections (default: false)
+- `ENCLAVED_EXPRESS_PORT` - Port to listen on (default: 3080)
+- `KMS_URL` - KMS service URL (required)
+
+#### Master Express Mode Specific
+
+- `MASTER_EXPRESS_PORT` - Port to listen on (default: 3081)
+- `BITGO_ENV` - BitGo environment (default: test)
+- `BITGO_DISABLE_ENV_CHECK` - Disable environment check (default: true)
+- `BITGO_AUTH_VERSION` - Authentication version (default: 2)
+- `BITGO_CUSTOM_ROOT_URI` - Custom BitGo API root URI (optional)
+- `BITGO_CUSTOM_BITCOIN_NETWORK` - Custom Bitcoin network (optional)
+- `ENCLAVED_EXPRESS_URL` - Enclaved Express server URL (required)
+- `ENCLAVED_EXPRESS_CERT` - Path to Enclaved Express server certificate (required)
+
+### TLS/mTLS Configuration
+
+Both modes use the same TLS configuration variables:
+
+#### TLS Mode
+
+- `TLS_MODE` - Set to either "mtls" or "disabled" (defaults to "mtls" if not set)
+
+#### Certificate Configuration (required when TLS_MODE=mtls)
+
+**Option 1: Certificate Files**
+
+- `TLS_KEY_PATH` - Path to private key file
+- `TLS_CERT_PATH` - Path to certificate file
+
+**Option 2: Environment Variables**
+
+- `TLS_KEY` - Private key content (PEM format)
+- `TLS_CERT` - Certificate content (PEM format)
+
+#### mTLS Settings (when TLS_MODE=mtls)
+
+- `MTLS_REQUEST_CERT` - Request client certificates (default: true)
+- `ALLOW_SELF_SIGNED` - Allow self-signed certificates (default: false)
 - `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed client certificate fingerprints (optional)
 
-### Master Express Settings
-
-- `BITGO_PORT` - Port to listen on (default: 3080)
-- `BITGO_BIND` - Address to bind to (default: localhost)
-- `BITGO_ENV` - Environment name (default: test)
-- `BITGO_ENABLE_SSL` - Enable SSL and certificate verification (default: true)
-- `BITGO_ENABLE_PROXY` - Enable proxy (default: true)
-- `ENCLAVED_EXPRESS_URL` - URL of the enclaved express server (required)
-- `ENCLAVED_EXPRESS_SSL_CERT` - Path to the enclaved express server's SSL certificate (required)
-
-### Other Settings
+### Logging and Debug
 
 - `LOGFILE` - Path to log file (optional)
-- `DEBUG` - Debug namespaces to enable (e.g., 'enclaved:\*')
+- `DEBUG_NAMESPACE` - Debug namespaces to enable (e.g., 'enclaved:\*')
 
-## Running Enclaved Express
+## Quick Start
 
-### Basic Setup (HTTP only)
+### 1. Generate Test Certificates
+
+First, create self-signed certificates for testing:
 
 ```bash
-yarn start --port 3080
+# Generate private key
+openssl genrsa -out server.key 2048
+
+# Generate certificate
+openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=localhost"
 ```
 
-### TLS Setup (with mTLS)
-
-For testing purposes, you can use self-signed certificates with relaxed verification:
+### 2. Start Enclaved Express
 
 ```bash
 APP_MODE=enclaved \
-MASTER_BITGO_EXPRESS_PORT=3080 \
-MASTER_BITGO_EXPRESS_BIND=localhost \
-MASTER_BITGO_EXPRESS_KEYPATH=./test-ssl-key.pem \
-MASTER_BITGO_EXPRESS_CRTPATH=./test-ssl-cert.pem \
-MTLS_ENABLED=true \
+KMS_URL=https://your-kms-service \
+TLS_KEY_PATH=./server.key \
+TLS_CERT_PATH=./server.crt \
 MTLS_REQUEST_CERT=true \
-MTLS_REJECT_UNAUTHORIZED=false \
+ALLOW_SELF_SIGNED=true \
 yarn start
 ```
 
-### Connecting from Master Express
+### 3. Start Master Express
 
-To connect to Enclaved Express from the Master Express server:
+In a separate terminal:
 
 ```bash
 APP_MODE=master-express \
-BITGO_PORT=3080 \
-BITGO_BIND=localhost \
 BITGO_ENV=test \
-BITGO_KEYPATH=./test-ssl-key.pem \
-BITGO_CRTPATH=./test-ssl-cert.pem \
-ENCLAVED_EXPRESS_URL=https://localhost:4000 \
-ENCLAVED_EXPRESS_SSL_CERT=./enclaved-express-cert.pem \
-BITGO_ENABLE_SSL=false \
+TLS_KEY_PATH=./server.key \
+TLS_CERT_PATH=./server.crt \
+ENCLAVED_EXPRESS_URL=https://localhost:3080 \
+ENCLAVED_EXPRESS_CERT=./server.crt \
+MTLS_REQUEST_CERT=false \
+ALLOW_SELF_SIGNED=true \
 yarn start
 ```
 
-## Understanding mTLS Configuration
+### 4. Test the Connection
 
-### Server Side (Enclaved Express)
+Test that Master Express can communicate with Enclaved Express:
 
-- Uses both certificate and key files
-- The key file (`test-ssl-key.pem`) is used to prove the server's identity
-- The certificate file (`test-ssl-cert.pem`) is what the server presents to clients
+```bash
+curl -k -X POST https://localhost:3081/ping/enclavedExpress
+```
 
-### Client Side (Regular Express)
+## Production Configuration
 
-- For testing, only needs the server's certificate
-- `rejectUnauthorized: false` allows testing without strict certificate verification
-- In production, proper client certificates should be used
+### Security Best Practices
 
-## Security Considerations
+1. **Use CA-signed certificates** instead of self-signed
+2. **Set `ALLOW_SELF_SIGNED=false`** in production
+3. **Configure client certificate allowlisting** with `MTLS_ALLOWED_CLIENT_FINGERPRINTS`
+4. **Use separate certificates** for each service
+5. **Regularly rotate certificates**
+6. **Secure private key storage**
 
-- The testing configuration (`MTLS_REJECT_UNAUTHORIZED=false`) should only be used in development
-- In production:
-  - Use proper CA-signed certificates
-  - Enable strict certificate verification
-  - Use client certificate allowlisting
-  - Keep private keys secure
-  - Regularly rotate certificates
+### Production Setup Example
+
+#### Enclaved Express (Production)
+
+```bash
+APP_MODE=enclaved \
+KMS_URL=https://production-kms.example.com \
+TLS_KEY_PATH=/secure/path/enclaved.key \
+TLS_CERT_PATH=/secure/path/enclaved.crt \
+MTLS_REQUEST_CERT=true \
+ALLOW_SELF_SIGNED=false \
+MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456... \
+yarn start
+```
+
+#### Master Express (Production)
+
+```bash
+APP_MODE=master-express \
+BITGO_ENV=prod \
+TLS_KEY_PATH=/secure/path/master.key \
+TLS_CERT_PATH=/secure/path/master.crt \
+ENCLAVED_EXPRESS_URL=https://enclaved.internal.example.com:3080 \
+ENCLAVED_EXPRESS_CERT=/secure/path/enclaved.crt \
+MTLS_REQUEST_CERT=true \
+ALLOW_SELF_SIGNED=false \
+yarn start
+```
+
+## API Endpoints
+
+### Enclaved Express (Port 3080)
+
+- `POST /ping` - Health check
+- `GET /version` - Version information
+- `POST /:coin/key/independentKey` - Generate independent keychain
+
+### Master Express (Port 3081)
+
+- `POST /ping` - Health check
+- `GET /version` - Version information
+- `POST /ping/enclavedExpress` - Test connection to Enclaved Express
+- `POST /api/:coin/wallet/generate` - Generate wallet (with Enclaved Express integration)
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Certificate Errors**
+#### 1. Certificate Loading Errors
 
-   - Ensure paths to certificate files are correct
-   - Check file permissions on certificate files
-   - Verify certificate format is correct
+```bash
+# Check certificate file paths and permissions
+ls -la /path/to/certificates/
+# Verify certificate format
+openssl x509 -in certificate.crt -text -noout
+```
 
-2. **Connection Issues**
+#### 2. mTLS Authentication Failures
 
-   - Verify ports are not in use
-   - Check firewall settings
-   - Ensure URLs are correct (including https:// prefix)
+- Verify client certificates are provided
+- Check `ALLOW_SELF_SIGNED` setting matches certificate type
+- Confirm client certificate fingerprints are in allowlist
+- Ensure both services use compatible TLS settings
 
-3. **mTLS Errors**
-   - Verify mTLS is enabled on both sides
-   - Check certificate configuration
-   - Ensure client certificate is trusted by server
+#### 3. Connection Refused
+
+- Verify both services are running on correct ports
+- Check firewall settings
+- Confirm URLs use `https://` prefix
+- Test basic connectivity with curl
+
+#### 4. Environment Variable Issues
+
+```bash
+# Check that required variables are set
+env | grep -E "(APP_MODE|KMS_URL|ENCLAVED_EXPRESS|TLS_)"
+```
+
+### Debug Mode
+
+Enable debug logging for detailed troubleshooting:
+
+```bash
+DEBUG_NAMESPACE=enclaved:*,master:* yarn start
+```
 
 ## License
 

@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 import fs from 'fs';
 import {
   Config,
@@ -10,6 +7,8 @@ import {
   AppMode,
   EnvironmentName,
 } from './types';
+import logger from './logger';
+import { validateTlsCertificates, validateMasterExpressConfig } from './shared/appUtils';
 
 export { Config, EnclavedConfig, MasterExpressConfig, TlsMode, AppMode, EnvironmentName };
 
@@ -39,6 +38,8 @@ function determineAppMode(): AppMode {
   throw new Error(`Invalid APP_MODE: ${mode}. Must be either "enclaved" or "master-express"`);
 }
 
+export { determineAppMode };
+
 // ============================================================================
 // ENCLAVED MODE CONFIGURATION
 // ============================================================================
@@ -50,55 +51,59 @@ const defaultEnclavedConfig: EnclavedConfig = {
   timeout: 305 * 1000,
   logFile: '',
   kmsUrl: '', // Will be overridden by environment variable
-  tlsMode: TlsMode.ENABLED,
-  mtlsRequestCert: false,
-  mtlsRejectUnauthorized: false,
+  tlsMode: TlsMode.MTLS,
+  mtlsRequestCert: true,
+  allowSelfSigned: false,
 };
 
 function determineTlsMode(): TlsMode {
-  const disableTls = readEnvVar('MASTER_BITGO_EXPRESS_DISABLE_TLS') === 'true';
-  const mtlsEnabled = readEnvVar('MTLS_ENABLED') === 'true';
+  const tlsMode = readEnvVar('TLS_MODE')?.toLowerCase();
 
-  if (disableTls && mtlsEnabled) {
-    throw new Error('Cannot have both TLS disabled and mTLS enabled');
+  if (!tlsMode) {
+    logger.warn('TLS_MODE not set, defaulting to MTLS. Set TLS_MODE=disabled to disable TLS.');
+    return TlsMode.MTLS;
   }
 
-  if (disableTls) return TlsMode.DISABLED;
-  if (mtlsEnabled) return TlsMode.MTLS;
-  return TlsMode.ENABLED;
+  if (tlsMode === 'disabled') {
+    return TlsMode.DISABLED;
+  }
+
+  if (tlsMode === 'mtls') {
+    return TlsMode.MTLS;
+  }
+
+  throw new Error(`Invalid TLS_MODE: ${tlsMode}. Must be either "disabled" or "mtls"`);
 }
 
 function enclavedEnvConfig(): Partial<EnclavedConfig> {
   const kmsUrl = readEnvVar('KMS_URL');
 
   if (!kmsUrl) {
+    logger.error('KMS_URL environment variable is required and cannot be empty');
     throw new Error('KMS_URL environment variable is required and cannot be empty');
   }
 
   return {
     appMode: AppMode.ENCLAVED,
-    port: Number(readEnvVar('MASTER_BITGO_EXPRESS_PORT')),
-    bind: readEnvVar('MASTER_BITGO_EXPRESS_BIND'),
-    ipc: readEnvVar('MASTER_BITGO_EXPRESS_IPC'),
-    debugNamespace: (readEnvVar('MASTER_BITGO_EXPRESS_DEBUG_NAMESPACE') || '')
-      .split(',')
-      .filter(Boolean),
-    logFile: readEnvVar('MASTER_BITGO_EXPRESS_LOGFILE'),
-    timeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_TIMEOUT')),
-    keepAliveTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_KEEP_ALIVE_TIMEOUT')),
-    headersTimeout: Number(readEnvVar('MASTER_BITGO_EXPRESS_HEADERS_TIMEOUT')),
+    port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
+    bind: readEnvVar('BIND'),
+    ipc: readEnvVar('IPC'),
+    debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
+    logFile: readEnvVar('LOGFILE'),
+    timeout: Number(readEnvVar('TIMEOUT')),
+    keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
+    headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
     // KMS settings
     kmsUrl,
-    // TLS settings
-    keyPath: readEnvVar('MASTER_BITGO_EXPRESS_KEYPATH'),
-    crtPath: readEnvVar('MASTER_BITGO_EXPRESS_CRTPATH'),
-    tlsKey: readEnvVar('MASTER_BITGO_EXPRESS_TLS_KEY'),
-    tlsCert: readEnvVar('MASTER_BITGO_EXPRESS_TLS_CERT'),
-    tlsMode: determineTlsMode(),
     // mTLS settings
-    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT') === 'true',
-    mtlsRejectUnauthorized: readEnvVar('MTLS_REJECT_UNAUTHORIZED') === 'true',
+    keyPath: readEnvVar('TLS_KEY_PATH'),
+    crtPath: readEnvVar('TLS_CERT_PATH'),
+    tlsKey: readEnvVar('TLS_KEY'),
+    tlsCert: readEnvVar('TLS_CERT'),
+    tlsMode: determineTlsMode(),
+    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT')?.toLowerCase() !== 'false',
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
+    allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
   };
 }
 
@@ -128,8 +133,8 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
     mtlsRequestCert: get('mtlsRequestCert'),
-    mtlsRejectUnauthorized: get('mtlsRejectUnauthorized'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
+    allowSelfSigned: get('allowSelfSigned'),
   };
 }
 
@@ -137,22 +142,35 @@ function configureEnclavedMode(): EnclavedConfig {
   const env = enclavedEnvConfig();
   let config = mergeEnclavedConfigs(env);
 
-  // Handle file loading for TLS certificates
-  if (!config.tlsKey && config.keyPath) {
-    try {
-      config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+  // Only load certificates if TLS is enabled
+  if (config.tlsMode !== TlsMode.DISABLED) {
+    // Handle file loading for TLS certificates
+    if (!config.tlsKey && config.keyPath) {
+      try {
+        config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+      }
+    } else if (config.tlsKey) {
+      logger.debug('Using TLS private key from environment variable');
     }
-  }
-  if (!config.tlsCert && config.crtPath) {
-    try {
-      config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+
+    if (!config.tlsCert && config.crtPath) {
+      try {
+        config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+      }
+    } else if (config.tlsCert) {
+      logger.debug('Using TLS certificate from environment variable');
     }
+
+    // Validate that certificates are properly loaded when TLS is enabled
+    validateTlsCertificates(config);
   }
 
   return config;
@@ -164,17 +182,18 @@ function configureEnclavedMode(): EnclavedConfig {
 
 const defaultMasterExpressConfig: MasterExpressConfig = {
   appMode: AppMode.MASTER_EXPRESS,
-  port: 3080,
+  port: 3081,
   bind: 'localhost',
   timeout: 305 * 1000,
   logFile: '',
   env: 'test',
-  enableSSL: true,
-  enableProxy: true,
   disableEnvCheck: true,
   authVersion: 2,
   enclavedExpressUrl: '', // Will be overridden by environment variable
-  enclavedExpressSSLCert: '', // Will be overridden by environment variable
+  enclavedExpressCert: '', // Will be overridden by environment variable
+  tlsMode: TlsMode.MTLS,
+  mtlsRequestCert: true,
+  allowSelfSigned: false,
 };
 
 function forceSecureUrl(url: string): string {
@@ -187,43 +206,49 @@ function forceSecureUrl(url: string): string {
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const enclavedExpressUrl = readEnvVar('ENCLAVED_EXPRESS_URL');
-  const enclavedExpressSSLCert = readEnvVar('ENCLAVED_EXPRESS_SSL_CERT');
+  const enclavedExpressCert = readEnvVar('ENCLAVED_EXPRESS_CERT');
 
   if (!enclavedExpressUrl) {
     throw new Error('ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty');
   }
 
-  if (!enclavedExpressSSLCert) {
-    throw new Error(
-      'ENCLAVED_EXPRESS_SSL_CERT environment variable is required and cannot be empty',
-    );
+  if (!enclavedExpressCert) {
+    throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required and cannot be empty');
   }
+
+  // Debug mTLS environment variables
+  const mtlsRequestCertRaw = readEnvVar('MTLS_REQUEST_CERT');
+  const allowSelfSignedRaw = readEnvVar('ALLOW_SELF_SIGNED');
+  const mtlsRequestCert = mtlsRequestCertRaw?.toLowerCase() !== 'false';
+  const allowSelfSigned = allowSelfSignedRaw === 'true';
 
   return {
     appMode: AppMode.MASTER_EXPRESS,
-    port: Number(readEnvVar('BITGO_PORT')),
-    bind: readEnvVar('BITGO_BIND'),
-    ipc: readEnvVar('BITGO_IPC'),
-    debugNamespace: (readEnvVar('BITGO_DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
-    logFile: readEnvVar('BITGO_LOGFILE'),
-    timeout: Number(readEnvVar('BITGO_TIMEOUT')),
-    keepAliveTimeout: Number(readEnvVar('BITGO_KEEP_ALIVE_TIMEOUT')),
-    headersTimeout: Number(readEnvVar('BITGO_HEADERS_TIMEOUT')),
+    port: Number(readEnvVar('MASTER_EXPRESS_PORT')),
+    bind: readEnvVar('BIND'),
+    ipc: readEnvVar('IPC'),
+    debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
+    logFile: readEnvVar('LOGFILE'),
+    timeout: Number(readEnvVar('TIMEOUT')),
+    keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
+    headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
     // BitGo API settings
     env: readEnvVar('BITGO_ENV') as EnvironmentName,
     customRootUri: readEnvVar('BITGO_CUSTOM_ROOT_URI'),
-    enableSSL: readEnvVar('BITGO_ENABLE_SSL') !== 'false', // Default to true unless explicitly set to false
-    enableProxy: readEnvVar('BITGO_ENABLE_PROXY') !== 'false', // Default to true unless explicitly set to false
     disableEnvCheck: readEnvVar('BITGO_DISABLE_ENV_CHECK') === 'true',
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
     enclavedExpressUrl,
-    enclavedExpressSSLCert,
+    enclavedExpressCert,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
-    // SSL settings
-    keyPath: readEnvVar('BITGO_KEYPATH'),
-    crtPath: readEnvVar('BITGO_CRTPATH'),
-    sslKey: readEnvVar('BITGO_SSL_KEY'),
-    sslCert: readEnvVar('BITGO_SSL_CERT'),
+    // mTLS settings
+    keyPath: readEnvVar('TLS_KEY_PATH'),
+    crtPath: readEnvVar('TLS_CERT_PATH'),
+    tlsKey: readEnvVar('TLS_KEY'),
+    tlsCert: readEnvVar('TLS_CERT'),
+    tlsMode: determineTlsMode(),
+    mtlsRequestCert,
+    mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
+    allowSelfSigned,
   };
 }
 
@@ -250,52 +275,92 @@ function mergeMasterExpressConfigs(
     headersTimeout: get('headersTimeout'),
     env: get('env'),
     customRootUri: get('customRootUri'),
-    enableSSL: get('enableSSL'),
-    enableProxy: get('enableProxy'),
     disableEnvCheck: get('disableEnvCheck'),
     authVersion: get('authVersion'),
     enclavedExpressUrl: get('enclavedExpressUrl'),
-    enclavedExpressSSLCert: get('enclavedExpressSSLCert'),
+    enclavedExpressCert: get('enclavedExpressCert'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
-    sslKey: get('sslKey'),
-    sslCert: get('sslCert'),
+    tlsKey: get('tlsKey'),
+    tlsCert: get('tlsCert'),
+    tlsMode: get('tlsMode'),
+    mtlsRequestCert: get('mtlsRequestCert'),
+    mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
+    allowSelfSigned: get('allowSelfSigned'),
   };
 }
 
-function configureMasterExpressMode(): MasterExpressConfig {
+export function configureMasterExpressMode(): MasterExpressConfig {
   const env = masterExpressEnvConfig();
   let config = mergeMasterExpressConfigs(env);
 
-  // Post-process URLs if SSL is enabled
-  if (config.enableSSL) {
-    const updates: Partial<MasterExpressConfig> = {};
-    if (config.customRootUri) {
-      updates.customRootUri = forceSecureUrl(config.customRootUri);
+  // Post-process URLs to ensure they use HTTPS
+  const updates: Partial<MasterExpressConfig> = {};
+  if (config.customRootUri) {
+    updates.customRootUri = forceSecureUrl(config.customRootUri);
+  }
+  if (config.enclavedExpressUrl) {
+    updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl);
+  }
+  config = { ...config, ...updates };
+
+  // Only load certificates if TLS is enabled
+  if (config.tlsMode !== TlsMode.DISABLED) {
+    // Handle file loading for TLS certificates
+    if (!config.tlsKey && config.keyPath) {
+      try {
+        config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+      }
+    } else if (config.tlsKey) {
+      logger.debug('Using TLS private key from environment variable');
     }
-    if (config.enclavedExpressUrl) {
-      updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl);
+
+    if (!config.tlsCert && config.crtPath) {
+      try {
+        config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+      }
+    } else if (config.tlsCert) {
+      logger.debug('Using TLS certificate from environment variable');
     }
-    config = { ...config, ...updates };
+
+    // Validate that certificates are properly loaded when TLS is enabled
+    validateTlsCertificates(config);
   }
 
-  // Handle SSL cert loading
-  if (config.enclavedExpressSSLCert) {
+  // Handle cert loading for Enclaved Express (always required for Master Express)
+  if (config.enclavedExpressCert) {
     try {
-      if (fs.existsSync(config.enclavedExpressSSLCert)) {
+      if (fs.existsSync(config.enclavedExpressCert)) {
         config = {
           ...config,
-          enclavedExpressSSLCert: fs.readFileSync(config.enclavedExpressSSLCert, 'utf-8'),
+          enclavedExpressCert: fs.readFileSync(config.enclavedExpressCert, 'utf-8'),
         };
+        logger.info(
+          `Successfully loaded Enclaved Express certificate from file: ${config.enclavedExpressCert.substring(
+            0,
+            50,
+          )}...`,
+        );
       } else {
-        throw new Error(`Certificate file not found: ${config.enclavedExpressSSLCert}`);
+        throw new Error(`Certificate file not found: ${config.enclavedExpressCert}`);
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read enclaved express SSL cert: ${err.message}`);
+      throw new Error(`Failed to read enclaved express cert: ${err.message}`);
     }
   }
+
+  // Validate Master Express configuration
+  validateMasterExpressConfig(config);
 
   return config;
 }

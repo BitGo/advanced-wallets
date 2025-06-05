@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 import express from 'express';
 import path from 'path';
 import https from 'https';
@@ -9,11 +6,10 @@ import morgan from 'morgan';
 import fs from 'fs';
 import timeout from 'connect-timeout';
 import bodyParser from 'body-parser';
-import _ from 'lodash';
 import pjson from '../../package.json';
 import logger from '../logger';
 
-import { Config } from '../config';
+import { Config, TlsMode } from '../config';
 
 /**
  * Set up the logging middleware provided by morgan
@@ -33,19 +29,6 @@ export function setupLogging(app: express.Application, config: Config): void {
   }
 
   app.use(middleware);
-}
-
-/**
- * Setup debug namespaces
- */
-export function setupDebugNamespaces(debugNamespace?: string[]): void {
-  if (_.isArray(debugNamespace)) {
-    for (const ns of debugNamespace) {
-      if (ns) {
-        logger.debug(`Enabling debug namespace: ${ns}`);
-      }
-    }
-  }
 }
 
 /**
@@ -160,4 +143,91 @@ export function setupHealthCheckRoutes(app: express.Application, serverType: str
       name: pjson.name,
     });
   });
+}
+
+/**
+ * Create mTLS middleware for validating client certificates
+ */
+export function createMtlsMiddleware(config: {
+  tlsMode: TlsMode;
+  mtlsRequestCert: boolean;
+  allowSelfSigned?: boolean;
+  mtlsAllowedClientFingerprints?: string[];
+}): express.RequestHandler {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const clientCert = (req as any).socket?.getPeerCertificate();
+
+    // Check if client certificate is actually present (not just an empty object)
+    const hasValidClientCert =
+      clientCert && Object.keys(clientCert).length > 0 && clientCert.subject;
+
+    // If client cert is required but not provided
+    if (config.mtlsRequestCert && !hasValidClientCert) {
+      return res.status(403).json({
+        error: 'mTLS Authentication Failed',
+        message: 'Client certificate is required for this endpoint',
+        details: 'Please provide a valid client certificate in your request',
+      });
+    }
+
+    // If client cert is provided, validate it
+    if (hasValidClientCert) {
+      // Check if self-signed certificates are allowed
+      if (!config.allowSelfSigned && clientCert.issuer.CN === clientCert.subject.CN) {
+        return res.status(403).json({
+          error: 'mTLS Authentication Failed',
+          message: 'Self-signed certificates are not allowed',
+          details: 'Please use a certificate issued by a trusted CA',
+        });
+      }
+
+      // Check fingerprint restrictions if configured
+      if (config.mtlsAllowedClientFingerprints?.length) {
+        const fingerprint = clientCert.fingerprint256?.replace(/:/g, '').toUpperCase();
+        if (!fingerprint || !config.mtlsAllowedClientFingerprints?.includes(fingerprint)) {
+          return res.status(403).json({
+            error: 'mTLS Authentication Failed',
+            message: 'Client certificate fingerprint not authorized',
+            details: `Certificate fingerprint ${fingerprint} is not in the allowed list`,
+          });
+        }
+      }
+    }
+
+    // Store client certificate info for logging
+    if (hasValidClientCert) {
+      (req as any).clientCert = clientCert;
+    }
+    next();
+  };
+}
+
+/**
+ * Validate that TLS certificates are properly loaded when TLS is enabled
+ */
+export function validateTlsCertificates(config: {
+  tlsMode: TlsMode;
+  tlsKey?: string;
+  tlsCert?: string;
+}): void {
+  if (config.tlsMode !== TlsMode.DISABLED) {
+    if (!config.tlsKey || !config.tlsCert) {
+      throw new Error('TLS is enabled but certificates are not properly loaded');
+    }
+  }
+}
+
+/**
+ * Validate Master Express configuration
+ */
+export function validateMasterExpressConfig(config: {
+  enclavedExpressUrl: string;
+  enclavedExpressCert: string;
+}): void {
+  if (!config.enclavedExpressUrl) {
+    throw new Error('ENCLAVED_EXPRESS_URL is required for Master Express mode');
+  }
+  if (!config.enclavedExpressCert) {
+    throw new Error('ENCLAVED_EXPRESS_CERT is required for Master Express mode');
+  }
 }

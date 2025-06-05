@@ -20,7 +20,7 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
 
-  const enclavedExpressClient = createEnclavedExpressClient(req.params.coin);
+  const enclavedExpressClient = createEnclavedExpressClient(req.config, req.params.coin);
   if (!enclavedExpressClient) {
     throw new Error(
       'Enclaved express client not configured - enclaved express features will be disabled',

@@ -1,6 +1,3 @@
-/**
- * @prettier
- */
 import express from 'express';
 import { BitGoBase } from '@bitgo/sdk-core';
 import { MasterExpressConfig } from '../types';

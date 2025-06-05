@@ -1,9 +1,5 @@
-/**
- * @prettier
- */
 export enum TlsMode {
   DISABLED = 'disabled', // No TLS (plain HTTP)
-  ENABLED = 'enabled', // TLS with server cert only
   MTLS = 'mtls', // TLS with both server and client certs
 }
 
@@ -32,16 +28,15 @@ export interface EnclavedConfig extends BaseConfig {
   appMode: AppMode.ENCLAVED;
   // KMS settings
   kmsUrl: string;
-  // TLS settings
+  // mTLS settings
   keyPath?: string;
   crtPath?: string;
   tlsKey?: string;
   tlsCert?: string;
   tlsMode: TlsMode;
-  // mTLS settings
-  mtlsRequestCert?: boolean;
-  mtlsRejectUnauthorized?: boolean;
+  mtlsRequestCert: boolean;
   mtlsAllowedClientFingerprints?: string[];
+  allowSelfSigned?: boolean;
 }
 
 // Master Express mode specific configuration
@@ -50,18 +45,20 @@ export interface MasterExpressConfig extends BaseConfig {
   // BitGo API settings
   env: EnvironmentName;
   customRootUri?: string;
-  enableSSL?: boolean;
-  enableProxy?: boolean;
   disableEnvCheck?: boolean;
   authVersion?: number;
   enclavedExpressUrl: string;
-  enclavedExpressSSLCert: string;
+  enclavedExpressCert: string;
   customBitcoinNetwork?: string;
-  // SSL settings (different from enclaved TLS)
+  // mTLS settings
   keyPath?: string;
   crtPath?: string;
-  sslKey?: string;
-  sslCert?: string;
+  tlsKey?: string;
+  tlsCert?: string;
+  tlsMode: TlsMode;
+  mtlsRequestCert: boolean;
+  mtlsAllowedClientFingerprints?: string[];
+  allowSelfSigned?: boolean;
 }
 
 // Union type for the configuration

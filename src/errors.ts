@@ -1,8 +1,4 @@
 /**
- * @prettier
- */
-
-/**
  * Common base error class for the Enclaved Express application
  */
 export class EnclavedError extends Error {
