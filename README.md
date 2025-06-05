@@ -174,7 +174,7 @@ yarn start
 
 - `POST /ping` - Health check
 - `GET /version` - Version information
-- `POST /:coin/key/independentKey` - Generate independent keychain
+- `POST /:coin/key/independent` - Generate independent keychain
 
 ### Master Express (Port 3081)
 

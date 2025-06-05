@@ -23,12 +23,19 @@ export class KmsClient {
   }
 
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
+    console.log('postKey', params);
     debugLogger('Posting key to KMS: %O', params);
 
-    const kmsResponse = await superagent
-      .post(`${this.url}/key`)
-      .set('x-api-key', 'abc')
-      .send(params);
+    let kmsResponse: any;
+    try {
+      kmsResponse = await superagent
+        .post(`${this.url}/key`)
+        // .set('x-api-key', 'abc')
+        .send(params);
+    } catch (error: any) {
+      console.error('Error posting key to KMS', error);
+      throw error;
+    }
 
     try {
       PostKeyKmsSchema.parse(kmsResponse.body);

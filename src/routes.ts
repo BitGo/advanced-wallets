@@ -49,7 +49,7 @@ async function prepBitGo(req: express.Request, res: express.Response, next: expr
 
 function setupKeyGenRoutes(app: express.Application) {
   app.post(
-    '/:coin/key/independentKey',
+    '/api/:coin/key/independent',
     promiseWrapper(prepBitGo),
     promiseWrapper(postIndependentKey),
   );
