@@ -2,6 +2,7 @@ import superagent from 'superagent';
 import https from 'https';
 import debug from 'debug';
 import { MasterExpressConfig } from '../types';
+import { TlsMode } from '../types';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -24,16 +25,17 @@ export interface IndependentKeychainResponse {
 export class EnclavedExpressClient {
   private readonly baseUrl: string;
   private readonly enclavedExpressCert: string;
-  private readonly tlsKey: string;
-  private readonly tlsCert: string;
+  private readonly tlsKey?: string;
+  private readonly tlsCert?: string;
   private readonly allowSelfSigned: boolean;
   private readonly coin?: string;
+  private readonly tlsMode: TlsMode;
 
   constructor(cfg: MasterExpressConfig, coin?: string) {
     if (!cfg.enclavedExpressUrl || !cfg.enclavedExpressCert) {
       throw new Error('enclavedExpressUrl and enclavedExpressCert are required');
     }
-    if (!cfg.tlsKey || !cfg.tlsCert) {
+    if (cfg.tlsMode === TlsMode.MTLS && (!cfg.tlsKey || !cfg.tlsCert)) {
       throw new Error('tlsKey and tlsCert are required for mTLS communication');
     }
 
@@ -43,10 +45,14 @@ export class EnclavedExpressClient {
     this.tlsCert = cfg.tlsCert;
     this.allowSelfSigned = cfg.allowSelfSigned ?? false;
     this.coin = coin;
+    this.tlsMode = cfg.tlsMode;
     debugLogger('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
   }
 
   private createHttpsAgent(): https.Agent {
+    if (!this.tlsKey || !this.tlsCert) {
+      throw new Error('TLS key and certificate are required for HTTPS agent');
+    }
     return new https.Agent({
       rejectUnauthorized: !this.allowSelfSigned,
       ca: this.enclavedExpressCert,
@@ -59,7 +65,12 @@ export class EnclavedExpressClient {
   async ping(): Promise<void> {
     try {
       debugLogger('Pinging enclaved express at %s', this.baseUrl);
-      await superagent.get(`${this.baseUrl}/ping`).agent(this.createHttpsAgent()).send();
+      if (this.tlsMode === TlsMode.MTLS) {
+        await superagent.get(`${this.baseUrl}/ping`).agent(this.createHttpsAgent()).send();
+      } else {
+        // When TLS is disabled, use plain HTTP without any TLS configuration
+        await superagent.get(`${this.baseUrl}/ping`).send();
+      }
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to ping enclaved express: %s', err.message);
@@ -79,13 +90,22 @@ export class EnclavedExpressClient {
 
     try {
       debugLogger('Creating independent keychain for coin: %s', this.coin);
-      const { body: keychain } = await superagent
-        .post(`${this.baseUrl}/api/${this.coin}/key/independent`)
-        .agent(this.createHttpsAgent())
-        .type('json')
-        .send(params);
+      let response;
+      if (this.tlsMode === TlsMode.MTLS) {
+        response = await superagent
+          .post(`${this.baseUrl}/api/${this.coin}/key/independent`)
+          .agent(this.createHttpsAgent())
+          .type('json')
+          .send(params);
+      } else {
+        // When TLS is disabled, use plain HTTP without any TLS configuration
+        response = await superagent
+          .post(`${this.baseUrl}/api/${this.coin}/key/independent`)
+          .type('json')
+          .send(params);
+      }
 
-      return keychain;
+      return response.body;
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to create independent keychain: %s', err.message);

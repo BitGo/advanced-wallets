@@ -196,17 +196,19 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   allowSelfSigned: false,
 };
 
-function forceSecureUrl(url: string): string {
+function forceSecureUrl(url: string, tlsMode: TlsMode): string {
   const regex = new RegExp(/(^\w+:|^)\/\//);
+  const protocol = tlsMode === TlsMode.DISABLED ? 'http' : 'https';
   if (regex.test(url)) {
-    return url.replace(/(^\w+:|^)\/\//, 'https://');
+    return url.replace(/(^\w+:|^)\/\//, `${protocol}://`);
   }
-  return `https://${url}`;
+  return `${protocol}://${url}`;
 }
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const enclavedExpressUrl = readEnvVar('ENCLAVED_EXPRESS_URL');
   const enclavedExpressCert = readEnvVar('ENCLAVED_EXPRESS_CERT');
+  const tlsMode = determineTlsMode();
 
   if (!enclavedExpressUrl) {
     throw new Error('ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty');
@@ -245,7 +247,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     crtPath: readEnvVar('TLS_CERT_PATH'),
     tlsKey: readEnvVar('TLS_KEY'),
     tlsCert: readEnvVar('TLS_CERT'),
-    tlsMode: determineTlsMode(),
+    tlsMode,
     mtlsRequestCert,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned,
@@ -295,13 +297,13 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   const env = masterExpressEnvConfig();
   let config = mergeMasterExpressConfigs(env);
 
-  // Post-process URLs to ensure they use HTTPS
+  // Post-process URLs to ensure they use the correct protocol based on TLS mode
   const updates: Partial<MasterExpressConfig> = {};
   if (config.customRootUri) {
-    updates.customRootUri = forceSecureUrl(config.customRootUri);
+    updates.customRootUri = forceSecureUrl(config.customRootUri, config.tlsMode);
   }
   if (config.enclavedExpressUrl) {
-    updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl);
+    updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl, config.tlsMode);
   }
   config = { ...config, ...updates };
 

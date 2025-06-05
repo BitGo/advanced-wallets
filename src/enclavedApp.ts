@@ -79,7 +79,7 @@ export async function createServer(
 
 export function createBaseUri(config: EnclavedConfig): string {
   const { bind, port } = config;
-  const tls = isTLS(config);
+  const tls = config.tlsMode === TlsMode.MTLS;
   const isStandardPort = (port === 80 && !tls) || (port === 443 && tls);
   return `http${tls ? 's' : ''}://${bind}${!isStandardPort ? ':' + port : ''}`;
 }
