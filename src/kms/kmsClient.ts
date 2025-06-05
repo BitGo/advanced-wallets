@@ -28,12 +28,9 @@ export class KmsClient {
 
     let kmsResponse: any;
     try {
-      kmsResponse = await superagent
-        .post(`${this.url}/key`)
-        // .set('x-api-key', 'abc')
-        .send(params);
+      kmsResponse = await superagent.post(`${this.url}/key`).set('x-api-key', 'abc').send(params);
     } catch (error: any) {
-      console.error('Error posting key to KMS', error);
+      console.log('Error posting key to KMS', error);
       throw error;
     }
 

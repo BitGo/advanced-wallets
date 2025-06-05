@@ -48,7 +48,7 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
     n: 3,
     keys: [],
     type: 'cold',
-    subType: 'onprem',
+    subType: 'onPrem',
     multisigType: 'onchain',
   } as unknown as SupplementGenerateWalletOptions; // TODO: Add onprem to the SDK subType and remove "unknown" type casting
 
