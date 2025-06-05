@@ -157,20 +157,26 @@ function setupMasterExpressRoutes(app: express.Application, cfg: MasterExpressCo
     try {
       logger.debug('Pinging enclaved express');
 
-      // Use Master Express's own certificate as client cert when connecting to Enclaved Express
-      const httpsAgent = new https.Agent({
-        rejectUnauthorized: cfg.tlsMode === TlsMode.MTLS && !cfg.allowSelfSigned,
-        ca: cfg.enclavedExpressCert,
-        // Provide client certificate for mTLS
-        key: cfg.tlsKey,
-        cert: cfg.tlsCert,
-      });
+      let response;
+      if (cfg.tlsMode === TlsMode.MTLS) {
+        // Use Master Express's own certificate as client cert when connecting to Enclaved Express
+        const httpsAgent = new https.Agent({
+          rejectUnauthorized: !cfg.allowSelfSigned,
+          ca: cfg.enclavedExpressCert,
+          // Provide client certificate for mTLS
+          key: cfg.tlsKey,
+          cert: cfg.tlsCert,
+        });
 
-      const response = await superagent
-        .post(`${cfg.enclavedExpressUrl}/ping`)
-        .ca(cfg.enclavedExpressCert)
-        .agent(httpsAgent)
-        .send();
+        response = await superagent
+          .post(`${cfg.enclavedExpressUrl}/ping`)
+          .ca(cfg.enclavedExpressCert)
+          .agent(httpsAgent)
+          .send();
+      } else {
+        // When TLS is disabled, use plain HTTP without any TLS configuration
+        response = await superagent.post(`${cfg.enclavedExpressUrl}/ping`).send();
+      }
 
       res.json({
         status: 'Successfully pinged enclaved express',
