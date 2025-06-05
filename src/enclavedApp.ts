@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
 import { EnclavedConfig, config, TlsMode, isEnclavedConfig } from './config';
-import * as routes from './routes';
+import { setupRoutes } from './routes/enclaved';
 import {
   setupLogging,
   setupCommonMiddleware,
@@ -108,7 +108,7 @@ export function app(cfg: EnclavedConfig): express.Application {
   }
 
   // Setup routes
-  routes.setupRoutes(app);
+  setupRoutes(app);
 
   // Add error handler
   app.use(createErrorHandler());
