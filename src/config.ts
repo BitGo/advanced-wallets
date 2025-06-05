@@ -196,9 +196,9 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   allowSelfSigned: false,
 };
 
-function forceSecureUrl(url: string, tlsMode: TlsMode): string {
+function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): string {
   const regex = new RegExp(/(^\w+:|^)\/\//);
-  const protocol = tlsMode === TlsMode.DISABLED ? 'http' : 'https';
+  const protocol = isBitGo ? 'https' : tlsMode === TlsMode.DISABLED ? 'http' : 'https';
   if (regex.test(url)) {
     return url.replace(/(^\w+:|^)\/\//, `${protocol}://`);
   }
@@ -300,10 +300,14 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   // Post-process URLs to ensure they use the correct protocol based on TLS mode
   const updates: Partial<MasterExpressConfig> = {};
   if (config.customRootUri) {
-    updates.customRootUri = forceSecureUrl(config.customRootUri, config.tlsMode);
+    updates.customRootUri = determineProtocol(config.customRootUri, config.tlsMode, true);
   }
   if (config.enclavedExpressUrl) {
-    updates.enclavedExpressUrl = forceSecureUrl(config.enclavedExpressUrl, config.tlsMode);
+    updates.enclavedExpressUrl = determineProtocol(
+      config.enclavedExpressUrl,
+      config.tlsMode,
+      false,
+    );
   }
   config = { ...config, ...updates };
 
