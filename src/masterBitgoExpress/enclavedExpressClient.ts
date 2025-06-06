@@ -1,3 +1,4 @@
+import { SignedTransaction } from '@bitgo/sdk-core';
 import debug from 'debug';
 import https from 'https';
 import superagent from 'superagent';
@@ -22,10 +23,7 @@ export interface IndependentKeychainResponse {
   coin: string;
 }
 
-//TODO: implement the type
-export interface SignTransactionResponse {
-  id: string;
-}
+export type SignTransactionResponse = SignedTransaction;
 
 export class EnclavedExpressClient {
   private readonly baseUrl: string;
@@ -106,7 +104,7 @@ export class EnclavedExpressClient {
     params: SignTransactionRecoveryParams,
   ): Promise<SignTransactionResponse> {
     if (!this.coin) {
-      throw new Error('Coin must be specified to create an independent keychain');
+      throw new Error('Coin must be specified to sign a transaction');
     }
     try {
       debugLogger('Siging tx for coin: %s', this.coin);
