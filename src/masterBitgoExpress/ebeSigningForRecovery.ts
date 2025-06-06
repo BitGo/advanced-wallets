@@ -20,7 +20,7 @@ async function signRecovery(req: Request) {
   if (coin.isEVM()) {
     const intent = req.body.intent;
     const ethCoin = coin as unknown as AbstractEthLikeNewCoins;
-    const txData = req.body.params;
+    const txData = req.body.parameters;
 
     if (!intent) {
       // TODO: normal signing, not recovery
