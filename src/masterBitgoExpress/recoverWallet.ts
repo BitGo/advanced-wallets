@@ -1,18 +1,23 @@
-import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
-import { MethodNotImplementedError } from '@bitgo/sdk-core';
+import {
+  AbstractEthLikeNewCoins,
+  OfflineVaultTxInfo,
+  RecoverOptions,
+  RecoveryInfo,
+  UnsignedSweepTxMPCv2,
+} from '@bitgo/abstract-eth';
+import { MethodNotImplementedError, SignedTransaction } from '@bitgo/sdk-core';
 import { BitGoRequest } from '../types/request';
 import { createEnclavedExpressClient } from './enclavedExpressClient';
-import { parseRecoveryWalletParams } from './recoveryUtils';
 
 export async function handleWalletRecovery(req: BitGoRequest) {
   const bitgo = req.bitgo;
-
   const coin = req.params.coin;
+  const { rootAddress, recoveryDestinationAddress, userPubKey, backupPubKey, coinSpecificParams } =
+    req.body;
+
   const baseCoin = bitgo.coin(coin);
-  const rootAddress = req.body.rootAddress;
 
   const enclavedExpressClient = createEnclavedExpressClient(req.config, coin);
-  // TODO: move this error check to a func, it's repeated in other places
   if (!enclavedExpressClient) {
     throw new Error(
       'Enclaved express client not configured - enclaved express features will be disabled',
@@ -20,21 +25,42 @@ export async function handleWalletRecovery(req: BitGoRequest) {
   }
 
   if (baseCoin.isEVM()) {
-    const ethCoin = baseCoin as unknown as AbstractEthLikeNewCoins;
+    const sdkCoin = baseCoin as unknown as AbstractEthLikeNewCoins;
     try {
-      const bodyParams = parseRecoveryWalletParams(req);
-      const recoverTx = await ethCoin.recover(bodyParams);
+      const { apiKey, walletContractAddress } = coinSpecificParams;
+      const unsignedTx = await sdkCoin.recover({
+        userKey: userPubKey,
+        backupKey: backupPubKey,
+        walletContractAddress,
+        recoveryDestination: recoveryDestinationAddress,
+        apiKey,
+      } as any as RecoverOptions);
 
-      const halfSignedTx = await enclavedExpressClient.signTransactionWIP({
-        intent: 'recover-half-sign',
+      const txPrebuildUnsigned = prebuildPayloadFromUnsigned(unsignedTx);
+
+      const halfSignedTx = await enclavedExpressClient.signTransaction({
         coin,
-        parameters: { ...recoverTx, key: bodyParams.userKey },
+        source: 'user',
+        pub: userPubKey,
+        txPrebuild: txPrebuildUnsigned,
+        txData: unsignedTx,
       });
-      const fullSignedTx = await enclavedExpressClient.signTransactionWIP({
-        intent: 'recover-full-sign',
+
+      const txPrebuildHalfSigned = prebuildPayloadFromHalfSigned(halfSignedTx);
+
+      //TODO: I managed to get this done but not enough time for checking if
+      // something is extra like the halfSigned, gonna try to do that asap
+      const fullSignedTx = await enclavedExpressClient.signTransaction({
         coin,
-        parameters: { ...halfSignedTx, rootAddress, key: bodyParams.backupKey },
+        source: 'backup',
+        pub: backupPubKey,
+        txPrebuild: txPrebuildHalfSigned,
+        halfSigned: halfSignedTx.halfSigned,
+        signingKeyNonce: (halfSignedTx.halfSigned as any).backupKeyNonce,
+        walletContractAddress: rootAddress,
+        isLastSignature: true,
       });
+
       return fullSignedTx;
     } catch (error) {
       console.log(error);
@@ -63,4 +89,25 @@ export async function handleWalletRecovery(req: BitGoRequest) {
   // backupPubKey
   // addressScanningFactor
   // apiKey
+}
+
+function prebuildPayloadFromUnsigned(
+  unsignedTx: RecoveryInfo | OfflineVaultTxInfo | UnsignedSweepTxMPCv2,
+) {
+  if (!('gasPrice' in unsignedTx) || !('gasLimit' in unsignedTx)) {
+    throw new Error('Unsigned transaction does not contain gasPrice or gasLimit');
+  }
+  return {
+    ...unsignedTx,
+    gasPrice: String(unsignedTx.gasPrice),
+    gasLimit: String(unsignedTx.gasLimit),
+  };
+}
+
+function prebuildPayloadFromHalfSigned(halfSignedTx: SignedTransaction) {
+  return {
+    ...halfSignedTx,
+    halfSigned: halfSignedTx,
+    txHex: (halfSignedTx.halfSigned as any).signatures,
+  };
 }

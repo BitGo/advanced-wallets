@@ -1,4 +1,4 @@
-import { SignedTransaction } from '@bitgo/sdk-core';
+import { HalfSignedTransaction, SignedTransaction } from '@bitgo/sdk-core';
 import debug from 'debug';
 import https from 'https';
 import superagent from 'superagent';
@@ -23,7 +23,7 @@ export interface IndependentKeychainResponse {
   coin: string;
 }
 
-export type SignTransactionResponse = SignedTransaction;
+export type SignTransactionResponse = SignedTransaction | HalfSignedTransaction;
 
 export class EnclavedExpressClient {
   private readonly baseUrl: string;
@@ -96,13 +96,11 @@ export class EnclavedExpressClient {
       throw err;
     }
   }
-  //TODO: @alex change this one to adjust to your normal signing
+
   /**
    * Sign a transaction, WIP method
    */
-  async signTransactionWIP(
-    params: SignTransactionRecoveryParams,
-  ): Promise<SignTransactionResponse> {
+  async signTransaction(params: SignTransactionRecoveryParams): Promise<SignTransactionResponse> {
     if (!this.coin) {
       throw new Error('Coin must be specified to sign a transaction');
     }

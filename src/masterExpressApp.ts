@@ -1,30 +1,30 @@
-import express from 'express';
-import https from 'https';
-import http from 'http';
-import superagent from 'superagent';
-import { BitGo, BitGoOptions } from 'bitgo';
 import { BitGoBase } from '@bitgo/sdk-core';
+import { BitGo, BitGoOptions } from 'bitgo';
 import { version } from 'bitgo/package.json';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
+import express from 'express';
+import http from 'http';
+import https from 'https';
+import superagent from 'superagent';
 
-import { MasterExpressConfig, config, isMasterExpressConfig, TlsMode } from './config';
-import { BitGoRequest } from './types/request';
+import bodyParser from 'body-parser';
+import pjson from '../package.json';
+import { config, isMasterExpressConfig, MasterExpressConfig, TlsMode } from './config';
+import logger from './logger';
+import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
+import { handleWalletRecovery } from './masterBitgoExpress/recoverWallet';
+import { promiseWrapper } from './routes';
 import {
-  setupLogging,
-  setupCommonMiddleware,
+  configureServerTimeouts,
   createErrorHandler,
   createHttpServer,
-  configureServerTimeouts,
-  prepareIpc,
-  setupHealthCheckRoutes,
   createMtlsMiddleware,
+  prepareIpc,
+  setupCommonMiddleware,
+  setupHealthCheckRoutes,
+  setupLogging,
 } from './shared/appUtils';
-import bodyParser from 'body-parser';
-import { promiseWrapper } from './routes';
-import pjson from '../package.json';
-import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
-import logger from './logger';
-import { handleWalletRecovery } from './masterBitgoExpress/recoverWallet';
+import { BitGoRequest } from './types/request';
 
 const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version}`;
 
@@ -195,8 +195,11 @@ function setupMasterExpressRoutes(app: express.Application, cfg: MasterExpressCo
     promiseWrapper(handleGenerateWalletOnPrem),
   );
 
+  // TODO: in https://bitgoinc.atlassian.net/browse/WP-4637
+  // the endpoin url is {coin}/recovery but the generate endpoint
+  // uses /{coin}/wallet/generate
   app.post(
-    '/api/:coin/wallet/recovery',
+    '/api/:coin/recovery',
     parseBody,
     prepareBitGo(cfg),
     promiseWrapper(handleWalletRecovery),
