@@ -6,7 +6,7 @@ on:
       node-version:
         description: 'Node.js version to use'
         type: string
-        default: '20.18.0'
+        default: '22.1.0'
 
 jobs:
   build:
@@ -69,10 +69,10 @@ jobs:
       - name: Test
         run: yarn test
         env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
+          NODE_OPTIONS: '--max-old-space-size=4096'
           MASTER_BITGO_EXPRESS_KEYPATH: ./test-ssl-key.pem
           MASTER_BITGO_EXPRESS_CRTPATH: ./test-ssl-cert.pem
           MTLS_ENABLED: true
           MTLS_REQUEST_CERT: true
           MTLS_REJECT_UNAUTHORIZED: false
-          KMS_URL: "https://localhost:3000/"
+          KMS_URL: 'https://localhost:3000/'
