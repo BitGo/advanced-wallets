@@ -17,8 +17,8 @@
     "generate-test-ssl": "openssl req -x509 -newkey rsa:2048 -keyout test-ssl-key.pem -out test-ssl-cert.pem -days 365 -nodes -subj '/CN=localhost'"
   },
   "dependencies": {
-    "@bitgo/sdk-core": "^33.2.0",
-    "bitgo": "^44.2.0",
+    "@bitgo/sdk-core": "^35.1.0",
+    "bitgo": "^47.0.0",
     "body-parser": "^1.20.3",
     "connect-timeout": "^1.9.0",
     "debug": "^3.1.0",

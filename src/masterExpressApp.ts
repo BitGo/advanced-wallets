@@ -24,6 +24,7 @@ import { promiseWrapper } from './routes';
 import pjson from '../package.json';
 import { handleGenerateWalletOnPrem } from './masterBitgoExpress/generateWallet';
 import logger from './logger';
+import { handleWalletRecovery } from './masterBitgoExpress/recoverWallet';
 
 const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${pjson.version} BitGoJS/${version}`;
 
@@ -95,6 +96,7 @@ function prepareBitGo(config: MasterExpressConfig) {
       customRootURI: customRootUri,
       accessToken,
       userAgent,
+      etherscanApiToken: req.body.etherscanApiToken,
     };
 
     (req as BitGoRequest).bitgo = new BitGo(bitgoConstructorParams) as unknown as BitGoBase;
@@ -191,6 +193,13 @@ function setupMasterExpressRoutes(app: express.Application, cfg: MasterExpressCo
     parseBody,
     prepareBitGo(cfg),
     promiseWrapper(handleGenerateWalletOnPrem),
+  );
+
+  app.post(
+    '/api/:coin/wallet/recovery',
+    parseBody,
+    prepareBitGo(cfg),
+    promiseWrapper(handleWalletRecovery),
   );
 
   // Add a catch-all for unsupported routes
