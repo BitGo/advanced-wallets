@@ -20,50 +20,55 @@ async function signRecovery(req: Request) {
   if (coin.isEVM()) {
     const intent = req.body.intent;
     const ethCoin = coin as unknown as AbstractEthLikeNewCoins;
-    const txData = req.body.txData;
+    const txData = req.body.params;
 
-    switch (intent) {
-      case 'recover-half-sign':
-        const userPrv = ''; // TODO: fetch it from KMS, already decrypted
+    if (!intent) {
+      // TODO: normal signing, not recovery
+    } else {
+      switch (intent) {
+        case 'recover-half-sign':
+          const userPrv = ''; // TODO: fetch it from KMS, already decrypted. source="user" userKeyMaterial in txData.key
 
-        try {
-          const halfSignedTx = (await ethCoin.signTransaction({
-            txPrebuild: {
+          try {
+            const halfSignedTx = (await ethCoin.signTransaction({
+              txPrebuild: {
+                ...txData,
+                gasPrice: String(txData.gasPrice),
+                gasLimit: String(txData.gasLimit),
+              },
+              prv: userPrv,
               ...txData,
-              gasPrice: String(txData.gasPrice),
-              gasLimit: String(txData.gasLimit),
-            },
-            prv: userPrv,
-            ...txData,
-          })) as HalfSignedTransaction;
+            })) as HalfSignedTransaction;
 
-          return halfSignedTx;
-        } catch (error) {
-          console.log(error);
-          throw new Error(`Failed to half-sign transaction`);
-        }
-      case 'recover-full-sign':
-        const backupPrv = ''; // TODO: fetch it from KMS, already decrypted
-        try {
-          const fullSignTxParams = {
-            txPrebuild: {
-              ...txData,
-              halfSigned: txData,
-              txHex: (txData.halfSigned as any).signatures,
-            },
-            ...txData.halfSigned,
-            signingKeyNonce: (txData.halfSigned as any).backupKeyNonce,
-            walletContractAddress: req.body.rootAddress,
-            prv: backupPrv,
-            isLastSignature: true,
-          } as unknown as SignTransactionOptions;
+            return halfSignedTx;
+          } catch (error) {
+            console.log(error);
+            throw new Error(`Failed to half-sign transaction`);
+          }
+        case 'recover-full-sign':
+          const backupPrv = ''; // TODO: fetch it from KMS, already decrypted. source="backup" backupKeyMaterial in txData.key
 
-          const fullSignedTx = await ethCoin.signTransaction(fullSignTxParams);
-          return fullSignedTx;
-        } catch (error) {
-          console.log(error);
-          throw new Error(`Failed to full-sign transaction`);
-        }
+          try {
+            const fullSignTxParams = {
+              txPrebuild: {
+                ...txData,
+                halfSigned: txData,
+                txHex: (txData.halfSigned as any).signatures,
+              },
+              ...txData.halfSigned,
+              signingKeyNonce: (txData.halfSigned as any).backupKeyNonce,
+              walletContractAddress: req.body.rootAddress,
+              prv: backupPrv,
+              isLastSignature: true,
+            } as unknown as SignTransactionOptions;
+
+            const fullSignedTx = await ethCoin.signTransaction(fullSignTxParams);
+            return fullSignedTx;
+          } catch (error) {
+            console.log(error);
+            throw new Error(`Failed to full-sign transaction`);
+          }
+      }
     }
   } else {
     throw new Error(`Unsupported coin type for recovery: ${coin}`);

@@ -9,6 +9,7 @@ export async function handleWalletRecovery(req: BitGoRequest) {
 
   const coin = req.params.coin;
   const baseCoin = bitgo.coin(coin);
+  const rootAddress = req.body.rootAddress;
 
   const enclavedExpressClient = createEnclavedExpressClient(req.config, coin);
   // TODO: move this error check to a func, it's repeated in other places
@@ -21,16 +22,18 @@ export async function handleWalletRecovery(req: BitGoRequest) {
   if (baseCoin.isEVM()) {
     const ethCoin = baseCoin as unknown as AbstractEthLikeNewCoins;
     try {
-      const recoverTx = await ethCoin.recover(parseRecoveryWalletParams(req));
-      const halfSignedTx = await enclavedExpressClient.signTransaction({
+      const bodyParams = parseRecoveryWalletParams(req);
+      const recoverTx = await ethCoin.recover(bodyParams);
+
+      const halfSignedTx = await enclavedExpressClient.signTransactionWIP({
         intent: 'recover-half-sign',
         coin,
-        txData: recoverTx,
+        parameters: { ...recoverTx, key: bodyParams.userKey },
       });
-      const fullSignedTx = await enclavedExpressClient.signTransaction({
+      const fullSignedTx = await enclavedExpressClient.signTransactionWIP({
         intent: 'recover-full-sign',
         coin,
-        txData: halfSignedTx,
+        parameters: { ...halfSignedTx, rootAddress, key: bodyParams.backupKey },
       });
       return fullSignedTx;
     } catch (error) {

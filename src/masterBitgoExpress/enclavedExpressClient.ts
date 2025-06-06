@@ -1,7 +1,8 @@
-import superagent from 'superagent';
-import https from 'https';
 import debug from 'debug';
+import https from 'https';
+import superagent from 'superagent';
 import { MasterExpressConfig } from '../types';
+import { SignTransactionRecoveryParams } from '../types/signTxRecovery';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -19,6 +20,11 @@ export interface IndependentKeychainResponse {
   type: 'independent';
   source: 'user' | 'backup' | 'bitgo';
   coin: string;
+}
+
+//TODO: implement the type
+export interface SignTransactionResponse {
+  id: string;
 }
 
 export class EnclavedExpressClient {
@@ -89,6 +95,30 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to create independent keychain: %s', err.message);
+      throw err;
+    }
+  }
+  //TODO: @alex change this one to adjust to your normal signing
+  /**
+   * Sign a transaction, WIP method
+   */
+  async signTransactionWIP(
+    params: SignTransactionRecoveryParams,
+  ): Promise<SignTransactionResponse> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to create an independent keychain');
+    }
+    try {
+      debugLogger('Siging tx for coin: %s', this.coin);
+      const { body: keychain } = await superagent
+        .post(`${this.baseUrl}/api/${this.coin}/sign`)
+        .agent(this.createHttpsAgent())
+        .type('json')
+        .send(params);
+      return keychain;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign transaction: %s', err.message);
       throw err;
     }
   }
