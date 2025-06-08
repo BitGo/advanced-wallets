@@ -103,7 +103,6 @@ export function app(cfg: MasterExpressConfig): express.Application {
 
   // Setup master express routes
   setupRoutes(app, cfg);
-  setupRoutes(app, cfg);
 
   // Add error handler
   app.use(createErrorHandler());

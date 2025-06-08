@@ -8,7 +8,7 @@
     "enclaved-bitgo-express": "./bin/enclaved-bitgo-express"
   },
   "scripts": {
-    "start": "node bin/enclaved-bitgo-express",
+    "start": "nodemon bin/enclaved-bitgo-express",
     "build": "yarn tsc --build --incremental --verbose . && cp package.json dist/",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -32,6 +32,7 @@
     "zod": "^3.25.48"
   },
   "devDependencies": {
+    "nodemon": "^3.1.10",
     "@types/body-parser": "^1.17.0",
     "@types/connect-timeout": "^1.9.0",
     "@types/debug": "^4.1.12",
