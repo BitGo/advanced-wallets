@@ -4,6 +4,7 @@ import pjson from '../../package.json';
 import type { BitGoOptions } from 'bitgo';
 import { postIndependentKey } from '../api/enclaved/postIndependentKey';
 import { promiseWrapper } from './utils';
+import { signMultisigTransaction } from '../api/enclaved/signMultisigTransaction';
 
 const debugLogger = debug('enclaved:routes');
 
@@ -50,6 +51,7 @@ async function prepBitGo(req: express.Request, res: express.Response, next: expr
 
 function setupKeyGenRoutes(app: express.Application) {
   app.post('/api/:coin/key/independent', prepBitGo, promiseWrapper(postIndependentKey));
+  app.post('/api/:coin/multisig/sign', prepBitGo, promiseWrapper(signMultisigTransaction));
   debugLogger('KeyGen routes configured');
 }
 
