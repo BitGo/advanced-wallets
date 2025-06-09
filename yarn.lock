@@ -335,15 +335,15 @@
     "@scure/base" "1.1.5"
     micro-eth-signer "0.7.2"
 
-"@bitgo/abstract-cosmos@^11.7.3", "@bitgo/abstract-cosmos@^11.7.4", "@bitgo/abstract-cosmos@^11.8.0":
-  version "11.8.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/abstract-cosmos/-/abstract-cosmos-11.8.0.tgz#bb0384a406b3f30221cbce808c7845d850319f5f"
-  integrity sha512-ka561xXR+6OB8rkt6EbIu/SuF49iRVhC96YTsjqVxYBXMXWfTi3ktuJIW4swz54rmb9R8zGCYtKShFJdwoY6ug==
+"@bitgo/abstract-cosmos@^11.9.0":
+  version "11.9.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/abstract-cosmos/-/abstract-cosmos-11.9.0.tgz#f7616d6f27c3a6d7b2300224dc6b477e11f73196"
+  integrity sha512-ECTkE8aspcDnVe9HZ78EDu5U+D2we3lAYtyyC7mxL746aVWdBdPIT7SiBKYHKlWm9eOwZeWErmqfSREryyBWrA==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/crypto" "^0.30.1"
     "@cosmjs/encoding" "^0.29.5"
@@ -355,15 +355,15 @@
     protobufjs "^7.4.0"
     superagent "^9.0.1"
 
-"@bitgo/abstract-eth@^24.4.0":
-  version "24.4.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/abstract-eth/-/abstract-eth-24.4.0.tgz#1f104a1687bb3f5468c07e093d7587eb0c8192e6"
-  integrity sha512-Bk5OTTaniyAnsFcyqCtRFQo0D8vsUoizrvkwmZDhuqLog0kvV3e3zdkA06Jrh77q/Uopio0XlYHNpQTJKoZNGg==
+"@bitgo/abstract-eth@^24.5.0":
+  version "24.5.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/abstract-eth/-/abstract-eth-24.5.0.tgz#6bbb7ff100b9e66022030a1bd2a818f3eb1f8c00"
+  integrity sha512-AxrmLrNyiQyar/K/Usjc9tMM8+c1AwikRPeSni0xS9e71nW2RjC5tqWQvvacHLf2p4jFVSDRgvoyjnn6XWLcjw==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     "@ethereumjs/tx" "^3.3.0"
     "@metamask/eth-sig-util" "^5.0.2"
@@ -378,44 +378,29 @@
     secp256k1 "5.0.1"
     superagent "^9.0.1"
 
-"@bitgo/abstract-lightning@^4.3.1":
-  version "4.3.4"
-  resolved "https://registry.yarnpkg.com/@bitgo/abstract-lightning/-/abstract-lightning-4.3.4.tgz#8eb05103954cfe68b7dcf1faf1108cc57d2e0d1c"
-  integrity sha512-1IEjwX6Pf9CPy9GMfLn3jVfnsVQlCvIsW9sGoPZAetbXh2nN4TfJwCn0FRdSeRHTowoR/m1rqE25V+wygpZB8A==
+"@bitgo/abstract-lightning@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/abstract-lightning/-/abstract-lightning-6.0.0.tgz#e950edeae8bdca8701949e13f3e846e46f180f43"
+  integrity sha512-Gxkbq3eaPekRFS+PGwdWj5LUORZgsEZHe+WgIXdMAYdI8miWyvUIJZYHjJIbjcl+jZEK+au3WZSVd/SND3N79g==
   dependencies:
     "@bitgo/public-types" "5.1.0"
-    "@bitgo/sdk-core" "^35.0.1"
-    "@bitgo/statics" "^54.0.1"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     bs58check "^2.1.2"
     fp-ts "^2.12.2"
     io-ts "npm:@bitgo-forks/io-ts@2.1.4"
     io-ts-types "^0.5.16"
     macaroon "^3.0.4"
 
-"@bitgo/abstract-lightning@^5.0.0":
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/abstract-lightning/-/abstract-lightning-5.0.0.tgz#1ea25c34042058507f2a06766bb00b08a1ec1522"
-  integrity sha512-/6VXvBrhUdqd4U1dLOQkht5Evyh7Y6hSum5Rf1+c+dEDYfNqrGl9SPKuG049irg5YOl4rD2OpmQRceJyJA0bgg==
+"@bitgo/abstract-substrate@^1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/abstract-substrate/-/abstract-substrate-1.7.0.tgz#ed326dac8769f81d5b52dab54e2529a6b4e7fa96"
+  integrity sha512-A7m6cEIF387O2wSBgCh62wp77W0QDnvRwP23UItStK1DFNB/fEeDD2f/6ii9AkV2jdw41VxJsF7GookcOOo7/g==
   dependencies:
-    "@bitgo/public-types" "5.1.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
-    bs58check "^2.1.2"
-    fp-ts "^2.12.2"
-    io-ts "npm:@bitgo-forks/io-ts@2.1.4"
-    io-ts-types "^0.5.16"
-    macaroon "^3.0.4"
-
-"@bitgo/abstract-substrate@^1.6.0":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/abstract-substrate/-/abstract-substrate-1.6.0.tgz#0284e3b96ff80e027463145b6b2d731910f46533"
-  integrity sha512-BnbanXO+vZNkqQ6TSSouwwBsmGPo0ipjm9eyMzJ+XRV5klXd/PV7KqgxX50ukLehAi3rRXwuLs2y8c6RRgeW/w==
-  dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@polkadot/api" "14.1.1"
     "@polkadot/keyring" "13.3.1"
     "@polkadot/types" "14.1.1"
@@ -431,17 +416,17 @@
     lodash "^4.17.15"
     tweetnacl "^1.0.3"
 
-"@bitgo/abstract-utxo@^9.19.9", "@bitgo/abstract-utxo@^9.20.0":
-  version "9.20.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/abstract-utxo/-/abstract-utxo-9.20.0.tgz#74db022ccfa12f42c092982bb9a7155b76d9c198"
-  integrity sha512-IOUCqbaXBFS+xvj6QacnZq+okiKzACEpxjJuegTV4mjvbQ4vdy6NoUqVbxkfzMtgXwBM+VpwavTO1bx+L/wtuA==
+"@bitgo/abstract-utxo@^9.21.0":
+  version "9.21.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/abstract-utxo/-/abstract-utxo-9.21.0.tgz#56472be29a5edb081628d273b95ed70f1ebbdda5"
+  integrity sha512-sv8H2uVkpEyQKztnmSF7xhkzMuPe04rNaYUxmarypzyL5VghZ+5RGhL884bJHF8FhAZ8cHKVQnPoGQI3y5223A==
   dependencies:
-    "@bitgo/blockapis" "^1.10.14"
-    "@bitgo/sdk-api" "^1.63.3"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/unspents" "^0.47.21"
-    "@bitgo/utxo-core" "^1.8.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/blockapis" "^1.10.15"
+    "@bitgo/sdk-api" "^1.63.4"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/unspents" "^0.48.0"
+    "@bitgo/utxo-core" "^1.9.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     "@bitgo/wasm-miniscript" "2.0.0-beta.7"
     "@types/lodash" "^4.14.121"
     "@types/superagent" "4.1.15"
@@ -452,67 +437,69 @@
     lodash "^4.17.14"
     superagent "^9.0.1"
 
-"@bitgo/account-lib@^25.2.0":
-  version "25.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/account-lib/-/account-lib-25.2.0.tgz#740ccaabdc157d0f3d28a0526129fc829b291479"
-  integrity sha512-KJx+6ZrXeC4rNOFqlyIhLX3wwuIrzoaiw88pmRAlB2YoqrphDdmy4tOnhuBrpi1nBsQA145xKTVXwsU/uqx1vw==
+"@bitgo/account-lib@^27.1.0":
+  version "27.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/account-lib/-/account-lib-27.1.0.tgz#dc97cd6680dbe9997e292b0f90095a272b611cb9"
+  integrity sha512-UBMe3Ed2VUM/+pIf1z5g6qQZAkJLmMm0ds1WkgRYxotADRN0TaBx/NJxusq8pgk6AXVrxoXx5MMlADYrlbBuvw==
   dependencies:
-    "@bitgo/sdk-coin-algo" "^2.1.77"
-    "@bitgo/sdk-coin-apt" "^2.1.2"
-    "@bitgo/sdk-coin-arbeth" "^21.5.2"
-    "@bitgo/sdk-coin-atom" "^13.4.10"
-    "@bitgo/sdk-coin-avaxc" "^6.0.10"
-    "@bitgo/sdk-coin-avaxp" "^5.0.78"
-    "@bitgo/sdk-coin-baby" "^1.4.2"
-    "@bitgo/sdk-coin-bera" "^2.3.23"
-    "@bitgo/sdk-coin-bld" "^3.0.48"
-    "@bitgo/sdk-coin-bsc" "^22.2.32"
-    "@bitgo/sdk-coin-celo" "^5.0.6"
-    "@bitgo/sdk-coin-coredao" "^2.1.3"
-    "@bitgo/sdk-coin-coreum" "^21.0.48"
-    "@bitgo/sdk-coin-cronos" "^1.1.0"
-    "@bitgo/sdk-coin-cspr" "^2.0.79"
-    "@bitgo/sdk-coin-dot" "^4.1.57"
-    "@bitgo/sdk-coin-etc" "^2.2.46"
-    "@bitgo/sdk-coin-eth" "^24.4.2"
-    "@bitgo/sdk-coin-fetch" "^1.1.0"
-    "@bitgo/sdk-coin-flr" "^1.2.3"
-    "@bitgo/sdk-coin-hash" "^3.0.48"
-    "@bitgo/sdk-coin-hbar" "^2.0.79"
-    "@bitgo/sdk-coin-icp" "^1.14.0"
-    "@bitgo/sdk-coin-init" "^1.1.0"
-    "@bitgo/sdk-coin-injective" "^3.0.48"
-    "@bitgo/sdk-coin-islm" "^2.1.29"
-    "@bitgo/sdk-coin-mantra" "^1.0.6"
-    "@bitgo/sdk-coin-mon" "^1.1.2"
-    "@bitgo/sdk-coin-near" "^2.1.4"
-    "@bitgo/sdk-coin-oas" "^2.1.3"
-    "@bitgo/sdk-coin-opeth" "^18.3.2"
-    "@bitgo/sdk-coin-osmo" "^3.0.48"
-    "@bitgo/sdk-coin-polygon" "^21.1.3"
-    "@bitgo/sdk-coin-rbtc" "^2.0.79"
-    "@bitgo/sdk-coin-rune" "^1.1.36"
-    "@bitgo/sdk-coin-sei" "^3.0.48"
-    "@bitgo/sdk-coin-sgb" "^1.2.3"
-    "@bitgo/sdk-coin-sol" "^4.10.2"
-    "@bitgo/sdk-coin-soneium" "^1.1.1"
-    "@bitgo/sdk-coin-stt" "^1.1.2"
-    "@bitgo/sdk-coin-stx" "^3.6.0"
-    "@bitgo/sdk-coin-sui" "^5.13.8"
-    "@bitgo/sdk-coin-tao" "^1.6.9"
-    "@bitgo/sdk-coin-tia" "^3.0.48"
-    "@bitgo/sdk-coin-ton" "^3.5.2"
-    "@bitgo/sdk-coin-trx" "^3.0.1"
-    "@bitgo/sdk-coin-wemix" "^1.2.3"
-    "@bitgo/sdk-coin-world" "^1.1.2"
-    "@bitgo/sdk-coin-xdc" "^1.2.3"
-    "@bitgo/sdk-coin-xrp" "^3.7.21"
-    "@bitgo/sdk-coin-xtz" "^2.2.10"
-    "@bitgo/sdk-coin-zeta" "^3.0.48"
-    "@bitgo/sdk-coin-zketh" "^2.0.71"
-    "@bitgo/sdk-core" "^33.2.0"
-    "@bitgo/sdk-lib-mpc" "^10.2.0"
-    "@bitgo/statics" "^52.2.0"
+    "@bitgo/sdk-coin-algo" "^2.3.0"
+    "@bitgo/sdk-coin-apt" "^2.4.0"
+    "@bitgo/sdk-coin-arbeth" "^21.6.0"
+    "@bitgo/sdk-coin-asi" "^1.1.0"
+    "@bitgo/sdk-coin-atom" "^13.5.0"
+    "@bitgo/sdk-coin-avaxc" "^6.1.0"
+    "@bitgo/sdk-coin-avaxp" "^5.2.0"
+    "@bitgo/sdk-coin-baby" "^1.5.0"
+    "@bitgo/sdk-coin-bera" "^2.4.0"
+    "@bitgo/sdk-coin-bld" "^3.1.0"
+    "@bitgo/sdk-coin-bsc" "^22.3.0"
+    "@bitgo/sdk-coin-celo" "^5.1.0"
+    "@bitgo/sdk-coin-coredao" "^2.3.0"
+    "@bitgo/sdk-coin-coreum" "^21.1.0"
+    "@bitgo/sdk-coin-cronos" "^1.2.0"
+    "@bitgo/sdk-coin-cspr" "^2.2.0"
+    "@bitgo/sdk-coin-dot" "^4.3.0"
+    "@bitgo/sdk-coin-etc" "^2.3.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-coin-fetchai" "^2.1.0"
+    "@bitgo/sdk-coin-flr" "^1.3.0"
+    "@bitgo/sdk-coin-hash" "^3.1.0"
+    "@bitgo/sdk-coin-hbar" "^2.2.0"
+    "@bitgo/sdk-coin-icp" "^1.17.0"
+    "@bitgo/sdk-coin-initia" "^2.1.0"
+    "@bitgo/sdk-coin-injective" "^3.1.0"
+    "@bitgo/sdk-coin-islm" "^2.2.0"
+    "@bitgo/sdk-coin-mantra" "^1.1.0"
+    "@bitgo/sdk-coin-mon" "^1.2.0"
+    "@bitgo/sdk-coin-near" "^2.4.0"
+    "@bitgo/sdk-coin-oas" "^2.2.0"
+    "@bitgo/sdk-coin-opeth" "^18.4.0"
+    "@bitgo/sdk-coin-osmo" "^3.1.0"
+    "@bitgo/sdk-coin-polygon" "^21.2.0"
+    "@bitgo/sdk-coin-polyx" "^1.3.0"
+    "@bitgo/sdk-coin-rbtc" "^2.1.0"
+    "@bitgo/sdk-coin-rune" "^1.2.0"
+    "@bitgo/sdk-coin-sei" "^3.1.0"
+    "@bitgo/sdk-coin-sgb" "^1.3.0"
+    "@bitgo/sdk-coin-sol" "^4.12.0"
+    "@bitgo/sdk-coin-soneium" "^1.3.0"
+    "@bitgo/sdk-coin-stt" "^1.2.0"
+    "@bitgo/sdk-coin-stx" "^3.8.0"
+    "@bitgo/sdk-coin-sui" "^5.15.0"
+    "@bitgo/sdk-coin-tao" "^1.8.0"
+    "@bitgo/sdk-coin-tia" "^3.1.0"
+    "@bitgo/sdk-coin-ton" "^3.7.0"
+    "@bitgo/sdk-coin-trx" "^3.3.0"
+    "@bitgo/sdk-coin-wemix" "^1.3.0"
+    "@bitgo/sdk-coin-world" "^1.2.0"
+    "@bitgo/sdk-coin-xdc" "^1.3.0"
+    "@bitgo/sdk-coin-xrp" "^3.9.0"
+    "@bitgo/sdk-coin-xtz" "^2.4.0"
+    "@bitgo/sdk-coin-zeta" "^3.1.0"
+    "@bitgo/sdk-coin-zketh" "^2.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     bignumber.js "^9.1.1"
     bs58 "^4.0.1"
 
@@ -531,25 +518,14 @@
     "@bitgo/blake2b-wasm" "^3.2.3"
     nanoassert "^2.0.0"
 
-"@bitgo/blockapis@^1.10.14":
-  version "1.10.14"
-  resolved "https://registry.yarnpkg.com/@bitgo/blockapis/-/blockapis-1.10.14.tgz#08fa8db44c5bcc2787aa735027842f6f8f284c6b"
-  integrity sha512-b6oeNDUnLLXDwYkRZ+ppSeMKNfNHPyrYGEIzZCSD5jJMSF4pr54z/6DIPGs7KyOf1MD/ceF96l93pSM5s1VyvA==
+"@bitgo/blockapis@^1.10.15":
+  version "1.10.15"
+  resolved "https://registry.yarnpkg.com/@bitgo/blockapis/-/blockapis-1.10.15.tgz#f263cda482d7f3c8db3437699a93d1c932624865"
+  integrity sha512-SMSLRXd3Hxoe57maUG0xgkuJg8mJ60v7ibKRtZ9Gtm/6tD//nY3dUZ35RRWfMqhzVe9cv61xe4d6qZ6cd6Yr3Q==
   dependencies:
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     "@types/superagent" "4.1.16"
     superagent "^9.0.1"
-
-"@bitgo/public-types@4.17.0":
-  version "4.17.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/public-types/-/public-types-4.17.0.tgz#ea6c0b808f2d43a75f1bc79fd4a8013ff0f66d26"
-  integrity sha512-BNWHzXIjqpiV05xQSGtJYEXcQhgB1g5955wvNo6N1i5SEP6DhJ9Ng/5Xyl2oWvcX3IBODIHMt8+hYnN+vMWi9A==
-  dependencies:
-    fp-ts "^2.0.0"
-    io-ts "npm:@bitgo-forks/io-ts@2.1.4"
-    io-ts-types "^0.5.16"
-    monocle-ts "^2.3.13"
-    newtype-ts "^0.3.5"
 
 "@bitgo/public-types@5.1.0":
   version "5.1.0"
@@ -562,16 +538,16 @@
     monocle-ts "^2.3.13"
     newtype-ts "^0.3.5"
 
-"@bitgo/sdk-api@^1.62.3", "@bitgo/sdk-api@^1.63.3":
-  version "1.63.3"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-api/-/sdk-api-1.63.3.tgz#861624aef3f2645d3cc7f26b9c4323416f5fb03c"
-  integrity sha512-eX32VdTqEUXhsKYspGEAeAsXsVT9HzLU2jOodFHiOzZJEV0lkrSNMFtpqwEnFidEK0p7RKkIoLfKw4Jr1Hrqkw==
+"@bitgo/sdk-api@^1.63.4":
+  version "1.63.4"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-api/-/sdk-api-1.63.4.tgz#4a5b6bacd764661d42ee1bff97ea2086fa3372c1"
+  integrity sha512-yl7f5v/D+OhgBndo7FdMdXgK/tUqECMdUv6zmSILGDvEplgCiG+eagSKkZNbWZxkVxi5Gbmr4Qqa0b8G+HxHjQ==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
     "@bitgo/sdk-hmac" "^1.1.0"
     "@bitgo/sjcl" "^1.0.1"
-    "@bitgo/unspents" "^0.47.21"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/unspents" "^0.48.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     "@types/superagent" "4.1.15"
     bitcoinjs-message "npm:@bitgo-forks/bitcoinjs-message@1.0.0-master.3"
     debug "3.1.0"
@@ -583,14 +559,14 @@
     secrets.js-grempe "^1.1.0"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-ada@^4.9.10":
-  version "4.10.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ada/-/sdk-coin-ada-4.10.0.tgz#d5f516543c7d9c85a0b19f3f626355e86311c1f8"
-  integrity sha512-0dOU8sKX2UWK5l9dfFapQYsDU1266LKJC9kkY0eCiEWhqUQRRluB4rzXBIEQateItAVs4fFYzA5r0/FmTslY4Q==
+"@bitgo/sdk-coin-ada@^4.11.0":
+  version "4.11.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ada/-/sdk-coin-ada-4.11.0.tgz#a932ef61b0e14ce9a241807bb561aca42f45b717"
+  integrity sha512-RVyzCNsiNsOSx2O6DSc5RMBRp3MUsCbmH/BTYT1FLebT2IhNgGtu0//kHqKbAwdkMNkIf+A+q5BAk1aEkU2tBg==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@emurgo/cardano-serialization-lib-browser" "^12.0.1"
     "@emurgo/cardano-serialization-lib-nodejs" "^12.0.1"
     bech32 "^2.0.0"
@@ -601,13 +577,13 @@
     superagent "^9.0.1"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-algo@^2.1.77", "@bitgo/sdk-coin-algo@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-algo/-/sdk-coin-algo-2.2.0.tgz#eba0162dc8e7786398ad1b213ff79419a1ba0ab1"
-  integrity sha512-RYDwxQOyslMd4lV0Wu4vEgjVjq+0OF2oHJj1y5YZWdb74V2fx9qm1/yiZrlO6SLV62reCTX+k4sPHpLYWXUv2w==
+"@bitgo/sdk-coin-algo@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-algo/-/sdk-coin-algo-2.3.0.tgz#10f965647f0331316c724c9707d97e23d8921248"
+  integrity sha512-vB5/LADpzQRvCpf6nrO9/uVEvyr++6i0Gpf7LnmWU7cwlCCj0Z+4FQvhXuOIi2c9nI2RpIVxXWAn/0ff1fZ0lA==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@hashgraph/cryptography" "1.1.2"
     "@stablelib/hex" "^1.0.0"
     algosdk "1.23.1"
@@ -619,55 +595,68 @@
     stellar-sdk "^10.0.1"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-apt@^2.1.2":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-apt/-/sdk-coin-apt-2.3.0.tgz#8e4e01d8189456e48b4b450bb72af00c30424092"
-  integrity sha512-JXSGBFlrfqbYSJGs3lzI0Z67oVdH9rEw3fik7L+16DAd8qMKm4LJJ1MziD7+gtOQfIh1nHpjcEDf9VGos/C9Fw==
+"@bitgo/sdk-coin-apt@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-apt/-/sdk-coin-apt-2.4.0.tgz#1c375859ebf7568393b056b4a2ee07dc3aa12b4a"
+  integrity sha512-uSz+j3xiOFYbDMZ/gqMjDz25LC1Ony0kKALsNnA7f0a8rJuH60Op2TJR7qlpgSOGP5GAQpPN6ZbGuqEqk1olYA==
   dependencies:
     "@aptos-labs/ts-sdk" "1.33.1"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     bignumber.js "^9.1.2"
     lodash "^4.17.21"
 
-"@bitgo/sdk-coin-arbeth@^21.5.2":
-  version "21.5.6"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-arbeth/-/sdk-coin-arbeth-21.5.6.tgz#3aa5bbffb5c5ec97ab17f0deb0a5031c3ceb7e71"
-  integrity sha512-ld9KDANjTpT1oUydWcJvpT0EA+GKtN9HUMGwkpvFsuu8Vvu/979U/iC/OZySf6ynT2Xk9Z31tiBVxYxelEgbgA==
+"@bitgo/sdk-coin-arbeth@^21.6.0":
+  version "21.6.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-arbeth/-/sdk-coin-arbeth-21.6.0.tgz#b6bcff9255c38d126f32277ddfd665679d6e1d3f"
+  integrity sha512-GUx/qcemJqpzWN0f8IOIOLTAV53nWhAtFprfgBvtEj/SaEZpIu/XGJlYh68kdNKrvfI1TJDp7VyJtzWaoXis6g==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     ethereumjs-abi "^0.6.5"
     ethereumjs-util "7.1.5"
 
-"@bitgo/sdk-coin-atom@^13.4.10":
-  version "13.4.14"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-atom/-/sdk-coin-atom-13.4.14.tgz#5a08192dd95e7063155ea2a5a8542fa658ff6fb4"
-  integrity sha512-GM+epPOBRA4xv8xAfle+m4i0MN3vBMDf+wlr182PfDObRGI4cMuQ1UAfpVJ38F6JAVHOkx0k02mI9V4HYeXzJQ==
+"@bitgo/sdk-coin-asi@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-asi/-/sdk-coin-asi-1.1.0.tgz#ae95b5354be0c1891aa496383557285fa50f5df6"
+  integrity sha512-CtSxsiTgMvcjg7XnWAHHY2ehNhW3sSfe8R9re1IWnTqmGz+mTT/51uNidWpQLdTOpIdGCytqkB97rRB+/j13JA==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-avaxc@^6.0.10":
-  version "6.0.14"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-avaxc/-/sdk-coin-avaxc-6.0.14.tgz#6a6f4ecd0a386a3ea901a4b13c779faa72b59758"
-  integrity sha512-GnI+r2NGHqrWQHH4gd95fubldoA7lShDpq0aip5L/AWXcOne1R6OWKZ/ZIOKgPGyWgKTjChQ97qhv0MvRUZltA==
+"@bitgo/sdk-coin-atom@^13.5.0":
+  version "13.5.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-atom/-/sdk-coin-atom-13.5.0.tgz#b6de0be3920370f07c3d8e9e81821ba2fec31492"
+  integrity sha512-ZpNzMWd8Dz8GwjxXtI2AFJuzd6C2F5yfOw6QTEOCaDPih9rLFpjy/2qpceyw+2JnQ0qVfvj7cjptXcJxV7wI+g==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-coin-avaxp" "^5.1.0"
-    "@bitgo/sdk-coin-eth" "^24.5.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
+    "@cosmjs/amino" "^0.29.5"
+    "@cosmjs/encoding" "^0.29.5"
+    "@cosmjs/stargate" "^0.29.5"
+    bignumber.js "^9.1.1"
+
+"@bitgo/sdk-coin-avaxc@^6.1.0":
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-avaxc/-/sdk-coin-avaxc-6.1.0.tgz#91168e88d950cdc8de67fc531297039867dd291e"
+  integrity sha512-VBEthg8qLpyK0LA2B9PQVjJ8TPrBE//V7KudJpV/5zWj3lL+3LGAOZKrFKcCvmaDE9BPYLe3gIJhzA5R4YCtOw==
+  dependencies:
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-coin-avaxp" "^5.2.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     bignumber.js "^9.1.1"
     ethereumjs-abi "^0.6.5"
@@ -677,15 +666,15 @@
     secp256k1 "5.0.1"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-avaxp@^5.0.78", "@bitgo/sdk-coin-avaxp@^5.1.0":
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-avaxp/-/sdk-coin-avaxp-5.1.0.tgz#8a4054a5afa87a191e3c7d90c5c47df2d6548de5"
-  integrity sha512-snfyuZoksyeOgU3pE7dqYCqp/+q1peENgbIEDsfGooLd121XYTTea0slioT78VN+svILJ3ItAQnS8gTeSnw6nQ==
+"@bitgo/sdk-coin-avaxp@^5.2.0":
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-avaxp/-/sdk-coin-avaxp-5.2.0.tgz#09fcb2c319ce937ec4ba1207f7e1690b190b0f93"
+  integrity sha512-YRdRoSIGVGQNkqMwgdi4TLqr5Gt25Ei6aoSczFg0E2ap2YS9/y+ghO6I5YJqHuX1VbGcKqpIKmlxzs5/cFtmng==
   dependencies:
     "@bitgo-forks/avalanchejs" "4.1.0-alpha.1"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@noble/curves" "1.8.1"
     avalanche "3.15.3"
     bignumber.js "^9.0.0"
@@ -694,15 +683,15 @@
     lodash "^4.17.14"
     safe-buffer "^5.2.1"
 
-"@bitgo/sdk-coin-baby@^1.4.2":
-  version "1.4.6"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-baby/-/sdk-coin-baby-1.4.6.tgz#d34e51e32d9afdfb211e839e1e33b997a36c6bbc"
-  integrity sha512-b39Ul9NN5y68VifFveFZcIAi+rgh2Oc6NdWS1g18OGdpFfe9q+Z9KTW5dwkgbxDchD1Gk0AGIH2ukK50NOvC0g==
+"@bitgo/sdk-coin-baby@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-baby/-/sdk-coin-baby-1.5.0.tgz#0babef074565c2b9db8182de5900e579a8979060"
+  integrity sha512-ZiZRCU29MtnPn4HCtx0YOqjBuTF1D3J252I65mJxprlmHStfRF64zpnJYPdOJ53HYlWlxvyhootKEXmOr/1ZwQ==
   dependencies:
     "@babylonlabs-io/babylon-proto-ts" "1.0.0"
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/proto-signing" "^0.29.5"
@@ -710,99 +699,99 @@
     bignumber.js "^9.1.1"
     cosmjs-types "^0.6.1"
 
-"@bitgo/sdk-coin-bch@^2.1.29", "@bitgo/sdk-coin-bch@^2.1.33":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bch/-/sdk-coin-bch-2.1.33.tgz#4ee8262cc49bda3c997d9eecca71f10af2d85be1"
-  integrity sha512-/+raPb75m6HN50TkWez1AZ2alpKQMI5PD7AogPk5j174Uv/vsV1Ypc2A80zATNqzaNEEeHGzaRz0OHbKnqkDMg==
+"@bitgo/sdk-coin-bch@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bch/-/sdk-coin-bch-2.2.0.tgz#661b0d9f22ae6fb633393e3887e062524947cf49"
+  integrity sha512-CqUyoaDQMERcn/rpZCt+WWvlZtmT/6X8jUYgQ28YdPjCmQWQRMduq2KwGUaVjaMDi/mSM6rX4rC/uNPz09kdAw==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-bcha@^2.2.29":
-  version "2.2.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bcha/-/sdk-coin-bcha-2.2.33.tgz#5b36006b98c0d94e347b3144e01ac088270faad3"
-  integrity sha512-g5bAzm+PH//ApTo2t5II1luQOgX+HXuxtYf2FHdCe23FezOlKNnw90de9sFKQZbjn9IyuTxY6lhbCyk7QV604g==
+"@bitgo/sdk-coin-bcha@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bcha/-/sdk-coin-bcha-2.3.0.tgz#713080aefe98cee8801dee2f78888907050f8ec3"
+  integrity sha512-mtP41dU89TjiEbChRH0ZXJ+q0K55lpl5JHry3ivKMctUJP31GX/qo+fyG/yHW3mMopIWnYvB5D8de8Q9IDuohw==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-coin-bch" "^2.1.33"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-coin-bch" "^2.2.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-bera@^2.3.23":
-  version "2.3.27"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bera/-/sdk-coin-bera-2.3.27.tgz#5ce7b2a5b79c15de5845cb3344be99816b591818"
-  integrity sha512-+1LSviAKW22QTaOOywWX+1EXEPYr+fasM6fQF0MSSU8THm2Et/1lkiY0Oti1nhUtcJgeU1aGJgISwy/K0n8TtQ==
+"@bitgo/sdk-coin-bera@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bera/-/sdk-coin-bera-2.4.0.tgz#52f0162c06ff8268aee389a014780abfa100a615"
+  integrity sha512-ykLIfi33nd9ZXuM8Ei1Kp5Hlaed4+LutA0pSjR5HHQS1xPGsVnO0s80zdVdHwTp0Qgjcf0ucX7EGKe5vLt0pZg==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-bld@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bld/-/sdk-coin-bld-3.0.52.tgz#b2000523178f370847c57243e68d36fcb092d5a5"
-  integrity sha512-bi0goxuQu9OL76KudYUR5cnZn9FzVYZF4uRDFwBdpvo6hLxzcQNrlKM6t7km5dMH07+VnR1Iubm80JMvdNxWPA==
+"@bitgo/sdk-coin-bld@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bld/-/sdk-coin-bld-3.1.0.tgz#95426fd21140a1e42fbddf1a9dce3385a2e98c30"
+  integrity sha512-M/roPJXrGX0hyQSwrPTLt1jCIXR5OUDsTIlClVDWw5EatsrAnUJJAUFYU4TrziFPx61/x6Vtm+FNe4dCMN7u7A==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-bsc@^22.2.32":
-  version "22.2.36"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bsc/-/sdk-coin-bsc-22.2.36.tgz#696f39dd5d888d51c292acba92444e27beb2d09d"
-  integrity sha512-++4zV2Gc8whahteQIdh5TT23meh/km3BEEwbMQyXuZiJeTjujZeYbZPgTGIPttmNGRjmaa26zxgo/t1pF1kvdw==
+"@bitgo/sdk-coin-bsc@^22.3.0":
+  version "22.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bsc/-/sdk-coin-bsc-22.3.0.tgz#cd059b63a3868f1e265250555cca3a34021c6779"
+  integrity sha512-VCQLf0ib/cFJ/8J50BZrFHJs/cAYphbUDigrRrZl/pkV2kzmYrBMZgW6dAi23Qc1MxDQJJrqWvNTRnaefW7r/Q==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-coin-eth" "^24.5.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-bsv@^2.1.29":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bsv/-/sdk-coin-bsv-2.1.33.tgz#5639eb52a76cc2392f8a959806173df8ed9b3a90"
-  integrity sha512-uxE7sfVEfvcyREIXp/KuCY22NTJNJX6PTeC3KMfrxiQvr4FUd+j5oe4GCrBt+rXRgXINZ6hUoneVPZZDjV1vVw==
+"@bitgo/sdk-coin-bsv@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-bsv/-/sdk-coin-bsv-2.2.0.tgz#202671bbef290a3bfa51d1e91a788d97468ea776"
+  integrity sha512-4zoQhZH4o+gSG77TO8vJ+55LZhoL/pJjVcf2Diau70WW1AO0CsqlzwN9vZ8z4EU7XwIaX48Ek+sLdNjlggnSXw==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-coin-bch" "^2.1.33"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-coin-bch" "^2.2.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-btc@^2.4.29":
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-btc/-/sdk-coin-btc-2.5.0.tgz#11d4c8b1d7bcf0dec9ed86f0dff970bbdbb3838e"
-  integrity sha512-a1fIMsmfgEq8felrN7+Vx7n1vHqUsHvi7eKjm0/ZKGSEylDvsn4T0TzPtrfLmckHRukcJqhkFzgBCRYVTgIcmg==
+"@bitgo/sdk-coin-btc@^2.6.0":
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-btc/-/sdk-coin-btc-2.6.0.tgz#b5b4d192127f9b0e45fe2040912395ff0f9741f2"
+  integrity sha512-sfCKvWb0bru06Sng77r6RRC9Z5f+GuA01fGim9NvbRL9UWgQd/8RJzkWnQJGmwisauh7XkOJ8f/k/vR+XVQcRA==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
-    "@bitgo/utxo-ord" "^1.20.88"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
+    "@bitgo/utxo-ord" "^1.20.89"
 
-"@bitgo/sdk-coin-btg@^2.1.29":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-btg/-/sdk-coin-btg-2.1.33.tgz#a05a5dbd95b7eaf483653ee4a385756060050684"
-  integrity sha512-3qK8nhUtwc5Q8joO9VgjBud5NtSl8/i40fH6oIrowxfJVT5O5URvtYiRGUNYDcQNh5w9EjfDUoMq/ic6hRSgBA==
+"@bitgo/sdk-coin-btg@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-btg/-/sdk-coin-btg-2.2.0.tgz#83b27bc213533707b68f523f162adf495c6865e5"
+  integrity sha512-dZVMKF3fCIaEyKXMoPX8XuFWZ9OjEqo/xtOdgUaBWJZsLfQOx57Ret8vO5Um43/rmKe6TD9c6iZLaVb7zf6k6A==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-celo@^5.0.6":
-  version "5.0.10"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-celo/-/sdk-coin-celo-5.0.10.tgz#ca4057d53f205f0e5e1b9ed1589bedd33cca8b4f"
-  integrity sha512-jGimxinmN2mtm+AOCm30PHDGzf9/mtwqeCtdu3W4aaJaV8DbgXxBq/fGHGZjy/hkyg+ZcHOIe3kgOB+48ebhoQ==
+"@bitgo/sdk-coin-celo@^5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-celo/-/sdk-coin-celo-5.1.0.tgz#81349bc194a744005a41682b616db88b3e631ab2"
+  integrity sha512-NQL8uRjUx44RCqetuMbJxcDYktzMFPqCPek79UbMi3awN5Gk/rUyIxpbODNdx91pZeoU/QePMJ8oEpF24OHiQQ==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-coin-eth" "^24.5.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@celo/connect" "^2.0.0"
     "@celo/contractkit" "^2.0.0"
     "@celo/wallet-base" "^2.0.0"
@@ -813,53 +802,53 @@
     ethereumjs-util "7.1.5"
     ethers "^5.1.3"
 
-"@bitgo/sdk-coin-coredao@^2.1.3":
-  version "2.2.3"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-coredao/-/sdk-coin-coredao-2.2.3.tgz#d65fd63acf203dc4c022028e1f214f22d1ede2b9"
-  integrity sha512-9TYzURmsI5/1PPhAyHHlwxGsCI4p9T3ZfagW65EGBhSOxFNdq844dGMSAaY4ceA3oGsL3IxBJ3yF8K97QkTgdA==
+"@bitgo/sdk-coin-coredao@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-coredao/-/sdk-coin-coredao-2.3.0.tgz#cc95f47ac8a4d7c44dd605c17d379bbd49da7e67"
+  integrity sha512-Ak48Ns/ymNprMXmc2ncwxO2t+sEgh97BWoDJ9KBmKu5m0bbZUm3oog9yPoh5l6AkxOkEFMfe7yWQpiil73OYhQ==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     "@ethereumjs/tx" "^3.3.0"
     bn.js "^5.2.1"
 
-"@bitgo/sdk-coin-coreum@^21.0.48":
-  version "21.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-coreum/-/sdk-coin-coreum-21.0.52.tgz#42b7b61ce1523b7a4d2b1ff8edae383cccd20c76"
-  integrity sha512-FY7w7bhphMzEwdnj9yr0BmGpqdpPS2LN5BkJZsSZpE56lU0yf438u4xFbokyig1sQSVluR/UciZCILXv/4yr/A==
+"@bitgo/sdk-coin-coreum@^21.1.0":
+  version "21.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-coreum/-/sdk-coin-coreum-21.1.0.tgz#07efad044ec96232a7b6729812af795de1903382"
+  integrity sha512-IEOI6S9f+fXPkdmRdqaLMn4tC3GVaDo45voub3ZK27EVCNBD74mbStgWXy9X0kz/LSV1fjpmkeSlZpELFdIRdA==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-cronos@^1.1.0":
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-cronos/-/sdk-coin-cronos-1.1.4.tgz#770b0800407cf1f7480eb5c7a13a0af7cb473370"
-  integrity sha512-pOuJNAWku/QB5h47C+fOjtdP9KodrxKHHtAnxwDxpo9VOjOaCeyPuCbWHLdAxboGS1pV3hmowLWM5fVnWndxhw==
+"@bitgo/sdk-coin-cronos@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-cronos/-/sdk-coin-cronos-1.2.0.tgz#de52fb8c6c719a92c38d04b424212e64cb2a4f63"
+  integrity sha512-9JprtnmzutU5o8NVfVKasMn+x57fzuWQ21bNnUgIm5+3iijw47FzwvvDnOnM2L0/Dt3jTHUGDYcaGth7lgm9Fw==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-cspr@^2.0.79":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-cspr/-/sdk-coin-cspr-2.1.0.tgz#da94db00372a31ee6476725414c2c531c28246eb"
-  integrity sha512-1jKAoeDFFTTCg+693jbBJ1WHqRqLxEDQWEHcEFg3IsdvIKXPyRv1Iy5/989l+xk8tcTojhnNrWNIvbkmBfYHLg==
+"@bitgo/sdk-coin-cspr@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-cspr/-/sdk-coin-cspr-2.2.0.tgz#3581fa5419ff793be06fca03beb9e4c3325c9d78"
+  integrity sha512-ksxtEsXMV2Sm1N+6/O7/MKlF+X08L2WhDOjjCGJfiP7OEyYNFtWU9gohkOletq9aTJuzEvvSg047alSBZJMtQA==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethersproject/bignumber" "^5.6.0"
     "@stablelib/hex" "^1.0.0"
     bignumber.js "^9.0.0"
@@ -867,32 +856,32 @@
     lodash "^4.17.15"
     secp256k1 "5.0.1"
 
-"@bitgo/sdk-coin-dash@^2.1.29":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-dash/-/sdk-coin-dash-2.1.33.tgz#05f58c7cb951cf1ed4c0f7f2eef11ad16478534b"
-  integrity sha512-K6NpxC/wzGyXit2xwyKRPXxCp2xS8VKIypz+7THfo8Sibz6GvsQjL1gh9S+fbPGsj1mkdO4lwmNElr/RPitKPg==
+"@bitgo/sdk-coin-dash@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-dash/-/sdk-coin-dash-2.2.0.tgz#e579bbffa6aefb3b0410521339fbb4db617a2402"
+  integrity sha512-q804J5RZaaTDw6UHN9t8tkp6f99yMaBmNgHe18IvFcg/ZCkTQBFQOinunIgbAYeOBjqxp/GUH9wkGWoz+BKtjg==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-doge@^2.1.29":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-doge/-/sdk-coin-doge-2.1.33.tgz#2daf6fb6bec734f51697cd3ea1036546add23b37"
-  integrity sha512-eS4HwWHMTqcqx4fxurpE/A26+E3SPWiMHqxaDXwmw+CIHIZSvL2R/bytvJE6tkA0u1AWaJfWDX/4BaJ5Fm7xFA==
+"@bitgo/sdk-coin-doge@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-doge/-/sdk-coin-doge-2.2.0.tgz#6899a0fb270c7f1c210ade05808f981c23c81dc3"
+  integrity sha512-mysCtsIcmSLtEY5e/rwvqVzm1yvqo2Q7i4Gjm59/Gd99m+BUWNHDK1r3qeCiJG1JVOQJtsHliUlGaswdqljljQ==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-dot@^4.1.57":
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-dot/-/sdk-coin-dot-4.2.0.tgz#576530d73ba12f8066697b1061cd19074bee4b36"
-  integrity sha512-jRLDNQF8j+oo5W5MMLoXLCedq0+eQxbPiSvokdS+kOszIDq4avYI1A63EHDfkRoeDtFh5f3BGjim7d90VuvHcg==
+"@bitgo/sdk-coin-dot@^4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-dot/-/sdk-coin-dot-4.3.0.tgz#e2ae74f1d487c1a9992dd5f9e0f91eb382528d9a"
+  integrity sha512-y7lp1POtTCLj5NuDdwJDXwfKuqbTl8eBClU00Xk7ad2z2skzH4KbmgLo1cAu7j5mkS3EMsCBexBUvje3HTUHOw==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@polkadot/api" "14.1.1"
     "@polkadot/api-augment" "14.1.1"
     "@polkadot/keyring" "13.3.1"
@@ -908,30 +897,30 @@
     lodash "^4.17.15"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-eos@^3.0.2":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-eos/-/sdk-coin-eos-3.1.0.tgz#74b16a778a446db9dad551d03fc1d679b95ef53d"
-  integrity sha512-1UAD+x3ujn8L56XkZxKjmX9e8wHEJjvv/hdTxZV0JBDV7l0WQho1LRAvR+Yb7AOFlSIo66mOSxAQvM7EgAPHYA==
+"@bitgo/sdk-coin-eos@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-eos/-/sdk-coin-eos-3.2.0.tgz#19d9d8d418db7af7935d9b0f177581b92b7bc456"
+  integrity sha512-obtdV3NSCll9SV93PCttjzySzPlTC6taRt6Eah+1HBbgMrCInHWZ4h3slGrRRFjLuthxKWY/oKx1Jp4d8u4WDg==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     bignumber.js "^9.0.2"
     eosjs "^21.0.2"
     eosjs-ecc "^4.0.4"
     lodash "^4.17.14"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-etc@^2.2.46":
-  version "2.2.50"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-etc/-/sdk-coin-etc-2.2.50.tgz#e0425d1551670172325cd38057e6de088fe72a24"
-  integrity sha512-z7McKyl/GnVesxnjOR0QliaCBTimye8jWX5wxAqlb61dfl53lGC25QpYP0TUD5Q48hRHgnPkB7mCLi4nmBkffw==
+"@bitgo/sdk-coin-etc@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-etc/-/sdk-coin-etc-2.3.0.tgz#3fa55a221c9b195c766563955d9e1ec9d4faba6e"
+  integrity sha512-6H+VsslapK7Yl9LEokC8K6l5dop8TTB2UcNMP3vu+lsCkM6n7wUu28YVBe9BMXcDZ0+lDHDzBxnNO0lrD0ctig==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-coin-eth" "^24.5.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     bignumber.js "^9.1.1"
     ethereumjs-abi "^0.6.5"
@@ -939,15 +928,15 @@
     lodash "^4.17.14"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-eth@^24.4.2", "@bitgo/sdk-coin-eth@^24.5.0":
-  version "24.5.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-eth/-/sdk-coin-eth-24.5.0.tgz#a7fb5b21835b1743e5fe1fb8cef3cc6570af9f6d"
-  integrity sha512-fAqkm13Sv2pDEYTAQ5d4W8LOOPIeIVpQNv+IO4hAbOVJAl9pW7JlI5P2/fIR1l8fJ13j2gmnvQUdPfLfupE63A==
+"@bitgo/sdk-coin-eth@^24.6.0":
+  version "24.6.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-eth/-/sdk-coin-eth-24.6.0.tgz#38f97c57acaaab42ea22af3e142029eb56420c68"
+  integrity sha512-n/SnvyxlSfzMVXDgbI4j8h+04yUbOjvonwirX4ZIrDidE6eEUmuWHPfqijqxIWgv3pH5Rxp0wy05nwzOxhgS2w==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/tx" "^3.3.0"
     "@ethereumjs/util" "8.0.3"
     bignumber.js "^9.1.1"
@@ -958,75 +947,75 @@
     secp256k1 "5.0.1"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-ethlike@^1.2.14":
-  version "1.2.18"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ethlike/-/sdk-coin-ethlike-1.2.18.tgz#1dc233150f50392389bceeb0631ba77984e6c474"
-  integrity sha512-mE43ogzsX0dC6vAG8/RCuYIgTVxIP2O5uXk5TRXuwR8Y/+II+4D7OMHeFRWQjfZHU51zRl+DQ7lSxDYLW18pnA==
+"@bitgo/sdk-coin-ethlike@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ethlike/-/sdk-coin-ethlike-1.3.0.tgz#79b2de69d97b609b46fa64142fbf0c3da659d558"
+  integrity sha512-j9cDXD0TlBRTFUubRWgK8CFDzTWZC0Ag+xdbWJG8B5wW/qIJ2ziGsoq5l5jwHbpPEQD/Yx4gwL1gmAKUmGUUVQ==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "2.6.5"
     ethereumjs-util "7.1.5"
 
-"@bitgo/sdk-coin-ethw@^20.0.79":
-  version "20.0.83"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ethw/-/sdk-coin-ethw-20.0.83.tgz#458fcab989f7241075392652b7ce22cb64782a32"
-  integrity sha512-skeT+Brt6N7ZwMEtZ0FjNZeONBH6U4E1vLty1sVw9JgrTkbuwLUFExffOm+mBawJ9O0CuN3az7j8dUsCujFHpg==
+"@bitgo/sdk-coin-ethw@^20.1.0":
+  version "20.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ethw/-/sdk-coin-ethw-20.1.0.tgz#4fb60929d5b7aa2d427eb8a21eeb470b990b9e62"
+  integrity sha512-AAOf1So0im3rO26nLJQ42JMn6IlkgoWtedcbrHh2A448QHZ7C5Is0+7OYkuoBO6Mt2Ld6qfV7GGLBkxeo0PwBg==
   dependencies:
-    "@bitgo/sdk-coin-eth" "^24.5.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     ethereumjs-util "7.1.5"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-fetch@^1.1.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-fetch/-/sdk-coin-fetch-1.2.0.tgz#d910799802a22cd888c1f998b4c9c318c0079c49"
-  integrity sha512-nglUGmCl8rhHgpc9xkcENDqumhCCnzn956kSHU4dax8P4/bC8e8ovzBiKMSKdPUwPktIUJrtGIMvXA/Hxjsxqw==
+"@bitgo/sdk-coin-fetchai@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-fetchai/-/sdk-coin-fetchai-2.1.0.tgz#29d20a8acd8f3aa17393e0340b847b55df5b4d57"
+  integrity sha512-Ji2NTKL/YsfNTksf+czliNJBZIHAL1YMM465vz02WuIPMSbybFP9TubW8b7tHlDYxebRijPVuMwtd/dIWUtBZA==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.7.4"
-    "@bitgo/sdk-core" "^34.0.0"
-    "@bitgo/statics" "^53.0.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-flr@^1.2.3":
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-flr/-/sdk-coin-flr-1.2.7.tgz#f58735d0e794d173a32d6bfe0dbaec6610306624"
-  integrity sha512-dQqCMBXHbVETFxGYsGlaXWpwWRiEL7dCguSFT0q/0Tx6nzOdV8bUJbgVg2CMfnmrq1zLxNhvi/f6MkiJmq/Ouw==
+"@bitgo/sdk-coin-flr@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-flr/-/sdk-coin-flr-1.3.0.tgz#d76e6446b5706f392dbca2087fd929ddc8f2afda"
+  integrity sha512-D+SyZJkAm02wljY3bWiR6Y1Ugmfv8fpOaVaBLl4jqU7ELtyw3gXbpiWsKWmyeXHUH7EXsXnWGN3eDpew4/pNLw==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     "@ethereumjs/tx" "^3.3.0"
 
-"@bitgo/sdk-coin-hash@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-hash/-/sdk-coin-hash-3.0.52.tgz#e9caa9118966a71de519bfa62a4264846ee1cbb3"
-  integrity sha512-FoRqybEPISCSJ3a/4/HOsoDkXs2HYtE3rnFZRM+IH4Ds0yvAxrlqVTqTwvTB9ecYLUD5MDyqX7CRcGv7wNh6MQ==
+"@bitgo/sdk-coin-hash@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-hash/-/sdk-coin-hash-3.1.0.tgz#0d1ee5ae5a9b29f0ebed9ef7dd970cbb7ae535ff"
+  integrity sha512-4zgQ+peJQnkEuPcxzS/ONunr7x7XIv8G3B3EbRPRNDQYx0AqEeBQYU+8W5mMifv1R85TqDS1FZChA4KLcSm0dg==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-hbar@^2.0.79":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-hbar/-/sdk-coin-hbar-2.1.0.tgz#a78d566b259b01a21a1df572fb92c878e7443e04"
-  integrity sha512-bx1YKKwhp5TjXPZIDZbjkBsvDCKGZf3Ry26EGfJDURFM8/d+0YM7FcEEXy+2o6qpY1wrm/UE6PEEBJDi0Sy4BA==
+"@bitgo/sdk-coin-hbar@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-hbar/-/sdk-coin-hbar-2.2.0.tgz#163491b52e3f3145686bf4cf48e442090b7a7d2d"
+  integrity sha512-c9BUyt6xzEjY8JR1YPC9dMNHdH+9Xcol45xQ7OfoGxHqYilcuHCUk4NArVExgwLcUzBc70NR1xqpeOw4KtznYQ==
   dependencies:
-    "@bitgo/sdk-coin-algo" "^2.2.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-coin-algo" "^2.3.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@hashgraph/proto" "2.12.0"
     "@hashgraph/sdk" "2.29.0"
     "@stablelib/sha384" "^1.0.0"
@@ -1037,15 +1026,15 @@
     stellar-sdk "^10.0.1"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-icp@^1.14.0":
-  version "1.16.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-icp/-/sdk-coin-icp-1.16.0.tgz#1aa2663aed640a5e62442cd9a842a73af8ea3af2"
-  integrity sha512-H680FHQNIi3FERAflrdsDa3IqiBAevGVB/Dac3gt6wceSIaEtXj9eBtOHwrHx02vh9odnwpYtaPLIPHbTrLw5A==
+"@bitgo/sdk-coin-icp@^1.17.0":
+  version "1.17.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-icp/-/sdk-coin-icp-1.17.0.tgz#6dad4c31a9cae95c010cfb8be49329d1fd8e8c92"
+  integrity sha512-vgws1RhJVMZPH8GQXLcaAG17vOgqR3ruuUMidzvIx3SX1Ls9uvjIl10n/7BFXjCOu4JiAo5dM/EjgASIcs3Iyw==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@dfinity/agent" "^2.2.0"
     "@dfinity/candid" "^2.2.0"
     "@dfinity/principal" "^2.2.0"
@@ -1058,38 +1047,41 @@
     long "^5.3.2"
     protobufjs "^7.5.0"
 
-"@bitgo/sdk-coin-init@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-init/-/sdk-coin-init-1.1.0.tgz#23524b7d95c01d42810fb095cb22e21b8202f8e5"
-  integrity sha512-aRrB/eoxXSZGnx6ejha92QoqHw4AuH0ul/TO+SxV6NbDEdItrtSbIYaUVp//mNfRIrlc1ZLQKIs+l8NHFjmStg==
+"@bitgo/sdk-coin-initia@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-initia/-/sdk-coin-initia-2.1.0.tgz#39f9f8f921e8959b99c4d9f8dd9a5f4049e6395e"
+  integrity sha512-N44nyiyu4gz5vDEny9SG4/J8o5tn0nppHTPYE9lZ2c6xBo0Pzw1noyBXvN+jjXOo/APDRVIIx3if4a6EZxX1TA==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.7.3"
-    "@bitgo/sdk-core" "^33.2.0"
-    "@bitgo/statics" "^52.2.0"
-    "@cosmjs/stargate" "^0.29.5"
-
-"@bitgo/sdk-coin-injective@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-injective/-/sdk-coin-injective-3.0.52.tgz#32b71288e71f79255b47bdcee3958d4893a85ca2"
-  integrity sha512-jlqUIEdjXCVJcyC0tRDIYGBmId8/aOuOXAde4ZLuZvRz9qMi9zXxylALfHLBj1kMdUfdXaIl7M96Ig8SyOwxwg==
-  dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-islm@^2.1.29":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-islm/-/sdk-coin-islm-2.1.33.tgz#5f997a08f2d7b9fa93ab410a193a349bd10f1177"
-  integrity sha512-Dz7EhlXQJL80jLBTfl1rgdr+pZcWpR5Pd8rpL2tCgFyKkwFiC+Dp4lWD+x4DmssWkW3NvcC/ot4nseMIYD60oQ==
+"@bitgo/sdk-coin-injective@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-injective/-/sdk-coin-injective-3.1.0.tgz#9e278b7abd0a6f4e2b9df9cd108e078e4988b93f"
+  integrity sha512-x4riSIfiuWKy1NmVPKcwxqHEMjoQOtmt3c9OI/B3Syi3CUUcRAlEAcdMpCeWOBJkK1ZTzrnyaaGqtElFH9v2RQ==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
+    "@cosmjs/amino" "^0.29.5"
+    "@cosmjs/encoding" "^0.29.5"
+    "@cosmjs/stargate" "^0.29.5"
+    bignumber.js "^9.1.1"
+
+"@bitgo/sdk-coin-islm@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-islm/-/sdk-coin-islm-2.2.0.tgz#a86a56b7402cd2a0b2c5ea46fe8ede2e7449fda5"
+  integrity sha512-HtZplLjc7ECMR3UQTIhI7QRc3YVObdVfgE65wxrnrSO6C7OAw93bEEMO8ltJCeeNEfRD0Iyj9D/G6xCfz1h+uw==
+  dependencies:
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/proto-signing" "^0.29.5"
@@ -1100,55 +1092,55 @@
     keccak "3.0.3"
     protobufjs "7.2.5"
 
-"@bitgo/sdk-coin-lnbtc@^1.2.10":
-  version "1.2.14"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-lnbtc/-/sdk-coin-lnbtc-1.2.14.tgz#22376bbdc1da199243419de8fa020545cbc2b51a"
-  integrity sha512-6bZnFyb/l8LrZx4coyLC+rQWZ6T6Gqe7SLDdQ9vZ48MgUgwsErfeIO8k3WRUiBrfYP0A6NfqwhtHBTRHud+VCA==
+"@bitgo/sdk-coin-lnbtc@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-lnbtc/-/sdk-coin-lnbtc-1.3.0.tgz#3797ee908fb64e7a48867c4ad7c48ab012c327e2"
+  integrity sha512-cmQxxEyCmYT/qrC7WMgkJ40+FR5GaH6FmZ3ywlrh1TT5fP1RDKffajKkSmzy4z1gevX+HtIpot/SisVx2IqV/Q==
   dependencies:
-    "@bitgo/abstract-lightning" "^5.0.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-lightning" "^6.0.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-ltc@^3.1.29":
-  version "3.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ltc/-/sdk-coin-ltc-3.1.33.tgz#2e145439676d5c0fe09886bcfbb603b3fbe06c9c"
-  integrity sha512-PZboG+1vwGvrnCWFmBFk+tm9/xaonaph9XBhR6HMLtae1IbP9L2ltdUTK97Hr9Z9z0cnwK1tHOSIBk2FlQ/SQQ==
+"@bitgo/sdk-coin-ltc@^3.2.0":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ltc/-/sdk-coin-ltc-3.2.0.tgz#2edc4570f440e2c2116e94c27c549e67dc914f46"
+  integrity sha512-9LYQFfUzeYwaW6rXCLQq9B6zA/kmZQwUP5APVIj68psIWil22MXgKpmpcvNs4/gSs78untcDrnomY13eU6dyxw==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-mantra@^1.0.6":
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-mantra/-/sdk-coin-mantra-1.0.10.tgz#551deb9d6db878e37afb685f1fadc76bbf368492"
-  integrity sha512-3VDjhJhQrhS4q7UT6fU8wSNbGYlMzJFagDFhVYjD6iPG54olc3mX4X+pI//QKlXY7n6lijyVOMXt+tTadruz2w==
+"@bitgo/sdk-coin-mantra@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-mantra/-/sdk-coin-mantra-1.1.0.tgz#1c9a9b78a0c15a2e459aa65c17c5672f1af2e8ca"
+  integrity sha512-p02yJTfwl8j3YXVNu4XQ6aqvaKK85tOvVcLkZhOjZ18YOuj2iuiIefv+/TN5OWRSZ0vrjkMFtWNjInzyAVBkJA==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-mon@^1.1.2":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-mon/-/sdk-coin-mon-1.1.6.tgz#a90af354016391ccb938f336a78b3a56b703c769"
-  integrity sha512-HbMx1aVPs70pc/eIE753IP6Lgw9Xoz2UF7W9jOB7H262Zo0LajTpVQ9LMpf775TNZREJZu3g2n75VVDhdqfQfg==
+"@bitgo/sdk-coin-mon@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-mon/-/sdk-coin-mon-1.2.0.tgz#e1e65d2fc981680e4257a0024114f2dc9b5b5c53"
+  integrity sha512-V1383l4hNuKzxOBnxRYrEEVAwv7ZdMRwEltLhldDXiQYzCV6huiYIfVHKPahQfXwJ/RtqaREYaN0/zwz0nXgWQ==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-near@^2.1.4":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-near/-/sdk-coin-near-2.3.0.tgz#12a9a2063eef698523fc09734c09101134cab32d"
-  integrity sha512-OuzigTYfCTuaMeXTu/YvRDAiqzoC3bz2SlYxhHeCHrvKWQK8qYW58nRxQr9etFHUwe1rHo2203k1eNj7tTjV7g==
+"@bitgo/sdk-coin-near@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-near/-/sdk-coin-near-2.4.0.tgz#02da81973b785c230a7783fbc75c121712576a23"
+  integrity sha512-0m7mkCkwS/MmXxD/92QkXjL5OAfMiDuYiZztqhTMx0HFD002JHTvtJPfUCaG/DuDrGw5u1KtaG7GOhZE5N0xmg==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@stablelib/hex" "^1.0.0"
     bignumber.js "^9.0.0"
     bn.js "^5.2.1"
@@ -1159,93 +1151,93 @@
     superagent "^9.0.1"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-oas@^2.1.3":
-  version "2.1.7"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-oas/-/sdk-coin-oas-2.1.7.tgz#422cfc05a9bbc50ee4677feb859d21812c5f2d33"
-  integrity sha512-zTV5GWWNZ++3W8lBNQc/R8MdTTrMH7Qo29nN0Bd5kpmQ8ShoRS4TASomPIdt1fIc4ThDouQBPMHPjLI2GW98GQ==
+"@bitgo/sdk-coin-oas@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-oas/-/sdk-coin-oas-2.2.0.tgz#ad8d200770ad3ece7c93c514fcb7bb800be6b2d8"
+  integrity sha512-uczaqlu56LttBe/TFEk171MAAFBrU5I+XXY7bXJhIYD3RX0Txrh2tfsdW3ps2teM0M0EZUclOWUaWo5fFbnI2w==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-opeth@^18.3.2":
-  version "18.3.6"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-opeth/-/sdk-coin-opeth-18.3.6.tgz#0332379e0bc85dab4573a671ffa34b8825d988d9"
-  integrity sha512-qnm6rJRmiiAYjx1rqVKkWkQc+73BwAJGknMYHnNTVHCWGFzUvGP2EsvFLem1V6vIxoIwFyg9wTPWP/mz7Ry3kQ==
+"@bitgo/sdk-coin-opeth@^18.4.0":
+  version "18.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-opeth/-/sdk-coin-opeth-18.4.0.tgz#e2a4fc6d898a37a43adacb58fe48bd8b5029683f"
+  integrity sha512-osV1tY/lEkELsv55wwtghicuMbYZ785JK+p+8010AkwUkC3GGUyUum3uUDp/UgRCDqqXM0Tdh2+EkfxIeCnS7A==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     ethereumjs-abi "^0.6.5"
     ethereumjs-util "7.1.5"
 
-"@bitgo/sdk-coin-osmo@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-osmo/-/sdk-coin-osmo-3.0.52.tgz#ec7a6858224d7dc9a0452232ea2c9d7543554a28"
-  integrity sha512-4zOdUSA9JtoqPdFCc9wzPLccO/95u+lAmaHyuwOdGmiFp9tC0kRYUx12bjgHFIFQtXR1KUV2WpQqPedJWr5t0Q==
+"@bitgo/sdk-coin-osmo@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-osmo/-/sdk-coin-osmo-3.1.0.tgz#beb66b9cac10785dbc3cafcc634abf464ca1753a"
+  integrity sha512-kQ35hS8BESDvtRoaS0z9ZMtfWk88iDwHthBY8ch7pxs6MGRlPj+xnXz2vxSCJs3RJ3D5uxWdkDOCOdxGrdZciw==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-polygon@^21.1.3":
-  version "21.1.7"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-polygon/-/sdk-coin-polygon-21.1.7.tgz#0dc0b93541d6da6908ecd46256e4d982a2a31c27"
-  integrity sha512-bi7Ze1m8C0fUAns3l1tzzJZZlIrBW29QpLW+YlkPzQUrCgAjVOHLVfwXc1ljgC1zvVh9Wsh+VHFw3p7ChMU6FA==
+"@bitgo/sdk-coin-polygon@^21.2.0":
+  version "21.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-polygon/-/sdk-coin-polygon-21.2.0.tgz#f83b91a3177a7eb4c2e460f1de4025506a381ed2"
+  integrity sha512-7WEjDMelxvZsYmMdZRRhxhmLt/aKZuPr89zD+k/usrM2mAsbNr45fQSfrQMrrQ+AfsfIyimGLRT+F86pBtN5VQ==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
     "@bitgo/sjcl" "^1.0.1"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     bignumber.js "^9.1.2"
     ethereumjs-abi "^0.6.5"
     ethereumjs-util "7.1.5"
     ethers "^5.1.3"
 
-"@bitgo/sdk-coin-polyx@^1.0.4":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-polyx/-/sdk-coin-polyx-1.2.0.tgz#7ca6ccb06820f7a7339bf839a1350f98894d3ceb"
-  integrity sha512-MraoM+eNsQEEsq6Od3+/OSdx6fKEAuG0PgrLGIo3Pu+H7jiKpqi1OKlUuzIDCstMqpq/uc01QInumyZlMqWhbw==
+"@bitgo/sdk-coin-polyx@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-polyx/-/sdk-coin-polyx-1.3.0.tgz#035952c5a1c581b347a6eaca8bcec6d92c190799"
+  integrity sha512-O4V3qE8XiaTkkMCs7oZxwIWANneW/hb3GW4IFYMqtcYYFU455VKrB7kplqrBlucqUz2g+7fC3R7wt4qsl939uQ==
   dependencies:
-    "@bitgo/abstract-substrate" "^1.6.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-substrate" "^1.7.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@polkadot/keyring" "13.3.1"
     "@substrate/txwrapper-core" "7.5.2"
     "@substrate/txwrapper-polkadot" "7.5.2"
     bignumber.js "^9.1.2"
     joi "^17.4.0"
 
-"@bitgo/sdk-coin-rbtc@^2.0.79":
-  version "2.0.83"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-rbtc/-/sdk-coin-rbtc-2.0.83.tgz#fd09c0cd1ed255dc4d06ded8db33560525a3fc49"
-  integrity sha512-vcy0985EOHgXg1MIveEpic+yyKTiWm0QcjY7Y1qggEWHUXYK3Edbie3fcqj9FAfPFiqsx80SLVfgg0UwNag2DQ==
+"@bitgo/sdk-coin-rbtc@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-rbtc/-/sdk-coin-rbtc-2.1.0.tgz#637f58c364e5453b0cbdcc713f6c31c19888ab0f"
+  integrity sha512-GrrCdMfQ0zDllO+eQCUfBnNW2xDagokxi/k0HTB0zn4hbap0oBAmlcsmrcgaH/+GWv71qFyEJjWb8XIq1QpBpA==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-coin-eth" "^24.5.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     ethereumjs-abi "^0.6.5"
 
-"@bitgo/sdk-coin-rune@^1.1.36":
-  version "1.1.40"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-rune/-/sdk-coin-rune-1.1.40.tgz#2aa0db8021f69a404ab4e3ef65ef35547b89cf5d"
-  integrity sha512-XEX6fIyXa80ZF+9TJq5eZjFI9puJI/KCmYtHgujIRfMdfCe7WcZo+gdmkVHBXV5km0myEkXkPuEYh8WUFZIvXQ==
+"@bitgo/sdk-coin-rune@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-rune/-/sdk-coin-rune-1.2.0.tgz#7569bbc9e0e9631cd66f6e6da5fc60689af4cf16"
+  integrity sha512-fTdydhOGAbcB47l/Wj5vHcaj7GUuMbngx680ngzjwhJNw5FZ2H3qD/uVLtAuRPjyqIVoCAljtR6Z2NEe1qCzfA==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/proto-signing" "^0.29.5"
@@ -1254,39 +1246,39 @@
     bignumber.js "^9.1.1"
     lodash "^4.17.21"
 
-"@bitgo/sdk-coin-sei@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sei/-/sdk-coin-sei-3.0.52.tgz#aad2c13b0773f3797a2dc8d6e3ea85edb1b670cd"
-  integrity sha512-XqYmXzTJytjFzgGsAoUWTVhoYgJqrNRsCvR+yY1IuVSofa+SOHqrwc55boSmHPQkEwNDBHjip7vCgt2no0hIHA==
+"@bitgo/sdk-coin-sei@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sei/-/sdk-coin-sei-3.1.0.tgz#e3b6b3501988537d9dd332efcb0bae632a1e2b56"
+  integrity sha512-tLBK8WTiL/61p1Fch+CQL1raItJ+DECrIoL+7VHu+OppRHRIQIbIkQAOfZCr656JU5O2b2iM0rJ1Kg8/CT80Cw==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-sgb@^1.2.3":
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sgb/-/sdk-coin-sgb-1.2.7.tgz#5a644cf44e8aeec251697c0a4bef8c0283005708"
-  integrity sha512-EBCTRoN4l6bJosGEVRu26fFDUm0gbs29UZmz7vf15uFK7w7vQv0bmPTMQebYTWfrxAV+G29QmxnfYUV9PuPFgg==
+"@bitgo/sdk-coin-sgb@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sgb/-/sdk-coin-sgb-1.3.0.tgz#62744d1dd7e9a7408f570e07b2ff7a51a9ebb4ac"
+  integrity sha512-BPIRsI1MpAvfDmmtVuN1/JN2KkJNdZRWmfbVFg8cZm0LdD0PCndJvFvFl7H6/wKPNsC4Km5l7OvWy/7M8ugawg==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     "@ethereumjs/tx" "^3.3.0"
 
-"@bitgo/sdk-coin-sol@^4.10.2":
-  version "4.11.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sol/-/sdk-coin-sol-4.11.0.tgz#91d34c6524373628b94d2b65f14ec9c538c96005"
-  integrity sha512-NF1EoZ2VEAIEm1zhqKKBP1XxzkEnX3hnNTz0j0Iv8Xl9GXEwtGRLIihSol/RoW9eYStMMnuIppQbF+tr0APXyQ==
+"@bitgo/sdk-coin-sol@^4.12.0":
+  version "4.12.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sol/-/sdk-coin-sol-4.12.0.tgz#f7822b86960c32f1e141276e7ee5ad05cd7f4799"
+  integrity sha512-8aIX59pYC8tbdMv7VJ2uUjkE72s1ieiNm2PT53WGe5eHeoJyx+i1P+I5Gi8E4jfpFZPUkavFxPG17K+OgL4/0w==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@solana/spl-token" "0.3.1"
     "@solana/web3.js" "1.92.1"
     bignumber.js "^9.0.0"
@@ -1295,34 +1287,34 @@
     superagent "^9.0.1"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-soneium@^1.1.1":
-  version "1.2.3"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-soneium/-/sdk-coin-soneium-1.2.3.tgz#980a966de29926c159806e53f86c27477b44b0a3"
-  integrity sha512-D3zHJKHBuV8g5PV3fEiw/br06fFdz8vYrjGISjB7klOxNIVw6EzDNp22wzComJ+d9kb3PWSEObevqe5wb/i+JA==
+"@bitgo/sdk-coin-soneium@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-soneium/-/sdk-coin-soneium-1.3.0.tgz#4f94036b850d75f5448e17c1f758024a0aca7a98"
+  integrity sha512-uz5lA61K66oUMyoqybzHYTPjphExcDvMEjCMWK7lrtnWAqrMxJe1csyeM3l9HWPmrlK9V2ljhzJVsK5EdXGnGA==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-stt@^1.1.2":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-stt/-/sdk-coin-stt-1.1.6.tgz#4b073b111a3b6ab56a6dca43da49218212aef679"
-  integrity sha512-cjDOEYSFDFJ8Q2Lh+n+2Mxp5eMRVoF3xQAeohuVwsfTVVo7QMLz5b5HjnxK/JdnV3hUAqBrCOn6yON87+PKv/w==
+"@bitgo/sdk-coin-stt@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-stt/-/sdk-coin-stt-1.2.0.tgz#b2e2bd4c3cdd3df010ab895b9a0a32a2a611b842"
+  integrity sha512-oQ4fvM2a5J68TBR1WDSfeTnfWgcZ90D1G+8+RMpew607lGjkFcZmMH7xf+w3bRPikPO31kLspgcx8CLgZUcvkg==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-stx@^3.6.0":
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-stx/-/sdk-coin-stx-3.7.0.tgz#9921207e6f205d0cfd9160a97efcbb5121299e6c"
-  integrity sha512-+Z3uxnFWfrD8aQokrcya3++YHVbxBWU8dCPs9u/UQCLEYmX36iwMOs9x5RlYgspsqJLtWFPOS8VWeWhZxI8rhg==
+"@bitgo/sdk-coin-stx@^3.8.0":
+  version "3.8.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-stx/-/sdk-coin-stx-3.8.0.tgz#5e5a2173208781a26768f4db604fdfdd19890bef"
+  integrity sha512-GNWZImTRMjz6J4uZA3rVl0VFJbrMkzIOgY2SfpPLW4tCIYkFyk1MednVZX1hXyNHZfS7NjK6eFjZcxOjqxfTFw==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@noble/curves" "1.8.1"
     "@stacks/network" "^4.3.0"
     "@stacks/transactions" "2.0.1"
@@ -1331,15 +1323,15 @@
     ethereumjs-util "7.1.5"
     lodash "^4.17.15"
 
-"@bitgo/sdk-coin-sui@^5.13.8":
-  version "5.14.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sui/-/sdk-coin-sui-5.14.0.tgz#34644b9720a32cbe718d9487457344f6a61de670"
-  integrity sha512-GhlpWM1y0yaNzxQZsb93bVKti2OVwk9OVfr05GIkRevj4X5RM7e26NHvX19ojHg9PjrqBXT3vNP4hOqGLUIdBg==
+"@bitgo/sdk-coin-sui@^5.15.0":
+  version "5.15.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-sui/-/sdk-coin-sui-5.15.0.tgz#674ba00b710e6243c817f93aa977d19ef8f79a73"
+  integrity sha512-k94OR+rKoPPRwrMsST2EUsgR7dDxzxXvsoErReNEk48pcMbR3OHzwsOjKT/djJ0sz0BIRpvA2cjvTw8nZ42qFg==
   dependencies:
     "@bitgo/blake2b" "^3.2.4"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@mysten/bcs" "^0.7.0"
     bignumber.js "^9.0.0"
     bs58 "^4.0.1"
@@ -1348,55 +1340,55 @@
     superstruct "^1.0.3"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-tao@^1.6.9":
-  version "1.7.3"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-tao/-/sdk-coin-tao-1.7.3.tgz#519144b26aea4ba275cd629dc02b0dcb5ac4d6ca"
-  integrity sha512-KT4uO/8dwm7vOwWtiig0tV8txhvKZSKfjyyJeSyjxf7AIZ++LUWGWhHXf5Qjew4ny5Fbnm1CqsOcGIT5KWcbyw==
+"@bitgo/sdk-coin-tao@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-tao/-/sdk-coin-tao-1.8.0.tgz#3b943ef930cfae42e65f57be7bda7680640006f7"
+  integrity sha512-KHN1pL8fnuCcowU7PYhKwIDVcBWTlYaFNw9lftpSvg3q2HWVq53T0/FxXvl6PW9SYOeMunP7B5WCWYxA/xr2tw==
   dependencies:
-    "@bitgo/abstract-substrate" "^1.6.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-substrate" "^1.7.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@polkadot/api" "14.1.1"
     "@substrate/txwrapper-core" "7.5.2"
     "@substrate/txwrapper-polkadot" "7.5.2"
     bignumber.js "^9.0.0"
 
-"@bitgo/sdk-coin-tia@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-tia/-/sdk-coin-tia-3.0.52.tgz#e2085c108c724a7feb199daed468b1c33110f65e"
-  integrity sha512-MlQK3VqL5khZwO6hUO5qafQACA/Zc+H5yjzc3cUCtR64pa75k5dUZ9iu/53N9NMdmsOG3cNpge9t8os+wBXbFg==
+"@bitgo/sdk-coin-tia@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-tia/-/sdk-coin-tia-3.1.0.tgz#6f38bb0d1b3c66ea3282a906e4000c512561f7e2"
+  integrity sha512-8akBVNOcRYsccsgHzwQQ6l1/SS5NkeWM1T4yRSnO6oz4IpCOmk5E/UVEtb38X05tM7RTBm5cOHVrBwVJYvcEMg==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-ton@^3.5.2":
-  version "3.6.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ton/-/sdk-coin-ton-3.6.0.tgz#bfdc6dca83d98888f97b007889428ecda6dcd242"
-  integrity sha512-R1CYVP5ZT3ISAhG//Nfcc2IiWHQbw0F1zOnkcDCVEg6W3hAlj4oyLj8UXMHEg8sHCBzsEtJL/En9FVWSnidVDw==
+"@bitgo/sdk-coin-ton@^3.7.0":
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-ton/-/sdk-coin-ton-3.7.0.tgz#96d1e8034d52749e8906074e49b2870853b39e07"
+  integrity sha512-v2WiZc5IdONXl1vcUWlTPOa5z+5Q6i09QqyYVholAqIrd2tIKhKmCrFaNqQEvV99MM+a95j8mH70PeCi2Uo+LA==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     bignumber.js "^9.0.0"
     bn.js "^5.2.1"
     lodash "^4.17.21"
     tonweb "^0.0.62"
     tweetnacl "^1.0.3"
 
-"@bitgo/sdk-coin-trx@^3.0.1":
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-trx/-/sdk-coin-trx-3.2.0.tgz#fa005b6ba422ef019eeff35157a605a15f9434a4"
-  integrity sha512-xVy3jhzjduGBQ9Gp/8rvijZsoVlBMiwzdwYDvVeYCcJyAB3hLTu5/+l22MZcRnZzTKjcTyI2iMPpSnYMIIeiyg==
+"@bitgo/sdk-coin-trx@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-trx/-/sdk-coin-trx-3.3.0.tgz#0be61eb93c670ade7135c63aa418af2026bfd3f6"
+  integrity sha512-zDTvNBoAue3ssIp+uUgJnwCxWW+cOR2FUK7OJYRP/s1+NyLfJA3ukIIO2zBkUuLO0vYA1/x+Yqvj1o8geuqXOw==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@stablelib/hex" "^1.0.0"
     bignumber.js "^9.0.0"
     ethers "^5.7.2"
@@ -1407,73 +1399,86 @@
     superagent "^9.0.1"
     tronweb "5.1.0"
 
-"@bitgo/sdk-coin-wemix@^1.2.3":
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-wemix/-/sdk-coin-wemix-1.2.7.tgz#2eba4a5558cf06687a4b2e218cd630b5fbe4af4c"
-  integrity sha512-2hZWTsSdwTJVgIbZ7T2gGthJLpMgXYPuFtccV/AvCvirRPfvfB1lgjtqMGIpU2FN4ew5Y+glx45rJwOxmhY8qA==
+"@bitgo/sdk-coin-vet@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-vet/-/sdk-coin-vet-1.3.0.tgz#b9b50884dcfa90d0512fe387602e95d223ce6ed4"
+  integrity sha512-AXPlnLd86Swd8ZlY/Rdv/ttuDaT+OU14tTwDPNVA9riy/yxDsrpq7AYkVI9q/I7VWASmbfdga0sTGzxshCQH0A==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
+    bignumber.js "^9.1.1"
+    ethereumjs-util "7.1.5"
+    tweetnacl "^1.0.3"
+
+"@bitgo/sdk-coin-wemix@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-wemix/-/sdk-coin-wemix-1.3.0.tgz#0035ca8503e027b4f69c2dbb12d477cb89451a37"
+  integrity sha512-fCS4Db4K9uSu/JwGH/h+bQeA2KzFieirkG+aAWbJVnYhARtxnNjPT0uIoLUsTc+oKhBCYBJnhcv44o4bRxsKzg==
+  dependencies:
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     "@ethereumjs/tx" "^3.3.0"
 
-"@bitgo/sdk-coin-world@^1.1.2":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-world/-/sdk-coin-world-1.1.6.tgz#84082de157d31fe942824527a8ecc11c12c8388b"
-  integrity sha512-UIWXfxul4e5YUxOwRaIQNb12J6h6Yyji55WEOdTKh+b8fRl3Ck+yFdLrRkk857N0XmMy6oAmIY65zQbHR9gEVg==
+"@bitgo/sdk-coin-world@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-world/-/sdk-coin-world-1.2.0.tgz#5185217caa7e6845fb04b73892fca4a858d71811"
+  integrity sha512-k/QCtxTwqblLFYNscLVBguTKHMLv/twYxKGolUQ2YVb7HPrcJRYrGOqKndIkbekyfMQECCBInluliLg5XGpCaw==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-coin-xdc@^1.2.3":
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xdc/-/sdk-coin-xdc-1.2.7.tgz#584a52e15b4b898940c86c3c16fb81729124f468"
-  integrity sha512-TVOmPzvF8aYiQFyuDkoeatB8vi4e+4RF8jeelwz/yYlqm2UbZJwAHIwy7VcUf0i1k35huctAkS7hmtBOkWxhvQ==
+"@bitgo/sdk-coin-xdc@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xdc/-/sdk-coin-xdc-1.3.0.tgz#05c2fc59a26829507d7fae1a63940beb5a8b09e7"
+  integrity sha512-mXSCylzVZguMLONCVnABIe7uAzg9wSHeU8a/y6+R3bCpqQ9Edm7sd4LwZz4aBDnAnxmiwp8uzIcrkwyaNG/XTg==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
     "@ethereumjs/tx" "^3.3.0"
 
-"@bitgo/sdk-coin-xlm@^3.2.53":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xlm/-/sdk-coin-xlm-3.3.0.tgz#ef096123a54d80667e3bfbb378a679b41887306e"
-  integrity sha512-8/02aHWnbrD8DUI0j2urggWabqd7oF0OWuHN1jYHiP1xz3v5QZNuS/ZXh65FKr31fyRNIyVFyrCgUia++wl+TA==
+"@bitgo/sdk-coin-xlm@^3.4.0":
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xlm/-/sdk-coin-xlm-3.4.0.tgz#bd406e569a86f414866ad5b652d82c8a2684cc7b"
+  integrity sha512-BvWstfO6qgDsnIeK31dzqD/U7zDB2jnW5ECbsEiRNRq3ZRtl3CCVWoxIeoXKgIGV044H5Yui12EjAshObreQJw==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/statics" "^54.2.0"
     bignumber.js "^9.1.1"
     lodash "^4.17.14"
     stellar-sdk "^10.0.1"
     superagent "^9.0.1"
 
-"@bitgo/sdk-coin-xrp@^3.7.21":
-  version "3.8.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xrp/-/sdk-coin-xrp-3.8.0.tgz#9a58a06d6b61bbb8ebcc76b48bec9d98bdcc31ef"
-  integrity sha512-Ot+jA/8afItBheeBcj3z6GgutlNge4PHbTp45jRK4/JjfP5NUFZFRN82/h3T+yXYZ9BD/jlJKwqtpxqcGk0bsw==
+"@bitgo/sdk-coin-xrp@^3.9.0":
+  version "3.9.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xrp/-/sdk-coin-xrp-3.9.0.tgz#59bdd6b591037e44791c53cf6e390cee439dab61"
+  integrity sha512-ZqkR0f8XjRdO81/yk4JIS4phVbnIgFVqbIAPOWpwCTFZmq/UY5ArigfbLFmPlAmi5arhFLecZdptExSUgDGpfQ==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     bignumber.js "^9.0.0"
     lodash "^4.17.14"
     ripple-binary-codec "2.1.0"
     ripple-keypairs "2.0.0"
     xrpl "4.0.0"
 
-"@bitgo/sdk-coin-xtz@^2.2.10":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xtz/-/sdk-coin-xtz-2.3.0.tgz#dff25f77eed961e7142ce0003805ca27aca8884a"
-  integrity sha512-Glp93Pgetc+n/YzMgunmJTjIIkWTqVOGjOZvtq+tNdq4f7XzZccNWY8+mwDn4pwlzsUTb7fWlykEt/jNG7u47A==
+"@bitgo/sdk-coin-xtz@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-xtz/-/sdk-coin-xtz-2.4.0.tgz#2c432b6a0baddd160fa8036010f5fe67a50df028"
+  integrity sha512-7w7Wm0q0fPsPspuy6vWvobmLKg+or6x+nSqcislxIEiVmjxZ/SRANcCc51nBTXqXPXJS6zL07TsfRUkvsVDVxg==
   dependencies:
     "@bitgo/blake2b" "^3.2.4"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@noble/curves" "1.8.1"
     "@taquito/local-forging" "6.3.5-beta.0"
     "@taquito/signer" "6.3.5-beta.0"
@@ -1482,125 +1487,51 @@
     libsodium-wrappers "^0.7.6"
     lodash "^4.17.15"
 
-"@bitgo/sdk-coin-zec@^2.1.29":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-zec/-/sdk-coin-zec-2.1.33.tgz#cb417cc4f236b8a74d1a5133107b6a26f529317c"
-  integrity sha512-0JIJFx7mdRZmqpeWK5whenXKxGFntPz+iGQ6pGM7Mt5jwWn5/pHSd2Y7XIYHn/FyBjU4ovlzURJJ97meLTh+Fg==
+"@bitgo/sdk-coin-zec@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-zec/-/sdk-coin-zec-2.2.0.tgz#34f69f0314269e60af8f02c13a68bee667c0155c"
+  integrity sha512-zR6EhTJFlIgzuqNAwgXjaeVxAovoW9gxiBWvLXhFOLcA10jlPIrPSuQaNSJDxPTtgUv2j8zlXnoaxSssISpsgA==
   dependencies:
-    "@bitgo/abstract-utxo" "^9.20.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
-"@bitgo/sdk-coin-zeta@^3.0.48":
-  version "3.0.52"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-zeta/-/sdk-coin-zeta-3.0.52.tgz#22f02cf5e28d3c7420cbecc16ba80c8670a8f7d7"
-  integrity sha512-ULXR8HuYGWi4V6f7Z71NKd7o4K7cZYHLER26GyAT1roLoa1yZvkWQLjixOlq9dYuPZ2rWbBH3v3H6Me9HQal2g==
+"@bitgo/sdk-coin-zeta@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-zeta/-/sdk-coin-zeta-3.1.0.tgz#457a859a899df24e523e5ac28da91f203dd5644f"
+  integrity sha512-rMuw+1Idj17R9qysA3bP4X68WskRvWiKUW1wLe7kvs7+SqRBqslhxdhO81eoDsItNlTmiXeWZJSa31Gby6k3MQ==
   dependencies:
-    "@bitgo/abstract-cosmos" "^11.8.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-cosmos" "^11.9.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/statics" "^54.2.0"
     "@cosmjs/amino" "^0.29.5"
     "@cosmjs/encoding" "^0.29.5"
     "@cosmjs/stargate" "^0.29.5"
     bignumber.js "^9.1.1"
 
-"@bitgo/sdk-coin-zketh@^2.0.71":
-  version "2.0.75"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-zketh/-/sdk-coin-zketh-2.0.75.tgz#d60d30bfe11efc9ef53c142bc219a2227b3e06ce"
-  integrity sha512-uLpeb+7f1kj0vK6z/gFEXktjvAv5mJCp1E4AYMr+ZyIu54hjdRQiAKruMdHnqsUqgx5XEf+Wdib+vF0ssxCSsA==
+"@bitgo/sdk-coin-zketh@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-coin-zketh/-/sdk-coin-zketh-2.1.0.tgz#f24cfe0a76fe59204c5a8270f8fb4132f408216f"
+  integrity sha512-MjLlrdowvY4EHbiDed21XwbhAS5+3a/dLM5Z0/2vq1AWhjCjKTU/dHcymBIWlHDkznE5saKerpWN2/fRFmdcMg==
   dependencies:
-    "@bitgo/abstract-eth" "^24.4.0"
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/statics" "^54.1.0"
+    "@bitgo/abstract-eth" "^24.5.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/secp256k1" "^1.4.0"
+    "@bitgo/statics" "^54.2.0"
     "@ethereumjs/common" "^2.6.5"
 
-"@bitgo/sdk-core@^33.2.0":
-  version "33.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-core/-/sdk-core-33.2.0.tgz#0b456e5d27dd7647da300ba3865d3179a2815d7e"
-  integrity sha512-GvvsnErwTb4UptDR0/ZFjnxgWNZie3Y4BP8qRkvM3mkcvu3hluvDl26VPw7HF38CS79WBW6cRQ1F814j8pFHTg==
-  dependencies:
-    "@bitgo/public-types" "4.17.0"
-    "@bitgo/sdk-lib-mpc" "^10.2.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/sjcl" "^1.0.1"
-    "@bitgo/statics" "^52.2.0"
-    "@bitgo/utxo-lib" "^11.3.0"
-    "@noble/curves" "1.8.1"
-    "@stablelib/hex" "^1.0.0"
-    "@types/superagent" "4.1.15"
-    big.js "^3.1.3"
-    bigint-crypto-utils "3.1.4"
-    bignumber.js "^9.1.1"
-    bitcoinjs-message "npm:@bitgo-forks/bitcoinjs-message@1.0.0-master.3"
-    bs58 "^4.0.1"
-    create-hmac "^1.1.7"
-    debug "^3.1.0"
-    ethereumjs-util "7.1.5"
-    fp-ts "^2.12.2"
-    io-ts "npm:@bitgo-forks/io-ts@2.1.4"
-    io-ts-types "^0.5.16"
-    keccak "3.0.3"
-    libsodium-wrappers-sumo "^0.7.9"
-    lodash "^4.17.15"
-    noble-bls12-381 "0.7.2"
-    openpgp "5.10.1"
-    paillier-bigint "3.3.0"
-    secp256k1 "5.0.1"
-    strip-hex-prefix "^1.0.0"
-    superagent "^9.0.1"
-    tweetnacl "^1.0.3"
-    uuid "^8.3.2"
-
-"@bitgo/sdk-core@^34.0.0":
-  version "34.0.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-core/-/sdk-core-34.0.0.tgz#e56653e59d382f0a75fb2f2cb711a475884ee434"
-  integrity sha512-TWUFIRRVGWcyRJ9EevxbH+mGEoEekcUH8rqUeKP6Z6wxKsp+eaHuWbqV5PSLvBOtvCp6HBnnmbuN+4CwHxbiYQ==
+"@bitgo/sdk-core@^35.2.0":
+  version "35.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-core/-/sdk-core-35.2.0.tgz#e5e300ebb45122c36361aaa1307a276e5e8dbd24"
+  integrity sha512-QS8aNmX3xGWWvSMcqb4jqhEHmrXJ/A1L7rJLcUq+M0EyTzo//HMBXN707uI5IVDjvKB1uW2erGgpXw1OUuVTOg==
   dependencies:
     "@bitgo/public-types" "5.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.2.0"
-    "@bitgo/secp256k1" "^1.3.3"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
+    "@bitgo/secp256k1" "^1.4.0"
     "@bitgo/sjcl" "^1.0.1"
-    "@bitgo/statics" "^53.0.0"
-    "@bitgo/utxo-lib" "^11.3.0"
-    "@noble/curves" "1.8.1"
-    "@stablelib/hex" "^1.0.0"
-    "@types/superagent" "4.1.15"
-    big.js "^3.1.3"
-    bigint-crypto-utils "3.1.4"
-    bignumber.js "^9.1.1"
-    bitcoinjs-message "npm:@bitgo-forks/bitcoinjs-message@1.0.0-master.3"
-    bs58 "^4.0.1"
-    create-hmac "^1.1.7"
-    debug "^3.1.0"
-    ethereumjs-util "7.1.5"
-    fp-ts "^2.12.2"
-    io-ts "npm:@bitgo-forks/io-ts@2.1.4"
-    io-ts-types "^0.5.16"
-    keccak "3.0.3"
-    libsodium-wrappers-sumo "^0.7.9"
-    lodash "^4.17.15"
-    noble-bls12-381 "0.7.2"
-    openpgp "5.10.1"
-    paillier-bigint "3.3.0"
-    secp256k1 "5.0.1"
-    strip-hex-prefix "^1.0.0"
-    superagent "^9.0.1"
-    tweetnacl "^1.0.3"
-    uuid "^8.3.2"
-
-"@bitgo/sdk-core@^35.0.1", "@bitgo/sdk-core@^35.1.0":
-  version "35.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-core/-/sdk-core-35.1.0.tgz#94e177c9e6894045a9110428fdaac34e1d17de41"
-  integrity sha512-dLJpRIkbcDPyuTOi8g1zbh++OlEbPNmWyo85+umbJMfL2MlTPAkxRDL7smGdWQJuX9cxtJoNyslNnmAzMps+Cw==
-  dependencies:
-    "@bitgo/public-types" "5.1.0"
-    "@bitgo/sdk-lib-mpc" "^10.4.0"
-    "@bitgo/secp256k1" "^1.3.3"
-    "@bitgo/sjcl" "^1.0.1"
-    "@bitgo/statics" "^54.1.0"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/statics" "^54.2.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     "@noble/curves" "1.8.1"
     "@stablelib/hex" "^1.0.0"
     "@types/superagent" "4.1.15"
@@ -1634,10 +1565,10 @@
   dependencies:
     "@bitgo/sjcl" "^1.0.1"
 
-"@bitgo/sdk-lib-mpc@^10.2.0", "@bitgo/sdk-lib-mpc@^10.4.0":
-  version "10.4.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/sdk-lib-mpc/-/sdk-lib-mpc-10.4.0.tgz#05ac36bfc9374d372a57aa18798905ec4ac76194"
-  integrity sha512-5C/H/8zysCiM/X7ojVwjeSiEqQsiL1S79OS+WwXySCkZBwwlxlVcvubBBl8+gTAUBeMbDmwthoLVzFZY75/9Mw==
+"@bitgo/sdk-lib-mpc@^10.5.0":
+  version "10.5.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/sdk-lib-mpc/-/sdk-lib-mpc-10.5.0.tgz#936fe8bb49e96afcc6eed77ca1006f49e32237f0"
+  integrity sha512-XYYyvqbJJbv6AghdDHdFt2eqtcfkto0PcQC2iVCaL8VZQh6XmZshwDvqqrEjha7RD7LdAfO0FN4oaiyvnRf8yg==
   dependencies:
     "@noble/curves" "1.8.1"
     "@silencelaboratories/dkls-wasm-ll-node" "1.2.0-pre.4"
@@ -1654,10 +1585,10 @@
     paillier-bigint "3.3.0"
     secp256k1 "5.0.1"
 
-"@bitgo/secp256k1@^1.3.3":
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/@bitgo/secp256k1/-/secp256k1-1.3.3.tgz#c379cc8cf8e50de1daf37e57ec27f7629a27e7ab"
-  integrity sha512-Cv06rly7rmeoyhteM71GWsyiBKOsmtF1nO4GiWRNEscfKJOkaB7sh+3xQ5P1Y0PAC8Zdh+mBndVbZdmsmmhTHQ==
+"@bitgo/secp256k1@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/secp256k1/-/secp256k1-1.4.0.tgz#f6ad7dc5b4261f17326f36283e75cb977797e078"
+  integrity sha512-GYF55Rw08DVc7X8yI/16XxKvE5ZPQ0Ol4WRKlzTefY+/mqwHMU2X5ncMgLATDy2pT7iGPAjLikkWPP4Hx1mGYA==
   dependencies:
     "@brandonblack/musig" "^0.0.1-alpha.0"
     "@noble/secp256k1" "1.6.3"
@@ -1671,45 +1602,35 @@
   resolved "https://registry.yarnpkg.com/@bitgo/sjcl/-/sjcl-1.0.1.tgz#633fa84608c1cb7461b17ceb6131d96722921fd3"
   integrity sha512-dBICMzShC8gXdpSj9cvl4wl9Jkt4h14wt4XQ+/6V6qcC2IObyKRJfaG5TYUU6RvVknhPBPyBx9v84vNKODM5fQ==
 
-"@bitgo/statics@^52.2.0":
-  version "52.2.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/statics/-/statics-52.2.0.tgz#f2d1f08d9cd05a981f4cfbb50cd4653722be4966"
-  integrity sha512-wvRRORW5teCWh26vC6Mutp5Zeshv2vijL1Uv0TnuaASTv8P1JDQjHYOpvos9hkgQ3VN/s5XRl3DxrozPjdKPhg==
+"@bitgo/statics@^54.2.0":
+  version "54.2.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/statics/-/statics-54.2.0.tgz#f60a10e0d630571b63712d845c6abfd9bd240912"
+  integrity sha512-IEsheDkYV0tmieF1JIGNcYeFg989e0YIblU5Tp9jKa82G3jHw8bqMqsofZnx01RD8ufDu5Coa6xyZ0n4T4t9BQ==
 
-"@bitgo/statics@^53.0.0":
-  version "53.0.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/statics/-/statics-53.0.0.tgz#ecf029f5d4af4aca8249eaa52a71282a290bcb12"
-  integrity sha512-LsRM4GrwVRzAsNqO3PSXPTjPjt2fMSPdxrJoTKXIKptLOQ6DPmHm/yh+mJdrUUsqCQ7WTx4wX4WweXLXWXw9LA==
-
-"@bitgo/statics@^54.0.1", "@bitgo/statics@^54.1.0":
-  version "54.1.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/statics/-/statics-54.1.0.tgz#2d13817af7b4a15c27661bbe2505e4a5a4348e58"
-  integrity sha512-+H3hRzbIXDBVDEW1hUaXVHxWWi6Usba4DBvstOf0mvemdWbPG3prN6tIt3lwqVuzXgcRQUD1peN9LQ014QKMmQ==
-
-"@bitgo/unspents@^0.47.21":
-  version "0.47.21"
-  resolved "https://registry.yarnpkg.com/@bitgo/unspents/-/unspents-0.47.21.tgz#12f3a296c5bb1ea99a36d6d7463382d28fcc8c0d"
-  integrity sha512-TG0R+dKVAZB/NhQqU2Aq+pP+gxgsbo9YYq3Nuhq6Py09mHiFvazUBzhjtEynlhKB1VXpZMClZVgc1oRLCdbEpA==
+"@bitgo/unspents@^0.48.0":
+  version "0.48.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/unspents/-/unspents-0.48.0.tgz#507a2c6c47ea2299bfc12c3cef41238d046585d2"
+  integrity sha512-Q8rERVFDmEAK5LBQEY1w2oh4cRrMFzsmmPyY/OYLYCD+Kv7uFTqyWGZHyT91r5/B78SJaIUmzVdhymVFAaKHtQ==
   dependencies:
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     lodash "~4.17.21"
     tcomb "~3.2.29"
     varuint-bitcoin "^1.0.4"
 
-"@bitgo/utxo-core@^1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/utxo-core/-/utxo-core-1.8.0.tgz#2f3b205ff5879762e8a791d76ac0599c15e3c090"
-  integrity sha512-98sSMXw3PU2SmttFHGnMRNg+27lvMhYSZiKoZtfKx2iBTc9yZyqbIJUwokTMzKVOv4EUbTYSibmQiJSTYvgYNA==
+"@bitgo/utxo-core@^1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/utxo-core/-/utxo-core-1.9.0.tgz#8107ed0531db35d74dfc0e7fac5dd5d3fb92b139"
+  integrity sha512-263clR0j+TkX02IdUFLg2lxfnbTZOFUHJdEYPkJhvDSGDOpeLMVHxQp7Z0Ej+lblCA0K5B180yjB5qEQTyf53g==
   dependencies:
-    "@bitgo/unspents" "^0.47.21"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/unspents" "^0.48.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     "@bitgo/wasm-miniscript" "2.0.0-beta.7"
     bip174 "npm:@bitgo-forks/bip174@3.1.0-master.4"
 
-"@bitgo/utxo-lib@^11.3.0":
-  version "11.3.0"
-  resolved "https://registry.yarnpkg.com/@bitgo/utxo-lib/-/utxo-lib-11.3.0.tgz#34daadfad22ee1d405dad7ddf89919c791ac2fdd"
-  integrity sha512-vzZrg+vTWM8VFaGKj5j+I5sXvtSm2yYtJOz3mF0gIpmJl6jKplQ8zEyGwH/bX9LN01kKd3I+99D4GlzqUzxdgg==
+"@bitgo/utxo-lib@^11.4.0":
+  version "11.4.0"
+  resolved "https://registry.yarnpkg.com/@bitgo/utxo-lib/-/utxo-lib-11.4.0.tgz#be62f965e8a894d051fae56abc13fe20c2efe724"
+  integrity sha512-8auvSjhXazdtY9OL5u8JkRoSsU5n3sqdeVe510LmQktNl2x/yVr1NvvISWQe5Ps49Kz7aMWuMFzccIocxopJCQ==
   dependencies:
     "@bitgo/blake2b" "^3.2.4"
     "@brandonblack/musig" "^0.0.1-alpha.0"
@@ -1729,14 +1650,14 @@
     typeforce "^1.11.3"
     varuint-bitcoin "^1.1.2"
 
-"@bitgo/utxo-ord@^1.20.88":
-  version "1.20.88"
-  resolved "https://registry.yarnpkg.com/@bitgo/utxo-ord/-/utxo-ord-1.20.88.tgz#9310857cb7be375a326019d6874dc7087957c1ce"
-  integrity sha512-djbEjRV1PMA6+NcoybW9M16Sannv+6hNfTi+FLpcguyHnEr0ICk1N8DQIILXXFePbime7DRT+9bihEnih3mLZA==
+"@bitgo/utxo-ord@^1.20.89":
+  version "1.20.89"
+  resolved "https://registry.yarnpkg.com/@bitgo/utxo-ord/-/utxo-ord-1.20.89.tgz#5a5fc4c948b4f7a2ffe984d87f49a85ae0311804"
+  integrity sha512-YxD14L5Y0v4sABhynYjVGfRASevhWpgyEXErJc6xQAXhHB+AKK8NAIjU0crAt103ay89BUnwLAB24x3Njom8zQ==
   dependencies:
-    "@bitgo/sdk-core" "^35.1.0"
-    "@bitgo/unspents" "^0.47.21"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/unspents" "^0.48.0"
+    "@bitgo/utxo-lib" "^11.4.0"
 
 "@bitgo/wasm-miniscript@2.0.0-beta.7":
   version "2.0.0-beta.7"
@@ -6015,96 +5936,98 @@ bitcoin-ops@^1.3.0:
     secp256k1 "5.0.1"
     varuint-bitcoin "^1.0.1"
 
-bitgo@^44.2.0:
-  version "44.2.0"
-  resolved "https://registry.yarnpkg.com/bitgo/-/bitgo-44.2.0.tgz#b987685a7b4be98d250492ef2046264f8862ad3c"
-  integrity sha512-IfAdbWGy6nGWglXYVpE4aLaxs8PnUFc2vEQUVpmnuOdD3oj5/9ZzZ/ed31ID1ntpU/FO0OUaBQ1VHQzc1r479Q==
+bitgo@^48.0.0:
+  version "48.0.0"
+  resolved "https://registry.yarnpkg.com/bitgo/-/bitgo-48.0.0.tgz#fd30494fedeec0aa5705a65b5b9494d1791ed2ae"
+  integrity sha512-4UQidfwFLSALQDIk3nc2S02Xa3C+aHx9xqwi62bkqeXAax5qUytPqkGTpz1WMI8hNCGosdAcba8mdNPyAGLtnw==
   dependencies:
-    "@bitgo/abstract-lightning" "^4.3.1"
-    "@bitgo/abstract-utxo" "^9.19.9"
-    "@bitgo/account-lib" "^25.2.0"
-    "@bitgo/blockapis" "^1.10.14"
-    "@bitgo/sdk-api" "^1.62.3"
-    "@bitgo/sdk-coin-ada" "^4.9.10"
-    "@bitgo/sdk-coin-algo" "^2.1.77"
-    "@bitgo/sdk-coin-apt" "^2.1.2"
-    "@bitgo/sdk-coin-arbeth" "^21.5.2"
-    "@bitgo/sdk-coin-atom" "^13.4.10"
-    "@bitgo/sdk-coin-avaxc" "^6.0.10"
-    "@bitgo/sdk-coin-avaxp" "^5.0.78"
-    "@bitgo/sdk-coin-baby" "^1.4.2"
-    "@bitgo/sdk-coin-bch" "^2.1.29"
-    "@bitgo/sdk-coin-bcha" "^2.2.29"
-    "@bitgo/sdk-coin-bera" "^2.3.23"
-    "@bitgo/sdk-coin-bld" "^3.0.48"
-    "@bitgo/sdk-coin-bsc" "^22.2.32"
-    "@bitgo/sdk-coin-bsv" "^2.1.29"
-    "@bitgo/sdk-coin-btc" "^2.4.29"
-    "@bitgo/sdk-coin-btg" "^2.1.29"
-    "@bitgo/sdk-coin-celo" "^5.0.6"
-    "@bitgo/sdk-coin-coredao" "^2.1.3"
-    "@bitgo/sdk-coin-coreum" "^21.0.48"
-    "@bitgo/sdk-coin-cronos" "^1.1.0"
-    "@bitgo/sdk-coin-cspr" "^2.0.79"
-    "@bitgo/sdk-coin-dash" "^2.1.29"
-    "@bitgo/sdk-coin-doge" "^2.1.29"
-    "@bitgo/sdk-coin-dot" "^4.1.57"
-    "@bitgo/sdk-coin-eos" "^3.0.2"
-    "@bitgo/sdk-coin-etc" "^2.2.46"
-    "@bitgo/sdk-coin-eth" "^24.4.2"
-    "@bitgo/sdk-coin-ethlike" "^1.2.14"
-    "@bitgo/sdk-coin-ethw" "^20.0.79"
-    "@bitgo/sdk-coin-fetch" "^1.1.0"
-    "@bitgo/sdk-coin-flr" "^1.2.3"
-    "@bitgo/sdk-coin-hash" "^3.0.48"
-    "@bitgo/sdk-coin-hbar" "^2.0.79"
-    "@bitgo/sdk-coin-icp" "^1.14.0"
-    "@bitgo/sdk-coin-init" "^1.1.0"
-    "@bitgo/sdk-coin-injective" "^3.0.48"
-    "@bitgo/sdk-coin-islm" "^2.1.29"
-    "@bitgo/sdk-coin-lnbtc" "^1.2.10"
-    "@bitgo/sdk-coin-ltc" "^3.1.29"
-    "@bitgo/sdk-coin-mantra" "^1.0.6"
-    "@bitgo/sdk-coin-mon" "^1.1.2"
-    "@bitgo/sdk-coin-near" "^2.1.4"
-    "@bitgo/sdk-coin-oas" "^2.1.3"
-    "@bitgo/sdk-coin-opeth" "^18.3.2"
-    "@bitgo/sdk-coin-osmo" "^3.0.48"
-    "@bitgo/sdk-coin-polygon" "^21.1.3"
-    "@bitgo/sdk-coin-polyx" "^1.0.4"
-    "@bitgo/sdk-coin-rbtc" "^2.0.79"
-    "@bitgo/sdk-coin-rune" "^1.1.36"
-    "@bitgo/sdk-coin-sei" "^3.0.48"
-    "@bitgo/sdk-coin-sgb" "^1.2.3"
-    "@bitgo/sdk-coin-sol" "^4.10.2"
-    "@bitgo/sdk-coin-soneium" "^1.1.1"
-    "@bitgo/sdk-coin-stt" "^1.1.2"
-    "@bitgo/sdk-coin-stx" "^3.6.0"
-    "@bitgo/sdk-coin-sui" "^5.13.8"
-    "@bitgo/sdk-coin-tao" "^1.6.9"
-    "@bitgo/sdk-coin-tia" "^3.0.48"
-    "@bitgo/sdk-coin-ton" "^3.5.2"
-    "@bitgo/sdk-coin-trx" "^3.0.1"
-    "@bitgo/sdk-coin-wemix" "^1.2.3"
-    "@bitgo/sdk-coin-world" "^1.1.2"
-    "@bitgo/sdk-coin-xdc" "^1.2.3"
-    "@bitgo/sdk-coin-xlm" "^3.2.53"
-    "@bitgo/sdk-coin-xrp" "^3.7.21"
-    "@bitgo/sdk-coin-xtz" "^2.2.10"
-    "@bitgo/sdk-coin-zec" "^2.1.29"
-    "@bitgo/sdk-coin-zeta" "^3.0.48"
-    "@bitgo/sdk-coin-zketh" "^2.0.71"
-    "@bitgo/sdk-core" "^33.2.0"
-    "@bitgo/sdk-lib-mpc" "^10.2.0"
+    "@bitgo/abstract-lightning" "^6.0.0"
+    "@bitgo/abstract-utxo" "^9.21.0"
+    "@bitgo/account-lib" "^27.1.0"
+    "@bitgo/blockapis" "^1.10.15"
+    "@bitgo/sdk-api" "^1.63.4"
+    "@bitgo/sdk-coin-ada" "^4.11.0"
+    "@bitgo/sdk-coin-algo" "^2.3.0"
+    "@bitgo/sdk-coin-apt" "^2.4.0"
+    "@bitgo/sdk-coin-arbeth" "^21.6.0"
+    "@bitgo/sdk-coin-asi" "^1.1.0"
+    "@bitgo/sdk-coin-atom" "^13.5.0"
+    "@bitgo/sdk-coin-avaxc" "^6.1.0"
+    "@bitgo/sdk-coin-avaxp" "^5.2.0"
+    "@bitgo/sdk-coin-baby" "^1.5.0"
+    "@bitgo/sdk-coin-bch" "^2.2.0"
+    "@bitgo/sdk-coin-bcha" "^2.3.0"
+    "@bitgo/sdk-coin-bera" "^2.4.0"
+    "@bitgo/sdk-coin-bld" "^3.1.0"
+    "@bitgo/sdk-coin-bsc" "^22.3.0"
+    "@bitgo/sdk-coin-bsv" "^2.2.0"
+    "@bitgo/sdk-coin-btc" "^2.6.0"
+    "@bitgo/sdk-coin-btg" "^2.2.0"
+    "@bitgo/sdk-coin-celo" "^5.1.0"
+    "@bitgo/sdk-coin-coredao" "^2.3.0"
+    "@bitgo/sdk-coin-coreum" "^21.1.0"
+    "@bitgo/sdk-coin-cronos" "^1.2.0"
+    "@bitgo/sdk-coin-cspr" "^2.2.0"
+    "@bitgo/sdk-coin-dash" "^2.2.0"
+    "@bitgo/sdk-coin-doge" "^2.2.0"
+    "@bitgo/sdk-coin-dot" "^4.3.0"
+    "@bitgo/sdk-coin-eos" "^3.2.0"
+    "@bitgo/sdk-coin-etc" "^2.3.0"
+    "@bitgo/sdk-coin-eth" "^24.6.0"
+    "@bitgo/sdk-coin-ethlike" "^1.3.0"
+    "@bitgo/sdk-coin-ethw" "^20.1.0"
+    "@bitgo/sdk-coin-fetchai" "^2.1.0"
+    "@bitgo/sdk-coin-flr" "^1.3.0"
+    "@bitgo/sdk-coin-hash" "^3.1.0"
+    "@bitgo/sdk-coin-hbar" "^2.2.0"
+    "@bitgo/sdk-coin-icp" "^1.17.0"
+    "@bitgo/sdk-coin-initia" "^2.1.0"
+    "@bitgo/sdk-coin-injective" "^3.1.0"
+    "@bitgo/sdk-coin-islm" "^2.2.0"
+    "@bitgo/sdk-coin-lnbtc" "^1.3.0"
+    "@bitgo/sdk-coin-ltc" "^3.2.0"
+    "@bitgo/sdk-coin-mantra" "^1.1.0"
+    "@bitgo/sdk-coin-mon" "^1.2.0"
+    "@bitgo/sdk-coin-near" "^2.4.0"
+    "@bitgo/sdk-coin-oas" "^2.2.0"
+    "@bitgo/sdk-coin-opeth" "^18.4.0"
+    "@bitgo/sdk-coin-osmo" "^3.1.0"
+    "@bitgo/sdk-coin-polygon" "^21.2.0"
+    "@bitgo/sdk-coin-polyx" "^1.3.0"
+    "@bitgo/sdk-coin-rbtc" "^2.1.0"
+    "@bitgo/sdk-coin-rune" "^1.2.0"
+    "@bitgo/sdk-coin-sei" "^3.1.0"
+    "@bitgo/sdk-coin-sgb" "^1.3.0"
+    "@bitgo/sdk-coin-sol" "^4.12.0"
+    "@bitgo/sdk-coin-soneium" "^1.3.0"
+    "@bitgo/sdk-coin-stt" "^1.2.0"
+    "@bitgo/sdk-coin-stx" "^3.8.0"
+    "@bitgo/sdk-coin-sui" "^5.15.0"
+    "@bitgo/sdk-coin-tao" "^1.8.0"
+    "@bitgo/sdk-coin-tia" "^3.1.0"
+    "@bitgo/sdk-coin-ton" "^3.7.0"
+    "@bitgo/sdk-coin-trx" "^3.3.0"
+    "@bitgo/sdk-coin-vet" "^1.3.0"
+    "@bitgo/sdk-coin-wemix" "^1.3.0"
+    "@bitgo/sdk-coin-world" "^1.2.0"
+    "@bitgo/sdk-coin-xdc" "^1.3.0"
+    "@bitgo/sdk-coin-xlm" "^3.4.0"
+    "@bitgo/sdk-coin-xrp" "^3.9.0"
+    "@bitgo/sdk-coin-xtz" "^2.4.0"
+    "@bitgo/sdk-coin-zec" "^2.2.0"
+    "@bitgo/sdk-coin-zeta" "^3.1.0"
+    "@bitgo/sdk-coin-zketh" "^2.1.0"
+    "@bitgo/sdk-core" "^35.2.0"
+    "@bitgo/sdk-lib-mpc" "^10.5.0"
     "@bitgo/sjcl" "^1.0.1"
-    "@bitgo/statics" "^52.2.0"
-    "@bitgo/unspents" "^0.47.21"
-    "@bitgo/utxo-lib" "^11.3.0"
+    "@bitgo/statics" "^54.2.0"
+    "@bitgo/unspents" "^0.48.0"
+    "@bitgo/utxo-lib" "^11.4.0"
     "@types/superagent" "^4.1.3"
     bignumber.js "^9.1.1"
     fs-extra "^9.1.0"
     lodash "^4.17.14"
-    openpgp "5.10.1"
+    openpgp "5.11.3"
     stellar-sdk "^10.0.1"
     superagent "^9.0.1"
   optionalDependencies:
@@ -10952,13 +10875,6 @@ onetime@^5.1.2:
   integrity sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==
   dependencies:
     mimic-fn "^2.1.0"
-
-openpgp@5.10.1:
-  version "5.10.1"
-  resolved "https://registry.yarnpkg.com/openpgp/-/openpgp-5.10.1.tgz#3b137470187b79281719ced16fb9e60b822cfd24"
-  integrity sha512-SR5Ft+ej51d0+p53ld5Ney0Yiz0y8Mh1YYLJrvpRMbTaNhvS1QcDX0Oq1rW9sjBnQXtgrpWw2Zve3rm7K5C/pw==
-  dependencies:
-    asn1.js "^5.0.0"
 
 openpgp@5.11.3:
   version "5.11.3"
