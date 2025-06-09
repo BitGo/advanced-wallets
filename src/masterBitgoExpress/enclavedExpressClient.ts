@@ -3,6 +3,8 @@ import https from 'https';
 import debug from 'debug';
 import { MasterExpressConfig } from '../types';
 import { TlsMode } from '../types';
+import { SignMultisigOptions } from '../types/masterApiTypes';
+import { SignedTransaction } from '@bitgo/sdk-core';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -62,15 +64,20 @@ export class EnclavedExpressClient {
     });
   }
 
+  /**
+   * Configure the request to use the appropriate TLS mode
+   */
+  private configureRequest(request: superagent.SuperAgentRequest): superagent.SuperAgentRequest {
+    if (this.tlsMode === TlsMode.MTLS) {
+      return request.agent(this.createHttpsAgent());
+    }
+    return request;
+  }
+
   async ping(): Promise<void> {
     try {
       debugLogger('Pinging enclaved express at %s', this.baseUrl);
-      if (this.tlsMode === TlsMode.MTLS) {
-        await superagent.get(`${this.baseUrl}/ping`).agent(this.createHttpsAgent()).send();
-      } else {
-        // When TLS is disabled, use plain HTTP without any TLS configuration
-        await superagent.get(`${this.baseUrl}/ping`).send();
-      }
+      await this.configureRequest(superagent.get(`${this.baseUrl}/ping`)).send();
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to ping enclaved express: %s', err.message);
@@ -90,25 +97,35 @@ export class EnclavedExpressClient {
 
     try {
       debugLogger('Creating independent keychain for coin: %s', this.coin);
-      let response;
-      if (this.tlsMode === TlsMode.MTLS) {
-        response = await superagent
-          .post(`${this.baseUrl}/api/${this.coin}/key/independent`)
-          .agent(this.createHttpsAgent())
-          .type('json')
-          .send(params);
-      } else {
-        // When TLS is disabled, use plain HTTP without any TLS configuration
-        response = await superagent
-          .post(`${this.baseUrl}/api/${this.coin}/key/independent`)
-          .type('json')
-          .send(params);
-      }
+      const response = await this.configureRequest(
+        superagent.post(`${this.baseUrl}/api/${this.coin}/key/independent`).type('json'),
+      ).send(params);
 
       return response.body;
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to create independent keychain: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Sign a multisig transaction
+   */
+  async signMultisig(params: SignMultisigOptions): Promise<SignedTransaction> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign a multisig');
+    }
+
+    try {
+      const res = await this.configureRequest(
+        superagent.post(`${this.baseUrl}/api/${this.coin}/signMultisig`).type('json'),
+      ).send(params);
+
+      return res.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign multisig: %s', err.message);
       throw err;
     }
   }

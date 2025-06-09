@@ -13,10 +13,11 @@ import {
 } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
 import express from 'express';
-import { BitGoRequest } from '../../types/request';
+import { BitGoRequest, isBitGoRequest } from '../../types/request';
 import { MasterExpressConfig } from '../../config';
 import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
+import { handleSendMany } from '../handleSendMany';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -43,6 +44,60 @@ const GenerateWalletRequest = {
   isDistributedCustody: t.union([t.undefined, t.boolean]),
 };
 
+export const SendManyRequest = t.intersection([
+  t.type({
+    pubkey: t.string,
+    source: t.union([t.literal('user'), t.literal('backup')]),
+    recipients: t.array(
+      t.type({
+        address: t.string,
+        amount: t.union([t.string, t.number]),
+        feeLimit: t.union([t.undefined, t.string]),
+        data: t.union([t.undefined, t.string]),
+        tokenName: t.union([t.undefined, t.string]),
+        tokenData: t.union([t.undefined, t.any]),
+      }),
+    ),
+  }),
+  t.partial({
+    numBlocks: t.number,
+    feeRate: t.number,
+    feeMultiplier: t.number,
+    maxFeeRate: t.number,
+    minConfirms: t.number,
+    enforceMinConfirmsForChange: t.boolean,
+    targetWalletUnspents: t.number,
+    message: t.string,
+    minValue: t.union([t.number, t.string]),
+    maxValue: t.union([t.number, t.string]),
+    sequenceId: t.string,
+    lastLedgerSequence: t.number,
+    ledgerSequenceDelta: t.number,
+    gasPrice: t.number,
+    noSplitChange: t.boolean,
+    unspents: t.array(t.string),
+    comment: t.string,
+    otp: t.string,
+    changeAddress: t.string,
+    allowExternalChangeAddress: t.boolean,
+    instant: t.boolean,
+    memo: t.string,
+    transferId: t.number,
+    eip1559: t.any,
+    gasLimit: t.number,
+    custodianTransactionId: t.string,
+  }),
+]);
+
+export const SendManyResponse: HttpResponse = {
+  // TODO: Get type from public types repo / Wallet Platform
+  200: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
 // API Specification
 export const MasterApiSpec = apiSpec({
   'v1.wallet.generate': {
@@ -57,6 +112,21 @@ export const MasterApiSpec = apiSpec({
       }),
       response: GenerateWalletResponse,
       description: 'Generate a new wallet',
+    }),
+  },
+  'v1.wallet.sendMany': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/{coin}/wallet/{walletId}/sendMany',
+      request: httpRequest({
+        params: {
+          walletId: t.string,
+          coin: t.string,
+        },
+        body: SendManyRequest,
+      }),
+      response: SendManyResponse,
+      description: 'Send many transactions',
     }),
   },
 });
@@ -90,6 +160,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleGenerateWalletOnPrem(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.wallet.sendMany', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleSendMany(typedReq);
       return Response.ok(result);
     }),
   ]);
