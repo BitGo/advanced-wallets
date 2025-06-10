@@ -1,10 +1,20 @@
 import * as t from 'io-ts';
-import { apiSpec, httpRoute, httpRequest, HttpResponse } from '@api-ts/io-ts-http';
-import { createRouter, type WrappedRouter } from '@api-ts/typed-express-router';
+import {
+  apiSpec,
+  httpRoute,
+  httpRequest,
+  HttpResponse,
+  Method as HttpMethod,
+} from '@api-ts/io-ts-http';
+import {
+  createRouter,
+  TypedRequestHandler,
+  type WrappedRouter,
+} from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
-import express, { Request } from 'express';
+import express from 'express';
 import { BitGo } from 'bitgo';
-import { BitGoRequest, isBitGoRequest } from '../../types/request';
+import { BitGoRequest } from '../../types/request';
 import { MasterExpressConfig } from '../../config';
 import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { withResponseHandler } from '../../shared/responseHandler';
@@ -86,6 +96,20 @@ export const MasterApiSpec = apiSpec({
   },
 });
 
+export type MasterApiSpec = typeof MasterApiSpec;
+
+export type MasterApiSpecRouteHandler<
+  ApiName extends keyof MasterApiSpec,
+  Method extends keyof MasterApiSpec[ApiName] & HttpMethod,
+> = TypedRequestHandler<MasterApiSpec, ApiName, Method>;
+
+export type MasterApiSpecRouteRequest<
+  ApiName extends keyof MasterApiSpec,
+  Method extends keyof MasterApiSpec[ApiName] & HttpMethod,
+> = BitGoRequest & Parameters<MasterApiSpecRouteHandler<ApiName, Method>>[0];
+
+export type GenericMasterApiSpecRouteRequest = MasterApiSpecRouteRequest<any, any>;
+
 // Create router with handlers
 export function createMasterApiRouter(
   cfg: MasterExpressConfig,
@@ -98,10 +122,7 @@ export function createMasterApiRouter(
 
   // Generate wallet endpoint handler
   router.post('v1.wallet.generate', [
-    withResponseHandler(async (req: BitGoRequest | Request) => {
-      if (!isBitGoRequest(req)) {
-        throw new Error('Invalid request type');
-      }
+    withResponseHandler(async (req: GenericMasterApiSpecRouteRequest) => {
       const result = await handleGenerateWalletOnPrem(req);
       return Response.ok(result);
     }),

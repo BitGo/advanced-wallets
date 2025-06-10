@@ -1,5 +1,8 @@
-import { BitGoRequest } from '../types/request';
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
+import {
+  GenericMasterApiSpecRouteRequest,
+  MasterApiSpecRouteRequest,
+} from '../masterBitgoExpress/routers/masterApiSpec';
 
 // Extend Express Response to include sendEncoded
 interface EncodedResponse extends ExpressResponse {
@@ -13,7 +16,7 @@ interface ApiResponse {
 }
 
 type ServiceFunction = (
-  req: Request | BitGoRequest,
+  req: MasterApiSpecRouteRequest<any, any>,
   res: EncodedResponse,
   next: NextFunction,
 ) => Promise<ApiResponse> | ApiResponse;
@@ -24,9 +27,9 @@ type ServiceFunction = (
  * @returns Express middleware function that handles the response encoding
  */
 export function withResponseHandler(fn: ServiceFunction) {
-  return async (req: Request | BitGoRequest, res: EncodedResponse, next: NextFunction) => {
+  return async (req: Request, res: EncodedResponse, next: NextFunction) => {
     try {
-      const result = await Promise.resolve(fn(req, res, next));
+      const result = await fn(req as unknown as GenericMasterApiSpecRouteRequest, res, next);
       return res.sendEncoded(result.type, result.payload);
     } catch (error) {
       // Log the error
