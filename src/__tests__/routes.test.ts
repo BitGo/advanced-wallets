@@ -2,13 +2,22 @@ import 'should';
 import express from 'express';
 import request from 'supertest';
 import { setupRoutes } from '../routes/enclaved';
+import { AppMode, TlsMode } from '../types';
 
 describe('Routes', () => {
   let app: express.Application;
 
   beforeEach(() => {
     app = express();
-    setupRoutes(app);
+    setupRoutes(app, {
+      appMode: AppMode.ENCLAVED,
+      tlsMode: TlsMode.DISABLED,
+      mtlsRequestCert: false,
+      kmsUrl: 'http://localhost:3000/kms',
+      timeout: 5000,
+      port: 3000,
+      bind: 'localhost',
+    });
   });
 
   describe('Health Check Routes', () => {

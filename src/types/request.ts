@@ -1,13 +1,15 @@
 import express from 'express';
 import { type BitGo } from 'bitgo';
-import { MasterExpressConfig } from '../types';
+import { Config } from '../types';
 
 // Extended request type for BitGo Express
-export interface BitGoRequest extends express.Request {
+export interface BitGoRequest<T extends Config = Config> extends express.Request {
   bitgo: BitGo;
-  config: MasterExpressConfig;
+  config: T;
 }
 
-export function isBitGoRequest(req: express.Request): req is BitGoRequest {
-  return (req as BitGoRequest).bitgo !== undefined && (req as BitGoRequest).config !== undefined;
+export function isBitGoRequest<T extends Config>(req: express.Request): req is BitGoRequest<T> {
+  return (
+    (req as BitGoRequest<T>).bitgo !== undefined && (req as BitGoRequest<T>).config !== undefined
+  );
 }

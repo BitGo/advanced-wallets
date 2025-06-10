@@ -6,7 +6,7 @@ import https from 'https';
 import superagent from 'superagent';
 import { MasterExpressConfig, TlsMode } from '../../config';
 import logger from '../../logger';
-import { withResponseHandler } from '../../shared/responseHandler';
+import { responseHandler } from '../../shared/middleware';
 
 // Response type for /ping/enclavedExpress endpoint
 const PingEnclavedResponse: HttpResponse = {
@@ -52,7 +52,7 @@ export function createEnclavedExpressRouter(
 
   // Ping endpoint handler
   router.post('v1.enclaved.ping', [
-    withResponseHandler(async () => {
+    responseHandler(async () => {
       logger.debug('Pinging enclaved express');
 
       try {

@@ -44,23 +44,13 @@ export const HealthCheckApiSpec = apiSpec({
 });
 
 // Create router with handlers
-export function createHealthCheckRouter(
-  serverType: string,
-): WrappedRouter<typeof HealthCheckApiSpec> {
-  const router = createRouter(HealthCheckApiSpec, {
-    onDecodeError: (_err, _req, _res) => {
-      console.log(_err);
-    },
-    onEncodeError: (_err, _req, _res) => {
-      console.log(_err);
-    },
-  });
-
+export function createHealthCheckRouter(): WrappedRouter<typeof HealthCheckApiSpec> {
+  const router = createRouter(HealthCheckApiSpec);
   // Ping endpoint handler
   router.post('v1.health.ping', [
     responseHandler(() =>
       Response.ok({
-        status: `${serverType} server is ok!`,
+        status: 'enclaved express server is ok!',
         timestamp: new Date().toISOString(),
       }),
     ),
