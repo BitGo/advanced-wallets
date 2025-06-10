@@ -3,8 +3,7 @@ import https from 'https';
 import debug from 'debug';
 import { MasterExpressConfig } from '../types';
 import { TlsMode } from '../types';
-import { SignMultisigOptions } from '../types/masterApiTypes';
-import { SignedTransaction } from '@bitgo/sdk-core';
+import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -22,6 +21,12 @@ export interface IndependentKeychainResponse {
   type: 'independent';
   source: 'user' | 'backup' | 'bitgo';
   coin: string;
+}
+
+interface SignMultisigOptions {
+  txPrebuild: TransactionPrebuild;
+  source: 'user' | 'backup';
+  pub: string;
 }
 
 export class EnclavedExpressClient {
@@ -119,7 +124,7 @@ export class EnclavedExpressClient {
 
     try {
       const res = await this.configureRequest(
-        superagent.post(`${this.baseUrl}/api/${this.coin}/signMultisig`).type('json'),
+        superagent.post(`${this.baseUrl}/api/${this.coin}/multisig/sign`).type('json'),
       ).send(params);
 
       return res.body;

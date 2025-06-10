@@ -13,7 +13,7 @@ import {
 } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
 import express from 'express';
-import { BitGoRequest, isBitGoRequest } from '../../types/request';
+import { BitGoRequest } from '../../types/request';
 import { MasterExpressConfig } from '../../config';
 import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
@@ -44,50 +44,37 @@ const GenerateWalletRequest = {
   isDistributedCustody: t.union([t.undefined, t.boolean]),
 };
 
-export const SendManyRequest = t.intersection([
-  t.type({
-    pubkey: t.string,
-    source: t.union([t.literal('user'), t.literal('backup')]),
-    recipients: t.array(
-      t.type({
-        address: t.string,
-        amount: t.union([t.string, t.number]),
-        feeLimit: t.union([t.undefined, t.string]),
-        data: t.union([t.undefined, t.string]),
-        tokenName: t.union([t.undefined, t.string]),
-        tokenData: t.union([t.undefined, t.any]),
-      }),
-    ),
-  }),
-  t.partial({
-    numBlocks: t.number,
-    feeRate: t.number,
-    feeMultiplier: t.number,
-    maxFeeRate: t.number,
-    minConfirms: t.number,
-    enforceMinConfirmsForChange: t.boolean,
-    targetWalletUnspents: t.number,
-    message: t.string,
-    minValue: t.union([t.number, t.string]),
-    maxValue: t.union([t.number, t.string]),
-    sequenceId: t.string,
-    lastLedgerSequence: t.number,
-    ledgerSequenceDelta: t.number,
-    gasPrice: t.number,
-    noSplitChange: t.boolean,
-    unspents: t.array(t.string),
-    comment: t.string,
-    otp: t.string,
-    changeAddress: t.string,
-    allowExternalChangeAddress: t.boolean,
-    instant: t.boolean,
-    memo: t.string,
-    transferId: t.number,
-    eip1559: t.any,
-    gasLimit: t.number,
-    custodianTransactionId: t.string,
-  }),
-]);
+export const SendManyRequest = {
+  pubkey: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  recipients: t.array(t.any),
+  numBlocks: t.union([t.undefined, t.number]),
+  feeRate: t.union([t.undefined, t.number]),
+  feeMultiplier: t.union([t.undefined, t.number]),
+  maxFeeRate: t.union([t.undefined, t.number]),
+  minConfirms: t.union([t.undefined, t.number]),
+  enforceMinConfirmsForChange: t.union([t.undefined, t.boolean]),
+  targetWalletUnspents: t.union([t.undefined, t.number]),
+  message: t.union([t.undefined, t.string]),
+  minValue: t.union([t.undefined, t.union([t.number, t.string])]),
+  maxValue: t.union([t.undefined, t.union([t.number, t.string])]),
+  sequenceId: t.union([t.undefined, t.string]),
+  lastLedgerSequence: t.union([t.undefined, t.number]),
+  ledgerSequenceDelta: t.union([t.undefined, t.number]),
+  gasPrice: t.union([t.undefined, t.number]),
+  noSplitChange: t.union([t.undefined, t.boolean]),
+  unspents: t.union([t.undefined, t.array(t.string)]),
+  comment: t.union([t.undefined, t.string]),
+  otp: t.union([t.undefined, t.string]),
+  changeAddress: t.union([t.undefined, t.string]),
+  allowExternalChangeAddress: t.union([t.undefined, t.boolean]),
+  instant: t.union([t.undefined, t.boolean]),
+  memo: t.union([t.undefined, t.string]),
+  transferId: t.union([t.undefined, t.number]),
+  eip1559: t.union([t.undefined, t.any]),
+  gasLimit: t.union([t.undefined, t.number]),
+  custodianTransactionId: t.union([t.undefined, t.string]),
+};
 
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
@@ -102,7 +89,7 @@ export const SendManyResponse: HttpResponse = {
 export const MasterApiSpec = apiSpec({
   'v1.wallet.generate': {
     post: httpRoute({
-      method: 'POST',
+      method: 'POST' as const,
       path: '/{coin}/wallet/generate',
       request: httpRequest({
         params: {

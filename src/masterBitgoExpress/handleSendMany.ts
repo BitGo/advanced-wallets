@@ -2,10 +2,22 @@ import { RequestTracer, PrebuildTransactionOptions, Memo } from '@bitgo/sdk-core
 import { BitGoRequest } from '../types/request';
 import { createEnclavedExpressClient } from './enclavedExpressClient';
 import logger from '../logger';
-import { SendManyRequest } from './routers/masterApiSpec';
-import { TypeOf } from 'io-ts';
+import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
 
-export async function handleSendMany(req: BitGoRequest) {
+/**
+ * Defines the structure for a single recipient in a send-many transaction.
+ * This provides strong typing and autocompletion within the handler.
+ */
+interface Recipient {
+  address: string;
+  amount: string | number;
+  feeLimit?: string;
+  data?: string;
+  tokenName?: string;
+  tokenData?: any;
+}
+
+export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
   const enclavedExpressClient = createEnclavedExpressClient(req.config, req.params.coin);
   if (!enclavedExpressClient) {
     throw new Error('Please configure enclaved express configs to sign the transactions.');
@@ -14,13 +26,16 @@ export async function handleSendMany(req: BitGoRequest) {
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
 
-  const params = req.body as TypeOf<typeof SendManyRequest>;
+  const params = req.decoded;
+  params.recipients = params.recipients as Recipient[];
+
   const walletId = req.params.walletId;
   const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
   if (!wallet) {
     throw new Error(`Wallet ${walletId} not found`);
   }
 
+  // @ts-ignore
   if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
     throw new Error('Wallet is not an on-prem wallet');
   }
@@ -33,7 +48,7 @@ export async function handleSendMany(req: BitGoRequest) {
 
   // Find the user keychain for signing
   const signingKeychain = signingKeychains.find((k) => k.source === params.source);
-  if (!signingKeychain) {
+  if (!signingKeychain || !signingKeychain.pub) {
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
 
