@@ -5,7 +5,6 @@ import nock from 'nock';
 import { app as expressApp } from '../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../types';
 import { Environments } from '@bitgo/sdk-core';
-import { before, after } from 'mocha';
 
 describe('POST /api/:coin/wallet/generate', () => {
   let agent: request.SuperAgentTest;

@@ -10,9 +10,9 @@
   "scripts": {
     "start": "nodemon bin/enclaved-bitgo-express",
     "build": "yarn tsc --build --incremental --verbose . && cp package.json dist/",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
+    "test:watch": "mocha --require ts-node/register --watch 'src/**/__tests__/**/*.test.ts'",
+    "test:coverage": "nyc mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "lint": "eslint --quiet .",
     "generate-test-ssl": "openssl req -x509 -newkey rsa:2048 -keyout test-ssl-key.pem -out test-ssl-cert.pem -days 365 -nodes -subj '/CN=localhost'"
   },
@@ -70,7 +70,8 @@
     "supertest": "^4.0.2",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^4.2.4"
+    "typescript": "^4.2.4",
+    "typescript-cached-transpile": "^0.0.6"
   },
   "engines": {
     "node": ">=22.1.0"
