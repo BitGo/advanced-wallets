@@ -1,11 +1,10 @@
-import * as express from 'express';
 import { KmsClient } from '../../kms/kmsClient';
-import { BitGo, RequestTracer, TransactionPrebuild } from 'bitgo';
+import { RequestTracer, TransactionPrebuild } from 'bitgo';
 import logger from '../../logger';
+import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 export async function signMultisigTransaction(
-  req: express.Request,
-  res: express.Response,
+  req: EnclavedApiSpecRouteRequest<'v1.multisig.sign', 'post'>,
 ): Promise<any> {
   const {
     source,
@@ -20,7 +19,7 @@ export async function signMultisigTransaction(
   }
 
   const reqId = new RequestTracer();
-  const bitgo: BitGo = req.body.bitgo;
+  const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
   const kms = new KmsClient();
 
@@ -47,18 +46,20 @@ export async function signMultisigTransaction(
     const res = await kms.getKey({ pub, source });
     prv = res.prv;
   } catch (error: any) {
-    res.status(error.status || 500).json({
+    throw {
+      status: error.status || 500,
       message: error.message || 'Failed to retrieve key from KMS',
-    });
-    return;
+    };
   }
 
   // Sign the transaction using BitGo SDK
   const coin = bitgo.coin(req.params.coin);
   try {
-    return await coin.signTransaction({ txPrebuild, prv });
+    const signedTx = await coin.signTransaction({ txPrebuild, prv });
+    // The signed transaction format depends on the coin type
+    return signedTx;
   } catch (error) {
-    console.log('error while signing wallet transaction ', error);
+    logger.error('error while signing wallet transaction:', error);
     throw error;
   }
 }

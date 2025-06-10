@@ -13,50 +13,15 @@ import {
 } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
 import express from 'express';
-import { BitGo } from 'bitgo';
 import { BitGoRequest } from '../../types/request';
 import { MasterExpressConfig } from '../../config';
 import { handleGenerateWalletOnPrem } from '../generateWallet';
-import { withResponseHandler } from '../../shared/responseHandler';
+import { prepareBitGo, responseHandler } from '../../shared/middleware';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
   req.headers['content-type'] = req.headers['content-type'] || 'application/json';
   return express.json({ limit: '20mb' })(req, res, next);
-}
-
-export function prepareBitGo(config: MasterExpressConfig) {
-  const { env, customRootUri } = config;
-  const BITGOEXPRESS_USER_AGENT = `BitGoExpress/${process.env.npm_package_version}`;
-
-  return function prepBitGo(
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
-  ) {
-    let accessToken;
-    if (req.headers.authorization) {
-      const authSplit = req.headers.authorization.split(' ');
-      if (authSplit.length === 2 && authSplit[0].toLowerCase() === 'bearer') {
-        accessToken = authSplit[1];
-      }
-    }
-    const userAgent = req.headers['user-agent']
-      ? BITGOEXPRESS_USER_AGENT + ' ' + req.headers['user-agent']
-      : BITGOEXPRESS_USER_AGENT;
-
-    const bitgoConstructorParams = {
-      env,
-      customRootURI: customRootUri,
-      accessToken,
-      userAgent,
-    };
-
-    (req as BitGoRequest).bitgo = new BitGo(bitgoConstructorParams);
-    (req as BitGoRequest).config = config;
-
-    next();
-  };
 }
 
 // Response type for /generate endpoint
@@ -122,8 +87,9 @@ export function createMasterApiRouter(
 
   // Generate wallet endpoint handler
   router.post('v1.wallet.generate', [
-    withResponseHandler(async (req: GenericMasterApiSpecRouteRequest) => {
-      const result = await handleGenerateWalletOnPrem(req);
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleGenerateWalletOnPrem(typedReq);
       return Response.ok(result);
     }),
   ]);

@@ -4,3 +4,4 @@ coverage/
 .idea/
 logs/
 tsconfig.tsbuildinfo
+out/

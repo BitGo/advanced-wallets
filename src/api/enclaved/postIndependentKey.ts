@@ -1,18 +1,17 @@
 import { BitGo } from 'bitgo';
-import * as express from 'express';
 import { KmsClient } from '../../kms/kmsClient';
+import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 export async function postIndependentKey(
-  req: express.Request,
-  res: express.Response,
-): Promise<any> {
-  const { source, seed }: { source: string; seed?: string } = req.body;
+  req: EnclavedApiSpecRouteRequest<'v1.key.independent', 'post'>,
+) {
+  const { source, seed }: { source: string; seed?: string } = req.decoded;
   if (!source) {
     throw new Error('Source is required for key generation');
   }
 
   // setup clients
-  const bitgo: BitGo = req.body.bitgo;
+  const bitgo: BitGo = req.bitgo;
   const kms = new KmsClient();
 
   // create public and private key pairs on BitGo SDK
@@ -34,9 +33,9 @@ export async function postIndependentKey(
       seed,
     });
   } catch (error: any) {
-    res.status(error.status || 500).json({
+    throw {
+      status: error.status || 500,
       message: error.message || 'Failed to post key to KMS',
-    });
-    return;
+    };
   }
 }
