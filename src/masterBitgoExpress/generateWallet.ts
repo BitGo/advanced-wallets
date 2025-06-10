@@ -30,11 +30,6 @@ export async function handleGenerateWalletOnPrem(
 
   const reqId = new RequestTracer();
 
-  // Assign the default multiSig type value based on the coin
-  if (!req.decoded.multisigType) {
-    req.decoded.multisigType = baseCoin.getDefaultMultisigType();
-  }
-
   const { label, enterprise } = req.decoded;
 
   // Create wallet parameters with type assertion to allow 'onprem' subtype
@@ -94,6 +89,7 @@ export async function handleGenerateWalletOnPrem(
     backupKeychain: backupKeychainPromise(),
     bitgoKeychain: baseCoin.keychains().createBitGo({
       enterprise: req.decoded.enterprise,
+      keyType: 'independent',
       reqId,
       isDistributedCustody: req.decoded.isDistributedCustody,
     }),
