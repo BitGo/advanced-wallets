@@ -5,7 +5,7 @@ export interface PostKeyParams {
   pub: string;
   coin: string;
   source: string;
-  type: 'independent' | 'enclaved';
+  type: 'independent' | 'tss';
   seed?: string; // Optional seed for key generation
 }
 
@@ -13,7 +13,7 @@ export interface PostKeyResponse {
   pub: string;
   coin: string;
   source: string;
-  type: 'independent' | 'enclaved';
+  type: 'independent' | 'tss';
 }
 
 export const PostKeyKmsSchema = z.object({

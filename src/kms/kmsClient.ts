@@ -2,6 +2,7 @@ import debug from 'debug';
 import * as superagent from 'superagent';
 import { config, isMasterExpressConfig } from '../config';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
+import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 
 const debugLogger = debug('bitgo:express:kmsClient');
 
@@ -25,6 +26,7 @@ export class KmsClient {
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
     debugLogger('Posting key to KMS: %O', params);
 
+    // Call KMS to post the key
     let kmsResponse: any;
     try {
       kmsResponse = await superagent.post(`${this.url}/key`).set('x-api-key', 'abc').send(params);
@@ -33,6 +35,7 @@ export class KmsClient {
       throw error;
     }
 
+    // validate the response
     try {
       PostKeyKmsSchema.parse(kmsResponse.body);
     } catch (error: any) {
@@ -43,5 +46,32 @@ export class KmsClient {
 
     const { pub, coin, source } = kmsResponse.body;
     return { pub, coin, source } as PostKeyResponse;
+  }
+
+  async getKey(params: GetKeyParams): Promise<GetKeyResponse> {
+    debugLogger('Getting key from KMS: %O', params);
+
+    // Call KMS to get the key
+    let kmsResponse: any;
+    try {
+      kmsResponse = await superagent
+        .get(`${this.url}/key/${params.pub}`)
+        .set('x-api-key', 'abc')
+        .query({ source: params.source });
+    } catch (error: any) {
+      console.log('Error getting key from KMS', error);
+      throw error;
+    }
+
+    // validate the response
+    try {
+      GetKeyKmsSchema.parse(kmsResponse.body);
+    } catch (error: any) {
+      throw new Error(
+        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+      );
+    }
+
+    return kmsResponse.body as GetKeyResponse;
   }
 }
