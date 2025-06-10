@@ -1,5 +1,4 @@
 import {
-  GenerateWalletOptions,
   promiseProps,
   RequestTracer,
   SupplementGenerateWalletOptions,
@@ -11,12 +10,14 @@ import {
 } from '@bitgo/sdk-core';
 import { createEnclavedExpressClient } from './enclavedExpressClient';
 import _ from 'lodash';
-import { BitGoRequest } from '../types/request';
+import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled
  */
-export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
+export async function handleGenerateWalletOnPrem(
+  req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
+) {
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
 
@@ -27,19 +28,14 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
     );
   }
 
-  const params = req.body as GenerateWalletOptions;
   const reqId = new RequestTracer();
 
   // Assign the default multiSig type value based on the coin
-  if (!params.multisigType) {
-    params.multisigType = baseCoin.getDefaultMultisigType();
+  if (!req.decoded.multisigType) {
+    req.decoded.multisigType = baseCoin.getDefaultMultisigType();
   }
 
-  if (typeof params.label !== 'string') {
-    throw new Error('missing required string parameter label');
-  }
-
-  const { label, enterprise } = params;
+  const { label, enterprise } = req.decoded;
 
   // Create wallet parameters with type assertion to allow 'onprem' subtype
   const walletParams = {
@@ -97,9 +93,9 @@ export async function handleGenerateWalletOnPrem(req: BitGoRequest) {
     userKeychain: userKeychainPromise(),
     backupKeychain: backupKeychainPromise(),
     bitgoKeychain: baseCoin.keychains().createBitGo({
-      enterprise: params.enterprise,
+      enterprise: req.decoded.enterprise,
       reqId,
-      isDistributedCustody: params.isDistributedCustody,
+      isDistributedCustody: req.decoded.isDistributedCustody,
     }),
   });
 
