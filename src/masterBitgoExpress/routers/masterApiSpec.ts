@@ -1,24 +1,25 @@
-import * as t from 'io-ts';
 import {
   apiSpec,
-  httpRoute,
+  Method as HttpMethod,
   httpRequest,
   HttpResponse,
-  Method as HttpMethod,
+  httpRoute,
 } from '@api-ts/io-ts-http';
+import { Response } from '@api-ts/response';
 import {
   createRouter,
   TypedRequestHandler,
   type WrappedRouter,
 } from '@api-ts/typed-express-router';
-import { Response } from '@api-ts/response';
 import express from 'express';
-import { BitGoRequest } from '../../types/request';
+import * as t from 'io-ts';
 import { MasterExpressConfig } from '../../initConfig';
-import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
+import { BitGoRequest } from '../../types/request';
+import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { handleSendMany } from '../handleSendMany';
 import { validateMasterExpressConfig } from '../middleware';
+import { handleRecoveryWalletOnPrem } from '../recoveryWallet';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -79,11 +80,32 @@ export const SendManyRequest = {
 
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
+
   200: t.any,
   500: t.type({
     error: t.string,
     details: t.string,
   }),
+};
+
+// Response type for /recovery endpoint
+const RecoveryWalletResponse: HttpResponse = {
+  // TODO: Get type from public types repo
+  200: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
+// Request type for /generate endpoint
+const RecoveryWalletRequest = {
+  // TODO: complete the type
+  // label: t.string,
+  // multisigType: t.union([t.undefined, t.literal('onchain'), t.literal('tss')]),
+  // enterprise: t.string,
+  // disableTransactionNotifications: t.union([t.undefined, t.boolean]),
+  // isDistributedCustody: t.union([t.undefined, t.boolean]),
 };
 
 // API Specification
@@ -115,6 +137,20 @@ export const MasterApiSpec = apiSpec({
       }),
       response: SendManyResponse,
       description: 'Send many transactions',
+    }),
+  },
+  'v1.wallet.recovery': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/{coin}/wallet/recovery',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+        },
+        body: RecoveryWalletRequest,
+      }),
+      response: RecoveryWalletResponse,
+      description: 'Recover an existing wallet',
     }),
   },
 });
@@ -157,6 +193,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleSendMany(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.wallet.recovery', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleRecoveryWalletOnPrem(typedReq);
       return Response.ok(result);
     }),
   ]);
