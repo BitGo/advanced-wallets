@@ -1,23 +1,24 @@
-import * as t from 'io-ts';
 import {
   apiSpec,
-  httpRoute,
+  Method as HttpMethod,
   httpRequest,
   HttpResponse,
-  Method as HttpMethod,
+  httpRoute,
 } from '@api-ts/io-ts-http';
+import { Response } from '@api-ts/response';
 import {
   createRouter,
-  type WrappedRouter,
   TypedRequestHandler,
+  type WrappedRouter,
 } from '@api-ts/typed-express-router';
-import { Response } from '@api-ts/response';
 import express from 'express';
-import { BitGoRequest } from '../../types/request';
-import { EnclavedConfig } from '../../types';
+import * as t from 'io-ts';
 import { postIndependentKey } from '../../api/enclaved/postIndependentKey';
+import { recoveryMultisigTransaction } from '../../api/enclaved/recoveryMultisigTransaction';
 import { signMultisigTransaction } from '../../api/enclaved/signMultisigTransaction';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
+import { EnclavedConfig } from '../../types';
+import { BitGoRequest } from '../../types/request';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -39,13 +40,32 @@ const IndependentKeyResponse: HttpResponse = {
 const SignMultisigRequest = {
   source: t.string,
   pub: t.string,
-  txPrebuild: t.any, // TransactionPrebuild type from BitGo
+  txPrebuild: t.any,
 };
 
 // Response type for /multisig/sign endpoint
 const SignMultisigResponse: HttpResponse = {
   // TODO: Define proper response type for signed multisig transaction
   200: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
+// Request type for /multisig/recovery endpoint
+const RecoveryMultisigRequest = {
+  userPub: t.string,
+  backupPub: t.string,
+  walletContractAddress: t.string,
+  recoveryDestinationAddress: t.string,
+  recoveryParams: t.any, // TODO: add more precise typing
+};
+
+// Response type for /multisig/recovery endpoint
+const RecoveryMultisigResponse: HttpResponse = {
+  // TODO: Define proper response type for recovery multisig transaction
+  200: t.any, // the full signed tx
   500: t.type({
     error: t.string,
     details: t.string,
@@ -66,6 +86,20 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: SignMultisigResponse,
       description: 'Sign a multisig transaction',
+    }),
+  },
+  'v1.multisig.recovery': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/{coin}/multisig/recovery',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+        },
+        body: RecoveryMultisigRequest,
+      }),
+      response: RecoveryMultisigResponse,
+      description: 'Recover a multisig transaction',
     }),
   },
   'v1.key.independent': {
@@ -117,6 +151,14 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.multisig.sign', 'post'>;
       const result = await signMultisigTransaction(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.multisig.recovery', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>;
+      const result = await recoveryMultisigTransaction(typedReq);
       return Response.ok(result);
     }),
   ]);
