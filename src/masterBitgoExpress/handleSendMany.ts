@@ -52,6 +52,8 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
 
+  logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
+
   try {
     const prebuildParams: PrebuildTransactionOptions = {
       ...params,
@@ -59,15 +61,38 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       memo: params.memo ? ({ type: 'text', value: params.memo } as Memo) : undefined,
     };
 
-    // First build the transaction
-    const txPrebuild = await wallet.prebuildTransaction({
+    // First build the transaction with bitgo
+    const txPrebuilt = await wallet.prebuildTransaction({
       ...prebuildParams,
       reqId,
     });
 
+    // verify transaction prebuild
+    try {
+      const verified = await baseCoin.verifyTransaction({
+        txParams: { ...prebuildParams },
+        txPrebuild: txPrebuilt,
+        wallet,
+        verification: {},
+        reqId: reqId,
+        walletType: 'onchain',
+      });
+      if (!verified) {
+        throw new Error('Transaction prebuild failed local validation');
+      }
+      logger.debug('Transaction prebuild verified');
+    } catch (e) {
+      const err = e as Error;
+      logger.error('transaction prebuild failed local validation:', err.message);
+      logger.error('transaction prebuild:', JSON.stringify(txPrebuilt, null, 2));
+      logger.error(err);
+    }
+
+    logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
+
     // Then sign it using the enclaved express client
     const signedTx = await enclavedExpressClient.signMultisig({
-      txPrebuild,
+      txPrebuild: txPrebuilt,
       source: params.source,
       pub: signingKeychain.pub,
     });
