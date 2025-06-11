@@ -1,5 +1,5 @@
 import { KmsClient } from '../../kms/kmsClient';
-import { RequestTracer, TransactionPrebuild } from 'bitgo';
+import { TransactionPrebuild } from 'bitgo';
 import logger from '../../logger';
 import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 
@@ -14,31 +14,12 @@ export async function signMultisigTransaction(
 
   if (!source || !pub) {
     throw new Error('Source and public key are required for signing');
-  } else if (!txPrebuild || !txPrebuild.wallet) {
+  } else if (!txPrebuild) {
     throw new Error('Transaction prebuild is required for signing');
   }
 
-  const reqId = new RequestTracer();
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
   const kms = new KmsClient();
-
-  // verify transaction prebuild
-  try {
-    await baseCoin.verifyTransaction({
-      txParams: { ...txPrebuild.buildParams },
-      txPrebuild,
-      wallet: txPrebuild.wallet,
-      verification: {},
-      reqId: reqId,
-      walletType: 'onchain',
-    });
-  } catch (e) {
-    const err = e as Error;
-    logger.error('transaction prebuild failed local validation:', err.message);
-    logger.error('transaction prebuild:', JSON.stringify(txPrebuild, null, 2));
-    logger.error(err);
-  }
 
   // Retrieve the private key from KMS
   let prv: string;

@@ -32,9 +32,17 @@ winston.addColors(colors);
 const format = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   winston.format.colorize({ all: true }),
-  winston.format.printf(
-    (info: winston.Logform.TransformableInfo) => `${info.timestamp} ${info.level}: ${info.message}`,
-  ),
+  winston.format.printf((info: winston.Logform.TransformableInfo) => {
+    // Handle both string interpolation and object logging
+    const message = typeof info.message === 'string' ? info.message : JSON.stringify(info.message);
+
+    // If there are additional arguments, format them
+    const args = (info[Symbol.for('splat')] as any[]) || [];
+    const formattedMessage =
+      args.length > 0 ? message.replace(/%s/g, () => String(args.shift() || '')) : message;
+
+    return `${info.timestamp} ${info.level}: ${formattedMessage}`;
+  }),
 );
 
 // Define which transports the logger must use
