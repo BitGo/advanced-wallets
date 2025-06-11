@@ -1,0 +1,15 @@
+{
+    "halfSigned": {
+        "recipients": [
+            {
+                "address": "0xe7d07af8e3e7472ea8391a3372ab98d04ac4df20",
+                "amount": "1000000000000000000"
+            }
+        ],
+        "expireTime": 1750182870,
+        "contractSequenceId": 1,
+        "operationHash": "0x92d3a28bd75dfa559c60e679b98fddfcb7dcaeb579c25cab3f9442b25fd270e2",
+        "signature": "0x62c594b62ce2fc9f1d2e82a105668ed53528eb02635b8ad73206fe75ed26b26923450ed54b87980296c362fe03c7bc8e156d1ab38bfe9a682ba585e7d92d88e31b",
+        "backupKeyNonce": 0
+    }
+}
