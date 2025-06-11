@@ -1,5 +1,5 @@
 import { KmsClient } from '../../kms/kmsClient';
-import { RequestTracer, TransactionPrebuild } from 'bitgo';
+import { TransactionPrebuild } from 'bitgo';
 import logger from '../../logger';
 import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 

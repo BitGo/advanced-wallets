@@ -1,8 +1,8 @@
 import { RequestTracer, PrebuildTransactionOptions, Memo } from '@bitgo/sdk-core';
-import { BitGoRequest } from '../types/request';
 import { createEnclavedExpressClient } from './enclavedExpressClient';
 import logger from '../logger';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import { isMasterExpressConfig } from '../config';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -18,6 +18,9 @@ interface Recipient {
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
+  if (!isMasterExpressConfig(req.config)) {
+    throw new Error('Configuration must be in master express mode');
+  }
   const enclavedExpressClient = createEnclavedExpressClient(req.config, req.params.coin);
   if (!enclavedExpressClient) {
     throw new Error('Please configure enclaved express configs to sign the transactions.');
@@ -35,10 +38,10 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  // @ts-ignore
-  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-    throw new Error('Wallet is not an on-prem wallet');
-  }
+  // TODO: uncomment when on-prem type is added to SDK
+  // if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
+  //   throw new Error('Wallet is not an on-prem wallet');
+  // }
 
   // Get the signing keychains
   const signingKeychains = await baseCoin.keychains().getKeysForSigning({
