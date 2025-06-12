@@ -4,7 +4,7 @@ import http from 'http';
 import morgan from 'morgan';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
-import { EnclavedConfig, config, TlsMode, isEnclavedConfig } from './config';
+import { EnclavedConfig, initConfig, TlsMode, isEnclavedConfig } from './initConfig';
 import { setupRoutes } from './routes/enclaved';
 import {
   setupLogging,
@@ -117,7 +117,7 @@ export function app(cfg: EnclavedConfig): express.Application {
 }
 
 export async function init(): Promise<void> {
-  const cfg = config();
+  const cfg = initConfig();
 
   // Type-safe validation that we're in enclaved mode
   if (!isEnclavedConfig(cfg)) {

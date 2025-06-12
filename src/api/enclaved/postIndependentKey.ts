@@ -12,7 +12,7 @@ export async function postIndependentKey(
 
   // setup clients
   const bitgo: BitGo = req.bitgo;
-  const kms = new KmsClient();
+  const kms = new KmsClient(req.config);
 
   // create public and private key pairs on BitGo SDK
   const coin = bitgo.coin(req.params.coin);

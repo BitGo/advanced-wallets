@@ -2,7 +2,7 @@ import { RequestTracer, PrebuildTransactionOptions, Memo, KeyIndices } from '@bi
 import { createEnclavedExpressClient } from './enclavedExpressClient';
 import logger from '../logger';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
-import { isMasterExpressConfig } from '../config';
+import { isMasterExpressConfig } from '../initConfig';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.

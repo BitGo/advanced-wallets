@@ -1,4 +1,4 @@
-import { determineAppMode, AppMode } from './config';
+import { determineAppMode, AppMode } from './initConfig';
 import * as enclavedApp from './enclavedApp';
 import * as masterExpressApp from './masterExpressApp';
 import logger from './logger';

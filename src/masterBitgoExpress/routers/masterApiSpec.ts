@@ -14,7 +14,7 @@ import {
 import { Response } from '@api-ts/response';
 import express from 'express';
 import { BitGoRequest } from '../../types/request';
-import { MasterExpressConfig } from '../../config';
+import { MasterExpressConfig } from '../../initConfig';
 import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { handleSendMany } from '../handleSendMany';
