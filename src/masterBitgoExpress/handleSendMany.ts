@@ -76,6 +76,8 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       reqId,
     });
 
+    logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
+
     // verify transaction prebuild
     try {
       const verified = await baseCoin.verifyTransaction({
@@ -94,7 +96,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       const err = e as Error;
       logger.error('transaction prebuild failed local validation:', err.message);
       logger.error('transaction prebuild:', JSON.stringify(txPrebuilt, null, 2));
-      logger.error(err);
+        throw new Error(`Transaction prebuild failed local validation: ${err.message}`);
     }
 
     logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));

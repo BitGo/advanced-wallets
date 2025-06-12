@@ -47,7 +47,11 @@ describe('POST /api/:coin/wallet/generate', () => {
 
   it('should generate a wallet by calling the enclaved express service', async () => {
     const userKeychainNock = nock(enclavedExpressUrl)
-      .post(`/api/${coin}/key/independent`)
+      .post(`/api/${coin}/key/independent`, {
+        source: 'user',
+        coin: coin,
+        type: 'independent',
+      })
       .reply(200, {
         pub: 'xpub_user',
         source: 'user',
@@ -55,7 +59,11 @@ describe('POST /api/:coin/wallet/generate', () => {
       });
 
     const backupKeychainNock = nock(enclavedExpressUrl)
-      .post(`/api/${coin}/key/independent`)
+      .post(`/api/${coin}/key/independent`, {
+        source: 'backup',
+        coin: coin,
+        type: 'independent',
+      })
       .reply(200, {
         pub: 'xpub_backup',
         source: 'backup',
