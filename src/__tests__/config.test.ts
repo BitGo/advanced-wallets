@@ -1,5 +1,5 @@
 import 'should';
-import { config, isEnclavedConfig, TlsMode } from '../config';
+import { initConfig, isEnclavedConfig, TlsMode } from '../initConfig';
 
 describe('Configuration', () => {
   const originalEnv = process.env;
@@ -17,14 +17,14 @@ describe('Configuration', () => {
   });
 
   it('should throw error when APP_MODE is not set', () => {
-    (() => config()).should.throw(
+    (() => initConfig()).should.throw(
       'APP_MODE environment variable is required. Set APP_MODE to either "enclaved" or "master-express"',
     );
   });
 
   it('should throw error when APP_MODE is invalid', () => {
     process.env.APP_MODE = 'invalid';
-    (() => config()).should.throw(
+    (() => initConfig()).should.throw(
       'Invalid APP_MODE: invalid. Must be either "enclaved" or "master-express"',
     );
   });
@@ -39,7 +39,7 @@ describe('Configuration', () => {
     });
 
     it('should use default configuration when no environment variables are set', () => {
-      const cfg = config();
+      const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.port.should.equal(3080);
@@ -54,7 +54,7 @@ describe('Configuration', () => {
 
     it('should read port from environment variable', () => {
       process.env.ENCLAVED_EXPRESS_PORT = '4000';
-      const cfg = config();
+      const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.port.should.equal(4000);
@@ -67,7 +67,7 @@ describe('Configuration', () => {
     it('should read TLS mode from environment variables', () => {
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
-      let cfg = config();
+      let cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
@@ -76,7 +76,7 @@ describe('Configuration', () => {
 
       // Test with mTLS explicitly enabled
       process.env.TLS_MODE = 'mtls';
-      cfg = config();
+      cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
@@ -87,13 +87,13 @@ describe('Configuration', () => {
 
       // Test with invalid TLS mode
       process.env.TLS_MODE = 'invalid';
-      (() => config()).should.throw(
+      (() => initConfig()).should.throw(
         'Invalid TLS_MODE: invalid. Must be either "disabled" or "mtls"',
       );
 
       // Test with no TLS mode (should default to MTLS)
       delete process.env.TLS_MODE;
-      cfg = config();
+      cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
@@ -108,7 +108,7 @@ describe('Configuration', () => {
       process.env.MTLS_REJECT_UNAUTHORIZED = 'true';
       process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
 
-      const cfg = config();
+      const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.mtlsRequestCert!.should.be.true();

@@ -3,7 +3,7 @@ import https from 'https';
 import http from 'http';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
-import { MasterExpressConfig, config, isMasterExpressConfig, TlsMode } from './config';
+import { MasterExpressConfig, initConfig, isMasterExpressConfig, TlsMode } from './initConfig';
 import {
   setupLogging,
   setupCommonMiddleware,
@@ -111,7 +111,7 @@ export function app(cfg: MasterExpressConfig): express.Application {
 }
 
 export async function init(): Promise<void> {
-  const cfg = config();
+  const cfg = initConfig();
 
   // Type-safe validation that we're in master express mode
   if (!isMasterExpressConfig(cfg)) {

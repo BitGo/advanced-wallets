@@ -19,7 +19,7 @@ export async function signMultisigTransaction(
   }
 
   const bitgo = req.bitgo;
-  const kms = new KmsClient();
+  const kms = new KmsClient(req.config);
 
   // Retrieve the private key from KMS
   let prv: string;

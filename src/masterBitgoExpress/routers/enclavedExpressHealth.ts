@@ -4,7 +4,7 @@ import { createRouter, type WrappedRouter } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
 import https from 'https';
 import superagent from 'superagent';
-import { MasterExpressConfig, TlsMode } from '../../config';
+import { MasterExpressConfig, TlsMode } from '../../initConfig';
 import logger from '../../logger';
 import { responseHandler } from '../../shared/middleware';
 

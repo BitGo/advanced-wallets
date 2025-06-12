@@ -214,8 +214,8 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     throw new Error('ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty');
   }
 
-  if (!enclavedExpressCert) {
-    throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required and cannot be empty');
+  if (tlsMode === TlsMode.MTLS && !enclavedExpressCert) {
+    throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required for MTLS mode.');
   }
 
   // Debug mTLS environment variables
@@ -375,7 +375,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 // MAIN CONFIG FUNCTION
 // ============================================================================
 
-export function config(): Config {
+export function initConfig(): Config {
   const appMode = determineAppMode();
 
   if (appMode === AppMode.ENCLAVED) {
