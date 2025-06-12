@@ -28,12 +28,11 @@ export async function handleRecoveryWalletOnPrem(
   } = req.body;
 
   try {
-    const fullSignedRecoveryTx = await enclavedExpressClient.multisigRecovery({
-      coin,
+    const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
       userPub,
       backupPub,
       walletContractAddress,
-      recoveryDestination: recoveryDestinationAddress,
+      recoveryDestinationAddress,
       apiKey,
       recoveryParams,
     });

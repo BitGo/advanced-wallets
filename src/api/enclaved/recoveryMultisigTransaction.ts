@@ -1,7 +1,3 @@
-// TODO: based on the original signMultisigTransaction.ts file.
-// Added this one because things like verify transaction doesn't seems to be present during recovery (in my limited experience)
-// But I want to commit something that could be fused later on with the normal signing
-
 import { SignFinalOptions } from '@bitgo/abstract-eth';
 import { MethodNotImplementedError } from 'bitgo';
 import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';

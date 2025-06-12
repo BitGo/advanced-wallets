@@ -1,9 +1,8 @@
-import superagent from 'superagent';
-import https from 'https';
-import debug from 'debug';
-import { MasterExpressConfig } from '../types';
-import { TlsMode } from '../types';
 import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
+import debug from 'debug';
+import https from 'https';
+import superagent from 'superagent';
+import { MasterExpressConfig, TlsMode } from '../types';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -27,6 +26,18 @@ interface SignMultisigOptions {
   txPrebuild: TransactionPrebuild;
   source: 'user' | 'backup';
   pub: string;
+}
+
+interface RecoveryMultisigOptions {
+  userPub: string;
+  backupPub: string;
+  walletContractAddress: string;
+  recoveryDestinationAddress: string;
+  apiKey: string;
+  recoveryParams?: {
+    bitgoPub?: string;
+    ignoreAddressTypes: string[];
+  };
 }
 
 export class EnclavedExpressClient {
@@ -131,6 +142,27 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign multisig: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Recovery a multisig transaction
+   */
+  async recoveryMultisig(params: RecoveryMultisigOptions): Promise<SignedTransaction> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to recovery a multisig');
+    }
+
+    try {
+      const res = await this.configureRequest(
+        superagent.post(`${this.baseUrl}/api/${this.coin}/multisig/recovery`).type('json'),
+      ).send(params);
+
+      return res.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to recover multisig: %s', err.message);
       throw err;
     }
   }
