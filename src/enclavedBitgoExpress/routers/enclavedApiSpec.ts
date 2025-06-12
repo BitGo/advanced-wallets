@@ -57,9 +57,16 @@ const SignMultisigResponse: HttpResponse = {
 const RecoveryMultisigRequest = {
   userPub: t.string,
   backupPub: t.string,
-  walletContractAddress: t.string,
-  recoveryDestinationAddress: t.string,
-  recoveryParams: t.any, // TODO: add more precise typing
+  apiKey: t.string,
+  // TODO: best typing for this, they come from sdk TS types
+  unsignedSweepPrebuildTx: t.any,
+  coinSpecificParams: t.union([
+    t.undefined,
+    t.partial({
+      bitgoPub: t.union([t.undefined, t.string]),
+      ignoreAddressTypes: t.union([t.undefined, t.array(t.string)]),
+    }),
+  ]),
 };
 
 // Response type for /multisig/recovery endpoint

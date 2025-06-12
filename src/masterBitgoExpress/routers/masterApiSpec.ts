@@ -80,7 +80,6 @@ export const SendManyRequest = {
 
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
-
   200: t.any,
   500: t.type({
     error: t.string,
@@ -98,14 +97,20 @@ const RecoveryWalletResponse: HttpResponse = {
   }),
 };
 
-// Request type for /generate endpoint
+// Request type for /recovery endpoint
 const RecoveryWalletRequest = {
-  // TODO: complete the type
-  // label: t.string,
-  // multisigType: t.union([t.undefined, t.literal('onchain'), t.literal('tss')]),
-  // enterprise: t.string,
-  // disableTransactionNotifications: t.union([t.undefined, t.boolean]),
-  // isDistributedCustody: t.union([t.undefined, t.boolean]),
+  userPub: t.string,
+  backupPub: t.string,
+  walletContractAddress: t.string,
+  recoveryDestinationAddress: t.string,
+  apiKey: t.string,
+  coinSpecificParams: t.union([
+    t.undefined,
+    t.partial({
+      bitgoPub: t.union([t.undefined, t.string]),
+      ignoreAddressTypes: t.union([t.undefined, t.array(t.string)]),
+    }),
+  ]),
 };
 
 // API Specification

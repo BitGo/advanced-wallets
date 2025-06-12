@@ -1,3 +1,4 @@
+import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
 import debug from 'debug';
 import https from 'https';
@@ -31,13 +32,14 @@ interface SignMultisigOptions {
 interface RecoveryMultisigOptions {
   userPub: string;
   backupPub: string;
-  walletContractAddress: string;
-  recoveryDestinationAddress: string;
+  unsignedSweepPrebuildTx: RecoveryInfo | OfflineVaultTxInfo | UnsignedSweepTxMPCv2;
   apiKey: string;
-  recoveryParams?: {
+  walletContractAddress: string;
+  coinSpecificParams?: {
     bitgoPub?: string;
-    ignoreAddressTypes: string[];
+    ignoreAddressTypes?: string[];
   };
+  // recoveryDestinationAddress: string;
 }
 
 export class EnclavedExpressClient {
