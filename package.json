@@ -8,7 +8,7 @@
     "enclaved-bitgo-express": "./bin/enclaved-bitgo-express"
   },
   "scripts": {
-    "start": "nodemon bin/enclaved-bitgo-express",
+    "start": "nodemon",
     "build": "yarn tsc --build --incremental --verbose . && cp package.json dist/",
     "test": "mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "test:watch": "mocha --require ts-node/register --watch 'src/**/__tests__/**/*.test.ts'",
