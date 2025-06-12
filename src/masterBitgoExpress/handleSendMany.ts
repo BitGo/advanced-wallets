@@ -1,4 +1,4 @@
-import { RequestTracer, PrebuildTransactionOptions, Memo } from '@bitgo/sdk-core';
+import { RequestTracer, PrebuildTransactionOptions, Memo, KeyIndices } from '@bitgo/sdk-core';
 import { createEnclavedExpressClient } from './enclavedExpressClient';
 import logger from '../logger';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
@@ -43,18 +43,24 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   //   throw new Error('Wallet is not an on-prem wallet');
   // }
 
+  const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
+  logger.info(`Key ID index: ${keyIdIndex}`);
+  logger.info(`Key IDs: ${JSON.stringify(wallet.keyIds(), null, 2)}`);
+
   // Get the signing keychains
-  const signingKeychains = await baseCoin.keychains().getKeysForSigning({
-    wallet,
-    reqId,
+  const signingKeychain = await baseCoin.keychains().get({
+    id: wallet.keyIds()[keyIdIndex],
   });
 
-  // Find the user keychain for signing
-  const signingKeychain = signingKeychains.find((k) => k.source === params.source);
   if (!signingKeychain || !signingKeychain.pub) {
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
 
+  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
+    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
+  }
+
+  logger.info(`Signing with ${params.source} keychain, pub: ${signingKeychain.pub}`);
   logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
 
   try {
