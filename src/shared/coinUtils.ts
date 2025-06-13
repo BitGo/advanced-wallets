@@ -1,66 +1,57 @@
 import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
+import { CoinFamily } from '@bitgo/statics';
 import { BaseCoin } from 'bitgo';
 import { AbstractUtxoCoin, Eos, Stx, Xtz } from 'bitgo/dist/types/src/v2/coins';
 
-export function isEthCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
-  const isEthPure =
-    isFamily(coin, 'eth', 'gteth') ||
-    isFamily(coin, 'eth', 'hteth') ||
-    isFamily(coin, 'ethw', 'tethw');
+export function isEthLikeCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
+  const isEthPure = isFamily(coin, CoinFamily.ETH);
 
   const isEthLike =
-    isFamily(coin, 'rbtc', 'trbtc') ||
-    isFamily(coin, 'etc', 'tetc') ||
-    isFamily(coin, 'avaxc', 'tavaxc') ||
-    isFamily(coin, 'polygon', 'tpolygon') ||
-    isFamily(coin, 'arbeth', 'tarbeth') ||
-    isFamily(coin, 'opeth', 'topeth') ||
-    isFamily(coin, 'bsc', 'tbsc') ||
-    isFamily(coin, 'baseeth', 'tbaseeth') ||
-    isFamily(coin, 'coredao', 'tcoredao') ||
-    isFamily(coin, 'oas', 'toas') ||
-    isFamily(coin, 'flr', 'tflr') ||
-    isFamily(coin, 'sgb', 'tsgb') ||
-    isFamily(coin, 'wemix', 'twemix') ||
-    isFamily(coin, 'xdc', 'txdc');
+    isFamily(coin, CoinFamily.ETHW) || // ethw has its own family. as the others
+    isFamily(coin, CoinFamily.RBTC) ||
+    isFamily(coin, CoinFamily.ETC) ||
+    isFamily(coin, CoinFamily.AVAXC) ||
+    isFamily(coin, CoinFamily.POLYGON) ||
+    isFamily(coin, CoinFamily.ARBETH) ||
+    isFamily(coin, CoinFamily.OPETH) ||
+    isFamily(coin, CoinFamily.BSC) ||
+    isFamily(coin, CoinFamily.BASEETH) ||
+    isFamily(coin, CoinFamily.COREDAO) ||
+    isFamily(coin, CoinFamily.OAS) ||
+    isFamily(coin, CoinFamily.FLR) ||
+    isFamily(coin, CoinFamily.SGB) ||
+    isFamily(coin, CoinFamily.WEMIX) ||
+    isFamily(coin, CoinFamily.XDC);
 
   return isEthPure || isEthLike;
 }
 
 export function isUtxoCoin(coin: BaseCoin): coin is AbstractUtxoCoin {
-  // how to check if coin is UTXO? so many families
-  const isBtc = isFamily(coin, 'btc', 'tbtc');
+  const isBtc = isFamily(coin, CoinFamily.BTC);
 
   const isBtcLike =
-    isFamily(coin, 'ltc', 'tltc') ||
-    isFamily(coin, 'bch', 'tbch') ||
-    isFamily(coin, 'zec', 'tzec') ||
-    isFamily(coin, 'dash', 'tdash') ||
-    isFamily(coin, 'doge', 'tdoge') ||
-    isFamily(coin, 'btg', 'tbtg');
+    isFamily(coin, CoinFamily.LTC) ||
+    isFamily(coin, CoinFamily.BCH) ||
+    isFamily(coin, CoinFamily.ZEC) ||
+    isFamily(coin, CoinFamily.DASH) ||
+    isFamily(coin, CoinFamily.DASH) ||
+    isFamily(coin, CoinFamily.BTG);
 
   return isBtc || isBtcLike;
 }
 
-//look for those on OVC repo
-//https://github.com/BitGo/offline-vault-console/blob/7f850cdd10c89ceb850c69759349b9e0bbfb56db/frontend/src/pkg/bitgo/transaction-utils.ts#L595
 export function isEosCoin(coin: BaseCoin): coin is Eos {
-  return isFamily(coin, 'eos', 'teos');
+  return isFamily(coin, CoinFamily.EOS);
 }
 
 export function isStxCoin(coin: BaseCoin): coin is Stx {
-  return isFamily(coin, 'stx', 'tstx');
+  return isFamily(coin, CoinFamily.STX);
 }
 
 export function isXtzCoin(coin: BaseCoin): coin is Xtz {
-  // Tezos faucet: https://faucet.ghostnet.teztnets.com/
-  return isFamily(coin, 'xtz', 'txtz');
+  return isFamily(coin, CoinFamily.XTZ);
 }
 
-function isFamily(coin: BaseCoin, coinFamily: string, testFamily: string) {
-  if (!coin) {
-    return false;
-  }
-  const family = coin.getFamily();
-  return family === coinFamily || family === testFamily;
+function isFamily(coin: BaseCoin, family: CoinFamily) {
+  return Boolean(coin && coin.getFamily() === family);
 }

@@ -1,7 +1,8 @@
 import { SignFinalOptions } from '@bitgo/abstract-eth';
+import { MethodNotImplementedError } from 'bitgo';
 import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import logger from '../../logger';
-import { isEthCoin } from '../../shared/coinUtils';
+import { isEthLikeCoin } from '../../shared/coinUtils';
 import { retrieveKmsKey } from './utils';
 
 export async function recoveryMultisigTransaction(
@@ -20,13 +21,13 @@ export async function recoveryMultisigTransaction(
   }
 
   const bitgo = req.bitgo;
-  const coin = bitgo.coin(req.params.coin);
+  const coin = bitgo.coin(req.decoded.coin);
 
   // The signed transaction format depends on the coin type so we do this check as a guard
   // If you check the type of coin before and after the "if", you may see "BaseCoin" vs "AbstractEthLikeCoin"
   if (coin.isEVM()) {
     // Every recovery method on every coin family varies one from another so we need to ensure with a guard.
-    if (isEthCoin(coin)) {
+    if (isEthLikeCoin(coin)) {
       // TODO: populate coinSpecificParams with things like replayProtectionOptions
       // coinSpecificParams type could be "recoverOptions"
       try {
@@ -59,11 +60,11 @@ export async function recoveryMultisigTransaction(
         throw error;
       }
     } else {
-      const errorMsg = 'Unsupported coin type for recovery: ' + req.params.coin;
+      const errorMsg = 'Unsupported coin type for recovery: ' + req.decoded.coin;
       logger.error(errorMsg);
       throw new Error(errorMsg);
     }
   } else {
-    throw new Error('Unsupported coin type for recovery: ' + coin);
+    throw new MethodNotImplementedError('Unsupported coin type for recovery: ' + coin);
   }
 }
