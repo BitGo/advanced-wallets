@@ -11,8 +11,8 @@ export async function recoveryMultisigTransaction(
   const { userPub, backupPub, unsignedSweepPrebuildTx, walletContractAddress } = req.body;
 
   //fetch prv and check that pub are valid
-  const userPrv = await retrieveKmsKey({ pub: userPub, source: 'user' });
-  const backupPrv = await retrieveKmsKey({ pub: backupPub, source: 'backup' });
+  const userPrv = await retrieveKmsKey({ pub: userPub, source: 'user', cfg: req.config });
+  const backupPrv = await retrieveKmsKey({ pub: backupPub, source: 'backup', cfg: req.config });
 
   if (!userPrv || !backupPrv) {
     const errorMsg = `Error while recovery wallet, missing prv keys for user or backup on pub keys user=${userPub}, backup=${backupPub}`;
