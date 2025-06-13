@@ -41,10 +41,6 @@ describe('POST /api/:coin/wallet/generate', () => {
     nock.cleanAll();
   });
 
-  after(() => {
-    nock.restore();
-  });
-
   it('should generate a wallet by calling the enclaved express service', async () => {
     const userKeychainNock = nock(enclavedExpressUrl)
       .post(`/api/${coin}/key/independent`)
