@@ -298,4 +298,118 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     response.body.should.have.property('error');
     response.body.error.should.equal('Please configure enclaved express configs.');
   });
+
+  it('should fail when transaction verification returns false', async () => {
+    // Mock wallet get request
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: walletId,
+        type: 'cold',
+        subType: 'onPrem',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+      });
+
+    // Mock keychain get request
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+      });
+
+    const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+      txHex: 'prebuilt-tx-hex',
+      txInfo: {
+        nP2SHInputs: 1,
+        nSegwitInputs: 0,
+        nOutputs: 2,
+      },
+      walletId,
+    });
+
+    // Mock verifyTransaction to return false
+    const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(false);
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [
+          {
+            address: 'tb1qtest1',
+            amount: '100000',
+          },
+        ],
+        source: 'user',
+        pubkey: 'xpub_user',
+      });
+
+    response.status.should.equal(500);
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(prebuildStub);
+    sinon.assert.calledOnce(verifyStub);
+  });
+
+  it('should fail when transaction verification throws an error', async () => {
+    // Mock wallet get request
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: walletId,
+        type: 'cold',
+        subType: 'onPrem',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+      });
+
+    // Mock keychain get request
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+      });
+
+    const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+      txHex: 'prebuilt-tx-hex',
+      txInfo: {
+        nP2SHInputs: 1,
+        nSegwitInputs: 0,
+        nOutputs: 2,
+      },
+      walletId,
+    });
+
+    // Mock verifyTransaction to throw an error
+    const verifyStub = sinon
+      .stub(Coin.Btc.prototype, 'verifyTransaction')
+      .rejects(new Error('Invalid transaction'));
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [
+          {
+            address: 'tb1qtest1',
+            amount: '100000',
+          },
+        ],
+        source: 'user',
+        pubkey: 'xpub_user',
+      });
+
+    response.status.should.equal(500);
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(prebuildStub);
+    sinon.assert.calledOnce(verifyStub);
+  });
 });
