@@ -1,6 +1,7 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
 import { Config } from '../types';
 import { BitGoRequest } from '../types/request';
+import { EnclavedError } from '../errors';
 
 // Extend Express Response to include sendEncoded
 interface EncodedResponse extends ExpressResponse {
@@ -31,19 +32,26 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       const result = await fn(req as BitGoRequest<T>, res, next);
       return res.sendEncoded(result.type, result.payload);
     } catch (error) {
-      // Log the error
-      console.error('Error in service function:', error);
-
       // If it's already a Response object (e.g. from Response.error)
       if (error && typeof error === 'object' && 'type' in error && 'payload' in error) {
         const apiError = error as ApiResponse;
         return res.sendEncoded(apiError.type, apiError.payload);
       }
 
+      // If it's an EnclavedError, use its status code
+      if (error instanceof EnclavedError) {
+        return res.sendEncoded(error.status, {
+          error: error.message,
+          name: error.name,
+          details: error.message,
+        });
+      }
+
       // Default error response
       return res.sendEncoded(500, {
         error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : 'An unexpected error occurred',
+        name: error instanceof Error ? error.name : 'Error',
+        details: error instanceof Error ? error.message : String(error),
       });
     }
   };
