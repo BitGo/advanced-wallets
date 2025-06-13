@@ -8,11 +8,8 @@ import {
   WalletWithKeychains,
   AddKeychainOptions,
 } from '@bitgo/sdk-core';
-import { createEnclavedExpressClient } from './enclavedExpressClient';
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
-import { isMasterExpressConfig } from '../types';
-import assert from 'assert';
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled
@@ -23,17 +20,8 @@ export async function handleGenerateWalletOnPrem(
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
 
-  assert(
-    isMasterExpressConfig(req.config),
-    'Expected req.config to be of type MasterExpressConfig',
-  );
-
-  const enclavedExpressClient = createEnclavedExpressClient(req.config, req.params.coin);
-  if (!enclavedExpressClient) {
-    throw new Error(
-      'Enclaved express client not configured - enclaved express features will be disabled',
-    );
-  }
+  // The enclavedExpressClient is now available from the request
+  const enclavedExpressClient = req.enclavedExpressClient;
 
   const reqId = new RequestTracer();
 

@@ -260,4 +260,42 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     walletGetNock.done();
     keychainGetNock.done();
   });
+
+  it('should fail when enclaved express client is not configured', async () => {
+    // Create a config without enclaved express settings
+    const invalidConfig: Partial<MasterExpressConfig> = {
+      appMode: AppMode.MASTER_EXPRESS,
+      port: 0,
+      bind: 'localhost',
+      timeout: 60000,
+      logFile: '',
+      env: 'test',
+      disableEnvCheck: true,
+      authVersion: 2,
+      tlsMode: TlsMode.DISABLED,
+      mtlsRequestCert: false,
+      allowSelfSigned: true,
+    };
+
+    const app = expressApp(invalidConfig as MasterExpressConfig);
+    const testAgent = request.agent(app);
+
+    const response = await testAgent
+      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [
+          {
+            address: 'tb1qtest1',
+            amount: '100000',
+          },
+        ],
+        source: 'user',
+        pubkey: 'xpub_user',
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error');
+    response.body.error.should.equal('Please configure enclaved express configs.');
+  });
 });

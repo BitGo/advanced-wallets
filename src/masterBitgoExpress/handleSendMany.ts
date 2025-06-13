@@ -1,5 +1,4 @@
 import { RequestTracer, PrebuildTransactionOptions, Memo, KeyIndices } from '@bitgo/sdk-core';
-import { createEnclavedExpressClient } from './enclavedExpressClient';
 import logger from '../logger';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
 import { isMasterExpressConfig } from '../initConfig';
@@ -18,13 +17,7 @@ interface Recipient {
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
-  if (!isMasterExpressConfig(req.config)) {
-    throw new Error('Configuration must be in master express mode');
-  }
-  const enclavedExpressClient = createEnclavedExpressClient(req.config, req.params.coin);
-  if (!enclavedExpressClient) {
-    throw new Error('Please configure enclaved express configs to sign the transactions.');
-  }
+  const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
@@ -96,7 +89,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       const err = e as Error;
       logger.error('transaction prebuild failed local validation:', err.message);
       logger.error('transaction prebuild:', JSON.stringify(txPrebuilt, null, 2));
-        throw new Error(`Transaction prebuild failed local validation: ${err.message}`);
+      throw new Error(`Transaction prebuild failed local validation: ${err.message}`);
     }
 
     logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));

@@ -41,10 +41,6 @@ describe('POST /api/:coin/wallet/generate', () => {
     nock.cleanAll();
   });
 
-  after(() => {
-    nock.restore();
-  });
-
   it('should generate a wallet by calling the enclaved express service', async () => {
     const userKeychainNock = nock(enclavedExpressUrl)
       .post(`/api/${coin}/key/independent`, {
@@ -141,5 +137,36 @@ describe('POST /api/:coin/wallet/generate', () => {
     bitgoAddBackupKeyNock.done();
     bitgoAddBitGoKeyNock.done();
     bitgoAddWalletNock.done();
+  });
+
+  it('should fail when enclaved express client is not configured', async () => {
+    // Create a config without enclaved express settings
+    const invalidConfig: Partial<MasterExpressConfig> = {
+      appMode: AppMode.MASTER_EXPRESS,
+      port: 0,
+      bind: 'localhost',
+      timeout: 60000,
+      logFile: '',
+      env: 'test',
+      disableEnvCheck: true,
+      authVersion: 2,
+      tlsMode: TlsMode.DISABLED,
+      mtlsRequestCert: false,
+      allowSelfSigned: true,
+    };
+
+    const app = expressApp(invalidConfig as MasterExpressConfig);
+    const testAgent = request.agent(app);
+
+    const response = await testAgent
+      .post(`/api/${coin}/wallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test-wallet',
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error');
+    response.body.error.should.equal('Please configure enclaved express configs.');
   });
 });
