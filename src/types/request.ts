@@ -1,11 +1,13 @@
 import express from 'express';
 import { type BitGo } from 'bitgo';
 import { Config } from '../types';
+import { EnclavedExpressClient } from '../masterBitgoExpress/enclavedExpressClient';
 
 // Extended request type for BitGo Express
 export interface BitGoRequest<T extends Config = Config> extends express.Request {
   bitgo: BitGo;
   config: T;
+  enclavedExpressClient: EnclavedExpressClient;
 }
 
 export function isBitGoRequest<T extends Config>(req: express.Request): req is BitGoRequest<T> {

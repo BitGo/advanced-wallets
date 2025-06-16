@@ -18,6 +18,7 @@ import { MasterExpressConfig } from '../../initConfig';
 import { handleGenerateWalletOnPrem } from '../generateWallet';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { handleSendMany } from '../handleSendMany';
+import { validateMasterExpressConfig } from '../middleware';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -141,6 +142,7 @@ export function createMasterApiRouter(
   // Add middleware to all routes
   router.use(parseBody);
   router.use(prepareBitGo(cfg));
+  router.use(validateMasterExpressConfig);
 
   // Generate wallet endpoint handler
   router.post('v1.wallet.generate', [
