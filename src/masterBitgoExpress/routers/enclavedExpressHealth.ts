@@ -12,9 +12,8 @@ import { responseHandler } from '../../shared/middleware';
 const PingEnclavedResponse: HttpResponse = {
   200: t.type({
     status: t.string,
-    // TODO: Move to common definition between enclavedExpress and masterExpress
     enclavedResponse: t.type({
-      message: t.string,
+      status: t.string,
       timestamp: t.string,
     }),
   }),
@@ -79,7 +78,10 @@ export function createEnclavedExpressRouter(
 
         return Response.ok({
           status: 'Successfully pinged enclaved express',
-          enclavedResponse: response.body,
+          enclavedResponse: {
+            status: response.body.status,
+            timestamp: response.body.timestamp,
+          },
         });
       } catch (error) {
         logger.error('Failed to ping enclaved express:', { error });

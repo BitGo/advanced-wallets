@@ -168,6 +168,74 @@ ALLOW_SELF_SIGNED=false \
 yarn start
 ```
 
+## Container Deployment with Podman
+
+First, build the container image:
+
+```bash
+# For Master Express (default port 3081)
+yarn container:build
+
+# For Enclaved Express (port 3080)
+yarn container:build --build-arg PORT=3080
+```
+
+For local development, you'll need to run both the Enclaved Express and Master Express containers:
+
+```bash
+# Start Enclaved Express container
+podman run -d \
+  -p 3080:3080 \
+  -v $(pwd)/certs:/app/certs:Z \
+  -e APP_MODE=enclaved \
+  -e BIND=0.0.0.0 \
+  -e TLS_MODE=mtls \
+  -e TLS_KEY_PATH=/app/certs/enclaved-express-key.pem \
+  -e TLS_CERT_PATH=/app/certs/enclaved-express-cert.pem \
+  -e KMS_URL=host.containers.internal:3000 \
+  -e NODE_ENV=development \
+  -e ALLOW_SELF_SIGNED=true \
+  bitgo-onprem-express
+
+# View logs
+podman logs -f <container_id>
+
+# Test the endpoint (note: using https)
+curl -k -X POST https://localhost:3080/ping
+
+# Start Master Express container
+podman run -d \
+  -p 3081:3081 \
+  -v $(pwd)/certs:/app/certs:Z \
+  -e APP_MODE=master-express \
+  -e BIND=0.0.0.0 \
+  -e TLS_MODE=mtls \
+  -e TLS_KEY_PATH=/app/certs/test-ssl-key.pem \
+  -e TLS_CERT_PATH=/app/certs/test-ssl-cert.pem \
+  -e ENCLAVED_EXPRESS_URL=https://host.containers.internal:3080 \
+  -e ENCLAVED_EXPRESS_CERT=/app/certs/enclaved-express-cert.pem \
+  -e ALLOW_SELF_SIGNED=true \
+  bitgo-onprem-express
+
+# View logs
+podman logs -f <container_id>
+
+# Test the endpoints (note: using https and mTLS)
+# For Enclaved Express
+curl -k --cert certs/test-ssl-cert.pem --key certs/enclaved-express-key.pem -X POST https://localhost:3080/ping
+
+# For Master Express
+curl -k --cert certs/test-ssl-cert.pem --key certs/test-ssl-key.pem -X POST https://localhost:3081/ping
+
+# Test the connection
+curl -k -X POST https://localhost:3081/ping/enclavedExpress
+```
+
+Notes:
+- `host.containers.internal` is a special DNS name that resolves to the host machine from inside containers
+- The `:Z` option in volume mounts is specific to SELinux-enabled systems and ensures proper volume labeling
+- The logs directory will be created with appropriate permissions if it doesn't exist
+
 ## API Endpoints
 
 ### Enclaved Express (Port 3080)

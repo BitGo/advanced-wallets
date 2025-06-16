@@ -1,0 +1,15 @@
+.git
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.env
+*.md
+.DS_Store
+.vscode
+.idea
+*.log
+coverage/
+test/
+__tests__/
+*.test.*
