@@ -16,7 +16,7 @@ export function setupRoutes(app: express.Application, cfg: MasterExpressConfig):
   // TODO: Add version endpoint to enclaved express
   app.use(createEnclavedExpressRouter(cfg));
 
-  app.use('/api', createMasterApiRouter(cfg));
+  app.use(createMasterApiRouter(cfg));
 
   logger.debug('Master express routes configured');
 }

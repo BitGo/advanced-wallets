@@ -90,7 +90,7 @@ export const MasterApiSpec = apiSpec({
   'v1.wallet.generate': {
     post: httpRoute({
       method: 'POST' as const,
-      path: '/{coin}/wallet/generate',
+      path: '/api/{coin}/wallet/generate',
       request: httpRequest({
         params: {
           coin: t.string,
@@ -104,7 +104,7 @@ export const MasterApiSpec = apiSpec({
   'v1.wallet.sendMany': {
     post: httpRoute({
       method: 'POST',
-      path: '/{coin}/wallet/{walletId}/sendMany',
+      path: '/api/{coin}/wallet/{walletId}/sendMany',
       request: httpRequest({
         params: {
           walletId: t.string,

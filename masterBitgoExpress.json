@@ -1,0 +1,328 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "@bitgo/master-bitgo-express",
+    "version": "1.0.0",
+    "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS"
+  },
+  "paths": {
+    "/api/{coin}/wallet/{walletId}/sendMany": {
+      "post": {
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pubkey": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "backup"
+                    ]
+                  },
+                  "recipients": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "numBlocks": {
+                    "type": "number"
+                  },
+                  "feeRate": {
+                    "type": "number"
+                  },
+                  "feeMultiplier": {
+                    "type": "number"
+                  },
+                  "maxFeeRate": {
+                    "type": "number"
+                  },
+                  "minConfirms": {
+                    "type": "number"
+                  },
+                  "enforceMinConfirmsForChange": {
+                    "type": "boolean"
+                  },
+                  "targetWalletUnspents": {
+                    "type": "number"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "minValue": {
+                    "oneOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "maxValue": {
+                    "oneOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "sequenceId": {
+                    "type": "string"
+                  },
+                  "lastLedgerSequence": {
+                    "type": "number"
+                  },
+                  "ledgerSequenceDelta": {
+                    "type": "number"
+                  },
+                  "gasPrice": {
+                    "type": "number"
+                  },
+                  "noSplitChange": {
+                    "type": "boolean"
+                  },
+                  "unspents": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "comment": {
+                    "type": "string"
+                  },
+                  "otp": {
+                    "type": "string"
+                  },
+                  "changeAddress": {
+                    "type": "string"
+                  },
+                  "allowExternalChangeAddress": {
+                    "type": "boolean"
+                  },
+                  "instant": {
+                    "type": "boolean"
+                  },
+                  "memo": {
+                    "type": "string"
+                  },
+                  "transferId": {
+                    "type": "number"
+                  },
+                  "eip1559": {},
+                  "gasLimit": {
+                    "type": "number"
+                  },
+                  "custodianTransactionId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "pubkey",
+                  "source",
+                  "recipients"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/{coin}/wallet/generate": {
+      "post": {
+        "parameters": [
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "multisigType": {
+                    "type": "string",
+                    "enum": [
+                      "onchain",
+                      "tss"
+                    ]
+                  },
+                  "enterprise": {
+                    "type": "string"
+                  },
+                  "disableTransactionNotifications": {
+                    "type": "boolean"
+                  },
+                  "isDistributedCustody": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "label",
+                  "enterprise"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "name"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  }
+}
