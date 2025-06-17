@@ -7,6 +7,7 @@ import { app as expressApp } from '../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../types';
 import { Environments, Wallet } from '@bitgo/sdk-core';
 import { Coin } from 'bitgo';
+import assert from 'assert';
 
 describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   let agent: request.SuperAgentTest;
@@ -277,26 +278,14 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       allowSelfSigned: true,
     };
 
-    const app = expressApp(invalidConfig as MasterExpressConfig);
-    const testAgent = request.agent(app);
-
-    const response = await testAgent
-      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        recipients: [
-          {
-            address: 'tb1qtest1',
-            amount: '100000',
-          },
-        ],
-        source: 'user',
-        pubkey: 'xpub_user',
-      });
-
-    response.status.should.equal(500);
-    response.body.should.have.property('error');
-    response.body.error.should.equal('Please configure enclaved express configs.');
+    try {
+      expressApp(invalidConfig as MasterExpressConfig);
+      assert(false, 'Expected error to be thrown when enclaved express client is not configured');
+    } catch (error) {
+      (error as Error).message.should.equal(
+        'enclavedExpressUrl and enclavedExpressCert are required',
+      );
+    }
   });
 
   it('should fail when transaction verification returns false', async () => {

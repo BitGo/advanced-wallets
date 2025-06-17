@@ -114,38 +114,6 @@ export async function prepareIpc(ipcSocketFilePath: string): Promise<void> {
 }
 
 /**
- * Read SSL/TLS certificates from files
- */
-export async function readCertificates(
-  keyPath: string,
-  crtPath: string,
-): Promise<{ key: string; cert: string }> {
-  const privateKeyPromise = fs.promises.readFile(keyPath, 'utf8');
-  const certificatePromise = fs.promises.readFile(crtPath, 'utf8');
-  const [key, cert] = await Promise.all([privateKeyPromise, certificatePromise]);
-  return { key, cert };
-}
-
-/**
- * Setup common health check routes
- */
-export function setupHealthCheckRoutes(app: express.Application, serverType: string): void {
-  app.get('/ping', (_req, res) => {
-    res.json({
-      status: `${serverType} server is ok!`,
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  app.get('/version', (_req, res) => {
-    res.json({
-      version: pjson.version,
-      name: pjson.name,
-    });
-  });
-}
-
-/**
  * Create mTLS middleware for validating client certificates
  */
 export function createMtlsMiddleware(config: {

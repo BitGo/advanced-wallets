@@ -5,6 +5,7 @@ import nock from 'nock';
 import { app as expressApp } from '../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../types';
 import { Environments } from '@bitgo/sdk-core';
+import assert from 'assert';
 
 describe('POST /api/:coin/wallet/generate', () => {
   let agent: request.SuperAgentTest;
@@ -45,8 +46,6 @@ describe('POST /api/:coin/wallet/generate', () => {
     const userKeychainNock = nock(enclavedExpressUrl)
       .post(`/api/${coin}/key/independent`, {
         source: 'user',
-        coin: coin,
-        type: 'independent',
       })
       .reply(200, {
         pub: 'xpub_user',
@@ -57,8 +56,6 @@ describe('POST /api/:coin/wallet/generate', () => {
     const backupKeychainNock = nock(enclavedExpressUrl)
       .post(`/api/${coin}/key/independent`, {
         source: 'backup',
-        coin: coin,
-        type: 'independent',
       })
       .reply(200, {
         pub: 'xpub_backup',
@@ -155,18 +152,11 @@ describe('POST /api/:coin/wallet/generate', () => {
       allowSelfSigned: true,
     };
 
-    const app = expressApp(invalidConfig as MasterExpressConfig);
-    const testAgent = request.agent(app);
-
-    const response = await testAgent
-      .post(`/api/${coin}/wallet/generate`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        label: 'test-wallet',
-      });
-
-    response.status.should.equal(500);
-    response.body.should.have.property('error');
-    response.body.error.should.equal('Please configure enclaved express configs.');
+    try {
+      expressApp(invalidConfig as MasterExpressConfig);
+      assert(false, 'Expected error to be thrown when enclaved express client is not configured');
+    } catch (e) {
+      (e as Error).message.should.equal('enclavedExpressUrl and enclavedExpressCert are required');
+    }
   });
 });

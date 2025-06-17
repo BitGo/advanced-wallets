@@ -272,18 +272,57 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "$ref": "#/components/schemas/PingResponseType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping/enclavedExpress": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
                   "properties": {
                     "status": {
                       "type": "string"
                     },
-                    "timestamp": {
-                      "type": "string"
+                    "enclavedResponse": {
+                      "$ref": "#/components/schemas/PingResponseType"
                     }
                   },
                   "required": [
                     "status",
-                    "timestamp"
+                    "enclavedResponse"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
                   ]
                 }
               }
@@ -301,18 +340,45 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "$ref": "#/components/schemas/VersionResponseType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version/enclavedExpress": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponseType"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
                   "properties": {
-                    "version": {
+                    "error": {
                       "type": "string"
                     },
-                    "name": {
+                    "details": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "version",
-                    "name"
+                    "error",
+                    "details"
                   ]
                 }
               }
@@ -323,6 +389,39 @@
     }
   },
   "components": {
-    "schemas": {}
+    "schemas": {
+      "VersionResponseType": {
+        "title": "VersionResponseType",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "name"
+        ]
+      },
+      "PingResponseType": {
+        "title": "PingResponseType",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ]
+      }
+    }
   }
 }

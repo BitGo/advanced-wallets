@@ -1,9 +1,15 @@
-import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
-import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
-import debug from 'debug';
 import https from 'https';
+import debug from 'debug';
 import superagent from 'superagent';
-import { MasterExpressConfig, TlsMode } from '../types';
+
+import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
+import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
+import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
+
+import { MasterExpressConfig } from '../types';
+import { TlsMode } from '../types';
+import { EnclavedApiSpec } from '../enclavedBitgoExpress/routers';
+import { PingResponseType, VersionResponseType } from '../types/health';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -50,6 +56,8 @@ export class EnclavedExpressClient {
   private readonly coin?: string;
   private readonly tlsMode: TlsMode;
 
+  private readonly apiClient: ApiClient<superagent.Request, typeof EnclavedApiSpec>;
+
   constructor(cfg: MasterExpressConfig, coin?: string) {
     if (!cfg.enclavedExpressUrl || !cfg.enclavedExpressCert) {
       throw new Error('enclavedExpressUrl and enclavedExpressCert are required');
@@ -65,6 +73,13 @@ export class EnclavedExpressClient {
     this.allowSelfSigned = cfg.allowSelfSigned ?? false;
     this.coin = coin;
     this.tlsMode = cfg.tlsMode;
+
+    // Create a request factory with TLS configuration
+    const requestFactory = superagentRequestFactory(superagent, this.baseUrl);
+
+    // Build the type-safe API client
+    this.apiClient = buildApiClient(requestFactory, EnclavedApiSpec);
+
     debugLogger('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
   }
 
@@ -82,27 +97,6 @@ export class EnclavedExpressClient {
   }
 
   /**
-   * Configure the request to use the appropriate TLS mode
-   */
-  private configureRequest(request: superagent.SuperAgentRequest): superagent.SuperAgentRequest {
-    if (this.tlsMode === TlsMode.MTLS) {
-      return request.agent(this.createHttpsAgent());
-    }
-    return request;
-  }
-
-  async ping(): Promise<void> {
-    try {
-      debugLogger('Pinging enclaved express at %s', this.baseUrl);
-      await this.configureRequest(superagent.get(`${this.baseUrl}/ping`)).send();
-    } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to ping enclaved express: %s', err.message);
-      throw err;
-    }
-  }
-
-  /**
    * Create an independent multisig key for a given source and coin
    */
   async createIndependentKeychain(
@@ -114,10 +108,18 @@ export class EnclavedExpressClient {
 
     try {
       debugLogger('Creating independent keychain for coin: %s', this.coin);
-      const response = await this.configureRequest(
-        superagent.post(`${this.baseUrl}/api/${this.coin}/key/independent`).type('json'),
-      ).send(params);
+      let request = this.apiClient['v1.key.independent'].post({
+        coin: this.coin,
+        source: params.source,
+        seed: params.seed,
+      });
 
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      console.log(response);
       return response.body;
     } catch (error) {
       const err = error as Error;
@@ -135,14 +137,70 @@ export class EnclavedExpressClient {
     }
 
     try {
-      const res = await this.configureRequest(
-        superagent.post(`${this.baseUrl}/api/${this.coin}/multisig/sign`).type('json'),
-      ).send(params);
+      let request = this.apiClient['v1.multisig.sign'].post({
+        coin: this.coin,
+        source: params.source,
+        pub: params.pub,
+        txPrebuild: params.txPrebuild,
+      });
 
-      return res.body;
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+
+      return response.body;
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign multisig: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Ping the enclaved express service to check if it's available
+   * @returns {Promise<PingResponseType>}
+   */
+  async ping(): Promise<PingResponseType> {
+    try {
+      debugLogger('Pinging enclaved express service at: %s', this.baseUrl);
+      let request = this.apiClient['v1.health.ping'].post({});
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+
+      debugLogger('Enclaved express service ping successful');
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Enclaved express service ping failed: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Get the version information from the enclaved express service
+   */
+  async getVersion(): Promise<VersionResponseType> {
+    try {
+      debugLogger('Getting version information from enclaved express service');
+      let request = this.apiClient['v1.health.version'].get({});
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+
+      debugLogger('Successfully retrieved version information');
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to get version information: %s', err.message);
       throw err;
     }
   }
@@ -156,9 +214,13 @@ export class EnclavedExpressClient {
     }
 
     try {
-      const res = await this.configureRequest(
-        superagent.post(`${this.baseUrl}/api/${this.coin}/multisig/recovery`).type('json'),
-      ).send(params);
+      let request = this.apiClient['v1.multisig.recovery'].post({ ...params, coin: this.coin });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      debugLogger('Recovering multisig for coin: %s', this.coin);
+      const res = await request.decodeExpecting(200);
 
       return res.body;
     } catch (error) {

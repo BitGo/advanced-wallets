@@ -1,24 +1,17 @@
-import * as t from 'io-ts';
 import { apiSpec, httpRoute, httpRequest, HttpResponse } from '@api-ts/io-ts-http';
 import { createRouter, type WrappedRouter } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
 import pjson from '../../../package.json';
 import { responseHandler } from '../../shared/middleware';
+import { PingResponseType, VersionResponseType } from '../../types/health';
 
-// Response type for /ping endpoint
+// API Response types
 const PingResponse: HttpResponse = {
-  200: t.type({
-    status: t.string,
-    timestamp: t.string,
-  }),
+  200: PingResponseType,
 };
 
-// Response type for /version endpoint
 const VersionResponse: HttpResponse = {
-  200: t.type({
-    version: t.string,
-    name: t.string,
-  }),
+  200: VersionResponseType,
 };
 
 // API Specification
