@@ -39,7 +39,6 @@ interface RecoveryMultisigOptions {
     bitgoPub?: string;
     ignoreAddressTypes?: string[];
   };
-  // recoveryDestinationAddress: string;
 }
 
 export class EnclavedExpressClient {
@@ -149,11 +148,11 @@ export class EnclavedExpressClient {
   }
 
   /**
-   * Recovery a multisig transaction
+   * Recover a multisig transaction
    */
   async recoveryMultisig(params: RecoveryMultisigOptions): Promise<SignedTransaction> {
     if (!this.coin) {
-      throw new Error('Coin must be specified to recovery a multisig');
+      throw new Error('Coin must be specified to recover a multisig');
     }
 
     try {

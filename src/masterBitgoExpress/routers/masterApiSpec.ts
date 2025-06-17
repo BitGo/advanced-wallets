@@ -147,7 +147,7 @@ export const MasterApiSpec = apiSpec({
   'v1.wallet.recovery': {
     post: httpRoute({
       method: 'POST',
-      path: '/{coin}/wallet/recovery',
+      path: '/api/{coin}/wallet/recovery',
       request: httpRequest({
         params: {
           coin: t.string,

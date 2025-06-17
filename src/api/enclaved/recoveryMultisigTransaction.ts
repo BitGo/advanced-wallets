@@ -28,8 +28,6 @@ export async function recoveryMultisigTransaction(
   if (coin.isEVM()) {
     // Every recovery method on every coin family varies one from another so we need to ensure with a guard.
     if (isEthLikeCoin(coin)) {
-      // TODO: populate coinSpecificParams with things like replayProtectionOptions
-      // coinSpecificParams type could be "recoverOptions"
       try {
         const halfSignedTx = await coin.signTransaction({
           isLastSignature: false,

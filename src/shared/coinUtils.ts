@@ -34,7 +34,6 @@ export function isUtxoCoin(coin: BaseCoin): coin is AbstractUtxoCoin {
     isFamily(coin, CoinFamily.BCH) ||
     isFamily(coin, CoinFamily.ZEC) ||
     isFamily(coin, CoinFamily.DASH) ||
-    isFamily(coin, CoinFamily.DASH) ||
     isFamily(coin, CoinFamily.BTG);
 
   return isBtc || isBtcLike;

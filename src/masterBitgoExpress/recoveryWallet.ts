@@ -1,8 +1,5 @@
-import assert from 'assert';
 import { MethodNotImplementedError } from 'bitgo';
 import { isEthLikeCoin } from '../shared/coinUtils';
-import { isMasterExpressConfig } from '../types';
-import { createEnclavedExpressClient } from './enclavedExpressClient';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
 
 export async function handleRecoveryWalletOnPrem(
@@ -10,16 +7,7 @@ export async function handleRecoveryWalletOnPrem(
 ) {
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  assert(
-    isMasterExpressConfig(req.config),
-    'Expected req.config to be of type MasterExpressConfig',
-  );
-  const enclavedExpressClient = createEnclavedExpressClient(req.config, coin);
-  if (!enclavedExpressClient) {
-    throw new Error(
-      'Enclaved express client not configured - enclaved express features will be disabled',
-    );
-  }
+  const enclavedExpressClient = req.enclavedExpressClient;
 
   const {
     userPub,
@@ -53,7 +41,6 @@ export async function handleRecoveryWalletOnPrem(
         unsignedSweepPrebuildTx,
         coinSpecificParams,
         walletContractAddress,
-        // recoveryDestinationAddress,
       });
 
       return fullSignedRecoveryTx;
