@@ -84,7 +84,7 @@ export const EnclavedAPiSpec = apiSpec({
   'v1.multisig.sign': {
     post: httpRoute({
       method: 'POST',
-      path: '/{coin}/multisig/sign',
+      path: '/api/{coin}/multisig/sign',
       request: httpRequest({
         params: {
           coin: t.string,
@@ -98,7 +98,7 @@ export const EnclavedAPiSpec = apiSpec({
   'v1.multisig.recovery': {
     post: httpRoute({
       method: 'POST',
-      path: '/{coin}/multisig/recovery',
+      path: '/api/{coin}/multisig/recovery',
       request: httpRequest({
         params: {
           coin: t.string,
@@ -112,7 +112,7 @@ export const EnclavedAPiSpec = apiSpec({
   'v1.key.independent': {
     post: httpRoute({
       method: 'POST',
-      path: '/{coin}/key/independent',
+      path: '/api/{coin}/key/independent',
       request: httpRequest({
         params: {
           coin: t.string,

@@ -8,13 +8,14 @@ const debugLogger = debug('enclaved:routes');
 /**
  * Setup all routes for the Enclaved Express application
  * @param app Express application
+ * @param config
  */
 export function setupRoutes(app: express.Application, config: EnclavedConfig): void {
   // Register health check routes
   app.use(createHealthCheckRouter());
 
   // Register keygen routes
-  app.use('/api', createKeyGenRouter(config));
+  app.use(createKeyGenRouter(config));
 
   app.use('*', (_req, res) => {
     res.status(404).json({
