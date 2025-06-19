@@ -10,8 +10,31 @@ import { MasterExpressConfig } from '../types';
 import { TlsMode } from '../types';
 import { EnclavedApiSpec } from '../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../types/health';
+import { InitEddsaKeyGenerationResponse } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
+
+interface InitMpcKeyGenerationParams {
+  source: 'user' | 'backup';
+  coin?: string;
+}
+
+interface FinalizeMpcKeyGenerationParams {
+  source: 'user' | 'backup';
+  coin?: string;
+  encryptedDataKey: string;
+  encryptedData: string;
+  bitGoKeychain: {
+    id: string;
+    source: 'bitgo';
+    type: 'tss';
+    commonKeychain: string;
+    verifiedVssProof: boolean;
+    isBitGo: boolean;
+    isTrust: boolean;
+    hsmType: string;
+  };
+}
 
 interface CreateIndependentKeychainParams {
   source: 'user' | 'backup';
@@ -226,6 +249,67 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to recover multisig: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Initialize MPC key generation for a given source and coin
+   */
+  async initMpcKeyGeneration(
+    params: InitMpcKeyGenerationParams,
+  ): Promise<InitEddsaKeyGenerationResponse> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to initialize MPC key generation');
+    }
+
+    try {
+      debugLogger('Initializing MPC key generation for coin: %s', this.coin);
+      let request = this.apiClient['v1.key.mpc.init'].post({
+        coin: this.coin,
+        source: params.source,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to initialize MPC key generation: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Finalize MPC key generation for a given source and coin
+   */
+  async finalizeMpcKeyGeneration(params: FinalizeMpcKeyGenerationParams): Promise<any> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to finalize MPC key generation');
+    }
+
+    try {
+      debugLogger('Finalizing MPC key generation for coin: %s', this.coin);
+      let request = this.apiClient['v1.mpc.finalize'].post({
+        coin: this.coin,
+        source: params.source,
+        encryptedDataKey: params.encryptedDataKey,
+        encryptedData: params.encryptedData,
+        bitGoKeychain: params.bitGoKeychain,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to finalize MPC key generation: %s', err.message);
       throw err;
     }
   }

@@ -5,3 +5,4 @@ coverage/
 logs/
 tsconfig.tsbuildinfo
 out/
+.vscode/
