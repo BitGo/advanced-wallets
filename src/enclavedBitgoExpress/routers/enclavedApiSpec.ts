@@ -20,12 +20,71 @@ import { signMpcTransaction } from '../../api/enclaved/handlers/signMpcTransacti
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { EnclavedConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
+import { NotImplementedError } from 'bitgo';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
   source: t.string,
   seed: t.union([t.undefined, t.string]),
 };
+
+const BitgoPayloadType = t.union([
+  t.type({
+    from: t.literal('user'),
+    to: t.literal('bitgo'),
+    publicShare: t.string,
+    privateShare: t.string,
+    privateShareProof: t.string,
+    vssProof: t.string,
+    userGPGPublicKey: t.string,
+  }),
+  t.type({
+    from: t.literal('backup'),
+    to: t.literal('bitgo'),
+    publicShare: t.string,
+    privateShare: t.string,
+    privateShareProof: t.string,
+    vssProof: t.string,
+    backupGPGPublicKey: t.string,
+  }),
+]);
+
+export const InitEddsaKeyGenerationRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+};
+
+export const InitEddsaKeyGenerationResponse = t.type({
+  encryptedDataKey: t.string,
+  encryptedData: t.string,
+  bitgoPayload: BitgoPayloadType,
+});
+
+export type InitEddsaKeyGenerationResponse = t.TypeOf<typeof InitEddsaKeyGenerationResponse>;
+
+// Types for /mpc/finalize endpoint
+const BitGoKeychainType = t.type({
+  id: t.string,
+  source: t.literal('bitgo'),
+  type: t.literal('tss'),
+  commonKeychain: t.string,
+  verifiedVssProof: t.boolean,
+  isBitGo: t.boolean,
+  isTrust: t.boolean,
+  hsmType: t.string,
+});
+
+const FinalizeKeyGenerationRequest = {
+  encryptedDataKey: t.string,
+  encryptedData: t.string,
+  bitGoKeychain: BitGoKeychainType,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+};
+
+const FinalizeKeyGenerationResponse = t.type({
+  commonKeychain: t.string,
+  enclavedExpressKeyId: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+});
 
 // Response type for /key/independent endpoint
 const IndependentKeyResponse: HttpResponse = {
@@ -179,6 +238,46 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Sign a MPC transaction',
     }),
   },
+  'v1.key.mpc.init': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpc/initialize',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+        },
+        body: InitEddsaKeyGenerationRequest,
+      }),
+      response: {
+        200: InitEddsaKeyGenerationResponse,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Initialize Eddsa key generation',
+    }),
+  },
+  'v1.mpc.finalize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpc/finalize',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+        },
+        body: FinalizeKeyGenerationRequest,
+      }),
+      response: {
+        200: FinalizeKeyGenerationResponse,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Finalize key generation and confirm commonKeychain',
+    }),
+  },
 });
 
 export type EnclavedApiSpecRouteHandler<
@@ -231,6 +330,18 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>;
       const result = await signMpcTransaction(typedReq);
       return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.key.mpc.init', [
+    responseHandler<EnclavedConfig>(async (_req) => {
+      throw new NotImplementedError('MPC key generation is not implemented yet');
+    }),
+  ]);
+
+  router.post('v1.mpc.finalize', [
+    responseHandler<EnclavedConfig>(async (_req) => {
+      throw new NotImplementedError('MPC key finalization is not implemented yet');
     }),
   ]);
 
