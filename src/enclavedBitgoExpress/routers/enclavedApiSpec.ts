@@ -16,6 +16,7 @@ import * as t from 'io-ts';
 import { postIndependentKey } from '../../api/enclaved/postIndependentKey';
 import { recoveryMultisigTransaction } from '../../api/enclaved/recoveryMultisigTransaction';
 import { signMultisigTransaction } from '../../api/enclaved/signMultisigTransaction';
+import { signMpcTransaction } from '../../api/enclaved/signMpcTransaction';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { EnclavedConfig } from '../../types';
 import { BitGoRequest } from '../../types/request';
@@ -79,6 +80,29 @@ const RecoveryMultisigResponse: HttpResponse = {
   }),
 };
 
+// Request type for /mpc/sign endpoint
+const SignMpcRequest = {
+  source: t.string,
+  pub: t.string,
+  txRequest: t.union([t.undefined, t.any]),
+  bitgoToUserRShare: t.union([t.undefined, t.any]),
+  userToBitgoRShare: t.union([t.undefined, t.any]),
+  encryptedUserToBitgoRShare: t.union([t.undefined, t.any]),
+  bitgoToUserCommitment: t.union([t.undefined, t.any]),
+  bitgoGpgPubKey: t.union([t.undefined, t.string]),
+  encryptedDataKey: t.union([t.undefined, t.string]),
+};
+
+// Response type for /mpc/sign endpoint
+const SignMpcResponse: HttpResponse = {
+  // TODO: Define proper response type for MPC transaction signing
+  200: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
   'v1.multisig.sign': {
@@ -121,6 +145,21 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: IndependentKeyResponse,
       description: 'Generate an independent key',
+    }),
+  },
+  'v1.mpc.sign': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpc/sign/{shareType}',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+          shareType: t.string,
+        },
+        body: SignMpcRequest,
+      }),
+      response: SignMpcResponse,
+      description: 'Sign a MPC transaction',
     }),
   },
 });
@@ -166,6 +205,14 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>;
       const result = await recoveryMultisigTransaction(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.mpc.sign', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>;
+      const result = await signMpcTransaction(typedReq);
       return Response.ok(result);
     }),
   ]);
