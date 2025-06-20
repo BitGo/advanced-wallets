@@ -177,6 +177,22 @@ const SignMpcResponse: HttpResponse = {
   }),
 };
 
+const MpcInitializeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  bitgoGpgPub: t.string,
+  counterPartyGpgPub: t.string,
+};
+const MpcInitializeRequestType = t.type(MpcInitializeRequest);
+export type MpcInitializeRequestType = t.TypeOf<typeof MpcInitializeRequestType>;
+
+const MpcInitializeResponse: HttpResponse = {
+  200: t.any, // TODO: Define proper response type for MPC initialization
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
   'v1.multisig.sign': {

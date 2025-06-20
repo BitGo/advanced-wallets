@@ -1,16 +1,16 @@
 import {
+  AddKeychainOptions,
+  Keychain,
+  KeychainsTriplet,
+  NotImplementedError,
   promiseProps,
   RequestTracer,
   SupplementGenerateWalletOptions,
-  Keychain,
-  KeychainsTriplet,
   Wallet,
   WalletWithKeychains,
-  AddKeychainOptions,
-  NotImplementedError,
 } from '@bitgo/sdk-core';
 import _ from 'lodash';
-import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { assert } from 'console';
 
 /**
