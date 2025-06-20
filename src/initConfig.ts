@@ -6,7 +6,7 @@ import {
   TlsMode,
   AppMode,
   EnvironmentName,
-} from './types';
+} from './shared/types';
 import logger from './logger';
 import { validateTlsCertificates, validateMasterExpressConfig } from './shared/appUtils';
 

@@ -1,8 +1,8 @@
 import express from 'express';
 import debug from 'debug';
-import { createHealthCheckRouter } from '../enclavedBitgoExpress/routers/healthCheck';
+import { EnclavedConfig } from '../shared/types';
 import { createKeyGenRouter } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
-import { EnclavedConfig } from '../types';
+import { createHealthCheckRouter } from '../enclavedBitgoExpress/routers/healthCheck';
 
 const debugLogger = debug('enclaved:routes');
 /**

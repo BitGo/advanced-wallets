@@ -1,5 +1,5 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
-import { Config } from '../types';
+import { Config } from '../initConfig';
 import { BitGoRequest } from '../types/request';
 import { EnclavedError } from '../errors';
 

@@ -1,9 +1,9 @@
 import { SignFinalOptions } from '@bitgo/abstract-eth';
 import { MethodNotImplementedError } from 'bitgo';
-import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import logger from '../../logger';
-import { isEthLikeCoin } from '../../shared/coinUtils';
-import { retrieveKmsPrvKey } from './utils';
+import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import logger from '../../../logger';
+import { isEthLikeCoin } from '../../../shared/coinUtils';
+import { retrieveKmsPrvKey } from '../utils';
 
 export async function recoveryMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,

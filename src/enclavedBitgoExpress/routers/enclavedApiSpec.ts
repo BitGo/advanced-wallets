@@ -13,12 +13,12 @@ import {
 } from '@api-ts/typed-express-router';
 import express from 'express';
 import * as t from 'io-ts';
-import { postIndependentKey } from '../../api/enclaved/postIndependentKey';
-import { recoveryMultisigTransaction } from '../../api/enclaved/recoveryMultisigTransaction';
-import { signMultisigTransaction } from '../../api/enclaved/signMultisigTransaction';
-import { signMpcTransaction } from '../../api/enclaved/signMpcTransaction';
+import { postIndependentKey } from '../../api/enclaved/handlers/postIndependentKey';
+import { recoveryMultisigTransaction } from '../../api/enclaved/handlers/recoveryMultisigTransaction';
+import { signMultisigTransaction } from '../../api/enclaved/handlers/signMultisigTransaction';
+import { signMpcTransaction } from '../../api/enclaved/handlers/signMpcTransaction';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
-import { EnclavedConfig } from '../../types';
+import { EnclavedConfig } from '../../initConfig';
 import { BitGoRequest } from '../../types/request';
 
 // Request type for /key/independent endpoint

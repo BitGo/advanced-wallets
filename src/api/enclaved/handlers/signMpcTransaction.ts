@@ -1,6 +1,6 @@
-import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import { decryptDataKey, generateDataKey, retrieveKmsPrvKey } from './utils';
-import logger from '../../logger';
+import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { decryptDataKey, generateDataKey, retrieveKmsPrvKey } from '../utils';
+import logger from '../../../logger';
 import {
   TxRequest,
   EddsaUtils,
@@ -10,7 +10,7 @@ import {
   SignatureShareRecord,
   GShare,
 } from '@bitgo/sdk-core';
-import { EnclavedConfig } from '../../types';
+import { EnclavedConfig } from '../../../initConfig';
 import { BitGoBase, BaseCoin } from 'bitgo';
 
 // Define share types for different MPC algorithms

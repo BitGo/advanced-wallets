@@ -1,9 +1,9 @@
 import { apiSpec, httpRoute, httpRequest, HttpResponse } from '@api-ts/io-ts-http';
 import { createRouter, type WrappedRouter } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
-import pjson from '../../../package.json';
-import { responseHandler } from '../../shared/middleware';
-import { PingResponseType, VersionResponseType } from '../../types/health';
+import pjson from '../../../../package.json';
+import { responseHandler } from '../../../shared/middleware';
+import { PingResponseType, VersionResponseType } from '../../../types/health';
 
 // API Response types
 const PingResponse: HttpResponse = {

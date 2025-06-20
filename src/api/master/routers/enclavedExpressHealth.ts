@@ -2,11 +2,11 @@ import * as t from 'io-ts';
 import { apiSpec, httpRoute, httpRequest, HttpResponse } from '@api-ts/io-ts-http';
 import { createRouter, type WrappedRouter } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
-import { MasterExpressConfig } from '../../initConfig';
-import logger from '../../logger';
-import { responseHandler } from '../../shared/middleware';
-import { EnclavedExpressClient } from '../enclavedExpressClient';
-import { PingResponseType, VersionResponseType } from '../../types/health';
+import { MasterExpressConfig } from '../../../initConfig';
+import logger from '../../../logger';
+import { responseHandler } from '../../../shared/middleware';
+import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { PingResponseType, VersionResponseType } from '../../../types/health';
 
 // Response type for /ping/enclavedExpress endpoint
 const PingEnclavedResponse: HttpResponse = {
