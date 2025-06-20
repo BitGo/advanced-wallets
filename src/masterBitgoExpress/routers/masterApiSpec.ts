@@ -90,7 +90,9 @@ export const SendManyResponse: HttpResponse = {
 // Response type for /recovery endpoint
 const RecoveryWalletResponse: HttpResponse = {
   // TODO: Get type from public types repo
-  200: t.any,
+  200: t.type({
+    txHex: t.string, // the full signed transaction hex
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
