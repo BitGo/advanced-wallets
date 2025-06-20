@@ -96,8 +96,24 @@ const SignMpcRequest = {
 
 // Response type for /mpc/sign endpoint
 const SignMpcResponse: HttpResponse = {
-  // TODO: Define proper response type for MPC transaction signing
-  200: t.any,
+  // Response type for MPC transaction signing
+  200: t.union([
+    // Commitment share response
+    t.type({
+      userToBitgoCommitment: t.any,
+      encryptedSignerShare: t.any,
+      encryptedUserToBitgoRShare: t.any,
+      encryptedDataKey: t.string,
+    }),
+    // R share response
+    t.type({
+      rShare: t.any,
+    }),
+    // G share response
+    t.type({
+      gShare: t.any,
+    }),
+  ]),
   500: t.type({
     error: t.string,
     details: t.string,
