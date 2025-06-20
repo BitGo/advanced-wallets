@@ -264,7 +264,6 @@ describe('signMpcTransaction', () => {
 
       response.status.should.equal(500);
       response.body.should.have.property('error');
-
       kmsNock.done();
     });
 
@@ -304,6 +303,9 @@ describe('signMpcTransaction', () => {
 
       response.status.should.equal(500);
       response.body.should.have.property('error');
+      response.body.details.should.equal(
+        'Share type invalid not supported for EDDSA, only commitment, G and R share generation is supported.',
+      );
 
       kmsNock.done();
     });
