@@ -18,7 +18,7 @@ import { recoveryMultisigTransaction } from '../../api/enclaved/handlers/recover
 import { signMultisigTransaction } from '../../api/enclaved/handlers/signMultisigTransaction';
 import { signMpcTransaction } from '../../api/enclaved/handlers/signMpcTransaction';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
-import { EnclavedConfig } from '../../initConfig';
+import { EnclavedConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
 
 // Request type for /key/independent endpoint

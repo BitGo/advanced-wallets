@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { isMasterExpressConfig } from '../../../initConfig';
+import { isMasterExpressConfig } from '../../../shared/types';
 import { createEnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { BitGoRequest } from '../../../types/request';
 

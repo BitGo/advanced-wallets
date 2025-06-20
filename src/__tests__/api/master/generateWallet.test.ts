@@ -3,7 +3,7 @@ import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
-import { AppMode, MasterExpressConfig, TlsMode } from '../../../initConfig';
+import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments } from '@bitgo/sdk-core';
 import assert from 'assert';
 

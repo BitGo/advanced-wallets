@@ -13,7 +13,7 @@ import {
 } from '@api-ts/typed-express-router';
 import express from 'express';
 import * as t from 'io-ts';
-import { MasterExpressConfig } from '../../../initConfig';
+import { MasterExpressConfig } from '../../../shared/types';
 import { prepareBitGo, responseHandler } from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { handleGenerateWalletOnPrem } from '../handlers/generateWallet';

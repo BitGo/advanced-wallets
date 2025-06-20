@@ -2,7 +2,7 @@ import 'should';
 
 import request from 'supertest';
 import express from 'express';
-import { AppMode, TlsMode } from '../initConfig';
+import { AppMode, TlsMode } from '../shared/types';
 import { setupRoutes } from '../routes/enclaved';
 
 describe('Routes', () => {

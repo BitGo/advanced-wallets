@@ -1,6 +1,6 @@
 import debug from 'debug';
 import * as superagent from 'superagent';
-import { EnclavedConfig, isMasterExpressConfig } from '../initConfig';
+import { EnclavedConfig, isMasterExpressConfig } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 import {

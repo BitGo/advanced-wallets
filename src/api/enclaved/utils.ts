@@ -1,7 +1,8 @@
 // TODO: this function is duplicated in multisigTransactioSign.ts but as hardcoded. Replace that code later with this call (to avoid merge conflicts/duplication)
 import { KmsClient } from '../../kms/kmsClient';
 import { GenerateDataKeyResponse } from '../../kms/types/dataKey';
-import { EnclavedConfig } from '../../initConfig';
+import { EnclavedConfig } from '../../shared/types';
+
 export async function retrieveKmsPrvKey({
   pub,
   source,

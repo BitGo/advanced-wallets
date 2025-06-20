@@ -3,7 +3,8 @@ import https from 'https';
 import http from 'http';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
-import { MasterExpressConfig, initConfig, isMasterExpressConfig, TlsMode } from './initConfig';
+import { MasterExpressConfig, isMasterExpressConfig, TlsMode } from './shared/types';
+import { initConfig } from './initConfig';
 import {
   setupLogging,
   setupCommonMiddleware,
