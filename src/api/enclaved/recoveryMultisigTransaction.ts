@@ -3,6 +3,7 @@ import { MethodNotImplementedError } from 'bitgo';
 import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import logger from '../../logger';
 import { isEthLikeCoin } from '../../shared/coinUtils';
+import { HalfSignedEthLikeRecoveryTx } from '../../types/transaction';
 import { retrieveKmsKey } from './utils';
 
 export async function recoveryMultisigTransaction(
@@ -36,7 +37,7 @@ export async function recoveryMultisigTransaction(
           walletContractAddress,
         });
 
-        const { halfSigned } = halfSignedTx as any;
+        const { halfSigned } = halfSignedTx as HalfSignedEthLikeRecoveryTx;
         const fullSignedTx = await coin.signTransaction({
           isLastSignature: true,
           prv: backupPrv,

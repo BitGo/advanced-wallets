@@ -58,8 +58,8 @@ const RecoveryMultisigRequest = {
   userPub: t.string,
   backupPub: t.string,
   apiKey: t.string,
-  // TODO: best typing for this, they come from sdk TS types
   unsignedSweepPrebuildTx: t.any,
+  walletContractAddress: t.string,
   coinSpecificParams: t.union([
     t.undefined,
     t.partial({
@@ -71,8 +71,9 @@ const RecoveryMultisigRequest = {
 
 // Response type for /multisig/recovery endpoint
 const RecoveryMultisigResponse: HttpResponse = {
-  // TODO: Define proper response type for recovery multisig transaction
-  200: t.any, // the full signed tx
+  200: t.type({
+    txHex: t.string,
+  }), // the full signed tx
   500: t.type({
     error: t.string,
     details: t.string,
