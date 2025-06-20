@@ -154,15 +154,20 @@ export async function handleGenerateOnPremMpcWallet(
     walletParams.enterprise = enterprise;
   }
 
+  const constants = await bitgo.fetchConstants();
+  if (!constants.mpc || !constants.mpc.bitgoPublicKey) {
+    throw new Error('Unable to create MPC keys - bitgoPublicKey is missing from constants');
+  }
+
   // Initialize key generation for user and backup
   const userInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
     source: 'user',
-    coin: req.params.coin,
+    bitgoGpgKey: constants.mpc.bitgoPublicKey,
   });
 
   const backupInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
     source: 'backup',
-    coin: req.params.coin,
+    bitgoGpgKey: constants.mpc.bitgoPublicKey,
   });
 
   // Extract GPG keys based on payload type

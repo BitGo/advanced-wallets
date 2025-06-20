@@ -138,9 +138,23 @@ describe('POST /api/:coin/wallet/generate', () => {
   });
 
   it('should generate a TSS wallet by calling the enclaved express service', async () => {
+    const constantsNock = nock(bitgoApiUrl)
+      .get('/api/v1/client/constants')
+      // Not sure why the nock is not matching any headers, but this works
+      .matchHeader('accept-encoding', 'gzip, deflate')
+      .matchHeader('bitgo-sdk-version', '48.0.0')
+      .reply(200, {
+        constants: {
+          mpc: {
+            bitgoPublicKey: 'test-bitgo-public-key',
+          },
+        },
+      });
+
     const userInitNock = nock(enclavedExpressUrl)
       .post(`/api/${eddsaCoin}/mpc/initialize`, {
         source: 'user',
+        bitgoGpgKey: 'test-bitgo-public-key',
       })
       .reply(200, {
         encryptedDataKey: 'key',
@@ -163,6 +177,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     const backupInitNock = nock(enclavedExpressUrl)
       .post(`/api/${eddsaCoin}/mpc/initialize`, {
         source: 'backup',
+        bitgoGpgKey: 'test-bitgo-public-key',
       })
       .reply(200, {
         encryptedDataKey: 'key',
@@ -261,6 +276,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     // );
 
     // Verify all nock mocks were called
+    constantsNock.done();
     userInitNock.done();
     backupInitNock.done();
     bitgoAddKeychainNock.done();
