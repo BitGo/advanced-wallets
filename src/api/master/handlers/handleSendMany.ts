@@ -1,6 +1,6 @@
 import { RequestTracer, PrebuildTransactionOptions, Memo, KeyIndices } from '@bitgo/sdk-core';
-import logger from '../logger';
-import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import logger from '../../../logger';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -31,9 +31,9 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
 
   // TODO: uncomment when on-prem type is added to SDK
-  // if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-  //   throw new Error('Wallet is not an on-prem wallet');
-  // }
+  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
+    throw new Error('Wallet is not an on-prem wallet');
+  }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
   logger.info(`Key ID index: ${keyIdIndex}`);

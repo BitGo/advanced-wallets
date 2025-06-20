@@ -1,7 +1,7 @@
-import { KmsClient } from '../../kms/kmsClient';
+import { KmsClient } from '../../../kms/kmsClient';
 import { TransactionPrebuild } from 'bitgo';
-import logger from '../../logger';
-import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import logger from '../../../logger';
+import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 export async function signMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.sign', 'post'>,

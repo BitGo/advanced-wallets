@@ -1,10 +1,10 @@
 import { SignFinalOptions } from '@bitgo/abstract-eth';
 import { MethodNotImplementedError } from 'bitgo';
-import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import logger from '../../logger';
-import { isEthLikeCoin } from '../../shared/coinUtils';
-import { HalfSignedEthLikeRecoveryTx } from '../../types/transaction';
-import { retrieveKmsKey } from './utils';
+import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import logger from '../../../logger';
+import { isEthLikeCoin } from '../../../shared/coinUtils';
+import { retrieveKmsPrvKey } from '../utils';
+import { HalfSignedEthLikeRecoveryTx } from '../../../types/transaction';
 
 export async function recoveryMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
@@ -12,8 +12,8 @@ export async function recoveryMultisigTransaction(
   const { userPub, backupPub, unsignedSweepPrebuildTx, walletContractAddress } = req.body;
 
   //fetch prv and check that pub are valid
-  const userPrv = await retrieveKmsKey({ pub: userPub, source: 'user', cfg: req.config });
-  const backupPrv = await retrieveKmsKey({ pub: backupPub, source: 'backup', cfg: req.config });
+  const userPrv = await retrieveKmsPrvKey({ pub: userPub, source: 'user', cfg: req.config });
+  const backupPrv = await retrieveKmsPrvKey({ pub: backupPub, source: 'backup', cfg: req.config });
 
   if (!userPrv || !backupPrv) {
     const errorMsg = `Error while recovery wallet, missing prv keys for user or backup on pub keys user=${userPub}, backup=${backupPub}`;

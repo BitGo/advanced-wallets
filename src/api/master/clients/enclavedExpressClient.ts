@@ -6,10 +6,9 @@ import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
-import { MasterExpressConfig } from '../types';
-import { TlsMode } from '../types';
-import { EnclavedApiSpec } from '../enclavedBitgoExpress/routers';
-import { PingResponseType, VersionResponseType } from '../types/health';
+import { MasterExpressConfig, TlsMode } from '../../../shared/types';
+import { EnclavedApiSpec } from '../../../enclavedBitgoExpress/routers';
+import { PingResponseType, VersionResponseType } from '../../../types/health';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 

@@ -1,8 +1,16 @@
 import debug from 'debug';
 import * as superagent from 'superagent';
-import { EnclavedConfig, isMasterExpressConfig } from '../initConfig';
+import { EnclavedConfig, isMasterExpressConfig } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
+import {
+  GenerateDataKeyKmsSchema,
+  GenerateDataKeyParams,
+  GenerateDataKeyResponse,
+  DecryptDataKeyParams,
+  DecryptDataKeyResponse,
+  DecryptDataKeyKmsSchema,
+} from './types/dataKey';
 
 const debugLogger = debug('bitgo:express:kmsClient');
 
@@ -72,5 +80,59 @@ export class KmsClient {
     }
 
     return kmsResponse.body as GetKeyResponse;
+  }
+
+  async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
+    debugLogger('Generating data key from KMS: %O', params);
+
+    // Call KMS to generate the data key
+    let kmsResponse: any;
+    try {
+      kmsResponse = await superagent
+        .post(`${this.url}/generateDataKey`)
+        .set('x-api-key', 'abc')
+        .send(params);
+    } catch (error: any) {
+      console.log('Error generating data key from KMS', error);
+      throw error;
+    }
+
+    // validate the response
+    try {
+      GenerateDataKeyKmsSchema.parse(kmsResponse.body);
+    } catch (error: any) {
+      throw new Error(
+        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+      );
+    }
+
+    return kmsResponse.body as GenerateDataKeyResponse;
+  }
+
+  async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
+    debugLogger('Decrypting data key from KMS: %O', params);
+
+    // Call KMS to decrypt the data key
+    let kmsResponse: any;
+    try {
+      kmsResponse = await superagent
+        .post(`${this.url}/decryptDataKey`)
+        .set('x-api-key', 'abc')
+        .send(params);
+    } catch (error: any) {
+      console.log('Error decrypting data key from KMS', error);
+      throw error;
+    }
+
+    // validate the response
+    try {
+      DecryptDataKeyKmsSchema.parse(kmsResponse.body);
+    } catch (error: any) {
+      throw new Error(
+        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+      );
+    }
+
+    return kmsResponse.body as DecryptDataKeyResponse;
   }
 }

@@ -9,7 +9,7 @@ import bodyParser from 'body-parser';
 import pjson from '../../package.json';
 import logger from '../logger';
 
-import { Config, TlsMode } from '../initConfig';
+import { Config, TlsMode } from '../shared/types';
 
 /**
  * Set up the logging middleware provided by morgan

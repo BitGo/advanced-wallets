@@ -1,6 +1,6 @@
 import { BitGo } from 'bitgo';
-import { KmsClient } from '../../kms/kmsClient';
-import { EnclavedApiSpecRouteRequest } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { KmsClient } from '../../../kms/kmsClient';
+import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 export async function postIndependentKey(
   req: EnclavedApiSpecRouteRequest<'v1.key.independent', 'post'>,

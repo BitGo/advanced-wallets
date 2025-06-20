@@ -4,7 +4,8 @@ import http from 'http';
 import morgan from 'morgan';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
-import { EnclavedConfig, initConfig, TlsMode, isEnclavedConfig } from './initConfig';
+import { EnclavedConfig, TlsMode, isEnclavedConfig } from './shared/types';
+import { initConfig } from './initConfig';
 import { setupRoutes } from './routes/enclaved';
 import {
   setupLogging,

@@ -1,7 +1,7 @@
 import express from 'express';
 import { type BitGo } from 'bitgo';
-import { Config } from '../types';
-import { EnclavedExpressClient } from '../masterBitgoExpress/enclavedExpressClient';
+import { Config } from '../shared/types';
+import { EnclavedExpressClient } from '../api/master/clients/enclavedExpressClient';
 
 // Extended request type for BitGo Express
 export interface BitGoRequest<T extends Config = Config> extends express.Request {

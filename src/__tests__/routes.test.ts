@@ -1,8 +1,9 @@
 import 'should';
-import express from 'express';
+
 import request from 'supertest';
+import express from 'express';
+import { AppMode, TlsMode } from '../shared/types';
 import { setupRoutes } from '../routes/enclaved';
-import { AppMode, TlsMode } from '../types';
 
 describe('Routes', () => {
   let app: express.Application;

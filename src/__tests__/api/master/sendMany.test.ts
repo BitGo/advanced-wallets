@@ -3,8 +3,8 @@ import sinon from 'sinon';
 
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../masterExpressApp';
-import { AppMode, MasterExpressConfig, TlsMode } from '../../types';
+import { app as expressApp } from '../../../masterExpressApp';
+import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo/sdk-core';
 import { Coin } from 'bitgo';
 import assert from 'assert';

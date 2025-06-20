@@ -1,4 +1,4 @@
-import { Config, isMasterExpressConfig } from '../types';
+import { Config, isMasterExpressConfig } from '../shared/types';
 import express from 'express';
 import { BitGoRequest } from '../types/request';
 import { BitGo } from 'bitgo';
