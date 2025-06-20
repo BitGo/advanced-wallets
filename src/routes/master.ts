@@ -1,9 +1,9 @@
 import express from 'express';
-import { MasterExpressConfig } from '../types';
-import { createHealthCheckRouter } from '../masterBitgoExpress/routers/healthCheck';
-import { createEnclavedExpressRouter } from '../masterBitgoExpress/routers/enclavedExpressHealth';
+import { MasterExpressConfig } from '../shared/types';
+import { createHealthCheckRouter } from '../api/master/routers/healthCheck';
+import { createEnclavedExpressRouter } from '../api/master/routers/enclavedExpressHealth';
 import logger from '../logger';
-import { createMasterApiRouter } from '../masterBitgoExpress/routers/masterApiSpec';
+import { createMasterApiRouter } from '../api/master/routers/masterApiSpec';
 
 /**
  * Setup master express specific routes

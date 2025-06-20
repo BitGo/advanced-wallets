@@ -13,13 +13,13 @@ import {
 } from '@api-ts/typed-express-router';
 import express from 'express';
 import * as t from 'io-ts';
-import { MasterExpressConfig } from '../../initConfig';
-import { prepareBitGo, responseHandler } from '../../shared/middleware';
-import { BitGoRequest } from '../../types/request';
-import { handleGenerateWalletOnPrem } from '../generateWallet';
-import { handleSendMany } from '../handleSendMany';
-import { validateMasterExpressConfig } from '../middleware';
-import { handleRecoveryWalletOnPrem } from '../recoveryWallet';
+import { MasterExpressConfig } from '../../../initConfig';
+import { prepareBitGo, responseHandler } from '../../../shared/middleware';
+import { BitGoRequest } from '../../../types/request';
+import { handleGenerateWalletOnPrem } from '../handlers/generateWallet';
+import { handleSendMany } from '../handlers/handleSendMany';
+import { validateMasterExpressConfig } from '../middleware/middleware';
+import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {

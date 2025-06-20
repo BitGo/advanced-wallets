@@ -2,12 +2,12 @@ import 'should';
 
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as enclavedApp } from '../enclavedApp';
-import { AppMode, EnclavedConfig, TlsMode } from '../types';
+import { app as enclavedApp } from '../../../enclavedApp';
+import { AppMode, EnclavedConfig, TlsMode } from '../../../initConfig';
 import express from 'express';
 
 import * as sinon from 'sinon';
-import * as configModule from '../initConfig';
+import * as configModule from '../../../initConfig';
 
 describe('postIndependentKey', () => {
   let cfg: EnclavedConfig;

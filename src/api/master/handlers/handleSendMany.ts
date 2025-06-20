@@ -1,6 +1,6 @@
 import { RequestTracer, PrebuildTransactionOptions, Memo, KeyIndices } from '@bitgo/sdk-core';
-import logger from '../logger';
-import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import logger from '../../../logger';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.

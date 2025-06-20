@@ -1,6 +1,6 @@
 import { MethodNotImplementedError } from 'bitgo';
-import { isEthLikeCoin } from '../shared/coinUtils';
-import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import { isEthLikeCoin } from '../../../shared/coinUtils';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 export async function handleRecoveryWalletOnPrem(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,

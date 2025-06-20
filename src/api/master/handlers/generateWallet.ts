@@ -9,7 +9,7 @@ import {
   AddKeychainOptions,
 } from '@bitgo/sdk-core';
 import _ from 'lodash';
-import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { isMasterExpressConfig } from '../types';
-import { createEnclavedExpressClient } from './enclavedExpressClient';
-import { BitGoRequest } from '../types/request';
+import { isMasterExpressConfig } from '../../../initConfig';
+import { createEnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { BitGoRequest } from '../../../types/request';
 
 /**
  * Middleware to validate master express configuration and enclaved express client
