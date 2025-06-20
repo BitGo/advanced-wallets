@@ -68,8 +68,7 @@ interface EddsaSigningParams {
 }
 
 export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>) {
-  const { source, pub, encryptedDataKey } = req.decoded;
-  const { coin: coinName, shareType } = req.params;
+  const { source, pub, coin, encryptedDataKey, shareType } = req.decoded;
 
   if (!source || !pub) {
     throw new Error('Source and public key are required for MPC signing');
@@ -80,7 +79,7 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
   }
 
   const bitgo = req.bitgo;
-  const coin = bitgo.coin(coinName);
+  const coinInstance = bitgo.coin(coin);
 
   // Get private key from KMS
   const prv = await retrieveKmsPrvKey({ pub, source, cfg: req.config });
@@ -92,11 +91,11 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
   }
 
   try {
-    const mpcAlgorithm = coin.getMPCAlgorithm?.() || MPCType.ECDSA; // Default to ECDSA if method doesn't exist
+    const mpcAlgorithm = coinInstance.getMPCAlgorithm?.() || MPCType.ECDSA; // Default to ECDSA if method doesn't exist
 
     if (mpcAlgorithm === MPCType.EDDSA) {
       return await handleEddsaSigning(req.bitgo, req.config, {
-        coin,
+        coin: coinInstance,
         shareType,
         txRequest: req.decoded.txRequest,
         prv,
