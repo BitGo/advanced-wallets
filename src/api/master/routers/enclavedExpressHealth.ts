@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import { apiSpec, httpRoute, httpRequest, HttpResponse } from '@api-ts/io-ts-http';
 import { createRouter, type WrappedRouter } from '@api-ts/typed-express-router';
 import { Response } from '@api-ts/response';
-import { MasterExpressConfig } from '../../../initConfig';
+import { MasterExpressConfig } from '../../../shared/types';
 import logger from '../../../logger';
 import { responseHandler } from '../../../shared/middleware';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';

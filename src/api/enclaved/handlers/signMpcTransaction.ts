@@ -10,7 +10,7 @@ import {
   SignatureShareRecord,
   GShare,
 } from '@bitgo/sdk-core';
-import { EnclavedConfig } from '../../../initConfig';
+import { EnclavedConfig } from '../../../shared/types';
 import { BitGoBase, BaseCoin } from 'bitgo';
 
 // Define share types for different MPC algorithms

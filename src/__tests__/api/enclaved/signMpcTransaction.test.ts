@@ -3,7 +3,7 @@ import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
 import { app as enclavedApp } from '../../../enclavedApp';
-import { AppMode, EnclavedConfig, TlsMode } from '../../../initConfig';
+import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
 import express from 'express';
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
