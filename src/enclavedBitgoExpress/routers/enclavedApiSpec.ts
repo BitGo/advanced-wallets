@@ -69,9 +69,6 @@ const BitGoKeychainType = t.type({
   type: t.literal('tss'),
   commonKeychain: t.string,
   verifiedVssProof: t.boolean,
-  isBitGo: t.boolean,
-  isTrust: t.boolean,
-  hsmType: t.string,
 });
 
 const FinalizeKeyGenerationRequest = {
