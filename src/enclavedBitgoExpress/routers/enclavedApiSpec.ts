@@ -51,6 +51,7 @@ const BitgoPayloadType = t.union([
 
 export const InitEddsaKeyGenerationRequest = {
   source: t.union([t.literal('user'), t.literal('backup')]),
+  bitgoGpgKey: t.string,
 };
 
 export const InitEddsaKeyGenerationResponse = t.type({

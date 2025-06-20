@@ -13,10 +13,10 @@ import { InitEddsaKeyGenerationResponse } from '../../../enclavedBitgoExpress/ro
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
-interface InitMpcKeyGenerationParams {
+export type InitMpcKeyGenerationParams = {
   source: 'user' | 'backup';
-  coin?: string;
-}
+  bitgoGpgKey: string;
+};
 
 interface FinalizeMpcKeyGenerationParams {
   source: 'user' | 'backup';
@@ -267,6 +267,7 @@ export class EnclavedExpressClient {
       let request = this.apiClient['v1.key.mpc.init'].post({
         coin: this.coin,
         source: params.source,
+        bitgoGpgKey: params.bitgoGpgKey,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {
