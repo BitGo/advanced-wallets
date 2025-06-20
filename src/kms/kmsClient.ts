@@ -3,6 +3,11 @@ import * as superagent from 'superagent';
 import { EnclavedConfig, isMasterExpressConfig } from '../initConfig';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
+import {
+  GenerateDataKeyKmsSchema,
+  GenerateDataKeyParams,
+  GenerateDataKeyResponse,
+} from './types/generateDataKey';
 
 const debugLogger = debug('bitgo:express:kmsClient');
 
@@ -72,5 +77,34 @@ export class KmsClient {
     }
 
     return kmsResponse.body as GetKeyResponse;
+  }
+
+  async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
+    debugLogger('Generating data key with params: %O', params);
+
+    // Call KMS to generate the data key
+    let kmsResponse: any;
+    try {
+      kmsResponse = await superagent
+        .post(`${this.url}/generateDataKey`)
+        .set('x-api-key', 'abc')
+        .send(params);
+    } catch (error: any) {
+      console.log('Error generating data key from KMS', error);
+      throw error;
+    }
+
+    try {
+      GenerateDataKeyKmsSchema.parse(kmsResponse.body);
+    } catch (error: any) {
+      throw new Error(
+        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+      );
+    }
+
+    return {
+      plaintextKey: kmsResponse.plaintextKey.split(',').map((x: any) => parseInt(x, 10)),
+      encryptedKey: kmsResponse.encryptedKey,
+    };
   }
 }
