@@ -11,6 +11,7 @@ import {
 } from '@bitgo/sdk-core';
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
+import { assert } from 'console';
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled
@@ -196,56 +197,77 @@ export async function handleGenerateOnPremMpcWallet(
     reqId,
   });
 
-  throw new NotImplementedError('MPC wallet generation is not fully implemented yet');
+  // TODO Create proper type guard for bitgoKeychain
+  assert(bitgoKeychain.type === 'tss', 'BitGo keychain must be of type tss');
+  assert('verifiedVssProof' in bitgoKeychain, 'BitGo keychain must have verifiedVssProof property');
+  assert('isBitGo' in bitgoKeychain, 'BitGo keychain must have isBitGo property');
 
-  // // Finalize user and backup keychains
-  // const userKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
-  //   source: 'user',
-  //   coin: req.params.coin,
-  //   encryptedDataKey: userInitResponse.encryptedDataKey,
-  //   encryptedData: userInitResponse.encryptedData,
-  //   bitGoKeychain: tssKeychain,
-  // });
+  // Finalize user and backup keychains
+  const userKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
+    source: 'user',
+    coin: req.params.coin,
+    encryptedDataKey: userInitResponse.encryptedDataKey,
+    encryptedData: userInitResponse.encryptedData,
+    bitGoKeychain: {
+      ...bitgoKeychain,
+      commonKeychain: bitgoKeychain.commonKeychain ?? '',
+      hsmType: bitgoKeychain.hsmType ?? '',
+      type: 'tss',
+      source: 'bitgo', // Ensure BitGo keychain is marked as BitGo
+      verifiedVssProof: true,
+      isBitGo: true, // Ensure BitGo keychain is marked as BitGo
+      isTrust: false,
+    },
+  });
 
-  // const backupKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
-  //   source: 'backup',
-  //   coin: req.params.coin,
-  //   encryptedDataKey: backupInitResponse.encryptedDataKey,
-  //   encryptedData: backupInitResponse.encryptedData,
-  //   bitGoKeychain: tssKeychain,
-  // });
+  const backupKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
+    source: 'backup',
+    coin: req.params.coin,
+    encryptedDataKey: backupInitResponse.encryptedDataKey,
+    encryptedData: backupInitResponse.encryptedData,
+    bitGoKeychain: {
+      ...bitgoKeychain,
+      commonKeychain: bitgoKeychain.commonKeychain ?? '',
+      hsmType: bitgoKeychain.hsmType ?? '',
+      type: 'tss',
+      source: 'bitgo', // Ensure BitGo keychain is marked as BitGo
+      verifiedVssProof: true,
+      isBitGo: true, // Ensure BitGo keychain is marked as BitGo
+      isTrust: false,
+    },
+  });
 
-  // const [userKeychain, backupKeychain] = await Promise.all([
-  //   userKeychainPromise,
-  //   backupKeychainPromise,
-  // ]);
+  const [userKeychain, backupKeychain] = await Promise.all([
+    userKeychainPromise,
+    backupKeychainPromise,
+  ]);
 
-  // walletParams.keys = [
-  //   userKeychain.enclavedExpressKeyId,
-  //   backupKeychain.enclavedExpressKeyId,
-  //   bitgoKeychain.id,
-  // ];
+  walletParams.keys = [
+    userKeychain.enclavedExpressKeyId,
+    backupKeychain.enclavedExpressKeyId,
+    bitgoKeychain.id,
+  ];
 
-  // const keychains = {
-  //   userKeychain,
-  //   backupKeychain,
-  //   bitgoKeychain,
-  // };
+  const keychains = {
+    userKeychain,
+    backupKeychain,
+    bitgoKeychain,
+  };
 
-  // const finalWalletParams = await baseCoin.supplementGenerateWallet(walletParams, keychains);
+  const finalWalletParams = await baseCoin.supplementGenerateWallet(walletParams, keychains);
 
-  // bitgo.setRequestTracer(reqId);
-  // const newWallet = await bitgo.post(baseCoin.url('/wallet/add')).send(finalWalletParams).result();
+  bitgo.setRequestTracer(reqId);
+  const newWallet = await bitgo.post(baseCoin.url('/wallet/add')).send(finalWalletParams).result();
 
-  // const result: WalletWithKeychains = {
-  //   wallet: new Wallet(bitgo, baseCoin, newWallet),
-  //   userKeychain: userKeychain,
-  //   backupKeychain: backupKeychain,
-  //   bitgoKeychain: bitgoKeychain,
-  //   responseType: 'WalletWithKeychains',
-  // };
+  const result: WalletWithKeychains = {
+    wallet: new Wallet(bitgo, baseCoin, newWallet),
+    userKeychain: userKeychain,
+    backupKeychain: backupKeychain,
+    bitgoKeychain: bitgoKeychain,
+    responseType: 'WalletWithKeychains',
+  };
 
-  // return { ...result, wallet: result.wallet.toJSON() };
+  return { ...result, wallet: result.wallet.toJSON() };
 }
 
 export async function handleGenerateWalletOnPrem(

@@ -19,7 +19,7 @@ export type InitMpcKeyGenerationParams = {
   bitgoGpgKey: string;
 };
 
-interface FinalizeMpcKeyGenerationParams {
+export type FinalizeMpcKeyGenerationParams = {
   source: 'user' | 'backup';
   coin?: string;
   encryptedDataKey: string;
@@ -30,11 +30,11 @@ interface FinalizeMpcKeyGenerationParams {
     type: 'tss';
     commonKeychain: string;
     verifiedVssProof: boolean;
-    isBitGo: boolean;
-    isTrust: boolean;
-    hsmType: string;
+    isBitGo?: boolean;
+    isTrust?: boolean;
+    hsmType?: string;
   };
-}
+};
 
 interface CreateIndependentKeychainParams {
   source: 'user' | 'backup';
