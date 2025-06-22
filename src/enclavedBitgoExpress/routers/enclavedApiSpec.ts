@@ -20,6 +20,7 @@ import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { EnclavedConfig } from '../../types';
 import { BitGoRequest } from '../../types/request';
 import { NotImplementedError } from 'bitgo';
+import { eddsaInitialize } from '../../api/enclaved/eddsaInitialize';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -27,39 +28,17 @@ const IndependentKeyRequest = {
   seed: t.union([t.undefined, t.string]),
 };
 
-const BitgoPayloadType = t.union([
-  t.type({
-    from: t.literal('user'),
-    to: t.literal('bitgo'),
-    publicShare: t.string,
-    privateShare: t.string,
-    privateShareProof: t.string,
-    vssProof: t.string,
-    userGPGPublicKey: t.string,
-  }),
-  t.type({
-    from: t.literal('backup'),
-    to: t.literal('bitgo'),
-    publicShare: t.string,
-    privateShare: t.string,
-    privateShareProof: t.string,
-    vssProof: t.string,
-    backupGPGPublicKey: t.string,
-  }),
-]);
-
-export const InitEddsaKeyGenerationRequest = {
-  source: t.union([t.literal('user'), t.literal('backup')]),
-  bitgoGpgKey: t.string,
-};
-
-export const InitEddsaKeyGenerationResponse = t.type({
-  encryptedDataKey: t.string,
-  encryptedData: t.string,
-  bitgoPayload: BitgoPayloadType,
+const keySharePayloadType = t.type({
+  from: t.union([t.literal('user'), t.literal('backup'), t.literal('bitgo')]),
+  to: t.union([t.literal('user'), t.literal('backup'), t.literal('bitgo')]),
+  publicShare: t.string,
+  privateShare: t.string,
+  privateShareProof: t.string,
+  vssProof: t.string,
+  gpgKey: t.string, // GPG public key of the sender
 });
 
-export type InitEddsaKeyGenerationResponse = t.TypeOf<typeof InitEddsaKeyGenerationResponse>;
+export type KeySharePayloadType = t.TypeOf<typeof keySharePayloadType>;
 
 // Types for /mpc/finalize endpoint
 const BitGoKeychainType = t.type({
@@ -136,21 +115,20 @@ const RecoveryMultisigResponse: HttpResponse = {
   }),
 };
 
-const MpcInitializeRequest = {
+export const InitEddsaKeyGenerationRequest = {
   source: t.union([t.literal('user'), t.literal('backup')]),
-  bitgoGpgPub: t.string,
-  counterPartyGpgPub: t.string,
+  bitgoGpgKey: t.string,
+  userGpgKey: t.union([t.undefined, t.string]),
 };
-const MpcInitializeRequestType = t.type(MpcInitializeRequest);
-export type MpcInitializeRequestType = t.TypeOf<typeof MpcInitializeRequestType>;
 
-const MpcInitializeResponse: HttpResponse = {
-  200: t.any, // TODO: Define proper response type for MPC initialization
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
-};
+export const InitEddsaKeyGenerationResponse = t.type({
+  encryptedDataKey: t.string,
+  encryptedData: t.string,
+  bitgoPayload: keySharePayloadType,
+  userPayload: t.union([keySharePayloadType, t.undefined]),
+});
+
+export type InitEddsaKeyGenerationResponse = t.TypeOf<typeof InitEddsaKeyGenerationResponse>;
 
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
@@ -202,9 +180,15 @@ export const EnclavedAPiSpec = apiSpec({
       path: '/{coin}/mpc/initialize',
       request: httpRequest({
         params: { coin: t.string },
-        body: MpcInitializeRequest,
+        body: InitEddsaKeyGenerationRequest,
       }),
-      response: MpcInitializeResponse,
+      response: {
+        200: InitEddsaKeyGenerationResponse,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
       description: 'Initialize MPC for EdDSA key generation',
     }),
   },
@@ -297,7 +281,17 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
 
   router.post('v1.key.mpc.init', [
     responseHandler<EnclavedConfig>(async (_req) => {
-      throw new NotImplementedError('MPC key generation is not implemented yet');
+      try {
+        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.key.mpc.init', 'post'>;
+        const response = await eddsaInitialize(typedReq);
+        return Response.ok(response);
+      } catch (error) {
+        const err = error as Error;
+        return Response.internalError({
+          error: err.message,
+          details: err.stack || 'No stack trace available',
+        });
+      }
     }),
   ]);
 

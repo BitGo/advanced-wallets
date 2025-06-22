@@ -17,6 +17,7 @@ const debugLogger = debug('bitgo:express:enclavedExpressClient');
 export type InitMpcKeyGenerationParams = {
   source: 'user' | 'backup';
   bitgoGpgKey: string;
+  userGpgKey?: string;
 };
 
 export type FinalizeMpcKeyGenerationParams = {
@@ -269,6 +270,7 @@ export class EnclavedExpressClient {
         coin: this.coin,
         source: params.source,
         bitgoGpgKey: params.bitgoGpgKey,
+        userGpgKey: params.userGpgKey,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {

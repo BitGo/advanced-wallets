@@ -3,21 +3,22 @@ import { KmsClient } from '../../kms/kmsClient';
 import * as crypto from 'crypto';
 import {
   EnclavedApiSpecRouteRequest,
-  MpcInitializeRequestType,
+  InitEddsaKeyGenerationResponse,
+  KeySharePayloadType,
 } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import * as openpgp from 'openpgp';
 
 export async function eddsaInitialize(
   req: EnclavedApiSpecRouteRequest<'v1.mpc.eddsa.initialize', 'post'>,
-) {
+): Promise<InitEddsaKeyGenerationResponse> {
   // request parsing
-  const { source, bitgoGpgPub, counterPartyGpgPub }: MpcInitializeRequestType = req.decoded;
-  if (!source) {
-    throw new Error('Source is required for MPC initialization');
+  const { source, bitgoGpgKey, userGpgKey } = req.decoded;
+  if (source === 'backup' && !userGpgKey) {
+    throw new Error('userGpgKey is required on backup key share generation');
   }
 
   // setup clients
-  const kms = new KmsClient(req.config);
+  // const kms = new KmsClient(req.config);
 
   // MPC configuration
   const MPC = await bitgoSdk.Eddsa.initialize();
@@ -43,55 +44,61 @@ export async function eddsaInitialize(
     Buffer.from(keyShare.yShares[3].chaincode, 'hex'),
   ]).toString('hex');
 
-  const bitgoKeyShare = {
+  const bitgoKeyShare: KeySharePayloadType = {
     from: source,
     to: 'bitgo',
     publicShare: publicKeyShare,
-    privateShare: gpgEncrypt(bitgoPrivateKeyShare, bitgoGpgPub),
+    privateShare: await gpgEncrypt(bitgoPrivateKeyShare, bitgoGpgKey),
     privateShareProof: await bitgoSdk.createShareProof(
       myGpgKey.privateKey,
       bitgoPrivateKeyShare.slice(0, 64),
       'eddsa',
     ),
-    vssProof: keyShare.yShares[3].v,
-    gpgPublicKey: myGpgKey.publicKey,
+    vssProof: keyShare.yShares[3].v as string,
+    gpgKey: myGpgKey.publicKey,
   };
 
-  // construct sourceToCounterParty key share
-  const counterPartyPrivateKeyShare = Buffer.concat([
-    Buffer.from(keyShare.yShares[2].u, 'hex'),
-    Buffer.from(keyShare.yShares[2].chaincode, 'hex'),
-  ]).toString('hex');
+  let userKeyShare: KeySharePayloadType | undefined = undefined;
 
-  const counterPartyKeyShare = {
-    from: source,
-    to: source === 'user' ? 'backup' : 'user',
-    publicShare: publicKeyShare,
-    privateShare: gpgEncrypt(counterPartyPrivateKeyShare, counterPartyGpgPub),
-    privateShareProof: await bitgoSdk.createShareProof(
-      myGpgKey.privateKey,
-      bitgoPrivateKeyShare.slice(0, 64),
-      'eddsa',
-    ),
-    vssProof: keyShare.yShares[2].v,
-    gpgPublicKey: myGpgKey.publicKey,
-  };
+  if (userGpgKey) {
+    // construct sourceToCounterParty key share
+    const counterPartyPrivateKeyShare = Buffer.concat([
+      Buffer.from(keyShare.yShares[2].u, 'hex'),
+      Buffer.from(keyShare.yShares[2].chaincode, 'hex'),
+    ]).toString('hex');
+
+    userKeyShare = {
+      from: source,
+      to: 'backup',
+      publicShare: publicKeyShare,
+      privateShare: await gpgEncrypt(counterPartyPrivateKeyShare, userGpgKey),
+      privateShareProof: await bitgoSdk.createShareProof(
+        myGpgKey.privateKey,
+        bitgoPrivateKeyShare.slice(0, 64),
+        'eddsa',
+      ),
+      vssProof: keyShare.yShares[2].v as string,
+      gpgKey: myGpgKey.publicKey,
+    };
+  }
 
   // construct encrypted payload. EBE receives back this payload in finalize since it can't keep it in memory
   const payload = {
     gpgPrv: myGpgKey.privateKey,
     myPrivateKeyShare,
   };
-  const { plaintextKey, encryptedKey } = await kms.generateDataKey({ keyType: 'AES-256' });
-  const encryptedPayload = crypto
-    .publicEncrypt(Buffer.from(plaintextKey), Buffer.from(JSON.stringify(payload)))
-    .toString();
+  // const { plaintextKey, encryptedKey } = await kms.generateDataKey({ keyType: 'AES-256' });
+  // const plaintextKey = 'test';
+  // const encryptedPayload = crypto
+  //   .publicEncrypt(Buffer.from(plaintextKey), Buffer.from(JSON.stringify(payload)))
+  //   .toString();
 
   return {
-    encryptedDataKey: encryptedKey,
-    encryptedData: encryptedPayload,
-    bitgoKeyShare,
-    counterPartyKeyShare,
+    // encryptedDataKey: encryptedKey,
+    encryptedDataKey: 'test',
+    encryptedData: 'test',
+    bitgoPayload: bitgoKeyShare,
+    userPayload: userKeyShare,
   };
 }
 
@@ -99,7 +106,7 @@ export async function eddsaInitialize(
  * Helper function to encrypt text using OpenPGP
  */
 async function gpgEncrypt(text: string, key: string): Promise<string> {
-  return await openpgp.encrypt({
+  const output = await openpgp.encrypt({
     message: await openpgp.createMessage({ text }),
     encryptionKeys: await openpgp.readKey({ armoredKey: key }),
     format: 'armored',
@@ -109,4 +116,5 @@ async function gpgEncrypt(text: string, key: string): Promise<string> {
       showComment: false,
     },
   });
+  return output.toString();
 }

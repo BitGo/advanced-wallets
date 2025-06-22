@@ -166,20 +166,25 @@ export async function handleGenerateOnPremMpcWallet(
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
   });
 
+  console.log('User MPC key generation initialized:', userInitResponse);
+
   const backupInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
     source: 'backup',
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
+    userGpgKey: userInitResponse.bitgoPayload.gpgKey,
   });
+
+  console.log('Backup MPC key generation initialized:', backupInitResponse);
 
   // Extract GPG keys based on payload type
   const userGPGKey =
     userInitResponse.bitgoPayload.from === 'user'
-      ? userInitResponse.bitgoPayload.userGPGPublicKey
+      ? userInitResponse.bitgoPayload.gpgKey
       : undefined;
 
   const backupGPGKey =
     backupInitResponse.bitgoPayload.from === 'backup'
-      ? backupInitResponse.bitgoPayload.backupGPGPublicKey
+      ? backupInitResponse.bitgoPayload.gpgKey
       : undefined;
 
   if (!userGPGKey || !backupGPGKey) {
@@ -196,6 +201,12 @@ export async function handleGenerateOnPremMpcWallet(
     backupGPGPublicKey: backupGPGKey,
     reqId,
   });
+
+  console.log('BitGo keychain created:', bitgoKeychain);
+
+  throw new NotImplementedError(
+    'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',
+  );
 
   // TODO Create proper type guard for bitgoKeychain
   assert(bitgoKeychain.type === 'tss', 'BitGo keychain must be of type tss');
@@ -273,7 +284,8 @@ export async function handleGenerateOnPremMpcWallet(
 export async function handleGenerateWalletOnPrem(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
-  const { multisigType } = req.body;
+  const { multisigType } = req.decoded;
+  console.log(req.decoded);
 
   if (multisigType === 'tss') {
     return handleGenerateOnPremMpcWallet(req);
