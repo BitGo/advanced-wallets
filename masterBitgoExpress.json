@@ -263,6 +263,99 @@
         }
       }
     },
+    "/api/{coin}/wallet/recovery": {
+      "post": {
+        "parameters": [
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userPub": {
+                    "type": "string"
+                  },
+                  "backupPub": {
+                    "type": "string"
+                  },
+                  "walletContractAddress": {
+                    "type": "string"
+                  },
+                  "recoveryDestinationAddress": {
+                    "type": "string"
+                  },
+                  "apiKey": {
+                    "type": "string"
+                  },
+                  "coinSpecificParams": {
+                    "type": "object",
+                    "properties": {
+                      "bitgoPub": {
+                        "type": "string"
+                      },
+                      "ignoreAddressTypes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "userPub",
+                  "backupPub",
+                  "walletContractAddress",
+                  "recoveryDestinationAddress",
+                  "apiKey"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ping": {
       "post": {
         "parameters": [],
