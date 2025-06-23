@@ -11,9 +11,9 @@ import { TlsMode } from '../types';
 import { EnclavedApiSpec } from '../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../types/health';
 import {
-  FinalizeKeyGenerationResponse,
-  InitEddsaKeyGenerationResponse,
-  KeySharePayloadType,
+  KeyShareType,
+  MpcFinalizeResponseType,
+  MpcInitializeResponseType,
 } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
 import assert from 'assert';
 
@@ -35,10 +35,8 @@ export type FinalizeMpcKeyGenerationParams = {
     isBitGo?: boolean;
     isTrust?: boolean;
   };
-  userGpgKey?: string;
-  backupGpgKey?: string;
-  backupToUserShare?: KeySharePayloadType;
-  userToBackupShare?: KeySharePayloadType;
+  counterPartyGPGKey: string;
+  counterPartyKeyShare: KeyShareType;
 };
 
 interface CreateIndependentKeychainParams {
@@ -263,18 +261,18 @@ export class EnclavedExpressClient {
    */
   async initMpcKeyGeneration(
     params: InitMpcKeyGenerationParams,
-  ): Promise<InitEddsaKeyGenerationResponse> {
+  ): Promise<MpcInitializeResponseType> {
     if (!this.coin) {
       throw new Error('Coin must be specified to initialize MPC key generation');
     }
 
     try {
       debugLogger('Initializing MPC key generation for coin: %s', this.coin);
-      let request = this.apiClient['v1.key.mpc.init'].post({
+      let request = this.apiClient['v1.mpc.initialize'].post({
         coin: this.coin,
         source: params.source,
-        bitgoGpgKey: params.bitgoGpgKey,
-        userGpgKey: params.userGpgKey,
+        bitgoGpgPub: params.bitgoGpgKey,
+        counterPartyGpgPub: params.userGpgKey,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -295,7 +293,7 @@ export class EnclavedExpressClient {
    */
   async finalizeMpcKeyGeneration(
     params: FinalizeMpcKeyGenerationParams,
-  ): Promise<FinalizeKeyGenerationResponse> {
+  ): Promise<MpcFinalizeResponseType> {
     if (!this.coin) {
       throw new Error('Coin must be specified to finalize MPC key generation');
     }
@@ -312,17 +310,15 @@ export class EnclavedExpressClient {
         source: params.source,
         encryptedDataKey: params.encryptedDataKey,
         encryptedData: params.encryptedData,
-        bitGoKeychain: {
+        bitgoKeyChain: {
           ...bitgoKeychain,
           source: 'bitgo',
           type: 'tss',
           commonKeychain: bitgoKeychain.commonKeychain ?? '',
           keyShares: bitgoKeychain.keyShares as any[],
         },
-        userGpgKey: params.userGpgKey,
-        backupGpgKey: params.backupGpgKey,
-        backupToUserShare: params.backupToUserShare,
-        userToBackupShare: params.userToBackupShare,
+        counterPartyGpgPub: params.counterPartyGPGKey,
+        counterPartyKeyShare: params.counterPartyKeyShare,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {

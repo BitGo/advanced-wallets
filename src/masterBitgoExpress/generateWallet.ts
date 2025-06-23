@@ -12,6 +12,7 @@ import {
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from './routers/masterApiSpec';
 import { assert } from 'console';
+import { KeyShareType } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled
@@ -173,6 +174,9 @@ export async function handleGenerateOnPremMpcWallet(
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
     userGpgKey: userInitResponse.bitgoPayload.gpgKey,
   });
+  if (!backupInitResponse.counterPartyKeyShare) {
+    throw new Error('User key share is missing from initialization response');
+  }
 
   console.log('Backup MPC key generation initialized:', backupInitResponse);
 
@@ -227,10 +231,12 @@ export async function handleGenerateOnPremMpcWallet(
       isTrust: false,
       keyShares: bitgoKeychain.keyShares,
     },
-    userGpgKey: userInitResponse.bitgoPayload?.gpgKey,
-    backupGpgKey: backupInitResponse.userPayload?.gpgKey,
-    backupToUserShare: backupInitResponse.userPayload,
+    counterPartyGPGKey: backupGPGKey,
+    counterPartyKeyShare: backupInitResponse.counterPartyKeyShare,
   });
+  if (!userKeychainPromise.counterpartyKeyShare) {
+    throw new Error('Backup key share is missing from user keychain promise');
+  }
 
   const userMpcKey = await baseCoin.keychains().add({
     commonKeychain: userKeychainPromise.commonKeychain,
@@ -259,7 +265,8 @@ export async function handleGenerateOnPremMpcWallet(
       isBitGo: true, // Ensure BitGo keychain is marked as BitGo
       isTrust: false,
     },
-    // TODO: push the user -> backup share/gpg keys
+    counterPartyGPGKey: userGPGKey as string, // not sure why I have to cast this here
+    counterPartyKeyShare: userKeychainPromise.counterpartyKeyShare as KeyShareType, // also not sure why I have to cast this here
   });
 
   const backupMpcKey = await baseCoin.keychains().add({
@@ -267,7 +274,6 @@ export async function handleGenerateOnPremMpcWallet(
     source: 'backup',
     type: 'tss',
   });
-
   walletParams.keys = [userMpcKey.id, backupMpcKey.id, bitgoKeychain.id];
 
   const keychains: KeychainsTriplet = {
