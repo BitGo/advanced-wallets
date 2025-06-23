@@ -204,17 +204,14 @@ export async function handleGenerateOnPremMpcWallet(
 
   console.log('BitGo keychain created:', bitgoKeychain);
 
-  throw new NotImplementedError(
-    'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',
-  );
-
   // TODO Create proper type guard for bitgoKeychain
   assert(bitgoKeychain.type === 'tss', 'BitGo keychain must be of type tss');
   assert('verifiedVssProof' in bitgoKeychain, 'BitGo keychain must have verifiedVssProof property');
   assert('isBitGo' in bitgoKeychain, 'BitGo keychain must have isBitGo property');
+  assert('keyShares' in bitgoKeychain, 'BitGo keychain must have keyShares property');
 
   // Finalize user and backup keychains
-  const userKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
+  const userKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
     source: 'user',
     coin: req.params.coin,
     encryptedDataKey: userInitResponse.encryptedDataKey,
@@ -222,14 +219,21 @@ export async function handleGenerateOnPremMpcWallet(
     bitGoKeychain: {
       ...bitgoKeychain,
       commonKeychain: bitgoKeychain.commonKeychain ?? '',
-      hsmType: bitgoKeychain.hsmType ?? '',
+      hsmType: bitgoKeychain.hsmType,
       type: 'tss',
       source: 'bitgo', // Ensure BitGo keychain is marked as BitGo
       verifiedVssProof: true,
       isBitGo: true, // Ensure BitGo keychain is marked as BitGo
       isTrust: false,
+      keyShares: bitgoKeychain.keyShares,
     },
   });
+
+  console.log('User keychain finalized:', userKeychainPromise);
+
+  throw new NotImplementedError(
+    'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',
+  );
 
   const backupKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
     source: 'backup',
@@ -239,7 +243,7 @@ export async function handleGenerateOnPremMpcWallet(
     bitGoKeychain: {
       ...bitgoKeychain,
       commonKeychain: bitgoKeychain.commonKeychain ?? '',
-      hsmType: bitgoKeychain.hsmType ?? '',
+      hsmType: bitgoKeychain.hsmType,
       type: 'tss',
       source: 'bitgo', // Ensure BitGo keychain is marked as BitGo
       verifiedVssProof: true,
