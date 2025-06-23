@@ -11,6 +11,7 @@ import { MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { EnclavedApiSpec } from '../../../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../../../types/health';
 import {
+  FinalizeKeyGenerationResponse,
   InitEddsaKeyGenerationResponse,
   KeySharePayloadType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
@@ -291,7 +292,9 @@ export class EnclavedExpressClient {
   /**
    * Finalize MPC key generation for a given source and coin
    */
-  async finalizeMpcKeyGeneration(params: FinalizeMpcKeyGenerationParams): Promise<any> {
+  async finalizeMpcKeyGeneration(
+    params: FinalizeMpcKeyGenerationParams,
+  ): Promise<FinalizeKeyGenerationResponse> {
     if (!this.coin) {
       throw new Error('Coin must be specified to finalize MPC key generation');
     }
