@@ -137,4 +137,26 @@ export class KmsClient {
 
     return kmsResponse.body as DecryptDataKeyResponse;
   }
+
+  async decryptDataKey(encryptedKey: string): Promise<Uint8Array> {
+    debugLogger('Decrypting data key: %s', encryptedKey);
+
+    // Call KMS to decrypt the data key
+    let kmsResponse: any;
+    try {
+      kmsResponse = await superagent
+        .post(`${this.url}/decryptDataKey`)
+        .set('x-api-key', 'abc')
+        .send({ encryptedKey });
+    } catch (error: any) {
+      console.log('Error decrypting data key from KMS', error);
+      throw error;
+    }
+
+    if (!kmsResponse.body || !kmsResponse.body.plaintextKey) {
+      throw new Error('KMS did not return a valid plaintext key');
+    }
+
+    return kmsResponse.body.plaintextKey;
+  }
 }
