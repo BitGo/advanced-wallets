@@ -246,10 +246,6 @@ export async function handleGenerateOnPremMpcWallet(
 
   console.log('User keychain finalized:', userMpcKey);
 
-  // throw new NotImplementedError(
-  //   'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',
-  // );
-
   const backupKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
     source: 'backup',
     coin: req.params.coin,
@@ -274,9 +270,11 @@ export async function handleGenerateOnPremMpcWallet(
     source: 'backup',
     type: 'tss',
   });
+  console.log('Backup keychain finalized:', backupMpcKey);
+
   walletParams.keys = [userMpcKey.id, backupMpcKey.id, bitgoKeychain.id];
 
-  const keychains: KeychainsTriplet = {
+  const keychains = {
     userKeychain: userMpcKey,
     backupKeychain: backupMpcKey,
     bitgoKeychain,
