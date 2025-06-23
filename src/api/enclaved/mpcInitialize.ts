@@ -60,7 +60,7 @@ export async function eddsaInitialize(
       'eddsa',
     ),
     vssProof: keyShare.yShares[bitgoIndex].v as string,
-    gpgPublicKey: sourceGpgKey.publicKey,
+    gpgKey: sourceGpgKey.publicKey,
   };
 
   // source to counter party private share
@@ -86,7 +86,7 @@ export async function eddsaInitialize(
       'eddsa',
     ),
     vssProof: keyShare.yShares[counterPartyIndex].v as string,
-    gpgPublicKey: sourceGpgKey.publicKey,
+    gpgKey: sourceGpgKey.publicKey,
   };
 
   // construct encrypted payload. EBE receives back this payload in finalize since it can't keep it in memory

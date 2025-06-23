@@ -4,6 +4,8 @@ import {
   HttpResponse,
   httpRoute,
   Method as HttpMethod,
+  optional,
+  optionalized,
 } from '@api-ts/io-ts-http';
 import { Response } from '@api-ts/response';
 import {
@@ -129,7 +131,7 @@ const KeyShare = {
   privateShare: t.string,
   privateShareProof: t.string,
   vssProof: t.string,
-  gpgPublicKey: t.string,
+  gpgKey: t.string,
 };
 const KeyShareType = t.type(KeyShare);
 export type KeyShareType = t.TypeOf<typeof KeyShareType>;
@@ -137,23 +139,19 @@ export type KeyShareType = t.TypeOf<typeof KeyShareType>;
 const MpcInitializeRequest = {
   source: t.union([t.literal('user'), t.literal('backup')]),
   bitgoGpgPub: t.string,
-  counterPartyGpgPub: t.string, // TODO: this should be optional, but I cannot make this optional
+  counterPartyGpgPub: optional(t.string), // Optional for backup source
 };
-const MpcInitializeRequestType = t.type(MpcInitializeRequest);
+const MpcInitializeRequestType = optionalized(MpcInitializeRequest);
 export type MpcInitializeRequestType = t.TypeOf<typeof MpcInitializeRequestType>;
 
-const MpcInitializeResponse: HttpResponse = {
-  200: t.type({
-    encryptedDataKey: t.string,
-    encryptedData: t.string,
-    bitgoPayload: KeyShareType,
-    counterPartyKeyShare: t.union([t.undefined, KeyShareType]),
-  }),
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+const MpcInitializeResponse = {
+  encryptedDataKey: t.string,
+  encryptedData: t.string,
+  bitgoPayload: KeyShareType,
+  counterPartyKeyShare: optional(KeyShareType),
 };
+const MpcInitializeResponseType = optionalized(MpcInitializeResponse);
+export type MpcInitializeResponseType = t.TypeOf<typeof MpcInitializeResponseType>;
 
 const BitGoKeychainType = t.type({
   id: t.string,
@@ -176,13 +174,14 @@ const MpcFinalizeRequest = {
 const MpcFinalizeRequestType = t.type(MpcFinalizeRequest);
 export type MpcFinalizeRequestType = t.TypeOf<typeof MpcFinalizeRequestType>;
 
-const MpcFinalizeResponse: HttpResponse = {
-  200: t.any, // TODO: Define proper response type for MPC finalization
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+const MpcFinalizeResponse = {
+  counterpartyKeyShare: optional(KeyShareType),
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  commonKeychain: t.string,
+  enclavedExpressKeyId: t.string,
 };
+const MpcFinalizeResponseType = optionalized(MpcFinalizeResponse);
+export type MpcFinalizeResponseType = t.TypeOf<typeof MpcFinalizeResponseType>;
 
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
@@ -236,7 +235,13 @@ export const EnclavedAPiSpec = apiSpec({
         params: { coin: t.string },
         body: MpcInitializeRequest,
       }),
-      response: MpcInitializeResponse,
+      response: {
+        200: t.type(MpcInitializeResponse),
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
       description: 'Initialize MPC for EdDSA key generation',
     }),
   },
@@ -264,7 +269,13 @@ export const EnclavedAPiSpec = apiSpec({
         params: { coin: t.string },
         body: MpcFinalizeRequest,
       }),
-      response: MpcFinalizeResponse,
+      response: {
+        200: MpcFinalizeResponseType,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
       description: 'Finalize key generation and confirm commonKeychain',
     }),
   },
