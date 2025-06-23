@@ -66,15 +66,17 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       });
 
     // Mock sendAccountConsolidations
-    const sendConsolidationsStub = sinon.stub(Wallet.prototype, 'sendAccountConsolidations').resolves({
-      success: [
-        {
-          txid: 'consolidation-tx-1',
-          status: 'signed',
-        },
-      ],
-      failure: [],
-    });
+    const sendConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'sendAccountConsolidations')
+      .resolves({
+        success: [
+          {
+            txid: 'consolidation-tx-1',
+            status: 'signed',
+          },
+        ],
+        failure: [],
+      });
 
     const response = await agent
       .post(`/api/${coin}/wallet/${walletId}/consolidate`)
@@ -82,7 +84,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .send({
         source: 'user',
         pubkey: 'xpub_user',
-        consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321']
+        consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
       });
 
     response.status.should.equal(200);
@@ -117,20 +119,22 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       });
 
     // Mock sendAccountConsolidations with partial failures
-    const sendConsolidationsStub = sinon.stub(Wallet.prototype, 'sendAccountConsolidations').resolves({
-      success: [
-        {
-          txid: 'consolidation-tx-1',
-          status: 'signed',
-        },
-      ],
-      failure: [
-        {
-          error: 'Insufficient funds',
-          address: '0xfedcba0987654321',
-        },
-      ],
-    });
+    const sendConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'sendAccountConsolidations')
+      .resolves({
+        success: [
+          {
+            txid: 'consolidation-tx-1',
+            status: 'signed',
+          },
+        ],
+        failure: [
+          {
+            error: 'Insufficient funds',
+            address: '0xfedcba0987654321',
+          },
+        ],
+      });
 
     const response = await agent
       .post(`/api/${coin}/wallet/${walletId}/consolidate`)
@@ -143,7 +147,9 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details').which.match(/Consolidations failed: 1 and succeeded: 1/);
+    response.body.should.have
+      .property('details')
+      .which.match(/Consolidations failed: 1 and succeeded: 1/);
 
     walletGetNock.done();
     keychainGetNock.done();
@@ -172,19 +178,21 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       });
 
     // Mock sendAccountConsolidations with all failures
-    const sendConsolidationsStub = sinon.stub(Wallet.prototype, 'sendAccountConsolidations').resolves({
-      success: [],
-      failure: [
-        {
-          error: 'All consolidations failed',
-          address: '0x1234567890abcdef',
-        },
-        {
-          error: 'All consolidations failed',
-          address: '0xfedcba0987654321',
-        },
-      ],
-    });
+    const sendConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'sendAccountConsolidations')
+      .resolves({
+        success: [],
+        failure: [
+          {
+            error: 'All consolidations failed',
+            address: '0x1234567890abcdef',
+          },
+          {
+            error: 'All consolidations failed',
+            address: '0xfedcba0987654321',
+          },
+        ],
+      });
 
     const response = await agent
       .post(`/api/${coin}/wallet/${walletId}/consolidate`)
@@ -217,7 +225,9 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       });
 
     // Mock allowsAccountConsolidations to return false
-    const allowsConsolidationsStub = sinon.stub(Hteth.prototype, 'allowsAccountConsolidations').returns(false);
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(false);
 
     const response = await agent
       .post(`/api/${coin}/wallet/${walletId}/consolidate`)
@@ -267,4 +277,4 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
     walletGetNock.done();
     keychainGetNock.done();
   });
-}); 
+});

@@ -12,7 +12,7 @@ export async function handleConsolidate(
   const params = req.decoded;
   const walletId = req.params.walletId;
   const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
-  
+
   if (!wallet) {
     throw new Error(`Wallet ${walletId} not found`);
   }
@@ -89,4 +89,4 @@ export async function handleConsolidate(
     logger.error('Failed to consolidate account: %s', err.message);
     throw err;
   }
-} 
+}
