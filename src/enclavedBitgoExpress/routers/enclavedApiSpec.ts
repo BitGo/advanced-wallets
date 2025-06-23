@@ -78,6 +78,8 @@ const FinalizeKeyGenerationResponse = t.type({
   source: t.union([t.literal('user'), t.literal('backup')]),
 });
 
+export type FinalizeKeyGenerationResponse = t.TypeOf<typeof FinalizeKeyGenerationResponse>;
+
 // Response type for /key/independent endpoint
 const IndependentKeyResponse: HttpResponse = {
   // TODO: Define proper response type

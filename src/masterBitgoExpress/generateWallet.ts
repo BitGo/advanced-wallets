@@ -240,11 +240,11 @@ export async function handleGenerateOnPremMpcWallet(
 
   console.log('User keychain finalized:', userMpcKey);
 
-  throw new NotImplementedError(
-    'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',
-  );
+  // throw new NotImplementedError(
+  //   'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',
+  // );
 
-  const backupKeychainPromise = enclavedExpressClient.finalizeMpcKeyGeneration({
+  const backupKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
     source: 'backup',
     coin: req.params.coin,
     encryptedDataKey: backupInitResponse.encryptedDataKey,
@@ -259,34 +259,32 @@ export async function handleGenerateOnPremMpcWallet(
       isBitGo: true, // Ensure BitGo keychain is marked as BitGo
       isTrust: false,
     },
+    // TODO: push the user -> backup share/gpg keys
   });
 
-  const [userKeychain, backupKeychain] = await Promise.all([
-    userKeychainPromise,
-    backupKeychainPromise,
-  ]);
+  const backupMpcKey = await baseCoin.keychains().add({
+    commonKeychain: backupKeychainPromise.commonKeychain,
+    source: 'backup',
+    type: 'tss',
+  });
 
-  walletParams.keys = [
-    userKeychain.enclavedExpressKeyId,
-    backupKeychain.enclavedExpressKeyId,
-    bitgoKeychain.id,
-  ];
+  walletParams.keys = [userMpcKey.id, backupMpcKey.id, bitgoKeychain.id];
 
-  const keychains = {
-    userKeychain,
-    backupKeychain,
+  const keychains: KeychainsTriplet = {
+    userKeychain: userMpcKey,
+    backupKeychain: backupMpcKey,
     bitgoKeychain,
   };
 
   const finalWalletParams = await baseCoin.supplementGenerateWallet(walletParams, keychains);
 
   bitgo.setRequestTracer(reqId);
-  const newWallet = await bitgo.post(baseCoin.url('/wallet/add')).send(finalWalletParams).result();
+  const newWallet = await baseCoin.wallets().add(finalWalletParams);
 
   const result: WalletWithKeychains = {
     wallet: new Wallet(bitgo, baseCoin, newWallet),
-    userKeychain: userKeychain,
-    backupKeychain: backupKeychain,
+    userKeychain: userMpcKey,
+    backupKeychain: backupMpcKey,
     bitgoKeychain: bitgoKeychain,
     responseType: 'WalletWithKeychains',
   };
