@@ -2,7 +2,7 @@ import https from 'https';
 import debug from 'debug';
 import superagent from 'superagent';
 
-import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
+import { Keychain, SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
@@ -11,6 +11,7 @@ import { TlsMode } from '../types';
 import { EnclavedApiSpec } from '../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../types/health';
 import { InitEddsaKeyGenerationResponse } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
+import assert from 'assert';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -25,15 +26,10 @@ export type FinalizeMpcKeyGenerationParams = {
   coin?: string;
   encryptedDataKey: string;
   encryptedData: string;
-  bitGoKeychain: {
-    id: string;
-    source: 'bitgo';
-    type: 'tss';
-    commonKeychain: string;
+  bitGoKeychain: Keychain & {
     verifiedVssProof: boolean;
     isBitGo?: boolean;
     isTrust?: boolean;
-    hsmType?: string;
   };
 };
 
@@ -293,6 +289,11 @@ export class EnclavedExpressClient {
     if (!this.coin) {
       throw new Error('Coin must be specified to finalize MPC key generation');
     }
+    const bitgoKeychain = params.bitGoKeychain;
+    assert(
+      bitgoKeychain.keyShares && bitgoKeychain.keyShares.length,
+      'BitGo keychain must have keyShares property',
+    );
 
     try {
       debugLogger('Finalizing MPC key generation for coin: %s', this.coin);
@@ -301,7 +302,13 @@ export class EnclavedExpressClient {
         source: params.source,
         encryptedDataKey: params.encryptedDataKey,
         encryptedData: params.encryptedData,
-        bitGoKeychain: params.bitGoKeychain,
+        bitGoKeychain: {
+          ...bitgoKeychain,
+          source: 'bitgo',
+          type: 'tss',
+          commonKeychain: bitgoKeychain.commonKeychain ?? '',
+          keyShares: bitgoKeychain.keyShares as any[],
+        },
       });
 
       if (this.tlsMode === TlsMode.MTLS) {

@@ -19,8 +19,8 @@ import { signMultisigTransaction } from '../../api/enclaved/signMultisigTransact
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { EnclavedConfig } from '../../types';
 import { BitGoRequest } from '../../types/request';
-import { NotImplementedError } from 'bitgo';
 import { eddsaInitialize } from '../../api/enclaved/eddsaInitialize';
+import { eddsaFinalize } from '../../api/enclaved/eddsaFinalize';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -41,12 +41,24 @@ const keySharePayloadType = t.type({
 export type KeySharePayloadType = t.TypeOf<typeof keySharePayloadType>;
 
 // Types for /mpc/finalize endpoint
+const BitGoKeyShareType = t.type({
+  from: t.union([t.literal('user'), t.literal('backup'), t.literal('bitgo')]),
+  to: t.union([t.literal('user'), t.literal('backup'), t.literal('bitgo')]),
+  publicShare: t.string,
+  privateShare: t.string,
+  privateShareProof: t.string,
+  vssProof: t.string,
+  paillierPublicKey: t.union([t.undefined, t.string]),
+});
+export type BitGoKeyShareType = t.TypeOf<typeof BitGoKeyShareType>;
+
 const BitGoKeychainType = t.type({
   id: t.string,
   source: t.literal('bitgo'),
   type: t.literal('tss'),
   commonKeychain: t.string,
   verifiedVssProof: t.boolean,
+  keyShares: t.array(t.any),
 });
 
 const FinalizeKeyGenerationRequest = {
@@ -54,6 +66,10 @@ const FinalizeKeyGenerationRequest = {
   encryptedData: t.string,
   bitGoKeychain: BitGoKeychainType,
   source: t.union([t.literal('user'), t.literal('backup')]),
+  backupToUserShare: t.union([t.undefined, keySharePayloadType]),
+  backupGpgKey: t.union([t.undefined, t.string]),
+  userToBackupShare: t.union([t.undefined, keySharePayloadType]),
+  userGpgKey: t.union([t.undefined, t.string]),
 };
 
 const FinalizeKeyGenerationResponse = t.type({
@@ -297,7 +313,17 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
 
   router.post('v1.mpc.finalize', [
     responseHandler<EnclavedConfig>(async (_req) => {
-      throw new NotImplementedError('MPC key finalization is not implemented yet');
+      try {
+        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.finalize', 'post'>;
+        const response = eddsaFinalize(typedReq);
+        return Response.ok(response);
+      } catch (error) {
+        const err = error as Error;
+        return Response.internalError({
+          error: err.message,
+          details: err.stack || 'No stack trace available',
+        });
+      }
     }),
   ]);
 
