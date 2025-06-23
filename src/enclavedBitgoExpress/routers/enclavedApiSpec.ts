@@ -315,7 +315,8 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     responseHandler<EnclavedConfig>(async (_req) => {
       try {
         const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.finalize', 'post'>;
-        const response = eddsaFinalize(typedReq);
+        const response = await eddsaFinalize(typedReq);
+        console.log(response);
         return Response.ok(response);
       } catch (error) {
         const err = error as Error;

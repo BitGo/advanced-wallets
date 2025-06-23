@@ -1,4 +1,5 @@
 import { YShare, EddsaUtils, Eddsa, SigningMaterial } from '@bitgo/sdk-core';
+import { KeyCombine } from '@bitgo/sdk-core/dist/src/account-lib/mpc/tss';
 import {
   BitGoKeyShareType,
   EnclavedApiSpecRouteRequest,
@@ -10,10 +11,9 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
     req.decoded;
 
   // Validate source-specific requirements
-  if (source === 'user' && (backupToUserShare || backupGpgKey)) {
-    throw new Error(
-      'Invalid request: backupToUserShare and backupGpgKey should not be provided when source is user',
-    );
+  if (source === 'user' && !(backupToUserShare || backupGpgKey)) {
+    // TODO: Update error handling
+    throw new Error('Invalid request');
   }
 
   if (source === 'backup' && !userToBackupShare) {
@@ -27,7 +27,8 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
   // For user source:
   // 1. Parse the encrypted user share data
   const userShareData = JSON.parse(encryptedData);
-  const { uShare, userGpgKey } = userShareData;
+  console.log(userShareData);
+  const { myPrivateKeyShare, myGpgKey } = userShareData;
 
   // 2. Get and validate bitgo key shares
   const bitgoKeychain = req.body.bitGoKeychain;
@@ -49,31 +50,14 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
   // Decrypt BitGo to User share
   const bitGoToUserPrivateShare = await decryptPrivateShare(
     bitGoToUserShare.privateShare,
-    userGpgKey,
+    myGpgKey,
   );
 
-  // Decrypt Backup to User share if present
-  let backupToUserPrivateShare: string | undefined;
-  if (backupToUserShare) {
-    backupToUserPrivateShare = await decryptPrivateShare(
-      backupToUserShare.privateShare,
-      userGpgKey,
-    );
-  }
-
   await eddsaUtils.verifyWalletSignatures(
-    userGpgKey.publicKey,
+    myGpgKey.publicKey,
     backupGpgKey ?? '',
     bitgoKeychain,
     bitGoToUserPrivateShare,
-    1,
-  );
-
-  await eddsaUtils.verifyWalletSignatures(
-    userGpgKey.publicKey,
-    backupGpgKey ?? '',
-    bitgoKeychain,
-    backupToUserPrivateShare || '',
     1,
   );
 
@@ -92,7 +76,7 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
   if (backupToUserShare) {
     const backupToUserPrivateShare = await decryptPrivateShare(
       backupToUserShare.privateShare,
-      userGpgKey,
+      myGpgKey,
     );
 
     backupToUser = {
@@ -107,31 +91,36 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
 
   // Log the constructed keychain for verification
   console.log('Constructed keychain:', {
-    uShare,
-    bitGoToUserShare,
-    backupToUserShare,
+    myPrivateKeyShare,
+    bitgoToUser,
+    backupToUser,
     commonKeychain: bitgoKeychain.commonKeychain,
   });
   const eddsa = await Eddsa.initialize();
-  const userCombined = eddsa.keyCombine(uShare, [backupToUser as YShare, bitgoToUser]);
-  const commonKeychain = userCombined.pShare.y + userCombined.pShare.chaincode;
-  if (commonKeychain !== bitgoKeychain.commonKeychain) {
-    throw new Error('Failed to create user keychain - commonKeychains do not match.');
+  try {
+    const userCombined = eddsa.keyCombine(myPrivateKeyShare, [backupToUser as YShare, bitgoToUser]);
+    const commonKeychain = userCombined?.pShare.y + userCombined?.pShare.chaincode;
+    if (commonKeychain !== bitgoKeychain.commonKeychain) {
+      throw new Error('Failed to create user keychain - commonKeychains do not match.');
+    }
+
+    const userSigningMaterial: SigningMaterial = {
+      uShare: myPrivateKeyShare,
+      bitgoYShare: bitgoToUser,
+      backupYShare: backupToUser,
+    };
+
+    console.log(userSigningMaterial);
+    console.log('Common keychain:', commonKeychain);
+
+    // 5. Return the response
+    return {
+      commonKeychain: commonKeychain,
+      enclavedExpressKeyId: 'generated-key-id', // TODO: Update later
+      source,
+    };
+  } catch (e) {
+    console.log(e);
+    throw new Error(`Failed to generate`);
   }
-
-  const userSigningMaterial: SigningMaterial = {
-    uShare: uShare,
-    bitgoYShare: bitgoToUser,
-    backupYShare: backupToUser,
-  };
-
-  console.log(userSigningMaterial);
-  console.log('Common keychain:', commonKeychain);
-
-  // 5. Return the response
-  return {
-    commonKeychain: commonKeychain,
-    enclavedExpressKeyId: 'generated-key-id', // TODO: Update later
-    source,
-  };
 }

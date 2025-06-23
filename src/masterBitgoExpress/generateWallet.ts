@@ -227,9 +227,18 @@ export async function handleGenerateOnPremMpcWallet(
       isTrust: false,
       keyShares: bitgoKeychain.keyShares,
     },
+    userGpgKey: userInitResponse.bitgoPayload?.gpgKey,
+    backupGpgKey: backupInitResponse.userPayload?.gpgKey,
+    backupToUserShare: backupInitResponse.userPayload,
   });
 
-  console.log('User keychain finalized:', userKeychainPromise);
+  const userMpcKey = await baseCoin.keychains().add({
+    commonKeychain: userKeychainPromise.commonKeychain,
+    source: 'user',
+    type: 'tss',
+  });
+
+  console.log('User keychain finalized:', userMpcKey);
 
   throw new NotImplementedError(
     'MPC wallet generation is not fully implemented yet. This is a placeholder for future functionality.',

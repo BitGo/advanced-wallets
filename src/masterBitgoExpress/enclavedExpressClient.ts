@@ -10,7 +10,10 @@ import { MasterExpressConfig } from '../types';
 import { TlsMode } from '../types';
 import { EnclavedApiSpec } from '../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../types/health';
-import { InitEddsaKeyGenerationResponse } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
+import {
+  InitEddsaKeyGenerationResponse,
+  KeySharePayloadType,
+} from '../enclavedBitgoExpress/routers/enclavedApiSpec';
 import assert from 'assert';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
@@ -31,6 +34,10 @@ export type FinalizeMpcKeyGenerationParams = {
     isBitGo?: boolean;
     isTrust?: boolean;
   };
+  userGpgKey?: string;
+  backupGpgKey?: string;
+  backupToUserShare?: KeySharePayloadType;
+  userToBackupShare?: KeySharePayloadType;
 };
 
 interface CreateIndependentKeychainParams {
@@ -309,6 +316,10 @@ export class EnclavedExpressClient {
           commonKeychain: bitgoKeychain.commonKeychain ?? '',
           keyShares: bitgoKeychain.keyShares as any[],
         },
+        userGpgKey: params.userGpgKey,
+        backupGpgKey: params.backupGpgKey,
+        backupToUserShare: params.backupToUserShare,
+        userToBackupShare: params.userToBackupShare,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {
