@@ -1,6 +1,22 @@
-import { RequestTracer, PrebuildTransactionOptions, Memo, KeyIndices } from '@bitgo/sdk-core';
+import {
+  RequestTracer,
+  PrebuildTransactionOptions,
+  Memo,
+  KeyIndices,
+  Wallet,
+  SendManyOptions,
+  BitGoBase,
+  PendingApprovals,
+  RequestType,
+  PrebuildTransactionResult,
+  Keychain,
+  TxRequest,
+} from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { sendTxRequest } from '@bitgo/sdk-core/dist/src/bitgo/tss/common';
+import { handleEddsaSigning } from './eddsa';
+import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -43,16 +59,17 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     id: wallet.keyIds()[keyIdIndex],
   });
 
-  if (!signingKeychain || !signingKeychain.pub) {
+  if (!signingKeychain) {
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
-
-  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
+  if (params.pubkey && signingKeychain.pub !== params.pubkey) {
     throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
   }
-
-  logger.info(`Signing with ${params.source} keychain, pub: ${signingKeychain.pub}`);
-  logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
+  if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
+    throw new Error(
+      `Common keychain provided does not match the keychain on wallet for ${params.source}`,
+    );
+  }
 
   try {
     const prebuildParams: PrebuildTransactionOptions = {
@@ -77,7 +94,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
         wallet,
         verification: {},
         reqId: reqId,
-        walletType: 'onchain',
+        walletType: wallet.multisigType(),
       });
       if (!verified) {
         throw new Error('Transaction prebuild failed local validation');
@@ -92,28 +109,128 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
 
     logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
 
-    // Then sign it using the enclaved express client
-    const signedTx = await enclavedExpressClient.signMultisig({
-      txPrebuild: txPrebuilt,
-      source: params.source,
-      pub: signingKeychain.pub,
-    });
-
-    // Get extra prebuild parameters
-    const extraParams = await baseCoin.getExtraPrebuildParams({
-      ...params,
-      wallet,
-    });
-
-    // Combine the signed transaction with extra parameters
-    const finalTxParams = { ...signedTx, ...extraParams };
-
-    // Submit the half signed transaction
-    const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
-    return result;
+    // Need to branch off for multisig and tss
+    if (wallet.multisigType() === 'tss') {
+      if (!txPrebuilt.txRequestId) {
+        throw new Error('MPC tx not built correctly.');
+      }
+      return signAndSendTxRequests(
+        bitgo,
+        wallet,
+        txPrebuilt.txRequestId,
+        enclavedExpressClient,
+        signingKeychain,
+        reqId,
+      );
+    } else {
+      return signAndSendMultisig(
+        wallet,
+        req.decoded.source,
+        txPrebuilt,
+        prebuildParams,
+        enclavedExpressClient,
+        signingKeychain,
+        reqId,
+      );
+    }
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to send many: %s', err.message);
     throw err;
   }
+}
+
+async function signAndSendMultisig(
+  wallet: Wallet,
+  source: 'user' | 'backup',
+  txPrebuilt: PrebuildTransactionResult,
+  params: SendManyOptions,
+  enclavedExpressClient: EnclavedExpressClient,
+  signingKeychain: Keychain,
+  reqId: RequestTracer,
+) {
+  if (!signingKeychain.pub) {
+    throw new Error(`Signing keychain pub not found for ${source}`);
+  }
+  logger.info(`Signing with ${source} keychain, pub: ${signingKeychain.pub}`);
+  logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
+
+  // Then sign it using the enclaved express client
+  const signedTx = await enclavedExpressClient.signMultisig({
+    txPrebuild: txPrebuilt,
+    source: source,
+    pub: signingKeychain.pub,
+  });
+
+  // Get extra prebuild parameters
+  const extraParams = await wallet.baseCoin.getExtraPrebuildParams({
+    ...params,
+    wallet,
+  });
+
+  // Combine the signed transaction with extra parameters
+  const finalTxParams = { ...signedTx, ...extraParams };
+
+  // Submit the half signed transaction
+  const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
+  return result;
+}
+
+/**
+ * Signs and sends a transaction from a TSS wallet.
+ *
+ * @param bitgo - BitGo instance
+ * @param wallet - Wallet instance
+ * @param txRequestId - Transaction request ID
+ * @param enclavedExpressClient - Enclaved express client
+ * @param signingKeychain - Signing keychain
+ * @param reqId - Request tracer
+ */
+async function signAndSendTxRequests(
+  bitgo: BitGoBase,
+  wallet: Wallet,
+  txRequestId: string,
+  enclavedExpressClient: EnclavedExpressClient,
+  signingKeychain: Keychain,
+  reqId: RequestTracer,
+): Promise<any> {
+  if (!signingKeychain.commonKeychain) {
+    throw new Error(`Common keychain not found for keychain ${signingKeychain.pub || 'unknown'}`);
+  }
+
+  let signedTxRequest: TxRequest;
+  if (wallet.baseCoin.getMPCAlgorithm() === 'eddsa') {
+    signedTxRequest = await handleEddsaSigning(
+      bitgo,
+      wallet,
+      txRequestId,
+      enclavedExpressClient,
+      signingKeychain.commonKeychain,
+      reqId,
+    );
+  } else {
+    throw new Error('Unsupported MPC algorithm');
+  }
+
+  if (!signedTxRequest.txRequestId) {
+    throw new Error('txRequestId missing from signed transaction');
+  }
+
+  if (signedTxRequest.apiVersion === 'full') {
+    bitgo.setRequestTracer(reqId);
+    if (signedTxRequest.state === 'pendingApproval') {
+      const pendingApprovals = new PendingApprovals(bitgo, wallet.baseCoin);
+      const pendingApproval = await pendingApprovals.get({ id: signedTxRequest.pendingApprovalId });
+      return {
+        pendingApproval: pendingApproval.toJSON(),
+        txRequest: signedTxRequest,
+      };
+    }
+    return {
+      txRequest: signedTxRequest,
+      txid: (signedTxRequest.transactions ?? [])[0]?.signedTx?.id,
+      tx: (signedTxRequest.transactions ?? [])[0]?.signedTx?.tx,
+    };
+  }
+  return sendTxRequest(bitgo, wallet.id(), signedTxRequest.txRequestId, RequestType.tx, reqId);
 }

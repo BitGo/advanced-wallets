@@ -65,7 +65,6 @@ export class KmsClient {
     try {
       kmsResponse = await superagent
         .get(`${this.url}/key/${params.pub}`)
-        .set('x-api-key', 'abc')
         .query({ source: params.source });
     } catch (error: any) {
       console.log('Error getting key from KMS', error);
@@ -92,7 +91,6 @@ export class KmsClient {
     try {
       kmsResponse = await superagent
         .post(`${this.url}/generateDataKey`)
-        .set('x-api-key', 'abc')
         .send(params);
     } catch (error: any) {
       debugLogger('Error generating data key from KMS', error);
@@ -122,7 +120,6 @@ export class KmsClient {
     try {
       kmsResponse = await superagent
         .post(`${this.url}/decryptDataKey`)
-        .set('x-api-key', 'abc')
         .send(params);
     } catch (error: any) {
       debugLogger('Error decrypting data key from KMS', error);

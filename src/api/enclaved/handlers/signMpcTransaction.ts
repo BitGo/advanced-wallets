@@ -142,7 +142,7 @@ async function handleEddsaSigning(
       if (!bitgoGpgPubKey) {
         throw new Error('bitgoGpgPubKey is required for commitment share generation');
       }
-      const dataKey = await generateDataKey({ keyType: 'RSA-2048', cfg });
+      const dataKey = await generateDataKey({ keyType: 'AES-256', cfg });
       const commitmentParams: CommitmentShareParams = {
         txRequest,
         prv,

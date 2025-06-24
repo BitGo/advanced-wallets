@@ -48,7 +48,9 @@ const GenerateWalletRequest = {
 };
 
 export const SendManyRequest = {
-  pubkey: t.string,
+  pubkey: t.union([t.undefined, t.string]),
+  type: t.union([t.undefined, t.string]),
+  commonKeychain: t.union([t.undefined, t.string]),
   source: t.union([t.literal('user'), t.literal('backup')]),
   recipients: t.array(t.any),
   numBlocks: t.union([t.undefined, t.number]),
