@@ -103,12 +103,12 @@ export class KmsClient {
     }
 
     return {
-      plaintextKey: kmsResponse.plaintextKey.split(',').map((x: any) => parseInt(x, 10)),
-      encryptedKey: kmsResponse.encryptedKey,
+      plaintextKey: kmsResponse.body.plaintextKey,
+      encryptedKey: kmsResponse.body.encryptedKey,
     };
   }
 
-  async decryptDataKey(encryptedKey: string): Promise<Uint8Array> {
+  async decryptDataKey(encryptedKey: string): Promise<string> {
     debugLogger('Decrypting data key: %s', encryptedKey);
 
     // Call KMS to decrypt the data key
@@ -127,6 +127,8 @@ export class KmsClient {
       throw new Error('KMS did not return a valid plaintext key');
     }
 
-    return kmsResponse.body.plaintextKey;
+    console.log(kmsResponse.body);
+    console.log(`PlaintextKey: ${kmsResponse.body.plaintextKey.toString()}`);
+    return kmsResponse.body.plaintextKey.toString();
   }
 }

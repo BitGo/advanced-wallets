@@ -92,6 +92,7 @@ const KeyShare = {
   vssProof: t.string,
   gpgKey: t.string,
 };
+
 const KeyShareType = t.type(KeyShare);
 export type KeyShareType = t.TypeOf<typeof KeyShareType>;
 
@@ -118,7 +119,8 @@ const BitGoKeychainType = t.type({
   type: t.literal('tss'),
   commonKeychain: t.string,
   verifiedVssProof: t.boolean,
-  keyShares: t.array(KeyShareType),
+  // TODO: api-ts does not like optionalized gpgKey
+  keyShares: t.array(t.any),
 });
 
 const MpcFinalizeRequest = {
@@ -274,6 +276,7 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
       try {
         const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.initialize', 'post'>;
         const response = await eddsaInitialize(typedReq);
+        console.log(response);
         return Response.ok(response);
       } catch (error) {
         const err = error as Error;

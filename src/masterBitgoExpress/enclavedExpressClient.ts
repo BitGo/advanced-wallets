@@ -2,7 +2,7 @@ import https from 'https';
 import debug from 'debug';
 import superagent from 'superagent';
 
-import { Keychain, SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
+import { ApiKeyShare, Keychain, SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
@@ -34,6 +34,7 @@ export type FinalizeMpcKeyGenerationParams = {
     verifiedVssProof: boolean;
     isBitGo?: boolean;
     isTrust?: boolean;
+    keyShares: ApiKeyShare[];
   };
   counterPartyGPGKey: string;
   counterPartyKeyShare: KeyShareType;
@@ -315,7 +316,7 @@ export class EnclavedExpressClient {
           source: 'bitgo',
           type: 'tss',
           commonKeychain: bitgoKeychain.commonKeychain ?? '',
-          keyShares: bitgoKeychain.keyShares as any[],
+          keyShares: bitgoKeychain.keyShares,
         },
         counterPartyGpgPub: params.counterPartyGPGKey,
         counterPartyKeyShare: params.counterPartyKeyShare,

@@ -5,7 +5,7 @@ export interface GenerateDataKeyParams {
 }
 
 export interface GenerateDataKeyResponse {
-  plaintextKey: Uint8Array;
+  plaintextKey: string;
   encryptedKey: string;
 }
 
