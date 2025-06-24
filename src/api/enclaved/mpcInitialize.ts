@@ -1,12 +1,15 @@
+import debug from 'debug';
 import * as bitgoSdk from '@bitgo/sdk-core';
+import { assert } from 'console';
 import { KmsClient } from '../../kms/kmsClient';
 import {
   EnclavedApiSpecRouteRequest,
   KeyShareType,
   MpcInitializeRequestType,
 } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import * as openpgp from 'openpgp';
-import { assert } from 'console';
+import { gpgEncrypt } from './utils';
+
+const debugLogger = debug('bitgo:enclavedExpress:mpcInitialize');
 
 export async function eddsaInitialize(
   req: EnclavedApiSpecRouteRequest<'v1.mpc.initialize', 'post'>,
@@ -96,7 +99,6 @@ export async function eddsaInitialize(
     counterPartyKeyShare: counterPartyGpgPub ? undefined : counterPartyKeyShare, // if counterPartyGpgPub is NOT gpg encrypted, store in payload to be encrypted in finalize
   };
   const { plaintextKey, encryptedKey } = await kms.generateDataKey({ keyType: 'AES-256' });
-  console.log({ plaintextKey, source });
   try {
     const encryptedPayload = req.bitgo.encrypt({
       input: JSON.stringify(payload),
@@ -109,25 +111,8 @@ export async function eddsaInitialize(
       counterPartyKeyShare: counterPartyGpgPub ? counterPartyKeyShare : undefined, // if counterPartyGpgPub is encrypted, send the key share unecrypted
     };
   } catch (error) {
+    debugLogger('Failed to initialize mpc key generation', error);
     console.error('Encryption error details:', error);
     throw error;
   }
-}
-
-/**
- * Helper function to encrypt text using OpenPGP
- */
-async function gpgEncrypt(text: string, key: string): Promise<string> {
-  return (
-    await openpgp.encrypt({
-      message: await openpgp.createMessage({ text }),
-      encryptionKeys: await openpgp.readKey({ armoredKey: key }),
-      format: 'armored',
-      config: {
-        rejectCurves: new Set(),
-        showVersion: false,
-        showComment: false,
-      },
-    })
-  ).toString();
 }

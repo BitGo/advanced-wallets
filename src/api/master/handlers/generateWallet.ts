@@ -11,8 +11,10 @@ import {
 } from '@bitgo/sdk-core';
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { assert } from 'console';
-import { KeyShareType } from '../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { KeyShareType } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import debug from 'debug';
+
+const debugLogger = debug('bitgo:masterBitGoExpress:generateWallet');
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled
@@ -145,8 +147,9 @@ export async function handleGenerateOnPremMpcWallet(
     n: 3,
     keys: [],
     type: 'cold',
+    subType: 'onPrem' as SupplementGenerateWalletOptions['subType'],
     multisigType: 'tss',
-  } as unknown as SupplementGenerateWalletOptions;
+  };
 
   if (!_.isUndefined(enterprise)) {
     if (!_.isString(enterprise)) {
@@ -166,7 +169,7 @@ export async function handleGenerateOnPremMpcWallet(
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
   });
 
-  console.log('User MPC key generation initialized:', userInitResponse);
+  debugLogger('User MPC key generation initialized:', userInitResponse);
 
   const backupInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
     source: 'backup',
@@ -177,7 +180,7 @@ export async function handleGenerateOnPremMpcWallet(
     throw new Error('User key share is missing from initialization response');
   }
 
-  console.log('Backup MPC key generation initialized:', backupInitResponse);
+  debugLogger('Backup MPC key generation initialized:', backupInitResponse);
 
   // Extract GPG keys based on payload type
   const userGPGKey =
@@ -204,16 +207,6 @@ export async function handleGenerateOnPremMpcWallet(
     backupGPGPublicKey: backupGPGKey,
     reqId,
   });
-
-  console.log('User BitGo payload:', JSON.stringify(userInitResponse.bitgoPayload, null, 2));
-  console.log('Backup BitGo payload:', JSON.stringify(backupInitResponse.bitgoPayload, null, 2));
-  console.log('BitGo keychain keyShares:', JSON.stringify(bitgoKeychain.keyShares, null, 2));
-
-  // TODO Create proper type guard for bitgoKeychain
-  assert(bitgoKeychain.type === 'tss', 'BitGo keychain must be of type tss');
-  assert('verifiedVssProof' in bitgoKeychain, 'BitGo keychain must have verifiedVssProof property');
-  assert('isBitGo' in bitgoKeychain, 'BitGo keychain must have isBitGo property');
-  assert('keyShares' in bitgoKeychain, 'BitGo keychain must have keyShares property');
 
   // Finalize user and backup keychains
   const userKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
@@ -245,8 +238,7 @@ export async function handleGenerateOnPremMpcWallet(
     type: 'tss',
   });
 
-  console.log('User keychain finalized:', userMpcKey);
-  console.log(userKeychainPromise.counterpartyKeyShare);
+  debugLogger('User key finalized', userMpcKey);
 
   const backupKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
     source: 'backup',
@@ -273,7 +265,7 @@ export async function handleGenerateOnPremMpcWallet(
     source: 'backup',
     type: 'tss',
   });
-  console.log('Backup keychain finalized:', backupMpcKey);
+  debugLogger('Backup keychain finalized:', backupMpcKey);
 
   walletParams.keys = [userMpcKey.id, backupMpcKey.id, bitgoKeychain.id];
 
@@ -286,7 +278,7 @@ export async function handleGenerateOnPremMpcWallet(
   const finalWalletParams = await baseCoin.supplementGenerateWallet(walletParams, keychains);
 
   bitgo.setRequestTracer(reqId);
-  const newWallet = await baseCoin.wallets().add(finalWalletParams);
+  const newWallet = await bitgo.post(baseCoin.url('/wallet/add')).send(finalWalletParams).result();
 
   const result: WalletWithKeychains = {
     wallet: new Wallet(bitgo, baseCoin, newWallet),
@@ -303,7 +295,6 @@ export async function handleGenerateWalletOnPrem(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const { multisigType } = req.decoded;
-  console.log(req.decoded);
 
   if (multisigType === 'tss') {
     return handleGenerateOnPremMpcWallet(req);
