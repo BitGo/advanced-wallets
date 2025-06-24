@@ -33,11 +33,11 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
   const bitgoIndex = 3;
 
   // Decrypt the encrypted payload using encryptedDataKey to retrieve the previous state of computation
-  const decryptedDataKey = await kms.decryptDataKey(encryptedDataKey);
+  const decryptedDataKey = await kms.decryptDataKey({ encryptedKey: encryptedDataKey });
   const previousState = JSON.parse(
     req.bitgo.decrypt({
       input: encryptedData,
-      password: decryptedDataKey,
+      password: decryptedDataKey.plaintextKey,
     }),
   );
   debugLogger('Decrypted previous state:', previousState);
