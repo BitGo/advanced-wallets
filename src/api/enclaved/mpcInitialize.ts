@@ -1,6 +1,5 @@
 import * as bitgoSdk from '@bitgo/sdk-core';
 import { KmsClient } from '../../kms/kmsClient';
-import * as crypto from 'crypto';
 import {
   EnclavedApiSpecRouteRequest,
   KeyShareType,
@@ -97,30 +96,38 @@ export async function eddsaInitialize(
     counterPartyKeyShare: counterPartyGpgPub ? undefined : counterPartyKeyShare, // if counterPartyGpgPub is NOT gpg encrypted, store in payload to be encrypted in finalize
   };
   const { plaintextKey, encryptedKey } = await kms.generateDataKey({ keyType: 'AES-256' });
-  const encryptedPayload = crypto
-    .publicEncrypt(Buffer.from(plaintextKey), Buffer.from(JSON.stringify(payload)))
-    .toString();
-
-  return {
-    encryptedDataKey: encryptedKey,
-    encryptedData: encryptedPayload,
-    bitgoKeyShare,
-    counterPartyKeyShare: counterPartyGpgPub ? counterPartyKeyShare : undefined, // if counterPartyGpgPub is encrypted, send the key share unecrypted
-  };
+  console.log({ plaintextKey, source });
+  try {
+    const encryptedPayload = req.bitgo.encrypt({
+      input: JSON.stringify(payload),
+      password: plaintextKey,
+    });
+    return {
+      encryptedDataKey: encryptedKey,
+      encryptedData: encryptedPayload,
+      bitgoPayload: bitgoKeyShare,
+      counterPartyKeyShare: counterPartyGpgPub ? counterPartyKeyShare : undefined, // if counterPartyGpgPub is encrypted, send the key share unecrypted
+    };
+  } catch (error) {
+    console.error('Encryption error details:', error);
+    throw error;
+  }
 }
 
 /**
  * Helper function to encrypt text using OpenPGP
  */
 async function gpgEncrypt(text: string, key: string): Promise<string> {
-  return await openpgp.encrypt({
-    message: await openpgp.createMessage({ text }),
-    encryptionKeys: await openpgp.readKey({ armoredKey: key }),
-    format: 'armored',
-    config: {
-      rejectCurves: new Set(),
-      showVersion: false,
-      showComment: false,
-    },
-  });
+  return (
+    await openpgp.encrypt({
+      message: await openpgp.createMessage({ text }),
+      encryptionKeys: await openpgp.readKey({ armoredKey: key }),
+      format: 'armored',
+      config: {
+        rejectCurves: new Set(),
+        showVersion: false,
+        showComment: false,
+      },
+    })
+  ).toString();
 }

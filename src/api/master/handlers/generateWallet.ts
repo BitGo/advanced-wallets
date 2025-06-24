@@ -139,13 +139,12 @@ export async function handleGenerateOnPremMpcWallet(
   const { label, enterprise } = req.decoded;
 
   // Create wallet parameters with type assertion to allow 'tss' subtype
-  const walletParams = {
+  const walletParams: SupplementGenerateWalletOptions = {
     label: label,
     m: 2,
     n: 3,
     keys: [],
-    type: 'hot',
-    subType: 'tss',
+    type: 'cold',
     multisigType: 'tss',
   } as unknown as SupplementGenerateWalletOptions;
 
@@ -206,7 +205,9 @@ export async function handleGenerateOnPremMpcWallet(
     reqId,
   });
 
-  console.log('BitGo keychain created:', bitgoKeychain);
+  console.log('User BitGo payload:', JSON.stringify(userInitResponse.bitgoPayload, null, 2));
+  console.log('Backup BitGo payload:', JSON.stringify(backupInitResponse.bitgoPayload, null, 2));
+  console.log('BitGo keychain keyShares:', JSON.stringify(bitgoKeychain.keyShares, null, 2));
 
   // TODO Create proper type guard for bitgoKeychain
   assert(bitgoKeychain.type === 'tss', 'BitGo keychain must be of type tss');
@@ -229,7 +230,7 @@ export async function handleGenerateOnPremMpcWallet(
       verifiedVssProof: true,
       isBitGo: true, // Ensure BitGo keychain is marked as BitGo
       isTrust: false,
-      keyShares: bitgoKeychain.keyShares,
+      keyShares: bitgoKeychain.keyShares as KeyShareType[], // Ensure keyShares are included
     },
     counterPartyGPGKey: backupGPGKey,
     counterPartyKeyShare: backupInitResponse.counterPartyKeyShare,
@@ -245,6 +246,7 @@ export async function handleGenerateOnPremMpcWallet(
   });
 
   console.log('User keychain finalized:', userMpcKey);
+  console.log(userKeychainPromise.counterpartyKeyShare);
 
   const backupKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
     source: 'backup',
@@ -256,12 +258,13 @@ export async function handleGenerateOnPremMpcWallet(
       commonKeychain: bitgoKeychain.commonKeychain ?? '',
       hsmType: bitgoKeychain.hsmType,
       type: 'tss',
-      source: 'bitgo', // Ensure BitGo keychain is marked as BitGo
+      source: 'bitgo',
       verifiedVssProof: true,
-      isBitGo: true, // Ensure BitGo keychain is marked as BitGo
+      isBitGo: true,
       isTrust: false,
+      keyShares: bitgoKeychain.keyShares as any, // Ensure keyShares are included
     },
-    counterPartyGPGKey: userGPGKey as string, // not sure why I have to cast this here
+    counterPartyGPGKey: userGPGKey,
     counterPartyKeyShare: userKeychainPromise.counterpartyKeyShare as KeyShareType, // also not sure why I have to cast this here
   });
 
