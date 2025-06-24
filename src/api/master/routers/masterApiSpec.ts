@@ -20,6 +20,7 @@ import { handleGenerateWalletOnPrem } from '../handlers/generateWallet';
 import { handleSendMany } from '../handlers/handleSendMany';
 import { validateMasterExpressConfig } from '../middleware/middleware';
 import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
+import { handleConsolidate } from '../handlers/handleConsolidate';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -81,6 +82,26 @@ export const SendManyRequest = {
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
   200: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
+// Request type for /consolidate endpoint
+export const ConsolidateRequest = {
+  pubkey: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  consolidateAddresses: t.union([t.undefined, t.array(t.string)]),
+  apiVersion: t.union([t.undefined, t.literal('full'), t.literal('lite')]),
+};
+
+// Response type for /consolidate endpoint
+const ConsolidateResponse: HttpResponse = {
+  // TODO: Get type from public types repo / Wallet Platform
+  200: t.any,
+  202: t.any, // Partial success
+  400: t.any, // All failed
   500: t.type({
     error: t.string,
     details: t.string,
@@ -160,6 +181,21 @@ export const MasterApiSpec = apiSpec({
       description: 'Recover an existing wallet',
     }),
   },
+  'v1.wallet.consolidate': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/wallet/{walletId}/consolidate',
+      request: httpRequest({
+        params: {
+          walletId: t.string,
+          coin: t.string,
+        },
+        body: ConsolidateRequest,
+      }),
+      response: ConsolidateResponse,
+      description: 'Consolidate addresses',
+    }),
+  },
 });
 
 export type MasterApiSpec = typeof MasterApiSpec;
@@ -208,6 +244,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleRecoveryWalletOnPrem(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.wallet.consolidate', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleConsolidate(typedReq);
       return Response.ok(result);
     }),
   ]);
