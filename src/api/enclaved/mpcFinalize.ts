@@ -1,10 +1,14 @@
+import debug from 'debug';
 import * as bitgoSdk from '@bitgo/sdk-core';
-import * as openpgp from 'openpgp';
+
 import {
   EnclavedApiSpecRouteRequest,
   MpcFinalizeRequestType,
 } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { KmsClient } from '../../kms/kmsClient';
+import { gpgDecrypt, gpgEncrypt } from './utils';
+
+const debugLogger = debug('bitgo:enclavedBitGoExpress:mpcFinalize');
 
 export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.finalize', 'post'>) {
   // request parsing
@@ -36,7 +40,7 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
       password: decryptedDataKey,
     }),
   );
-  console.log('Decrypted previous state:', previousState);
+  debugLogger('Decrypted previous state:', previousState);
   const { sourceGpgPub, sourceGpgPrv, sourcePrivateShare } = previousState;
   let sourceToCounterPartyKeyShare = previousState.counterPartyKeyShare;
 
@@ -85,7 +89,7 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
   };
 
   // Log the constructed keychain for verification
-  console.log('Constructed keychain:', {
+  debugLogger('Constructed keychain:', {
     sourcePrivateShare,
     bitgoToSourceKeyShare,
     counterPartyToSourceKeyShare,
@@ -103,14 +107,21 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
       throw new Error('Failed to create user keychain - commonKeychains do not match.');
     }
 
-    const userSigningMaterial: bitgoSdk.SigningMaterial = {
+    const sourceSigningMaterial: bitgoSdk.SigningMaterial = {
       uShare: sourcePrivateShare,
       bitgoYShare: bitgoToSourceYShare,
       backupYShare: counterPartyToSourceYShare,
     };
 
-    console.log(userSigningMaterial);
-    console.log('Common keychain:', commonKeychain);
+    debugLogger(`Common keychain for ${source}:`, commonKeychain);
+    await kms.postKey({
+      pub: commonKeychain,
+      prv: JSON.stringify(sourceSigningMaterial),
+      source,
+      coin,
+      type: 'tss',
+    });
+    debugLogger(`Stored key ${source} - ${commonKeychain}`);
 
     // if counterPartyGpgPub is provided, encrypt the private key share to be sent to the counter party
     if (sourceToCounterPartyKeyShare) {
@@ -127,172 +138,13 @@ export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.fin
       counterpartyKeyShare: sourceToCounterPartyKeyShare,
       source,
       commonKeychain,
-      enclavedExpressKeyId: 'generated-key-id', // TODO: Update later
     };
   } catch (e) {
-    console.log(e);
-    throw new Error(`Failed to generate`);
+    debugLogger(`Error: ${JSON.stringify(e)}`);
+    if (e instanceof Error) {
+      debugLogger(`${e.name}: ${e.message}`);
+      throw e;
+    }
+    throw new Error(`Unknown failure: Failed to generate or store key`);
   }
 }
-
-/**
- * Helper function to encrypt text using OpenPGP
- */
-async function gpgEncrypt(text: string, key: string): Promise<string> {
-  return (
-    await openpgp.encrypt({
-      message: await openpgp.createMessage({ text }),
-      encryptionKeys: await openpgp.readKey({ armoredKey: key }),
-      format: 'armored',
-      config: {
-        rejectCurves: new Set(),
-        showVersion: false,
-        showComment: false,
-      },
-    })
-  ).toString();
-}
-
-/**
- * Helper function to decrypt text using OpenPGP
- */
-async function gpgDecrypt(text: string, key: string): Promise<string> {
-  const message = await openpgp.readMessage({
-    armoredMessage: text,
-  });
-  const gpgPrivateKey = await openpgp.readPrivateKey({ armoredKey: key });
-
-  const decryptedPrivateShare = (
-    await openpgp.decrypt({
-      message,
-      decryptionKeys: [gpgPrivateKey],
-      format: 'utf8',
-    })
-  ).data;
-
-  return decryptedPrivateShare.toString();
-}
-
-// /**
-//  * Routine to verify both wallet signature
-//  */
-// async function verifyWalletSignatures(
-//   sourceGpgPub: string,
-//   counterPartyGpgPub: string,
-//   bitgoGpgPub: string,
-//   bitgoKeychain: bitgoSdk.Keychain,
-//   decryptedShare: string,
-//   sourceIndex: 1 | 2,
-// ): Promise<void> {
-//   assert(bitgoKeychain.commonKeychain);
-//   assert(bitgoKeychain.walletHSMGPGPublicKeySigs);
-
-//   // parse GPG public keys
-//   const sourceKey = await openpgp.readKey({ armoredKey: sourceGpgPub });
-//   const sourceKeyId = sourceKey.keyPacket.getFingerprint();
-
-//   const counterPartyKey = await openpgp.readKey({ armoredKey: counterPartyGpgPub });
-//   const counterPartyKeyId = counterPartyKey.keyPacket.getFingerprint();
-
-//   const bitgoKey = await openpgp.readKey({ armoredKey: bitgoGpgPub });
-
-//   // get the keys used to sign the wallet
-//   const walletSignatures = await openpgp.readKeys({
-//     armoredKeys: bitgoKeychain.walletHSMGPGPublicKeySigs,
-//   });
-//   const walletKeyIds = walletSignatures.map((key) => key.keyPacket.getFingerprint());
-
-//   // sanity checks
-//   if (walletKeyIds.length !== 2) {
-//     throw new Error('Invalid wallet signatures');
-//   }
-//   if (!walletKeyIds.includes(sourceKeyId)) {
-//     throw new Error('Source key signature mismatch');
-//   }
-//   if (!walletKeyIds.includes(counterPartyKeyId)) {
-//     throw new Error('Counter party key signature mismatch');
-//   }
-
-//   walletSignatures.forEach(async (walletSignature) => {
-//     await verifyWalletSignature({
-//       walletSignature,
-//       bitgoPub: bitgoKey,
-//       commonKeychain: bitgoKeychain.commonKeychain as string,
-//       userKeyId: sourceKeyId.padStart(40, '0'),
-//       backupKeyId: counterPartyKeyId.padStart(40, '0'),
-//       decryptedShare,
-//       sourceIndex,
-//     });
-//   });
-// }
-
-// /**
-//  * Routine to verify a wallet signature
-//  */
-// async function verifyWalletSignature(params: {
-//   walletSignature: openpgp.Key;
-//   bitgoPub: openpgp.Key;
-//   commonKeychain: string;
-//   userKeyId: string;
-//   backupKeyId: string;
-//   decryptedShare: string;
-//   sourceIndex: 1 | 2;
-// }): Promise<void> {
-//   const {
-//     walletSignature,
-//     bitgoPub,
-//     commonKeychain,
-//     userKeyId,
-//     backupKeyId,
-//     decryptedShare,
-//     sourceIndex,
-//   } = params;
-
-//   const isValid = await walletSignature
-//     .verifyPrimaryUser([bitgoPub])
-//     .then((values) => _.some(values, (value) => value.valid));
-//   if (!isValid) {
-//     throw new Error('Invalid GPG signature');
-//   }
-//   const publicShare =
-//     Buffer.from(
-//       await sodium.crypto_scalarmult_ed25519_base_noclamp(
-//         Buffer.from(decryptedShare.slice(0, 64), 'hex'),
-//       ),
-//     ).toString('hex') + decryptedShare.slice(64);
-
-//   const publicShareRawNotationIndex = 2 + sourceIndex;
-//   const primaryUser = await walletSignature.getPrimaryUser();
-
-//   assert(
-//     primaryUser.user.otherCertifications[0].rawNotations.length === 5,
-//     'invalid wallet signatures',
-//   );
-
-//   assert(
-//     commonKeychain ===
-//       Buffer.from(primaryUser.user.otherCertifications[0].rawNotations[0].value).toString(),
-//     'wallet signature does not match common keychain',
-//   );
-//   assert(
-//     userKeyId ===
-//       Buffer.from(primaryUser.user.otherCertifications[0].rawNotations[1].value)
-//         .toString()
-//         .padStart(40, '0'),
-//     'wallet signature does not match user key id',
-//   );
-//   assert(
-//     backupKeyId ===
-//       Buffer.from(primaryUser.user.otherCertifications[0].rawNotations[2].value)
-//         .toString()
-//         .padStart(40, '0'),
-//     'wallet signature does not match backup key id',
-//   );
-//   assert(
-//     publicShare ===
-//       Buffer.from(
-//         primaryUser.user.otherCertifications[0].rawNotations[publicShareRawNotationIndex].value,
-//       ).toString(),
-//     'bitgo share mismatch',
-//   );
-// }

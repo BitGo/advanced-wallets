@@ -139,7 +139,6 @@ const MpcFinalizeResponse = {
   counterpartyKeyShare: optional(KeyShareType),
   source: t.union([t.literal('user'), t.literal('backup')]),
   commonKeychain: t.string,
-  enclavedExpressKeyId: t.string,
 };
 const MpcFinalizeResponseType = optionalized(MpcFinalizeResponse);
 export type MpcFinalizeResponseType = t.TypeOf<typeof MpcFinalizeResponseType>;
@@ -276,7 +275,6 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
       try {
         const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.initialize', 'post'>;
         const response = await eddsaInitialize(typedReq);
-        console.log(response);
         return Response.ok(response);
       } catch (error) {
         const err = error as Error;
@@ -293,7 +291,6 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
       try {
         const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.finalize', 'post'>;
         const response = await eddsaFinalize(typedReq);
-        console.log(response);
         return Response.ok(response);
       } catch (error) {
         const err = error as Error;

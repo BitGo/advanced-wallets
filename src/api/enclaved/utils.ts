@@ -1,32 +1,7 @@
+import { createMessage, decrypt, encrypt, readKey, readMessage, readPrivateKey } from 'openpgp';
+
 import { KmsClient } from '../../kms/kmsClient';
 import { EnclavedConfig } from '../../types';
-import { decrypt, readMessage, readPrivateKey, SerializedKeyPair } from 'openpgp';
-
-/**
- * Decrypts a private share using the provided GPG key
- * @param privateShare - The encrypted private share to decrypt
- * @param userGpgKey - The user's GPG key pair used for decryption
- * @returns The decrypted private share as a string
- */
-export async function decryptPrivateShare(
-  privateShare: string,
-  userGpgKey: SerializedKeyPair<string>,
-): Promise<string> {
-  const privateShareMessage = await readMessage({
-    armoredMessage: privateShare,
-  });
-  const userGpgPrivateKey = await readPrivateKey({ armoredKey: userGpgKey.privateKey });
-
-  const decryptedPrivateShare = (
-    await decrypt({
-      message: privateShareMessage,
-      decryptionKeys: [userGpgPrivateKey],
-      format: 'utf8',
-    })
-  ).data;
-
-  return decryptedPrivateShare.toString();
-}
 
 export async function retrieveKmsKey({
   pub,
@@ -50,4 +25,52 @@ export async function retrieveKmsKey({
       message: error.message || 'Failed to retrieve key from KMS',
     };
   }
+}
+
+/**
+ * Helper function to encrypt text using OpenPGP
+ *
+ * @param text {string} The message to encrypt
+ * @param key {string} The encryption key
+ *
+ * @return {string} encrypted string
+ */
+export async function gpgEncrypt(text: string, key: string): Promise<string> {
+  return (
+    await encrypt({
+      message: await createMessage({ text }),
+      encryptionKeys: await readKey({ armoredKey: key }),
+      format: 'armored',
+      config: {
+        rejectCurves: new Set(),
+        showVersion: false,
+        showComment: false,
+      },
+    })
+  ).toString();
+}
+
+/**
+ * Helper function to a decrypt text using OpenPGP
+ *
+ * @param text {string} The message to decrypt
+ * @param key {string} The decryption key
+ *
+ * @return {string} The decrypted message
+ */
+export async function gpgDecrypt(text: string, key: string): Promise<string> {
+  const message = await readMessage({
+    armoredMessage: text,
+  });
+  const gpgPrivateKey = await readPrivateKey({ armoredKey: key });
+
+  const decryptedPrivateShare = (
+    await decrypt({
+      message,
+      decryptionKeys: [gpgPrivateKey],
+      format: 'utf8',
+    })
+  ).data;
+
+  return decryptedPrivateShare.toString();
 }
