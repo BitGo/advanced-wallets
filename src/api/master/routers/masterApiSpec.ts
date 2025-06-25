@@ -23,6 +23,7 @@ import { validateMasterExpressConfig } from '../middleware/middleware';
 import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
 import { handleConsolidate } from '../handlers/handleConsolidate';
 import { handleAccelerate } from '../handlers/handleAccelerate';
+import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -187,6 +188,42 @@ const RecoveryWalletRequest = {
 };
 
 export type RecoveryWalletRequest = typeof RecoveryWalletRequest;
+
+export const ConsolidateUnspentsRequest = {
+  pubkey: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  walletPassphrase: t.union([t.undefined, t.string]),
+  xprv: t.union([t.undefined, t.string]),
+  feeRate: t.union([t.undefined, t.union([t.string, t.number])]),
+  maxFeeRate: t.union([t.undefined, t.union([t.string, t.number])]),
+  maxFeePercentage: t.union([t.undefined, t.number]),
+  feeTxConfirmTarget: t.union([t.undefined, t.number]),
+  bulk: t.union([t.undefined, t.boolean]),
+  minValue: t.union([t.undefined, t.union([t.string, t.number])]),
+  maxValue: t.union([t.undefined, t.union([t.string, t.number])]),
+  minHeight: t.union([t.undefined, t.number]),
+  minConfirms: t.union([t.undefined, t.number]),
+  enforceMinConfirmsForChange: t.union([t.undefined, t.boolean]),
+  limit: t.union([t.undefined, t.number]),
+  numUnspentsToMake: t.union([t.undefined, t.number]),
+  targetAddress: t.union([t.undefined, t.string]),
+  txFormat: t.union([
+    t.undefined,
+    t.literal('legacy'),
+    t.literal('psbt'),
+    t.literal('psbt-lite'),
+  ]),
+};
+
+const ConsolidateUnspentsResponse: HttpResponse = {
+  200: t.any,
+  202: t.any,
+  400: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
 
 // API Specification
 export const MasterApiSpec = apiSpec({
