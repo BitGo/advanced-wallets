@@ -9,10 +9,13 @@ import {
   TxRequestVersion,
   Environments,
   RequestTracer,
+  EddsaUtils,
+  openpgpUtils,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
 import { handleEddsaSigning } from '../../../../src/api/master/handlers/eddsa';
 import { BitGo } from 'bitgo';
+import { readKey } from 'openpgp';
 
 describe('Eddsa Signing Handler', () => {
   let bitgo: BitGoBase;
@@ -75,7 +78,11 @@ describe('Eddsa Signing Handler', () => {
     };
     const userPubKey = 'test-user-pub-key';
 
-    const getGPGKeysStub = sinon.stub().resolves([{ pub: 'test-gpg-key' }]);
+    const bitgoGpgKey = await openpgpUtils.generateGPGKeyPair('ed25519');
+    const getGPGKeysStub = sinon.stub().resolves([{ pub: bitgoGpgKey.publicKey }]);
+
+    const pgpKey = await readKey({ armoredKey: bitgoGpgKey.publicKey });
+    sinon.stub(EddsaUtils.prototype, 'getBitgoPublicGpgKey').resolves(pgpKey);
 
     // Mock getTxRequest call
     const getTxRequestNock = nock(bitgoApiUrl)
@@ -139,13 +146,20 @@ describe('Eddsa Signing Handler', () => {
                   derivationPath: 'm/0',
                   signableHex: 'testMessage',
                 },
-              },
-            ],
-            signatureShares: [
-              {
-                share: 'bitgo-to-user-r-share',
-                from: 'bitgo',
-                to: 'user',
+                signatureShares: [
+                  {
+                    share: 'bitgo-to-user-r-share',
+                    from: 'bitgo',
+                    to: 'user',
+                    type: 'r',
+                  },
+                  {
+                    share: 'user-to-bitgo-r-share',
+                    from: 'user',
+                    to: 'bitgo',
+                    type: 'r',
+                  },
+                ],
               },
             ],
           },
@@ -169,7 +183,14 @@ describe('Eddsa Signing Handler', () => {
       .get(`/api/v2/wallet/${walletId}/txrequests`)
       .query({ txRequestIds: 'test-tx-request-id', latest: true })
       .matchHeader('any', () => true)
-      .reply(200, txRequest);
+      .reply(200, {
+        txRequests: [
+          {
+            ...txRequest,
+            state: 'signed',
+          },
+        ],
+      });
 
     // Mock MPC commitment signing
     const signMpcCommitmentNockEbe = nock(enclavedExpressUrl)
@@ -185,14 +206,27 @@ describe('Eddsa Signing Handler', () => {
     const signMpcRShareNockEbe = nock(enclavedExpressUrl)
       .post(`/api/${coin}/mpc/sign/r`)
       .reply(200, {
-        rShare: { share: 'r-share' },
+        rShare: {
+          rShares: [
+            { r: 'r-share', R: 'R-share' },
+            { r: 'r-share-2', R: 'R-share-2' },
+            { r: 'r-share-3', R: 'R-share-3' },
+            { r: 'r-share-4', R: 'R-share-4', i: 3, j: 1 },
+          ],
+        },
       });
 
     // Mock MPC G-share signing
     const signMpcGShareNockEbe = nock(enclavedExpressUrl)
       .post(`/api/${coin}/mpc/sign/g`)
       .reply(200, {
-        gShare: { share: 'g-share' },
+        gShare: {
+          r: 'r',
+          gamma: 'gamma',
+          i: 1, // USER position
+          j: 3, // BITGO position
+          n: 4,
+        },
       });
 
     (bitgo as any).getGPGKeys = getGPGKeysStub;
@@ -206,9 +240,11 @@ describe('Eddsa Signing Handler', () => {
       reqId,
     );
 
-    result.should.eql(txRequest);
+    result.should.eql({
+      ...txRequest,
+        state: 'signed',
+    });
 
-    sinon.assert.calledWith(getGPGKeysStub);
     getTxRequestNock.done();
     exchangeCommitmentsNock.done();
     offerRShareNock.done();
