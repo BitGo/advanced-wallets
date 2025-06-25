@@ -11,8 +11,8 @@ import {
   SignShare,
   CommitmentShareRecord,
   GShare,
-    Keychain,
-    ApiKeyShare,
+  Keychain,
+  ApiKeyShare,
 } from '@bitgo/sdk-core';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';

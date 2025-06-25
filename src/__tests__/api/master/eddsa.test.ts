@@ -242,7 +242,7 @@ describe('Eddsa Signing Handler', () => {
 
     result.should.eql({
       ...txRequest,
-        state: 'signed',
+      state: 'signed',
     });
 
     getTxRequestNock.done();
