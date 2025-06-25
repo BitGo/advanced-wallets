@@ -85,7 +85,7 @@ const RecoveryMultisigResponse: HttpResponse = {
 const SignMpcRequest = {
   source: t.string,
   pub: t.string,
-  txRequest: t.union([t.undefined, t.any]),
+  txRequest: t.any,
   bitgoToUserRShare: t.union([t.undefined, t.any]),
   userToBitgoRShare: t.union([t.undefined, t.any]),
   encryptedUserToBitgoRShare: t.union([t.undefined, t.any]),
