@@ -1,46 +1,34 @@
 import { RequestTracer, KeyIndices } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
 
 export async function handleConsolidateUnspents(
-  req: MasterApiSpecRouteRequest<'v1.wallet.consolidateUnspents', 'post'>,
+  req: MasterApiSpecRouteRequest<'v1.wallet.consolidateunspents', 'post'>,
 ) {
   const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin((req as any).params.coin);
-  const params = (req as any).decoded;
-  const walletId = (req as any).params.walletId;
-  const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
+  const params = req.decoded;
+  const walletId = req.params.walletId;
+  const coin = req.params.coin;
 
-  if (!wallet) {
-    throw new Error(`Wallet ${walletId} not found`);
-  }
-
-  // Get the signing keychain based on source
-  const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
-  const signingKeychain = await baseCoin.keychains().get({
-    id: wallet.keyIds()[keyIdIndex],
+  const { wallet, signingKeychain } = await getWalletAndSigningKeychain({
+    bitgo,
+    coin,
+    walletId,
+    params,
+    reqId,
+    KeyIndices,
   });
-
-  if (!signingKeychain || !signingKeychain.pub) {
-    throw new Error(`Signing keychain for ${params.source} not found`);
-  }
-
-  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
-    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
-  }
 
   try {
     // Create custom signing function that delegates to EBE
-    const customSigningFunction = async (signParams: any) => {
-      const signedTx = await enclavedExpressClient.signMultisig({
-        txPrebuild: signParams.txPrebuild,
-        source: params.source,
-        pub: signingKeychain.pub!,
-      });
-      return signedTx;
-    };
+    const customSigningFunction = makeCustomSigningFunction({
+      enclavedExpressClient,
+      source: params.source,
+      pub: signingKeychain.pub!,
+    });
 
     // Prepare consolidation parameters
     const consolidationParams = {
@@ -57,4 +45,4 @@ export async function handleConsolidateUnspents(
     logger.error('Failed to consolidate unspents: %s', err.message);
     throw err;
   }
-} 
+}

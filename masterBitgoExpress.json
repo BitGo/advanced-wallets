@@ -73,11 +73,168 @@
               }
             }
           },
-          "202": {
-            "description": "Accepted",
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/{coin}/wallet/{walletId}/consolidateunspents": {
+      "post": {
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pubkey": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "backup"
+                    ]
+                  },
+                  "walletPassphrase": {
+                    "type": "string"
+                  },
+                  "feeRate": {
+                    "type": "number"
+                  },
+                  "maxFeeRate": {
+                    "type": "number"
+                  },
+                  "maxFeePercentage": {
+                    "type": "number"
+                  },
+                  "feeTxConfirmTarget": {
+                    "type": "number"
+                  },
+                  "bulk": {
+                    "type": "boolean"
+                  },
+                  "minValue": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  "maxValue": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  "minHeight": {
+                    "type": "number"
+                  },
+                  "minConfirms": {
+                    "type": "number"
+                  },
+                  "enforceMinConfirmsForChange": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "number"
+                  },
+                  "numUnspentsToMake": {
+                    "type": "number"
+                  },
+                  "targetAddress": {
+                    "type": "string"
+                  },
+                  "txFormat": {
+                    "type": "string",
+                    "enum": [
+                      "legacy",
+                      "psbt",
+                      "psbt-lite"
+                    ]
+                  }
+                },
+                "required": [
+                  "pubkey",
+                  "source"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tx": {
+                      "type": "string"
+                    },
+                    "txid": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "tx",
+                    "txid"
+                  ]
+                }
               }
             }
           },

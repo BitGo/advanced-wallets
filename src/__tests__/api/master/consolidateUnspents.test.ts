@@ -129,7 +129,8 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     const mockError = {
       error: 'Internal Server Error',
       name: 'ApiResponseError',
-      details: 'There are too few unspents that meet the given parameters to consolidate (1 available).',
+      details:
+        'There are too few unspents that meet the given parameters to consolidate (1 available).',
     };
 
     const consolidateUnspentsStub = sinon
