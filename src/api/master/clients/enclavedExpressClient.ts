@@ -13,10 +13,9 @@ import {
   GShare,
   Keychain,
   ApiKeyShare,
-  MPCSweepTxs,
   MPCTx,
-  MPCTxs,
 } from '@bitgo/sdk-core';
+import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
@@ -87,7 +86,9 @@ interface RecoveryMultisigOptions {
     | RecoveryInfo
     | OfflineVaultTxInfo
     | UnsignedSweepTxMPCv2
-    | FormattedOfflineVaultTxInfo;
+    | FormattedOfflineVaultTxInfo
+    | MPCTx
+    | RecoveryTransaction;
   walletContractAddress: string;
 }
 
