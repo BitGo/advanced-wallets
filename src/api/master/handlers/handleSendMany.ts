@@ -7,14 +7,12 @@ import {
   SendManyOptions,
   BitGoBase,
   PendingApprovals,
-  RequestType,
   PrebuildTransactionResult,
   Keychain,
   TxRequest,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { sendTxRequest } from '@bitgo/sdk-core/dist/src/bitgo/tss/common';
 import { handleEddsaSigning } from './eddsa';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 
@@ -216,21 +214,22 @@ async function signAndSendTxRequests(
     throw new Error('txRequestId missing from signed transaction');
   }
 
-  if (signedTxRequest.apiVersion === 'full') {
-    bitgo.setRequestTracer(reqId);
-    if (signedTxRequest.state === 'pendingApproval') {
-      const pendingApprovals = new PendingApprovals(bitgo, wallet.baseCoin);
-      const pendingApproval = await pendingApprovals.get({ id: signedTxRequest.pendingApprovalId });
-      return {
-        pendingApproval: pendingApproval.toJSON(),
-        txRequest: signedTxRequest,
-      };
-    }
+  if (signedTxRequest.apiVersion !== 'full') {
+    throw new Error('Only TxRequest API version full is supported.');
+  }
+
+  bitgo.setRequestTracer(reqId);
+  if (signedTxRequest.state === 'pendingApproval') {
+    const pendingApprovals = new PendingApprovals(bitgo, wallet.baseCoin);
+    const pendingApproval = await pendingApprovals.get({ id: signedTxRequest.pendingApprovalId });
     return {
+      pendingApproval: pendingApproval.toJSON(),
       txRequest: signedTxRequest,
-      txid: (signedTxRequest.transactions ?? [])[0]?.signedTx?.id,
-      tx: (signedTxRequest.transactions ?? [])[0]?.signedTx?.tx,
     };
   }
-  return sendTxRequest(bitgo, wallet.id(), signedTxRequest.txRequestId, RequestType.tx, reqId);
+  return {
+    txRequest: signedTxRequest,
+    txid: (signedTxRequest.transactions ?? [])[0]?.signedTx?.id,
+    tx: (signedTxRequest.transactions ?? [])[0]?.signedTx?.tx,
+  };
 }
