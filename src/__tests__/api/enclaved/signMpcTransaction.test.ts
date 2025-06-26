@@ -326,4 +326,225 @@ describe('signMpcTransaction', () => {
       response.body.should.have.property('error');
     });
   });
+
+  describe('ECDSA MPCv2 Signing Integration Tests', () => {
+    const coin = 'hteth'; // Use hteth for ECDSA testing
+    const bitgoGpgPubKey = 'mock-bitgo-gpg-pub-key';
+
+    it('should successfully complete all MPCv2 rounds', async () => {
+      const mockKmsResponse = {
+        prv: 'mock-ecdsa-private-key',
+        pub: 'mock-ecdsa-public-key',
+        source: 'user',
+        type: 'independent',
+      };
+
+      // Round 1 test
+      const round1Input = {
+        source: 'user',
+        pub: 'mock-ecdsa-public-key',
+        txRequest: mockTxRequest,
+        bitgoGpgPubKey: bitgoGpgPubKey,
+      };
+
+      const mockDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+        encryptedKey: 'mock-encrypted-data-key',
+      };
+
+      // Mock KMS responses for Round 1
+      const kmsNock = nock(kmsUrl)
+        .get(`/key/${round1Input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsResponse);
+
+      const dataKeyNock = nock(kmsUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
+
+      const round1Response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round1`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(round1Input);
+
+      round1Response.status.should.equal(200);
+      round1Response.body.should.have.property('signatureShareRound1');
+      round1Response.body.should.have.property('userGpgPubKey');
+      round1Response.body.should.have.property('encryptedRound1Session');
+      round1Response.body.should.have.property('encryptedUserGpgPrvKey');
+      round1Response.body.should.have.property('encryptedDataKey');
+
+      kmsNock.done();
+      dataKeyNock.done();
+
+      // Round 2 test using data from Round 1
+      const encryptedDataKey = round1Response.body.encryptedDataKey;
+      const encryptedUserGpgPrvKey = round1Response.body.encryptedUserGpgPrvKey;
+      const encryptedRound1Session = round1Response.body.encryptedRound1Session;
+
+      const round2Input = {
+        source: 'user',
+        pub: 'mock-ecdsa-public-key',
+        txRequest: mockTxRequest,
+        bitgoGpgPubKey: bitgoGpgPubKey,
+        encryptedDataKey,
+        encryptedUserGpgPrvKey,
+        encryptedRound1Session,
+      };
+
+      const mockDecryptedDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+      };
+
+      // Mock KMS responses for Round 2
+      const r2KmsNock = nock(kmsUrl)
+        .get(`/key/${round2Input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsResponse);
+
+      const decryptDataKeyNock = nock(kmsUrl)
+        .post('/decryptDataKey')
+        .reply(200, mockDecryptedDataKeyResponse);
+
+      const round2Response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round2`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(round2Input);
+
+      round2Response.status.should.equal(200);
+      round2Response.body.should.have.property('signatureShareRound2');
+      round2Response.body.should.have.property('encryptedRound2Session');
+
+      r2KmsNock.done();
+      decryptDataKeyNock.done();
+
+      // Round 3 test using data from previous rounds
+      const encryptedRound2Session = round2Response.body.encryptedRound2Session;
+
+      const round3Input = {
+        source: 'user',
+        pub: 'mock-ecdsa-public-key',
+        txRequest: mockTxRequest,
+        bitgoGpgPubKey: bitgoGpgPubKey,
+        encryptedDataKey,
+        encryptedUserGpgPrvKey,
+        encryptedRound2Session,
+      };
+
+      // Mock KMS responses for Round 3
+      const r3KmsNock = nock(kmsUrl)
+        .get(`/key/${round3Input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsResponse);
+
+      const r3DecryptDataKeyNock = nock(kmsUrl)
+        .post('/decryptDataKey')
+        .reply(200, mockDecryptedDataKeyResponse);
+
+      const round3Response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round3`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(round3Input);
+
+      round3Response.status.should.equal(200);
+      round3Response.body.should.have.property('signatureShareRound3');
+
+      r3KmsNock.done();
+      r3DecryptDataKeyNock.done();
+    });
+
+    it('should fail when required fields are missing for Round 2', async () => {
+      const mockKmsResponse = {
+        prv: 'mock-ecdsa-private-key',
+        pub: 'mock-ecdsa-public-key',
+        source: 'user',
+        type: 'independent',
+      };
+
+      const input = {
+        source: 'user',
+        pub: 'mock-ecdsa-public-key',
+        txRequest: mockTxRequest,
+        // Missing encryptedDataKey, encryptedUserGpgPrvKey, encryptedRound1Session
+      };
+
+      const kmsNock = nock(kmsUrl)
+        .get(`/key/${input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsResponse);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round2`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(input);
+
+      response.status.should.equal(500);
+      response.body.should.have.property('error');
+      response.body.details.should.contain('encryptedDataKey from Round 1 is required');
+
+      kmsNock.done();
+    });
+
+    it('should fail when required fields are missing for Round 3', async () => {
+      const mockKmsResponse = {
+        prv: 'mock-ecdsa-private-key',
+        pub: 'mock-ecdsa-public-key',
+        source: 'user',
+        type: 'independent',
+      };
+
+      const input = {
+        source: 'user',
+        pub: 'mock-ecdsa-public-key',
+        txRequest: mockTxRequest,
+        encryptedDataKey: 'mock-encrypted-data-key',
+        // Missing encryptedUserGpgPrvKey, encryptedRound2Session
+      };
+
+      const kmsNock = nock(kmsUrl)
+        .get(`/key/${input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsResponse);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round3`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(input);
+
+      response.status.should.equal(500);
+      response.body.should.have.property('error');
+      response.body.details.should.contain('encryptedUserGpgPrvKey is required');
+
+      kmsNock.done();
+    });
+
+    it('should fail for unsupported share type', async () => {
+      const mockKmsResponse = {
+        prv: 'mock-ecdsa-private-key',
+        pub: 'mock-ecdsa-public-key',
+        source: 'user',
+        type: 'independent',
+      };
+
+      const input = {
+        source: 'user',
+        pub: 'mock-ecdsa-public-key',
+        txRequest: mockTxRequest,
+      };
+
+      const kmsNock = nock(kmsUrl)
+        .get(`/key/${input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsResponse);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/invalid`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(input);
+
+      response.status.should.equal(500);
+      response.body.should.have.property('error');
+      response.body.details.should.contain('Only MPCv2 is supported for ECDSA curve');
+
+      kmsNock.done();
+    });
+  });
 });
