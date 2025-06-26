@@ -4,13 +4,15 @@ import { EnclavedConfig, isMasterExpressConfig } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 import {
+  DecryptDataKeyKmsSchema,
+  DecryptDataKeyParams,
+  DecryptDataKeyResponse,
+} from './types/dataKey';
+import {
   GenerateDataKeyKmsSchema,
   GenerateDataKeyParams,
   GenerateDataKeyResponse,
-  DecryptDataKeyParams,
-  DecryptDataKeyResponse,
-  DecryptDataKeyKmsSchema,
-} from './types/dataKey';
+} from './types/generateDataKey';
 
 const debugLogger = debug('bitgo:express:kmsClient');
 
@@ -106,7 +108,10 @@ export class KmsClient {
       );
     }
 
-    return kmsResponse.body as GenerateDataKeyResponse;
+    return {
+      plaintextKey: kmsResponse.body.plaintextKey,
+      encryptedKey: kmsResponse.body.encryptedKey,
+    };
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {

@@ -2,15 +2,42 @@ import https from 'https';
 import debug from 'debug';
 import superagent from 'superagent';
 
-import { SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
-import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
+import { ApiKeyShare, Keychain, SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
+import { ApiClient, buildApiClient, superagentRequestFactory } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
+import assert from 'assert';
 import { MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { EnclavedApiSpec } from '../../../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../../../types/health';
+import {
+  KeyShareType,
+  MpcFinalizeResponseType,
+  MpcInitializeResponseType,
+} from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
+
+export type InitMpcKeyGenerationParams = {
+  source: 'user' | 'backup';
+  bitgoGpgKey: string;
+  userGpgKey?: string;
+};
+
+export type FinalizeMpcKeyGenerationParams = {
+  source: 'user' | 'backup';
+  coin?: string;
+  encryptedDataKey: string;
+  encryptedData: string;
+  bitGoKeychain: Keychain & {
+    verifiedVssProof: boolean;
+    isBitGo?: boolean;
+    isTrust?: boolean;
+    keyShares: ApiKeyShare[];
+  };
+  counterPartyGPGKey: string;
+  counterPartyKeyShare: KeyShareType;
+};
 
 interface CreateIndependentKeychainParams {
   source: 'user' | 'backup';
@@ -225,6 +252,84 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to recover multisig: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Initialize MPC key generation for a given source and coin
+   */
+  async initMpcKeyGeneration(
+    params: InitMpcKeyGenerationParams,
+  ): Promise<MpcInitializeResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to initialize MPC key generation');
+    }
+
+    try {
+      debugLogger('Initializing MPC key generation for coin: %s', this.coin);
+      let request = this.apiClient['v1.mpc.key.initialize'].post({
+        coin: this.coin,
+        source: params.source,
+        bitgoGpgPub: params.bitgoGpgKey,
+        counterPartyGpgPub: params.userGpgKey,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to initialize MPC key generation: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Finalize MPC key generation for a given source and coin
+   */
+  async finalizeMpcKeyGeneration(
+    params: FinalizeMpcKeyGenerationParams,
+  ): Promise<MpcFinalizeResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to finalize MPC key generation');
+    }
+    const bitgoKeychain = params.bitGoKeychain;
+    assert(
+      bitgoKeychain.keyShares && bitgoKeychain.keyShares.length,
+      'BitGo keychain must have keyShares property',
+    );
+
+    try {
+      debugLogger('Finalizing MPC key generation for coin: %s', this.coin);
+      let request = this.apiClient['v1.mpc.key.finalize'].post({
+        coin: this.coin,
+        source: params.source,
+        encryptedDataKey: params.encryptedDataKey,
+        encryptedData: params.encryptedData,
+        bitgoKeyChain: {
+          ...bitgoKeychain,
+          source: 'bitgo',
+          type: 'tss',
+          commonKeychain: bitgoKeychain.commonKeychain ?? '',
+          keyShares: bitgoKeychain.keyShares,
+        },
+        counterPartyGpgPub: params.counterPartyGPGKey,
+        counterPartyKeyShare: params.counterPartyKeyShare,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to finalize MPC key generation: %s', err.message);
       throw err;
     }
   }

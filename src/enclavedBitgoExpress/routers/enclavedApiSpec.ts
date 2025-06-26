@@ -1,9 +1,11 @@
 import {
   apiSpec,
-  Method as HttpMethod,
   httpRequest,
   HttpResponse,
   httpRoute,
+  Method as HttpMethod,
+  optional,
+  optionalized,
 } from '@api-ts/io-ts-http';
 import { Response } from '@api-ts/response';
 import {
@@ -20,6 +22,8 @@ import { signMpcTransaction } from '../../api/enclaved/handlers/signMpcTransacti
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { EnclavedConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
+import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
+import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -120,6 +124,66 @@ const SignMpcResponse: HttpResponse = {
   }),
 };
 
+const KeyShare = {
+  from: t.union([t.literal('user'), t.literal('backup'), t.literal('bitgo')]),
+  to: t.union([t.literal('user'), t.literal('backup'), t.literal('bitgo')]),
+  publicShare: t.string,
+  privateShare: t.string,
+  privateShareProof: t.string,
+  vssProof: t.string,
+  gpgKey: t.string,
+};
+
+const KeyShareType = t.type(KeyShare);
+export type KeyShareType = t.TypeOf<typeof KeyShareType>;
+
+const MpcInitializeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  bitgoGpgPub: t.string,
+  counterPartyGpgPub: optional(t.string), // Optional for backup source
+};
+const MpcInitializeRequestType = optionalized(MpcInitializeRequest);
+export type MpcInitializeRequestType = t.TypeOf<typeof MpcInitializeRequestType>;
+
+const MpcInitializeResponse = {
+  encryptedDataKey: t.string,
+  encryptedData: t.string,
+  bitgoPayload: KeyShareType,
+  counterPartyKeyShare: optional(KeyShareType),
+};
+const MpcInitializeResponseType = optionalized(MpcInitializeResponse);
+export type MpcInitializeResponseType = t.TypeOf<typeof MpcInitializeResponseType>;
+
+const BitGoKeychainType = t.type({
+  id: t.string,
+  source: t.literal('bitgo'),
+  type: t.literal('tss'),
+  commonKeychain: t.string,
+  verifiedVssProof: t.boolean,
+  // TODO: api-ts does not like optionalized gpgKey
+  keyShares: t.array(t.any),
+});
+
+const MpcFinalizeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  encryptedDataKey: t.string,
+  encryptedData: t.string,
+  counterPartyGpgPub: t.string,
+  bitgoKeyChain: BitGoKeychainType,
+  coin: t.string,
+  counterPartyKeyShare: KeyShareType,
+};
+const MpcFinalizeRequestType = t.type(MpcFinalizeRequest);
+export type MpcFinalizeRequestType = t.TypeOf<typeof MpcFinalizeRequestType>;
+
+const MpcFinalizeResponse = {
+  counterpartyKeyShare: optional(KeyShareType),
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  commonKeychain: t.string,
+};
+const MpcFinalizeResponseType = optionalized(MpcFinalizeResponse);
+export type MpcFinalizeResponseType = t.TypeOf<typeof MpcFinalizeResponseType>;
+
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
   'v1.multisig.sign': {
@@ -164,6 +228,24 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Generate an independent key',
     }),
   },
+  'v1.mpc.key.initialize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpc/key/initialize',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: MpcInitializeRequest,
+      }),
+      response: {
+        200: t.type(MpcInitializeResponse),
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Initialize MPC for EdDSA key generation',
+    }),
+  },
   'v1.mpc.sign': {
     post: httpRoute({
       method: 'POST',
@@ -177,6 +259,25 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: SignMpcResponse,
       description: 'Sign a MPC transaction',
+    }),
+  },
+
+  'v1.mpc.key.finalize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpc/key/finalize',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: MpcFinalizeRequest,
+      }),
+      response: {
+        200: MpcFinalizeResponseType,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Finalize key generation and confirm commonKeychain',
     }),
   },
 });
@@ -231,6 +332,38 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>;
       const result = await signMpcTransaction(typedReq);
       return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.mpc.key.initialize', [
+    responseHandler<EnclavedConfig>(async (_req) => {
+      try {
+        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>;
+        const response = await eddsaInitialize(typedReq);
+        return Response.ok(response);
+      } catch (error) {
+        const err = error as Error;
+        return Response.internalError({
+          error: err.message,
+          details: err.stack || 'No stack trace available',
+        });
+      }
+    }),
+  ]);
+
+  router.post('v1.mpc.key.finalize', [
+    responseHandler<EnclavedConfig>(async (_req) => {
+      try {
+        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>;
+        const response = await eddsaFinalize(typedReq);
+        return Response.ok(response);
+      } catch (error) {
+        const err = error as Error;
+        return Response.internalError({
+          error: err.message,
+          details: err.stack || 'No stack trace available',
+        });
+      }
     }),
   ]);
 

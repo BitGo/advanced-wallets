@@ -30,7 +30,6 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  // TODO: uncomment when on-prem type is added to SDK
   if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
     throw new Error('Wallet is not an on-prem wallet');
   }

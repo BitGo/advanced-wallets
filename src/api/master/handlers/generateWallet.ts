@@ -1,20 +1,25 @@
 import {
+  AddKeychainOptions,
+  Keychain,
+  KeychainsTriplet,
+  NotImplementedError,
   promiseProps,
   RequestTracer,
   SupplementGenerateWalletOptions,
-  Keychain,
-  KeychainsTriplet,
   Wallet,
   WalletWithKeychains,
-  AddKeychainOptions,
 } from '@bitgo/sdk-core';
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { KeyShareType } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import debug from 'debug';
+
+const debugLogger = debug('bitgo:masterBitGoExpress:generateWallet');
 
 /**
  * This route is used to generate a multisig wallet when enclaved express is enabled
  */
-export async function handleGenerateWalletOnPrem(
+export async function handleGenerateOnPremOnChainWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const bitgo = req.bitgo;
@@ -112,4 +117,188 @@ export async function handleGenerateWalletOnPrem(
   };
 
   return { ...result, wallet: result.wallet.toJSON() };
+}
+
+export async function handleGenerateOnPremMpcWallet(
+  req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
+) {
+  const bitgo = req.bitgo;
+  const baseCoin = bitgo.coin(req.decoded.coin);
+  const enclavedExpressClient = req.enclavedExpressClient;
+
+  if (!baseCoin.supportsTss()) {
+    throw new NotImplementedError(
+      `MPC wallet generation is not supported for coin ${req.decoded.coin}`,
+    );
+  }
+
+  if (!enclavedExpressClient) {
+    throw new Error('Enclaved express client is required for MPC wallet generation');
+  }
+
+  const reqId = new RequestTracer(); // Create tracer without storing reference since it's not used
+
+  const { label, enterprise } = req.decoded;
+
+  // Create wallet parameters with type assertion to allow 'tss' subtype
+  const walletParams: SupplementGenerateWalletOptions = {
+    label: label,
+    m: 2,
+    n: 3,
+    keys: [],
+    type: 'cold',
+    subType: 'onPrem' as SupplementGenerateWalletOptions['subType'],
+    multisigType: 'tss',
+  };
+
+  if (!_.isUndefined(enterprise)) {
+    if (!_.isString(enterprise)) {
+      throw new Error('invalid enterprise argument, expecting string');
+    }
+    walletParams.enterprise = enterprise;
+  }
+
+  const constants = await bitgo.fetchConstants();
+  if (!constants.mpc || !constants.mpc.bitgoPublicKey) {
+    throw new Error('Unable to create MPC keys - bitgoPublicKey is missing from constants');
+  }
+
+  // Initialize key generation for user and backup
+  const userInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
+    source: 'user',
+    bitgoGpgKey: constants.mpc.bitgoPublicKey,
+  });
+
+  debugLogger('User MPC key generation initialized:', userInitResponse);
+
+  const backupInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
+    source: 'backup',
+    bitgoGpgKey: constants.mpc.bitgoPublicKey,
+    userGpgKey: userInitResponse.bitgoPayload.gpgKey,
+  });
+  if (!backupInitResponse.counterPartyKeyShare) {
+    throw new Error('User key share is missing from initialization response');
+  }
+
+  debugLogger('Backup MPC key generation initialized:', backupInitResponse);
+
+  // Extract GPG keys based on payload type
+  const userGPGKey =
+    userInitResponse.bitgoPayload.from === 'user'
+      ? userInitResponse.bitgoPayload.gpgKey
+      : undefined;
+
+  const backupGPGKey =
+    backupInitResponse.bitgoPayload.from === 'backup'
+      ? backupInitResponse.bitgoPayload.gpgKey
+      : undefined;
+
+  if (!userGPGKey || !backupGPGKey) {
+    throw new Error('Missing required GPG keys from payloads');
+  }
+
+  // Create BitGo keychain using the initialization responses
+  const bitgoKeychain = await baseCoin.keychains().add({
+    keyType: 'tss',
+    source: 'bitgo',
+    keyShares: [userInitResponse.bitgoPayload, backupInitResponse.bitgoPayload],
+    enterprise: req.decoded.enterprise,
+    userGPGPublicKey: userGPGKey,
+    backupGPGPublicKey: backupGPGKey,
+    reqId,
+  });
+
+  // Finalize user and backup keychains
+  const userKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
+    source: 'user',
+    coin: req.params.coin,
+    encryptedDataKey: userInitResponse.encryptedDataKey,
+    encryptedData: userInitResponse.encryptedData,
+    bitGoKeychain: {
+      ...bitgoKeychain,
+      commonKeychain: bitgoKeychain.commonKeychain ?? '',
+      hsmType: bitgoKeychain.hsmType,
+      type: 'tss',
+      source: 'bitgo', // Ensure BitGo keychain is marked as BitGo
+      verifiedVssProof: true,
+      isBitGo: true, // Ensure BitGo keychain is marked as BitGo
+      isTrust: false,
+      keyShares: bitgoKeychain.keyShares as KeyShareType[], // Ensure keyShares are included
+    },
+    counterPartyGPGKey: backupGPGKey,
+    counterPartyKeyShare: backupInitResponse.counterPartyKeyShare,
+  });
+  if (!userKeychainPromise.counterpartyKeyShare) {
+    throw new Error('Backup key share is missing from user keychain promise');
+  }
+
+  const userMpcKey = await baseCoin.keychains().add({
+    commonKeychain: userKeychainPromise.commonKeychain,
+    source: 'user',
+    type: 'tss',
+  });
+
+  debugLogger('User key finalized', userMpcKey);
+
+  const backupKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
+    source: 'backup',
+    coin: req.params.coin,
+    encryptedDataKey: backupInitResponse.encryptedDataKey,
+    encryptedData: backupInitResponse.encryptedData,
+    bitGoKeychain: {
+      ...bitgoKeychain,
+      commonKeychain: bitgoKeychain.commonKeychain ?? '',
+      hsmType: bitgoKeychain.hsmType,
+      type: 'tss',
+      source: 'bitgo',
+      verifiedVssProof: true,
+      isBitGo: true,
+      isTrust: false,
+      keyShares: bitgoKeychain.keyShares as any, // Ensure keyShares are included
+    },
+    counterPartyGPGKey: userGPGKey,
+    counterPartyKeyShare: userKeychainPromise.counterpartyKeyShare as KeyShareType, // also not sure why I have to cast this here
+  });
+
+  const backupMpcKey = await baseCoin.keychains().add({
+    commonKeychain: backupKeychainPromise.commonKeychain,
+    source: 'backup',
+    type: 'tss',
+  });
+  debugLogger('Backup keychain finalized:', backupMpcKey);
+
+  walletParams.keys = [userMpcKey.id, backupMpcKey.id, bitgoKeychain.id];
+
+  const keychains = {
+    userKeychain: userMpcKey,
+    backupKeychain: backupMpcKey,
+    bitgoKeychain,
+  };
+
+  const finalWalletParams = await baseCoin.supplementGenerateWallet(walletParams, keychains);
+
+  bitgo.setRequestTracer(reqId);
+  const newWallet = await bitgo.post(baseCoin.url('/wallet/add')).send(finalWalletParams).result();
+
+  const result: WalletWithKeychains = {
+    wallet: new Wallet(bitgo, baseCoin, newWallet),
+    userKeychain: userMpcKey,
+    backupKeychain: backupMpcKey,
+    bitgoKeychain: bitgoKeychain,
+    responseType: 'WalletWithKeychains',
+  };
+
+  return { ...result, wallet: result.wallet.toJSON() };
+}
+
+export async function handleGenerateWalletOnPrem(
+  req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
+) {
+  const { multisigType } = req.decoded;
+
+  if (multisigType === 'tss') {
+    return handleGenerateOnPremMpcWallet(req);
+  }
+
+  return handleGenerateOnPremOnChainWallet(req);
 }
