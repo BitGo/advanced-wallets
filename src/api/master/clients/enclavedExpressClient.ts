@@ -268,7 +268,7 @@ export class EnclavedExpressClient {
 
     try {
       debugLogger('Initializing MPC key generation for coin: %s', this.coin);
-      let request = this.apiClient['v1.mpc.initialize'].post({
+      let request = this.apiClient['v1.mpc.key.initialize'].post({
         coin: this.coin,
         source: params.source,
         bitgoGpgPub: params.bitgoGpgKey,
@@ -305,7 +305,7 @@ export class EnclavedExpressClient {
 
     try {
       debugLogger('Finalizing MPC key generation for coin: %s', this.coin);
-      let request = this.apiClient['v1.mpc.finalize'].post({
+      let request = this.apiClient['v1.mpc.key.finalize'].post({
         coin: this.coin,
         source: params.source,
         encryptedDataKey: params.encryptedDataKey,

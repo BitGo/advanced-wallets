@@ -12,7 +12,7 @@ import { gpgEncrypt } from './utils';
 const debugLogger = debug('bitgo:enclavedExpress:mpcInitialize');
 
 export async function eddsaInitialize(
-  req: EnclavedApiSpecRouteRequest<'v1.mpc.initialize', 'post'>,
+  req: EnclavedApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>,
 ) {
   // request parsing. counterPartyGpgPub can be undefined
   const { source, bitgoGpgPub, counterPartyGpgPub }: MpcInitializeRequestType = req.decoded;

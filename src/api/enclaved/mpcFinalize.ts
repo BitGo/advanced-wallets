@@ -10,7 +10,9 @@ import { gpgDecrypt, gpgEncrypt } from './utils';
 
 const debugLogger = debug('bitgo:enclavedBitGoExpress:mpcFinalize');
 
-export async function eddsaFinalize(req: EnclavedApiSpecRouteRequest<'v1.mpc.finalize', 'post'>) {
+export async function eddsaFinalize(
+  req: EnclavedApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>,
+) {
   // request parsing
   const {
     source,

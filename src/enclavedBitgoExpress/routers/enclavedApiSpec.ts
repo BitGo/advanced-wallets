@@ -228,10 +228,10 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Generate an independent key',
     }),
   },
-  'v1.mpc.initialize': {
+  'v1.mpc.key.initialize': {
     post: httpRoute({
       method: 'POST',
-      path: '/api/{coin}/mpc/initialize',
+      path: '/api/{coin}/mpc/key/initialize',
       request: httpRequest({
         params: { coin: t.string },
         body: MpcInitializeRequest,
@@ -262,10 +262,10 @@ export const EnclavedAPiSpec = apiSpec({
     }),
   },
 
-  'v1.mpc.finalize': {
+  'v1.mpc.key.finalize': {
     post: httpRoute({
       method: 'POST',
-      path: '/api/{coin}/mpc/finalize',
+      path: '/api/{coin}/mpc/key/finalize',
       request: httpRequest({
         params: { coin: t.string },
         body: MpcFinalizeRequest,
@@ -335,10 +335,10 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     }),
   ]);
 
-  router.post('v1.mpc.initialize', [
+  router.post('v1.mpc.key.initialize', [
     responseHandler<EnclavedConfig>(async (_req) => {
       try {
-        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.initialize', 'post'>;
+        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>;
         const response = await eddsaInitialize(typedReq);
         return Response.ok(response);
       } catch (error) {
@@ -351,10 +351,10 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     }),
   ]);
 
-  router.post('v1.mpc.finalize', [
+  router.post('v1.mpc.key.finalize', [
     responseHandler<EnclavedConfig>(async (_req) => {
       try {
-        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.finalize', 'post'>;
+        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>;
         const response = await eddsaFinalize(typedReq);
         return Response.ok(response);
       } catch (error) {
