@@ -93,7 +93,7 @@ export class KmsClient {
         .set('x-api-key', 'abc')
         .send(params);
     } catch (error: any) {
-      console.log('Error generating data key from KMS', error);
+      debugLogger('Error generating data key from KMS', error);
       throw error;
     }
 
@@ -120,7 +120,7 @@ export class KmsClient {
         .set('x-api-key', 'abc')
         .send(params);
     } catch (error: any) {
-      console.log('Error decrypting data key from KMS', error);
+      debugLogger('Error decrypting data key from KMS', error);
       throw error;
     }
 

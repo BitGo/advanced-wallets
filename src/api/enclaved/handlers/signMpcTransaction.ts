@@ -70,14 +70,6 @@ interface EddsaSigningParams {
 export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>) {
   const { source, pub, coin, encryptedDataKey, shareType } = req.decoded;
 
-  if (!source || !pub) {
-    throw new Error('Source and public key are required for MPC signing');
-  }
-
-  if (!shareType) {
-    throw new Error('Share type is required for MPC signing');
-  }
-
   const bitgo = req.bitgo;
   const coinInstance = bitgo.coin(coin);
 
@@ -147,9 +139,6 @@ async function handleEddsaSigning(
 
   switch (shareType.toLowerCase()) {
     case ShareType.Commitment: {
-      if (!txRequest) {
-        throw new Error('txRequest is required for commitment share generation');
-      }
       if (!bitgoGpgPubKey) {
         throw new Error('bitgoGpgPubKey is required for commitment share generation');
       }
@@ -166,9 +155,6 @@ async function handleEddsaSigning(
       };
     }
     case ShareType.R: {
-      if (!txRequest) {
-        throw new Error('txRequest is required for R share generation');
-      }
       if (!encryptedUserToBitgoRShare) {
         throw new Error('encryptedUserToBitgoRShare is required for R share generation');
       }
@@ -186,9 +172,6 @@ async function handleEddsaSigning(
       return await eddsaUtils.createRShareFromTxRequest(rShareParams);
     }
     case ShareType.G: {
-      if (!txRequest) {
-        throw new Error('txRequest is required for G share generation');
-      }
       if (!bitgoToUserRShare) {
         throw new Error('bitgoToUserRShare is required for G share generation');
       }
