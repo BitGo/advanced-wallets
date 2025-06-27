@@ -3,8 +3,13 @@ import { MethodNotImplementedError } from 'bitgo';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import logger from '../../../logger';
 import { isEthLikeCoin } from '../../../shared/coinUtils';
+import {
+  addEthLikeRecoveryExtras,
+  getDefaultMusigEthGasParams,
+  getReplayProtectionOptions,
+} from '../../../shared/recoveryUtils';
+import { SignedEthLikeRecoveryTx } from '../../../types/transaction';
 import { retrieveKmsPrvKey } from '../utils';
-import { HalfSignedEthLikeRecoveryTx } from '../../../types/transaction';
 
 export async function recoveryMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
@@ -29,28 +34,79 @@ export async function recoveryMultisigTransaction(
   if (coin.isEVM()) {
     // Every recovery method on every coin family varies one from another so we need to ensure with a guard.
     if (isEthLikeCoin(coin)) {
+      const walletKeys = unsignedSweepPrebuildTx.xpubxWithDerivationPath;
+      const pubs = [walletKeys?.user?.xpub, walletKeys?.backup?.xpub, walletKeys?.bitgo?.xpub];
+      const { gasPrice, gasLimit, maxFeePerGas, maxPriorityFeePerGas } =
+        getDefaultMusigEthGasParams();
+
       try {
-        const halfSignedTx = await coin.signTransaction({
+        const halfSignedTxBase = await coin.signTransaction({
           isLastSignature: false,
           prv: userPrv,
-          txPrebuild: { ...unsignedSweepPrebuildTx } as unknown as SignFinalOptions,
+          pubs,
+          keyList: walletKeys,
+          recipients: unsignedSweepPrebuildTx.recipients ?? [],
+          expireTime: unsignedSweepPrebuildTx.expireTime,
+          signingKeyNonce: unsignedSweepPrebuildTx.signingKeyNonce,
+          gasPrice,
+          gasLimit,
+          eip1559: {
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+          },
+          replayProtectionOptions: getReplayProtectionOptions(
+            unsignedSweepPrebuildTx.replayProtectionOptions,
+          ),
+          txPrebuild: {
+            ...unsignedSweepPrebuildTx,
+            gasPrice,
+            gasLimit,
+            eip1559: {
+              maxFeePerGas,
+              maxPriorityFeePerGas,
+            },
+            replayProtectionOptions: getReplayProtectionOptions(
+              unsignedSweepPrebuildTx.replayProtectionOptions,
+            ),
+          },
           walletContractAddress,
         });
 
-        const { halfSigned } = halfSignedTx as HalfSignedEthLikeRecoveryTx;
+        const halfSignedTx = addEthLikeRecoveryExtras({
+          signedTx: halfSignedTxBase as SignedEthLikeRecoveryTx,
+          transaction: unsignedSweepPrebuildTx,
+          isLastSignature: false,
+          replayProtectionOptions: unsignedSweepPrebuildTx.replayProtectionOptions,
+        });
+
+        const { halfSigned } = halfSignedTx;
         const fullSignedTx = await coin.signTransaction({
           isLastSignature: true,
           prv: backupPrv,
+          pubs,
+          keyList: walletKeys,
+          recipients: halfSignedTx.recipients ?? [],
+          expireTime: halfSigned?.expireTime,
+          signingKeyNonce: halfSigned?.backupKeyNonce,
+          gasPrice,
+          gasLimit,
           txPrebuild: {
             ...halfSignedTx,
-            txHex: halfSigned.signatures,
+            txHex: halfSigned?.txHex,
             halfSigned,
-            recipients: halfSigned.recipients ?? [],
+            recipients: halfSigned?.recipients ?? [],
+            gasPrice,
+            gasLimit,
+            eip1559: {
+              maxFeePerGas,
+              maxPriorityFeePerGas,
+            },
+            replayProtectionOptions: getReplayProtectionOptions(
+              halfSignedTx?.replayProtectionOptions,
+            ),
           } as unknown as SignFinalOptions,
           walletContractAddress,
-          signingKeyNonce: halfSigned.signingKeyNonce ?? 0,
-          backupKeyNonce: halfSigned.backupKeyNonce ?? 0,
-          recipients: halfSigned.recipients ?? [],
+          backupKeyNonce: halfSigned?.backupKeyNonce ?? 0,
         });
 
         return fullSignedTx;

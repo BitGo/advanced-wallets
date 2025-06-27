@@ -1,5 +1,9 @@
 import { MethodNotImplementedError } from 'bitgo';
 import { isEthLikeCoin } from '../../../shared/coinUtils';
+import {
+  getDefaultMusigEthGasParams,
+  getReplayProtectionOptions,
+} from '../../../shared/recoveryUtils';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 export async function handleRecoveryWalletOnPrem(
@@ -31,9 +35,19 @@ export async function handleRecoveryWalletOnPrem(
 
   if (isEthLikeCoin(sdkCoin)) {
     try {
+      const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } =
+        getDefaultMusigEthGasParams();
       const unsignedSweepPrebuildTx = await sdkCoin.recover({
         ...commonRecoveryParams,
+        gasPrice,
+        gasLimit,
+        eip1559: {
+          maxFeePerGas,
+          maxPriorityFeePerGas,
+        },
+        replayProtectionOptions: getReplayProtectionOptions(),
       });
+
       const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
         userPub,
         backupPub,
