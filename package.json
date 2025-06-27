@@ -50,6 +50,7 @@
     "@types/express": "4.17.13",
     "@types/jasmine": "^5.1.8",
     "@types/jest": "^29.5.12",
+    "@types/keccak": "^3.0.5",
     "@types/lodash": "^4.14.121",
     "@types/mocha": "^10.0.10",
     "@types/morgan": "^1.7.35",
@@ -65,6 +66,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "jasmine": "^5.8.0",
     "jest": "^29.7.0",
+    "keccak": "^3.0.3",
     "mocha": "^11.6.0",
     "nock": "^13.3.1",
     "nodemon": "^3.1.10",
@@ -78,8 +80,7 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0",
-    "typescript-cached-transpile": "^0.0.6",
-    "keccak": "^3.0.3"
+    "typescript-cached-transpile": "^0.0.6"
   },
   "engines": {
     "node": ">=22.1.0"
