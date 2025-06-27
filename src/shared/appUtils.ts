@@ -62,12 +62,15 @@ export function createErrorHandler() {
     res: express.Response,
     _next: express.NextFunction,
   ) {
-    logger.error('Error:', { error: err && err.message ? err.message : String(err) });
+    logger.debug('Error:', { error: err && err.message ? err.message : String(err) });
     const statusCode = err && err.status ? err.status : 500;
     const result = {
       error: err && err.message ? err.message : String(err),
       name: err && err.name ? err.name : 'Error',
       code: err && err.code ? err.code : undefined,
+      details: err && err.details ? err.details : undefined,
+      result: err && err.result ? err.result : undefined,
+      stack: process.env.NODE_ENV === 'development' && err && err.stack ? err.stack : undefined,
       version: pjson.version,
     };
     return res.status(statusCode).json(result);

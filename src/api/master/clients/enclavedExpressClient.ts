@@ -2,8 +2,19 @@ import https from 'https';
 import debug from 'debug';
 import superagent from 'superagent';
 
-import { ApiKeyShare, Keychain, SignedTransaction, TransactionPrebuild } from '@bitgo/sdk-core';
-import { ApiClient, buildApiClient, superagentRequestFactory } from '@api-ts/superagent-wrapper';
+import {
+  SignedTransaction,
+  TransactionPrebuild,
+  TxRequest,
+  EncryptedSignerShareRecord,
+  SignatureShareRecord,
+  SignShare,
+  CommitmentShareRecord,
+  GShare,
+  Keychain,
+  ApiKeyShare,
+} from '@bitgo/sdk-core';
+import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
 import assert from 'assert';
@@ -71,6 +82,45 @@ interface RecoveryMultisigOptions {
     bitgoPub?: string;
     ignoreAddressTypes?: string[];
   };
+}
+
+interface SignMpcCommitmentParams {
+  txRequest: TxRequest;
+  bitgoGpgPubKey: string;
+  source: 'user' | 'backup';
+  pub: string;
+}
+
+interface SignMpcCommitmentResponse {
+  userToBitgoCommitment: CommitmentShareRecord;
+  encryptedSignerShare: EncryptedSignerShareRecord;
+  encryptedUserToBitgoRShare: EncryptedSignerShareRecord;
+  encryptedDataKey: string;
+}
+
+interface SignMpcRShareParams {
+  txRequest: TxRequest;
+  encryptedUserToBitgoRShare: EncryptedSignerShareRecord;
+  encryptedDataKey: string;
+  source: 'user' | 'backup';
+  pub: string;
+}
+
+interface SignMpcRShareResponse {
+  rShare: SignShare;
+}
+
+interface SignMpcGShareParams {
+  txRequest: TxRequest;
+  bitgoToUserRShare: SignatureShareRecord;
+  userToBitgoRShare: SignShare;
+  bitgoToUserCommitment: CommitmentShareRecord;
+  source: 'user' | 'backup';
+  pub: string;
+}
+
+interface SignMpcGShareResponse {
+  gShare: GShare;
 }
 
 export class EnclavedExpressClient {
@@ -330,6 +380,78 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to finalize MPC key generation: %s', err.message);
+      throw err;
+    }
+  }
+
+  async signMpcCommitment(params: SignMpcCommitmentParams): Promise<SignMpcCommitmentResponse> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign an MPC commitment');
+    }
+
+    try {
+      let request = this.apiClient['v1.mpc.sign'].post({
+        coin: this.coin,
+        shareType: 'commitment',
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign mpc commitment: %s', err.message);
+      throw err;
+    }
+  }
+
+  async signMpcRShare(params: SignMpcRShareParams): Promise<SignMpcRShareResponse> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign an MPC R-share');
+    }
+
+    try {
+      let request = this.apiClient['v1.mpc.sign'].post({
+        coin: this.coin,
+        shareType: 'r',
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign mpc r-share: %s', err.message);
+      throw err;
+    }
+  }
+
+  async signMpcGShare(params: SignMpcGShareParams): Promise<SignMpcGShareResponse> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign an MPC G-share');
+    }
+
+    try {
+      let request = this.apiClient['v1.mpc.sign'].post({
+        coin: this.coin,
+        shareType: 'g',
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign mpc g-share: %s', err.message);
       throw err;
     }
   }

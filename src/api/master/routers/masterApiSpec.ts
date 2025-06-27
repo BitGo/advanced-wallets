@@ -48,7 +48,20 @@ const GenerateWalletRequest = {
 };
 
 export const SendManyRequest = {
-  pubkey: t.string,
+  pubkey: t.union([t.undefined, t.string]),
+  // Required for MPC
+  type: t.union([
+    t.undefined,
+    t.literal('transfer'),
+    t.literal('acceleration'),
+    t.literal('accountSet'),
+    t.literal('enabletoken'),
+    t.literal('stakingLock'),
+    t.literal('stakingUnlock'),
+    t.literal('transfertoken'),
+    t.literal('trustline'),
+  ]),
+  commonKeychain: t.union([t.undefined, t.string]),
   source: t.union([t.literal('user'), t.literal('backup')]),
   recipients: t.array(t.any),
   numBlocks: t.union([t.undefined, t.number]),
