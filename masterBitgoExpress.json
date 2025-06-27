@@ -410,6 +410,9 @@
                   "backupPub": {
                     "type": "string"
                   },
+                  "bitgoPub": {
+                    "type": "string"
+                  },
                   "walletContractAddress": {
                     "type": "string"
                   },
@@ -422,13 +425,23 @@
                   "coinSpecificParams": {
                     "type": "object",
                     "properties": {
-                      "bitgoPub": {
-                        "type": "string"
+                      "addressScan": {
+                        "type": "number"
+                      },
+                      "feeRate": {
+                        "type": "number"
                       },
                       "ignoreAddressTypes": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "p2sh",
+                            "p2shP2wsh",
+                            "p2wsh",
+                            "p2tr",
+                            "p2trMusig2"
+                          ]
                         }
                       }
                     }

@@ -1,3 +1,4 @@
+import { FormattedOfflineVaultTxInfo, BackupKeyRecoveryTransansaction } from '@bitgo/abstract-utxo';
 import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
 import { CoinFamily } from '@bitgo/statics';
 import { BaseCoin } from 'bitgo';
@@ -53,4 +54,10 @@ export function isXtzCoin(coin: BaseCoin): coin is Xtz {
 
 function isFamily(coin: BaseCoin, family: CoinFamily) {
   return Boolean(coin && coin.getFamily() === family);
+}
+
+export function isFormattedOfflineVaultTxInfo(
+  obj: FormattedOfflineVaultTxInfo | BackupKeyRecoveryTransansaction,
+): obj is FormattedOfflineVaultTxInfo {
+  return obj && 'txInfo' in obj && 'txHex' in obj && 'feeInfo' in obj;
 }

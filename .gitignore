@@ -6,3 +6,4 @@ logs/
 tsconfig.tsbuildinfo
 out/
 .vscode/
+*.iml
