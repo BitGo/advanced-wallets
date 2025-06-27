@@ -116,7 +116,7 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
         bitgoGpgPubKey: req.decoded.bitgoGpgPubKey,
       });
     } else if (mpcAlgorithm === MPCType.ECDSA) {
-      return await handleEcdsaSigning(req.bitgo, req.config, {
+      return await handleEcdsaMpcV2Signing(req.bitgo, req.config, {
         coin: coinInstance,
         shareType,
         txRequest: req.decoded.txRequest,
@@ -225,94 +225,83 @@ async function handleEddsaSigning(
   }
 }
 
-async function handleEcdsaSigning(
+async function handleEcdsaMpcV2Signing(
   bitgo: BitGoBase,
   cfg: EnclavedConfig,
   params: EcdsaSigningParams,
 ): Promise<any> {
   const { coin, shareType } = params;
 
-  // Check if this is an MPCv2 operation
-  const isMPCv2 = [
-    ShareType.MPCv2Round1.toString(),
-    ShareType.MPCv2Round2.toString(),
-    ShareType.MPCv2Round3.toString(),
-  ].includes(shareType.toLowerCase());
+  // Create EcdsaMPCv2Utils instance using the coin's bitgo instance
+  const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, coin);
 
-  if (isMPCv2) {
-    // Create EcdsaMPCv2Utils instance using the coin's bitgo instance
-    const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, coin);
-
-    switch (shareType.toLowerCase()) {
-      case ShareType.MPCv2Round1: {
-        const dataKey = await generateDataKey({ keyType: 'RSA-2048', cfg });
-        return {
-          ...(await ecdsaMPCv2Utils.createOfflineRound1Share({
-            txRequest: params.txRequest,
-            prv: params.prv,
-            walletPassphrase: dataKey.plaintextKey,
-          })),
-          encryptedDataKey: dataKey.encryptedKey,
-        };
-      }
-      case ShareType.MPCv2Round2: {
-        if (!params.encryptedDataKey) {
-          throw new Error('encryptedDataKey from Round 1 is required for MPCv2 Round 2');
-        }
-        if (!params.bitgoGpgPubKey) {
-          throw new Error('bitgoGpgPubKey is required for MPCv2 Round 2');
-        }
-        if (!params.encryptedUserGpgPrvKey) {
-          throw new Error('encryptedUserGpgPrvKey is required for MPCv2 Round 2');
-        }
-        if (!params.encryptedRound1Session) {
-          throw new Error('encryptedRound1Session is required for MPCv2 Round 2');
-        }
-        const plaintextDataKey = await decryptDataKey({
-          encryptedDataKey: params.encryptedDataKey,
-          cfg,
-        });
-        return await ecdsaMPCv2Utils.createOfflineRound2Share({
+  switch (shareType.toLowerCase()) {
+    case ShareType.MPCv2Round1: {
+      const dataKey = await generateDataKey({ keyType: 'RSA-2048', cfg });
+      return {
+        ...(await ecdsaMPCv2Utils.createOfflineRound1Share({
           txRequest: params.txRequest,
           prv: params.prv,
-          walletPassphrase: plaintextDataKey,
-          bitgoPublicGpgKey: params.bitgoGpgPubKey,
-          encryptedUserGpgPrvKey: params.encryptedUserGpgPrvKey,
-          encryptedRound1Session: params.encryptedRound1Session,
-        });
-      }
-      case ShareType.MPCv2Round3: {
-        if (!params.encryptedDataKey) {
-          throw new Error('encryptedDataKey from Round 1 is required for MPCv2 Round 3');
-        }
-        if (!params.bitgoGpgPubKey) {
-          throw new Error('bitgoGpgPubKey is required for MPCv2 Round 3');
-        }
-        if (!params.encryptedUserGpgPrvKey) {
-          throw new Error('encryptedUserGpgPrvKey is required for MPCv2 Round 3');
-        }
-        if (!params.encryptedRound2Session) {
-          throw new Error('encryptedRound2Session is required for MPCv2 Round 3');
-        }
-        const plaintextDataKey = await decryptDataKey({
-          encryptedDataKey: params.encryptedDataKey,
-          cfg,
-        });
-        return await ecdsaMPCv2Utils.createOfflineRound3Share({
-          txRequest: params.txRequest,
-          prv: params.prv,
-          walletPassphrase: plaintextDataKey,
-          bitgoPublicGpgKey: params.bitgoGpgPubKey,
-          encryptedUserGpgPrvKey: params.encryptedUserGpgPrvKey,
-          encryptedRound2Session: params.encryptedRound2Session,
-        });
-      }
-      default:
-        throw new Error(
-          `Share type ${shareType} not supported for MPCv2, only MPCv2Round1, MPCv2Round2 and MPCv2Round3 is supported.`,
-        );
+          walletPassphrase: dataKey.plaintextKey,
+        })),
+        encryptedDataKey: dataKey.encryptedKey,
+      };
     }
-  } else {
-    throw new Error(`Only MPCv2 is supported for ECDSA curve.`);
+    case ShareType.MPCv2Round2: {
+      if (!params.encryptedDataKey) {
+        throw new Error('encryptedDataKey from Round 1 is required for MPCv2 Round 2');
+      }
+      if (!params.bitgoGpgPubKey) {
+        throw new Error('bitgoGpgPubKey is required for MPCv2 Round 2');
+      }
+      if (!params.encryptedUserGpgPrvKey) {
+        throw new Error('encryptedUserGpgPrvKey is required for MPCv2 Round 2');
+      }
+      if (!params.encryptedRound1Session) {
+        throw new Error('encryptedRound1Session is required for MPCv2 Round 2');
+      }
+      const plaintextDataKey = await decryptDataKey({
+        encryptedDataKey: params.encryptedDataKey,
+        cfg,
+      });
+      return await ecdsaMPCv2Utils.createOfflineRound2Share({
+        txRequest: params.txRequest,
+        prv: params.prv,
+        walletPassphrase: plaintextDataKey,
+        bitgoPublicGpgKey: params.bitgoGpgPubKey,
+        encryptedUserGpgPrvKey: params.encryptedUserGpgPrvKey,
+        encryptedRound1Session: params.encryptedRound1Session,
+      });
+    }
+    case ShareType.MPCv2Round3: {
+      if (!params.encryptedDataKey) {
+        throw new Error('encryptedDataKey from Round 1 is required for MPCv2 Round 3');
+      }
+      if (!params.bitgoGpgPubKey) {
+        throw new Error('bitgoGpgPubKey is required for MPCv2 Round 3');
+      }
+      if (!params.encryptedUserGpgPrvKey) {
+        throw new Error('encryptedUserGpgPrvKey is required for MPCv2 Round 3');
+      }
+      if (!params.encryptedRound2Session) {
+        throw new Error('encryptedRound2Session is required for MPCv2 Round 3');
+      }
+      const plaintextDataKey = await decryptDataKey({
+        encryptedDataKey: params.encryptedDataKey,
+        cfg,
+      });
+      return await ecdsaMPCv2Utils.createOfflineRound3Share({
+        txRequest: params.txRequest,
+        prv: params.prv,
+        walletPassphrase: plaintextDataKey,
+        bitgoPublicGpgKey: params.bitgoGpgPubKey,
+        encryptedUserGpgPrvKey: params.encryptedUserGpgPrvKey,
+        encryptedRound2Session: params.encryptedRound2Session,
+      });
+    }
+    default:
+      throw new Error(
+        `Share type ${shareType} not supported for MPCv2, only MPCv2Round1, MPCv2Round2 and MPCv2Round3 is supported.`,
+      );
   }
 }
