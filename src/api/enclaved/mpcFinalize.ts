@@ -6,7 +6,9 @@ import {
   MpcFinalizeRequestType,
 } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { KmsClient } from '../../kms/kmsClient';
-import { gpgDecrypt, gpgEncrypt } from './utils';
+import { gpgDecrypt } from './utils';
+import { YShare } from '@bitgo/sdk-core';
+import { readKey } from 'openpgp';
 
 const debugLogger = debug('bitgo:enclavedBitGoExpress:mpcFinalize');
 
@@ -30,9 +32,9 @@ export async function eddsaFinalize(
   const eddsaUtils = new bitgoSdk.EddsaUtils(req.bitgo, req.bitgo.coin(coin));
 
   // indexes
-  const sourceIndex = source === 'user' ? 1 : 2;
+  const sourceIndex = bitgoSdk.ECDSAMethods.getParticipantIndex(source);
   const counterPartyIndex = source === 'user' ? 2 : 1;
-  const bitgoIndex = 3;
+  const bitgoIndex = bitgoSdk.ECDSAMethods.getParticipantIndex('bitgo');
 
   // Decrypt the encrypted payload using encryptedDataKey to retrieve the previous state of computation
   const decryptedDataKey = await kms.decryptDataKey({ encryptedKey: encryptedDataKey });
@@ -63,7 +65,7 @@ export async function eddsaFinalize(
     source === 'user' ? counterPartyGpgPub : sourceGpgPub,
     bitgoKeyChain,
     bitgoToSourcePrivateShare,
-    sourceIndex,
+    sourceIndex as 1 | 2,
   );
 
   // construct yShare and key
@@ -81,7 +83,7 @@ export async function eddsaFinalize(
     counterPartyToSourceKeyShare.privateShare,
     sourceGpgPrv,
   );
-  const counterPartyToSourceYShare = {
+  const counterPartyToSourceYShare: YShare = {
     i: sourceIndex, // to whom
     j: counterPartyIndex, // from whom
     y: counterPartyToSourceKeyShare.publicShare.slice(0, 64),
@@ -130,7 +132,10 @@ export async function eddsaFinalize(
       sourceToCounterPartyKeyShare = {
         ...sourceToCounterPartyKeyShare,
         privateShare: counterPartyGpgPub
-          ? await gpgEncrypt(sourceToCounterPartyKeyShare.privateShare, counterPartyGpgPub)
+          ? await bitgoSdk.encryptText(
+              sourceToCounterPartyKeyShare.privateShare,
+              await readKey({ armoredKey: counterPartyGpgPub }),
+            )
           : sourceToCounterPartyKeyShare.privateShare,
       };
     }

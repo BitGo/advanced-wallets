@@ -1,13 +1,14 @@
 import debug from 'debug';
+import assert from 'assert';
+import { readKey } from 'openpgp';
 import * as bitgoSdk from '@bitgo/sdk-core';
-import { assert } from 'console';
+
 import { KmsClient } from '../../kms/kmsClient';
 import {
   EnclavedApiSpecRouteRequest,
   KeyShareType,
   MpcInitializeRequestType,
 } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import { gpgEncrypt } from './utils';
 
 const debugLogger = debug('bitgo:enclavedExpress:mpcInitialize');
 
@@ -28,14 +29,15 @@ export async function eddsaInitialize(
   const m = 2;
   const n = 3;
 
-  // key share generation of source. 1 is user, 2 is backup, 3 is BitGo
-  const sourceIndex = source === 'user' ? 1 : 2;
-  const counterPartyIndex = source === 'user' ? 2 : 1;
-  const bitgoIndex = 3;
-  const keyShare: bitgoSdk.KeyShare = MPC.keyShare(sourceIndex, m, n); // encrypt this and send it in payload?
+  // Function is still valid for EdDSA
+  const sourceIndex = bitgoSdk.ECDSAMethods.getParticipantIndex(source);
+  const counterPartyIndex = bitgoSdk.ECDSAMethods.getParticipantIndex(
+    source === 'user' ? 'backup' : 'user',
+  );
+  const bitgoIndex = bitgoSdk.ECDSAMethods.getParticipantIndex('bitgo');
+  const keyShare = MPC.keyShare(sourceIndex, m, n);
   const sourceGpgKey = await bitgoSdk.generateGPGKeyPair('secp256k1');
 
-  // source to source private share
   const sourcePrivateShare = keyShare.uShare;
 
   // public share used in both bitgo and counterPartySource key share
@@ -55,7 +57,10 @@ export async function eddsaInitialize(
     from: source,
     to: 'bitgo',
     publicShare,
-    privateShare: await gpgEncrypt(bitgoPrivateShare, bitgoGpgPub),
+    privateShare: await bitgoSdk.encryptText(
+      bitgoPrivateShare,
+      await readKey({ armoredKey: bitgoGpgPub }),
+    ),
     privateShareProof: await bitgoSdk.createShareProof(
       sourceGpgKey.privateKey,
       bitgoPrivateShare.slice(0, 64),
@@ -75,12 +80,15 @@ export async function eddsaInitialize(
     keyShare.yShares[counterPartyIndex].v,
     `Counter party share v is required for proof generation for index ${counterPartyIndex}`,
   );
-  const counterPartyKeyShare: KeyShareType = {
+  const counterPartyKeyShare: Partial<KeyShareType> = {
     from: source,
     to: source === 'user' ? 'backup' : 'user',
     publicShare: publicShare,
     privateShare: counterPartyGpgPub // if counterPartyGpgPub is provided, encrypt the private key share using counter party's GPG public key
-      ? await gpgEncrypt(counterPartyPrivateShare, counterPartyGpgPub)
+      ? await bitgoSdk.encryptText(
+          counterPartyPrivateShare,
+          await readKey({ armoredKey: counterPartyGpgPub }),
+        )
       : counterPartyPrivateShare,
     privateShareProof: await bitgoSdk.createShareProof(
       sourceGpgKey.privateKey,

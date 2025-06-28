@@ -1,4 +1,4 @@
-import { createMessage, decrypt, encrypt, readKey, readMessage, readPrivateKey } from 'openpgp';
+import { decrypt, readMessage, readPrivateKey } from 'openpgp';
 
 import { KmsClient } from '../../kms/kmsClient';
 import { GenerateDataKeyResponse } from '../../kms/types/dataKey';
@@ -26,29 +26,6 @@ export async function retrieveKmsPrvKey({
       message: error.message || 'Failed to retrieve key from KMS',
     };
   }
-}
-
-/**
- * Helper function to encrypt text using OpenPGP
- *
- * @param text {string} The message to encrypt
- * @param key {string} The encryption key
- *
- * @return {string} encrypted string
- */
-export async function gpgEncrypt(text: string, key: string): Promise<string> {
-  return (
-    await encrypt({
-      message: await createMessage({ text }),
-      encryptionKeys: await readKey({ armoredKey: key }),
-      format: 'armored',
-      config: {
-        rejectCurves: new Set(),
-        showVersion: false,
-        showComment: false,
-      },
-    })
-  ).toString();
 }
 
 /**
