@@ -24,6 +24,10 @@ import { EnclavedConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
 import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
 import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
+import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
+import { mpcV2Initialize } from '../../api/enclaved/handlers/mpcV2Initialize';
+import { mpcV2Round } from '../../api/enclaved/handlers/mpcV2Round';
+import { mpcV2Finalize } from '../../api/enclaved/handlers/mpcV2Finalize';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -177,6 +181,71 @@ const MpcFinalizeResponse = {
 const MpcFinalizeResponseType = optionalized(MpcFinalizeResponse);
 export type MpcFinalizeResponseType = t.TypeOf<typeof MpcFinalizeResponseType>;
 
+const MpcV2InitializeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+};
+const MpcV2InitializeRequestType = t.type(MpcV2InitializeRequest);
+export type MpcV2InitializeRequestType = t.TypeOf<typeof MpcV2InitializeRequestType>;
+
+const MpcV2InitializeResponse = {
+  gpgPub: t.string,
+  encryptedData: t.string,
+  encryptedDataKey: t.string,
+};
+const MpcV2InitializeResponseType = t.type(MpcV2InitializeResponse);
+export type MpcV2InitializeResponseType = t.TypeOf<typeof MpcV2InitializeResponseType>;
+
+export type MpcV2RoundState = {
+  round: number;
+  sessionData?: DklsDkg.DkgSessionData;
+  sourceGpgPrv: DklsTypes.PartyGpgKey;
+  bitgoGpgPub?: DklsTypes.PartyGpgKey;
+  counterPartyGpgPub?: DklsTypes.PartyGpgKey;
+};
+const MpcV2RoundMessage = t.type({
+  bitgo: t.any,
+  counterParty: t.any,
+});
+const MpcV2RoundRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  encryptedData: t.string,
+  encryptedDataKey: t.string,
+  round: t.number,
+  bitgoGpgPub: optional(t.string),
+  counterPartyGpgPub: optional(t.string),
+  broadcastMessages: optional(MpcV2RoundMessage),
+  p2pMessages: optional(MpcV2RoundMessage),
+};
+const MpcV2RoundRequestType = t.type(MpcV2RoundRequest);
+export type MpcV2RoundRequestType = t.TypeOf<typeof MpcV2RoundRequestType>;
+
+const MpcV2RoundResponse = {
+  encryptedData: t.string,
+  encryptedDataKey: t.string,
+  round: t.number,
+  broadcastMessage: optional(t.any),
+  p2pMessages: optional(MpcV2RoundMessage),
+};
+const MpcV2RoundResponseType = optionalized(MpcV2RoundResponse);
+export type MpcV2RoundResponseType = t.TypeOf<typeof MpcV2RoundResponseType>;
+
+const MpcV2FinalizeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  encryptedData: t.string,
+  encryptedDataKey: t.string,
+  broadcastMessages: MpcV2RoundMessage,
+  bitgoCommonKeychain: t.string,
+};
+const MpcV2FinalizeRequestType = t.type(MpcV2FinalizeRequest);
+export type MpcV2FinalizeRequestType = t.TypeOf<typeof MpcV2FinalizeRequestType>;
+
+const MpcV2FinalizeResponse = {
+  commonKeychain: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+};
+const MpcV2FinalizeResponseType = t.type(MpcV2FinalizeResponse);
+export type MpcV2FinalizeResponseType = t.TypeOf<typeof MpcV2FinalizeResponseType>;
+
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
   'v1.multisig.sign': {
@@ -273,6 +342,60 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Finalize key generation and confirm commonKeychain',
     }),
   },
+  'v1.mpcv2.initialize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpcv2/initialize',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: MpcV2InitializeRequest,
+      }),
+      response: {
+        200: MpcV2InitializeResponseType,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Initialize MPC for EdDSA key generation',
+    }),
+  },
+  'v1.mpcv2.round': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpcv2/round',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: MpcV2RoundRequest,
+      }),
+      response: {
+        200: MpcV2RoundResponseType,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Perform a round in the MPC protocol',
+    }),
+  },
+  'v1.mpcv2.finalize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpcv2/finalize',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: MpcV2FinalizeRequest,
+      }),
+      response: {
+        200: MpcV2FinalizeResponseType,
+        500: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+      },
+      description: 'Finalize the MPC protocol',
+    }),
+  },
 });
 
 export type EnclavedApiSpecRouteHandler<
@@ -357,6 +480,30 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
           details: err.stack || 'No stack trace available',
         });
       }
+    }),
+  ]);
+
+  router.post('v1.mpcv2.initialize', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>;
+      const result = await mpcV2Initialize(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.mpcv2.round', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>;
+      const result = await mpcV2Round(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.mpcv2.finalize', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>;
+      const result = await mpcV2Finalize(typedReq);
+      return Response.ok(result);
     }),
   ]);
 
