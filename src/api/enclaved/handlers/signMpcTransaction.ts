@@ -237,7 +237,7 @@ async function handleEcdsaMpcV2Signing(
 
   switch (shareType.toLowerCase()) {
     case ShareType.MPCv2Round1: {
-      const dataKey = await generateDataKey({ keyType: 'RSA-2048', cfg });
+      const dataKey = await generateDataKey({ keyType: 'AES-256', cfg });
       return {
         ...(await ecdsaMPCv2Utils.createOfflineRound1Share({
           txRequest: params.txRequest,
