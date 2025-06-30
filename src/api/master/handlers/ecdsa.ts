@@ -2,7 +2,6 @@ import {
   BitGoBase,
   getTxRequest,
   Wallet,
-  TxRequest,
   IRequestTracer,
   EcdsaMPCv2Utils,
   commonTssMethods,
@@ -10,31 +9,21 @@ import {
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import logger from '../../../logger';
-import { sendTxRequest } from '@bitgo/sdk-core/dist/src/bitgo/tss/common';
 
 export async function handleEcdsaSigning(
   bitgo: BitGoBase,
   wallet: Wallet,
-  txRequest: string | TxRequest,
+  txRequestId: string,
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   commonKeychain: string,
   reqId?: IRequestTracer,
 ) {
-  let txRequestResolved: TxRequest;
-  let txRequestId: string;
   const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin);
-
-  if (typeof txRequest === 'string') {
-    txRequestResolved = await getTxRequest(bitgo, wallet.id(), txRequest, reqId);
-    txRequestId = txRequestResolved.txRequestId;
-  } else {
-    txRequestResolved = txRequest;
-    txRequestId = txRequest.txRequestId;
-  }
+  const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
 
   // Get BitGo GPG key for MPCv2
-  const bitgoGpgKey = await ecdsaMPCv2Utils.getBitgoPublicGpgKey();
+  const bitgoGpgKey = await ecdsaMPCv2Utils.getBitgoMpcv2PublicGpgKey();
 
   // Round 1: Generate user's Round 1 share
   const {
@@ -44,7 +33,7 @@ export async function handleEcdsaSigning(
     encryptedUserGpgPrvKey,
     encryptedDataKey,
   } = await enclavedExpressClient.signMpcV2Round1({
-    txRequest: txRequestResolved,
+    txRequest,
     bitgoGpgPubKey: bitgoGpgKey.armor(),
     source,
     pub: commonKeychain,
@@ -116,10 +105,10 @@ export async function handleEcdsaSigning(
   );
 
   logger.debug('Successfully completed ECDSA MPCv2 signing!');
-  return sendTxRequest(
+  return commonTssMethods.sendTxRequest(
     bitgo,
-    txRequestResolved.walletId,
-    txRequestResolved.txRequestId,
+    txRequest.walletId,
+    txRequest.txRequestId,
     RequestType.tx,
     reqId,
   );
