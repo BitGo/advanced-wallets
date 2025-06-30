@@ -4,6 +4,7 @@ import {
   httpRequest,
   HttpResponse,
   httpRoute,
+  optional,
 } from '@api-ts/io-ts-http';
 import { Response } from '@api-ts/response';
 import {
@@ -137,17 +138,30 @@ const RecoveryWalletResponse: HttpResponse = {
 const RecoveryWalletRequest = {
   userPub: t.string,
   backupPub: t.string,
+  bitgoPub: t.union([t.undefined, t.string]),
   walletContractAddress: t.string,
   recoveryDestinationAddress: t.string,
   apiKey: t.string,
-  coinSpecificParams: t.union([
-    t.undefined,
+  coinSpecificParams: optional(
     t.partial({
-      bitgoPub: t.union([t.undefined, t.string]),
-      ignoreAddressTypes: t.union([t.undefined, t.array(t.string)]),
+      ignoreAddressTypes: optional(
+        t.array(
+          t.union([
+            t.literal('p2sh'),
+            t.literal('p2shP2wsh'),
+            t.literal('p2wsh'),
+            t.literal('p2tr'),
+            t.literal('p2trMusig2'),
+          ]),
+        ),
+      ),
+      addressScan: optional(t.number),
+      feeRate: optional(t.number),
     }),
-  ]),
+  ),
 };
+
+export type RecoveryWalletRequest = typeof RecoveryWalletRequest;
 
 // API Specification
 export const MasterApiSpec = apiSpec({

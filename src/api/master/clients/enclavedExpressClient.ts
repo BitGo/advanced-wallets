@@ -26,6 +26,7 @@ import {
   MpcFinalizeResponseType,
   MpcInitializeResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -75,13 +76,13 @@ interface SignMultisigOptions {
 interface RecoveryMultisigOptions {
   userPub: string;
   backupPub: string;
-  unsignedSweepPrebuildTx: RecoveryInfo | OfflineVaultTxInfo | UnsignedSweepTxMPCv2;
-  apiKey: string;
+  bitgoPub?: string;
+  unsignedSweepPrebuildTx:
+    | RecoveryInfo
+    | OfflineVaultTxInfo
+    | UnsignedSweepTxMPCv2
+    | FormattedOfflineVaultTxInfo;
   walletContractAddress: string;
-  coinSpecificParams?: {
-    bitgoPub?: string;
-    ignoreAddressTypes?: string[];
-  };
 }
 
 interface SignMpcCommitmentParams {

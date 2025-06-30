@@ -26,6 +26,8 @@
     "@api-ts/typed-express-router": "^1.1.13",
     "@bitgo/sdk-core": "^35.3.0",
     "bitgo": "^48.1.0",
+    "@bitgo/abstract-utxo": "^9.21.4",
+    "@bitgo/statics": "^54.6.0",
     "body-parser": "^1.20.3",
     "connect-timeout": "^1.9.0",
     "debug": "^3.1.0",
