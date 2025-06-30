@@ -8,7 +8,20 @@ export enum AppMode {
   MASTER_EXPRESS = 'master-express',
 }
 
-export type EnvironmentName = 'prod' | 'test' | 'staging' | 'dev' | 'local';
+export type EnvironmentName =
+  | 'prod'
+  | 'staging'
+  | 'test'
+  | 'dev'
+  | 'local'
+  | 'localNonSecure'
+  | 'mock'
+  | 'adminProd'
+  | 'adminTest'
+  | 'adminStaging'
+  | 'adminDev'
+  | 'custom'
+  | 'branch';
 
 // Common base configuration shared by both modes
 interface BaseConfig {

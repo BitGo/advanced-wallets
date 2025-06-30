@@ -1,7 +1,7 @@
 import { BaseCoin, MethodNotImplementedError } from 'bitgo';
 
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
+import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 
 import {
   isEthLikeCoin,
@@ -9,11 +9,12 @@ import {
   isUtxoCoin,
 } from '../../../shared/coinUtils';
 import {
-  getDefaultMusigEthGasParams,
+  DEFAULT_MUSIG_ETH_GAS_PARAMS,
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { EnvironmentName } from '../../../shared/types/index';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 interface RecoveryParams {
   userKey: string;
@@ -37,10 +38,10 @@ async function handleEthLikeRecovery(
   commonRecoveryParams: RecoveryParams,
   enclavedExpressClient: any,
   params: EnclavedRecoveryParams,
+  env: EnvironmentName,
 ) {
   try {
-    const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } =
-      getDefaultMusigEthGasParams();
+    const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
     const unsignedSweepPrebuildTx = await (sdkCoin as AbstractEthLikeNewCoins).recover({
       ...commonRecoveryParams,
       gasPrice,
@@ -49,7 +50,7 @@ async function handleEthLikeRecovery(
         maxFeePerGas,
         maxPriorityFeePerGas,
       },
-      replayProtectionOptions: getReplayProtectionOptions(),
+      replayProtectionOptions: getReplayProtectionOptions(env),
     });
 
     const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
@@ -133,14 +134,20 @@ export async function handleRecoveryWalletOnPrem(
   }
 
   if (isEthLikeCoin(sdkCoin)) {
-    return handleEthLikeRecovery(sdkCoin, commonRecoveryParams, enclavedExpressClient, {
-      userPub,
-      backupPub,
-      apiKey,
-      unsignedSweepPrebuildTx: undefined,
-      coinSpecificParams: undefined,
-      walletContractAddress,
-    });
+    return handleEthLikeRecovery(
+      sdkCoin,
+      commonRecoveryParams,
+      enclavedExpressClient,
+      {
+        userPub,
+        backupPub,
+        apiKey,
+        unsignedSweepPrebuildTx: undefined,
+        coinSpecificParams: undefined,
+        walletContractAddress,
+      },
+      bitgo.env,
+    );
   }
   if (!bitgoPub) {
     throw new Error('BitGo public key is required for recovery');
