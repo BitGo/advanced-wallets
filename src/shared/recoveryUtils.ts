@@ -1,11 +1,14 @@
+import { type EnvironmentName } from '../shared/types/index';
 import type { ReplayProtectionOptions, SignedEthLikeRecoveryTx } from '../types/transaction';
 
 export function addEthLikeRecoveryExtras({
+  env,
   signedTx,
   transaction,
   isLastSignature,
   replayProtectionOptions,
 }: {
+  env: EnvironmentName;
   signedTx: SignedEthLikeRecoveryTx;
   transaction: any; // Same type as UnsignedSweepPrebuildTx
   isLastSignature: boolean;
@@ -50,28 +53,30 @@ export function addEthLikeRecoveryExtras({
         ? transaction.backupKeyNonce
         : transaction.nextContractSequenceId;
     decoratedSignedTx.walletContractAddress = transaction.walletContractAddress;
-    decoratedSignedTx.replayProtectionOptions = getReplayProtectionOptions(replayProtectionOptions);
+    decoratedSignedTx.replayProtectionOptions = getReplayProtectionOptions(
+      env,
+      replayProtectionOptions,
+    );
   }
 
   return decoratedSignedTx;
 }
 
 export function getReplayProtectionOptions(
+  env: EnvironmentName,
   replayProtectionOptions: ReplayProtectionOptions | undefined = undefined,
 ): ReplayProtectionOptions {
   return (
     replayProtectionOptions ?? {
-      chain: 17000, // 1 if mainnet, 17000 if testnet
+      chain: env === 'prod' ? 1 : 17000,
       hardfork: 'london',
     }
   );
 }
 
-export function getDefaultMusigEthGasParams() {
-  return {
-    gasPrice: 20000000000,
-    gasLimit: 200000,
-    maxFeePerGas: 20000000000,
-    maxPriorityFeePerGas: 10000000000,
-  };
-}
+export const DEFAULT_MUSIG_ETH_GAS_PARAMS = {
+  gasPrice: 20000000000,
+  gasLimit: 200000,
+  maxFeePerGas: 20000000000,
+  maxPriorityFeePerGas: 10000000000,
+};

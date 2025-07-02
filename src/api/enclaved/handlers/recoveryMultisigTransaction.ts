@@ -1,6 +1,8 @@
 import { SignFinalOptions } from '@bitgo/abstract-eth';
-import { HalfSignedUtxoTransaction, MethodNotImplementedError } from 'bitgo';
+import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
+import { HalfSignedUtxoTransaction, MethodNotImplementedError, TransactionRecipient } from 'bitgo';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { EnvironmentName } from '../../../initConfig';
 import logger from '../../../logger';
 import {
   isEthLikeCoin,
@@ -9,12 +11,11 @@ import {
 } from '../../../shared/coinUtils';
 import {
   addEthLikeRecoveryExtras,
-  getDefaultMusigEthGasParams,
+  DEFAULT_MUSIG_ETH_GAS_PARAMS,
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
 import { SignedEthLikeRecoveryTx } from '../../../types/transaction';
 import { retrieveKmsPrvKey } from '../utils';
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 
 export async function recoveryMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
@@ -43,9 +44,13 @@ export async function recoveryMultisigTransaction(
       const walletKeys = unsignedSweepPrebuildTx.xpubxWithDerivationPath;
       const pubs = [walletKeys?.user?.xpub, walletKeys?.backup?.xpub, walletKeys?.bitgo?.xpub];
       const { gasPrice, gasLimit, maxFeePerGas, maxPriorityFeePerGas } =
-        getDefaultMusigEthGasParams();
+        DEFAULT_MUSIG_ETH_GAS_PARAMS;
 
       try {
+        checkIfNoRecipients({
+          recipients: unsignedSweepPrebuildTx.recipients,
+          coin: req.decoded.coin,
+        });
         const halfSignedTxBase = await baseCoin.signTransaction({
           isLastSignature: false,
           prv: userPrv,
@@ -61,6 +66,7 @@ export async function recoveryMultisigTransaction(
             maxPriorityFeePerGas,
           },
           replayProtectionOptions: getReplayProtectionOptions(
+            bitgo.env as EnvironmentName,
             unsignedSweepPrebuildTx.replayProtectionOptions,
           ),
           txPrebuild: {
@@ -72,6 +78,7 @@ export async function recoveryMultisigTransaction(
               maxPriorityFeePerGas,
             },
             replayProtectionOptions: getReplayProtectionOptions(
+              bitgo.env as EnvironmentName,
               unsignedSweepPrebuildTx.replayProtectionOptions,
             ),
           },
@@ -79,6 +86,7 @@ export async function recoveryMultisigTransaction(
         });
 
         const halfSignedTx = addEthLikeRecoveryExtras({
+          env: bitgo.env as EnvironmentName,
           signedTx: halfSignedTxBase as SignedEthLikeRecoveryTx,
           transaction: unsignedSweepPrebuildTx,
           isLastSignature: false,
@@ -108,6 +116,7 @@ export async function recoveryMultisigTransaction(
               maxPriorityFeePerGas,
             },
             replayProtectionOptions: getReplayProtectionOptions(
+              bitgo.env as EnvironmentName,
               halfSignedTx?.replayProtectionOptions,
             ),
           } as unknown as SignFinalOptions,
@@ -157,5 +166,19 @@ export async function recoveryMultisigTransaction(
     }
   } else {
     throw new MethodNotImplementedError('Unsupported coin type for recovery: ' + baseCoin);
+  }
+}
+
+function checkIfNoRecipients({
+  recipients,
+  coin,
+}: {
+  recipients?: TransactionRecipient[];
+  coin: string;
+}) {
+  if (!recipients || recipients.length === 0) {
+    const errorMsg = `Recovery tx for coin ${coin} must have at least one recipient.`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 }
