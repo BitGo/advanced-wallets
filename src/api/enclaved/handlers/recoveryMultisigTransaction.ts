@@ -2,6 +2,7 @@ import { SignFinalOptions } from '@bitgo/abstract-eth';
 import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 import { HalfSignedUtxoTransaction, MethodNotImplementedError, TransactionRecipient } from 'bitgo';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { EnvironmentName } from '../../../initConfig';
 import logger from '../../../logger';
 import {
   isEthLikeCoin,
@@ -65,7 +66,7 @@ export async function recoveryMultisigTransaction(
             maxPriorityFeePerGas,
           },
           replayProtectionOptions: getReplayProtectionOptions(
-            bitgo.env,
+            bitgo.env as EnvironmentName,
             unsignedSweepPrebuildTx.replayProtectionOptions,
           ),
           txPrebuild: {
@@ -77,7 +78,7 @@ export async function recoveryMultisigTransaction(
               maxPriorityFeePerGas,
             },
             replayProtectionOptions: getReplayProtectionOptions(
-              bitgo.env,
+              bitgo.env as EnvironmentName,
               unsignedSweepPrebuildTx.replayProtectionOptions,
             ),
           },
@@ -85,7 +86,7 @@ export async function recoveryMultisigTransaction(
         });
 
         const halfSignedTx = addEthLikeRecoveryExtras({
-          env: bitgo.env,
+          env: bitgo.env as EnvironmentName,
           signedTx: halfSignedTxBase as SignedEthLikeRecoveryTx,
           transaction: unsignedSweepPrebuildTx,
           isLastSignature: false,
@@ -115,7 +116,7 @@ export async function recoveryMultisigTransaction(
               maxPriorityFeePerGas,
             },
             replayProtectionOptions: getReplayProtectionOptions(
-              bitgo.env,
+              bitgo.env as EnvironmentName,
               halfSignedTx?.replayProtectionOptions,
             ),
           } as unknown as SignFinalOptions,

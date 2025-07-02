@@ -146,7 +146,7 @@ export async function handleRecoveryWalletOnPrem(
         coinSpecificParams: undefined,
         walletContractAddress,
       },
-      bitgo.env,
+      bitgo.env as EnvironmentName,
     );
   }
   if (!bitgoPub) {
