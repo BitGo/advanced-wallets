@@ -1,9 +1,9 @@
 import {
   apiSpec,
+  Method as HttpMethod,
   httpRequest,
   HttpResponse,
   httpRoute,
-  Method as HttpMethod,
   optional,
   optionalized,
 } from '@api-ts/io-ts-http';
@@ -16,14 +16,15 @@ import {
 import express from 'express';
 import * as t from 'io-ts';
 import { postIndependentKey } from '../../api/enclaved/handlers/postIndependentKey';
+import { recoveryMpcTransaction } from '../../api/enclaved/handlers/recoveryMpcTransaction';
 import { recoveryMultisigTransaction } from '../../api/enclaved/handlers/recoveryMultisigTransaction';
-import { signMultisigTransaction } from '../../api/enclaved/handlers/signMultisigTransaction';
 import { signMpcTransaction } from '../../api/enclaved/handlers/signMpcTransaction';
+import { signMultisigTransaction } from '../../api/enclaved/handlers/signMultisigTransaction';
+import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
+import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { EnclavedConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
-import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
-import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -69,6 +70,28 @@ const RecoveryMultisigRequest = {
 
 // Response type for /multisig/recovery endpoint
 const RecoveryMultisigResponse: HttpResponse = {
+  200: t.type({
+    txHex: t.string,
+  }), // the full signed tx
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
+// TODO: maybe it's the same req/resp as the musig rec? In that case merge both types
+// Request type for /mpc/recovery endpoint
+const RecoveryMpcRequest = {
+  userPub: t.string,
+  backupPub: t.string,
+  bitgoPub: optional(t.string),
+  unsignedSweepPrebuildTx: t.any,
+  walletContractAddress: optional(t.string),
+};
+
+// TODO: same type as RecoveryMultisigResponse perhaps, check if can be merge
+// Response type for /multisig/recovery endpoint
+const RecoveryMpcResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
@@ -207,6 +230,21 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Recover a multisig transaction',
     }),
   },
+  // should we use v1.eddsa.recovery instead?
+  'v1.mpc.recovery': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpc/recovery',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+        },
+        body: RecoveryMpcRequest,
+      }),
+      response: RecoveryMpcResponse,
+      description: 'Recover a mpc transaction',
+    }),
+  },
   'v1.key.independent': {
     post: httpRoute({
       method: 'POST',
@@ -316,6 +354,14 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>;
       const result = await recoveryMultisigTransaction(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.mpc.recovery', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.recovery', 'post'>;
+      const result = await recoveryMpcTransaction(typedReq);
       return Response.ok(result);
     }),
   ]);

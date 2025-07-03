@@ -1,5 +1,7 @@
 import { createMessage, decrypt, encrypt, readKey, readMessage, readPrivateKey } from 'openpgp';
 
+import { EcdsaTypes } from '@bitgo/sdk-lib-mpc';
+import { BitGo } from 'bitgo';
 import { KmsClient } from '../../kms/kmsClient';
 import { GenerateDataKeyResponse } from '../../kms/types/dataKey';
 import { EnclavedConfig } from '../../shared/types';
@@ -111,4 +113,49 @@ export async function decryptDataKey({
       message: error.message || 'Failed to decrypt data key from KMS',
     };
   }
+}
+
+// Notes (please check hope it makes sense!):
+// FROM OVC sign-tss-first-trip-form.tsx
+// Weird method name as it's not a JSON transaction at this point, it's already a javascript object
+// expects an {txRequests: [{transactions: [{unsignedTx: unsignedSweepTx}], walletCoin: 'sol'  }]} object
+
+//import { getExplainTransaction, TransactionWrapper } from '../../pkg/bitgo/transaction-utils'
+// import { OfflineVaultUnsignedTransaction } from '../../pkg/bitgo/types'
+
+// Not 100% sure that we need this function as if we're not exporting/downloading anything, why do we need that?
+// and also removing this removes TransactionWrapper from the equation.
+export async function parseJsonTransactions({
+  unsignedTx,
+  coin,
+  bitgo,
+}: {
+  unsignedTx: any;
+  coin: string;
+  bitgo: BitGo;
+}): Promise<TransactionWrapper[]> {
+  const { txRequests } = { txRequests: [{ transactions: [{ unsignedTx }, coin] }] };
+  return txRequests.map((txRequest) => {
+    return {
+      ...createBaseTransactionWrapper('step-1'),
+      txRequest,
+    };
+  });
+}
+
+// This one I copied it without checking so much in depth, in a hurry to have the flow as complete as possible
+export type JsonTransactions = {
+  signatureShares?: MpcSigningOutput[];
+  txRequests?: TxRequest[];
+  transactions?: OfflineVaultUnsignedTransaction[];
+  bitgoRangeProofChallenge?: EcdsaTypes.SerializedNtildeWithProofs;
+};
+
+// the payload in which we wraps the tx, things like the fileName are not gonna make sense here, but what about the id?
+function createBaseTransactionWrapper(fileName?: string): TransactionWrapper {
+  return {
+    id: uuid.v4(),
+    isIgnored: false,
+    fileName,
+  };
 }

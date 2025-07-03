@@ -1,19 +1,21 @@
 import { BaseCoin, MethodNotImplementedError } from 'bitgo';
 
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
+import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 
+import { Sol } from 'bitgo/dist/types/src/v2/coins';
 import {
   isEthLikeCoin,
   isFormattedOfflineVaultTxInfo,
+  isSolCoin,
   isUtxoCoin,
 } from '../../../shared/coinUtils';
 import {
   getDefaultMusigEthGasParams,
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 
 interface RecoveryParams {
   userKey: string;
@@ -53,6 +55,53 @@ async function handleEthLikeRecovery(
     });
 
     const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
+      ...params,
+      unsignedSweepPrebuildTx,
+    });
+
+    return fullSignedRecoveryTx;
+  } catch (err) {
+    throw err;
+  }
+}
+
+function getKeyNonceFromParams(
+  coinSpecificParams: EnclavedRecoveryParams['coinSpecificParams'] | undefined,
+) {
+  // formatted as in WRW
+  if (!coinSpecificParams) return undefined;
+
+  const { publicKeyNonce, secretKeyNonce } = coinSpecificParams;
+  if (!publicKeyNonce || !secretKeyNonce) return undefined;
+
+  // coinSpecificParams is untyped so we need to cast the keys in order to avoid build errors.
+  return { publicKey: publicKeyNonce as string, secretKey: secretKeyNonce as string };
+}
+
+async function handleSolRecovery(
+  sdkCoin: Sol,
+  commonRecoveryParams: RecoveryParams,
+  enclavedExpressClient: EnclavedExpressClient,
+  params: EnclavedRecoveryParams,
+) {
+  const { recoveryDestination, userKey } = commonRecoveryParams;
+  try {
+    const durableNonce = getKeyNonceFromParams(params.coinSpecificParams);
+    const { seed } = params.coinSpecificParams;
+    const unsignedSweepPrebuildTx = await sdkCoin.recover({
+      bitgoKey: userKey,
+      userKey: '', // as in the WRW
+      backupKey: '', // as in the WRW
+      // ignoreAddressTypes: [], // TODO: notify eth-alt, this one is on the WRW call but not even compatible with sdk recover call
+      seed,
+      durableNonce,
+      recoveryDestination: recoveryDestination,
+    });
+
+    console.log('Unsigned sweep tx');
+    console.log(JSON.stringify(unsignedSweepPrebuildTx, null, 2));
+    // TODO: implement recoveryMPC on ebe
+    const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMPC({
       ...params,
       unsignedSweepPrebuildTx,
     });
@@ -132,6 +181,23 @@ export async function handleRecoveryWalletOnPrem(
     throw new Error('Invalid backup public');
   }
 
+  if (isTSS(sdkCoin)) {
+    if (isSolCoin(sdkCoin)) {
+      handleSolRecovery(sdkCoin, commonRecoveryParams, enclavedExpressClient, {
+        userPub,
+        backupPub,
+        unsignedSweepPrebuildTx: undefined,
+        apiKey,
+        walletContractAddress,
+        coinSpecificParams: {
+          publicKeyNonce: coinSpecificParams?.publicKeyNonce,
+          secretKeyNonce: coinSpecificParams?.secretKeyNonce,
+          seed: coinSpecificParams?.seed,
+        },
+      });
+    }
+  }
+
   if (isEthLikeCoin(sdkCoin)) {
     return handleEthLikeRecovery(sdkCoin, commonRecoveryParams, enclavedExpressClient, {
       userPub,
@@ -160,4 +226,11 @@ export async function handleRecoveryWalletOnPrem(
   }
 
   throw new MethodNotImplementedError('Recovery wallet is not supported for this coin: ' + coin);
+}
+
+function isTSS(coin: BaseCoin): boolean {
+  // ETH could be TSS or Musig, how do we differenciate. Update: we discussed this with Mohammad but didn't had time to implement it
+  // so i'm just faking the eval return
+  console.log(coin);
+  return true;
 }
