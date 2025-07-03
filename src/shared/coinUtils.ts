@@ -84,26 +84,26 @@ export async function getWalletAndSigningKeychain({
   KeyIndices: { USER: number; BACKUP: number; BITGO: number };
 }) {
   const baseCoin = bitgo.coin(coin);
-  
+
   const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
-  
+
   if (!wallet) {
     throw new Error(`Wallet ${walletId} not found`);
   }
-  
+
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
   const signingKeychain = await baseCoin.keychains().get({
     id: wallet.keyIds()[keyIdIndex],
   });
-  
+
   if (!signingKeychain || !signingKeychain.pub) {
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
-  
+
   if (params.pubkey && params.pubkey !== signingKeychain.pub) {
     throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
   }
-  
+
   return { baseCoin, wallet, signingKeychain };
 }
 
