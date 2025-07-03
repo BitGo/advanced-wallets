@@ -223,6 +223,14 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
         subType: 'onPrem',
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
       });
+    // Mock keychain get request
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+      });
 
     // Mock allowsAccountConsolidations to return false
     const allowsConsolidationsStub = sinon
@@ -240,6 +248,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
     response.status.should.equal(500);
 
     walletGetNock.done();
+    keychainGetNock.done();
     sinon.assert.calledOnce(allowsConsolidationsStub);
   });
 
