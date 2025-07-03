@@ -22,18 +22,6 @@ export async function handleAccelerate(
     KeyIndices,
   });
 
-  if (!wallet) {
-    throw new Error(`Wallet ${walletId} not found`);
-  }
-
-  if (!signingKeychain || !signingKeychain.pub) {
-    throw new Error(`Signing keychain for ${params.source} not found`);
-  }
-
-  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
-    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
-  }
-
   try {
     // Create custom signing function that delegates to EBE
     const customSigningFunction = makeCustomSigningFunction({

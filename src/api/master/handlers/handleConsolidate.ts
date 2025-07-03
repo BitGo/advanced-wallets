@@ -32,10 +32,6 @@ export async function handleConsolidate(
     throw new Error('consolidateAddresses must be an array of addresses');
   }
 
-  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
-    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
-  }
-
   try {
     // Create custom signing function that delegates to EBE
     const customSigningFunction = makeCustomSigningFunction({
