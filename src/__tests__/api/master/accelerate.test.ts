@@ -5,7 +5,6 @@ import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo/sdk-core';
-import { Tbtc } from '@bitgo/sdk-coin-btc';
 
 describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
   let agent: request.SuperAgentTest;
@@ -70,7 +69,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .stub(Wallet.prototype, 'accelerateTransaction')
       .resolves({
         txid: 'accelerated-tx-id',
-        tx: "accerated-transaction-hex",
+        tx: 'accerated-transaction-hex',
         status: 'signed',
       });
 
@@ -121,7 +120,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .resolves({
         txid: 'accelerated-tx-id',
         status: 'signed',
-        tx: "accelerated-transaction-hex",
+        tx: 'accelerated-transaction-hex',
       });
 
     const response = await agent
@@ -262,7 +261,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .resolves({
         txid: 'accelerated-tx-id',
         status: 'signed',
-        tx: "accelerated-transaction-hex",
+        tx: 'accelerated-transaction-hex',
       });
 
     const response = await agent
@@ -284,4 +283,4 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
     keychainGetNock.done();
     sinon.assert.calledOnce(accelerateTransactionStub);
   });
-}); 
+});

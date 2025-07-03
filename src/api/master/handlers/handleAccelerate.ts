@@ -1,6 +1,7 @@
 import { RequestTracer, KeyIndices } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../../../shared/coinUtils';
 
 export async function handleAccelerate(
   req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>,
@@ -8,24 +9,22 @@ export async function handleAccelerate(
   const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
   const params = req.decoded;
   const walletId = req.params.walletId;
-  const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
+  const coin = req.params.coin;
 
-  // Log the runtime class name of the wallet object
-  logger.info('Wallet runtime class name: %s', wallet?.constructor.name);
-  logger.info('Wallet prototype chain: %s', Object.getPrototypeOf(wallet)?.constructor.name);
+  const { wallet, signingKeychain } = await getWalletAndSigningKeychain({
+    bitgo,
+    coin,
+    walletId,
+    params,
+    reqId,
+    KeyIndices,
+  });
 
   if (!wallet) {
     throw new Error(`Wallet ${walletId} not found`);
   }
-
-  // Get the signing keychain based on source
-  const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
-  const signingKeychain = await baseCoin.keychains().get({
-    id: wallet.keyIds()[keyIdIndex],
-  });
 
   if (!signingKeychain || !signingKeychain.pub) {
     throw new Error(`Signing keychain for ${params.source} not found`);
@@ -37,14 +36,11 @@ export async function handleAccelerate(
 
   try {
     // Create custom signing function that delegates to EBE
-    const customSigningFunction = async (signParams: any) => {
-      const signedTx = await enclavedExpressClient.signMultisig({
-        txPrebuild: signParams.txPrebuild,
-        source: params.source,
-        pub: signingKeychain.pub!,
-      });
-      return signedTx;
-    };
+    const customSigningFunction = makeCustomSigningFunction({
+      enclavedExpressClient,
+      source: params.source,
+      pub: signingKeychain.pub!,
+    });
 
     // Prepare acceleration parameters
     const accelerationParams = {
@@ -62,4 +58,4 @@ export async function handleAccelerate(
     logger.error('Failed to accelerate transaction: %s', err.message);
     throw err;
   }
-} 
+}

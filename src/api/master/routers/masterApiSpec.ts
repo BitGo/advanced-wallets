@@ -138,8 +138,8 @@ export const AccelerateRequest = {
 const AccelerateResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
   200: t.type({
-    "txid": t.string,
-    "tx": t.string,
+    txid: t.string,
+    tx: t.string,
   }),
   500: t.type({
     error: t.string,
