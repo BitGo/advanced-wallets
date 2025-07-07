@@ -127,12 +127,9 @@ interface SignMpcGShareResponse {
 // ECDSA MPCv2 interfaces
 interface SignMpcV2Round1Params {
   txRequest: TxRequest;
-  bitgoGpgPubKey: string;
-  source: 'user' | 'backup';
-  pub: string;
 }
 
-interface SignMpcV2Round1Response {
+export interface SignMpcV2Round1Response {
   signatureShareRound1: SignatureShareRecord;
   userGpgPubKey: string;
   encryptedRound1Session: string;
@@ -142,30 +139,28 @@ interface SignMpcV2Round1Response {
 
 interface SignMpcV2Round2Params {
   txRequest: TxRequest;
-  bitgoGpgPubKey: string;
-  encryptedDataKey: string;
   encryptedUserGpgPrvKey: string;
   encryptedRound1Session: string;
-  source: 'user' | 'backup';
-  pub: string;
+  encryptedDataKey: string;
+  bitgoPublicGpgKey: string;
+  bitgoGpgPubKey: string;
 }
 
-interface SignMpcV2Round2Response {
+export interface SignMpcV2Round2Response {
   signatureShareRound2: SignatureShareRecord;
   encryptedRound2Session: string;
 }
 
 interface SignMpcV2Round3Params {
   txRequest: TxRequest;
-  bitgoGpgPubKey: string;
-  encryptedDataKey: string;
   encryptedUserGpgPrvKey: string;
   encryptedRound2Session: string;
-  source: 'user' | 'backup';
-  pub: string;
+  encryptedDataKey: string;
+  bitgoPublicGpgKey: string;
+  bitgoGpgPubKey: string;
 }
 
-interface SignMpcV2Round3Response {
+export interface SignMpcV2Round3Response {
   signatureShareRound3: SignatureShareRecord;
 }
 
@@ -501,21 +496,32 @@ export class EnclavedExpressClient {
       throw err;
     }
   }
+}
 
-  async signMpcV2Round1(params: SignMpcV2Round1Params): Promise<SignMpcV2Round1Response> {
-    if (!this.coin) {
+/**
+ * Create custom MPCv2 Round 1 signing function for enclaved express client
+ */
+export function createCustomMPCv2SigningRound1Generator(
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  pub: string,
+): (params: SignMpcV2Round1Params) => Promise<SignMpcV2Round1Response> {
+  return async function (params): Promise<SignMpcV2Round1Response> {
+    if (!enclavedExpressClient['coin']) {
       throw new Error('Coin must be specified to sign an MPCv2 Round 1');
     }
 
     try {
-      let request = this.apiClient['v1.mpc.sign'].post({
-        coin: this.coin,
+      let request = enclavedExpressClient['apiClient']['v1.mpc.sign'].post({
+        coin: enclavedExpressClient['coin'],
         shareType: 'mpcv2round1',
         ...params,
+        source,
+        pub,
       });
 
-      if (this.tlsMode === TlsMode.MTLS) {
-        request = request.agent(this.createHttpsAgent());
+      if (enclavedExpressClient['tlsMode'] === TlsMode.MTLS) {
+        request = request.agent(enclavedExpressClient['createHttpsAgent']());
       }
       const response = await request.decodeExpecting(200);
       return response.body;
@@ -524,22 +530,33 @@ export class EnclavedExpressClient {
       debugLogger('Failed to sign mpcv2 round 1: %s', err.message);
       throw err;
     }
-  }
+  };
+}
 
-  async signMpcV2Round2(params: SignMpcV2Round2Params): Promise<SignMpcV2Round2Response> {
-    if (!this.coin) {
+/**
+ * Create custom MPCv2 Round 2 signing function for enclaved express client
+ */
+export function createCustomMPCv2SigningRound2Generator(
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  pub: string,
+): (params: SignMpcV2Round2Params) => Promise<SignMpcV2Round2Response> {
+  return async function (params): Promise<SignMpcV2Round2Response> {
+    if (!enclavedExpressClient['coin']) {
       throw new Error('Coin must be specified to sign an MPCv2 Round 2');
     }
 
     try {
-      let request = this.apiClient['v1.mpc.sign'].post({
-        coin: this.coin,
+      let request = enclavedExpressClient['apiClient']['v1.mpc.sign'].post({
+        coin: enclavedExpressClient['coin'],
         shareType: 'mpcv2round2',
         ...params,
+        source,
+        pub,
       });
 
-      if (this.tlsMode === TlsMode.MTLS) {
-        request = request.agent(this.createHttpsAgent());
+      if (enclavedExpressClient['tlsMode'] === TlsMode.MTLS) {
+        request = request.agent(enclavedExpressClient['createHttpsAgent']());
       }
       const response = await request.decodeExpecting(200);
       return response.body;
@@ -548,22 +565,33 @@ export class EnclavedExpressClient {
       debugLogger('Failed to sign mpcv2 round 2: %s', err.message);
       throw err;
     }
-  }
+  };
+}
 
-  async signMpcV2Round3(params: SignMpcV2Round3Params): Promise<SignMpcV2Round3Response> {
-    if (!this.coin) {
+/**
+ * Create custom MPCv2 Round 3 signing function for enclaved express client
+ */
+export function createCustomMPCv2SigningRound3Generator(
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  pub: string,
+): (params: SignMpcV2Round3Params) => Promise<SignMpcV2Round3Response> {
+  return async function (params): Promise<SignMpcV2Round3Response> {
+    if (!enclavedExpressClient['coin']) {
       throw new Error('Coin must be specified to sign an MPCv2 Round 3');
     }
 
     try {
-      let request = this.apiClient['v1.mpc.sign'].post({
-        coin: this.coin,
+      let request = enclavedExpressClient['apiClient']['v1.mpc.sign'].post({
+        coin: enclavedExpressClient['coin'],
         shareType: 'mpcv2round3',
         ...params,
+        source,
+        pub,
       });
 
-      if (this.tlsMode === TlsMode.MTLS) {
-        request = request.agent(this.createHttpsAgent());
+      if (enclavedExpressClient['tlsMode'] === TlsMode.MTLS) {
+        request = request.agent(enclavedExpressClient['createHttpsAgent']());
       }
       const response = await request.decodeExpecting(200);
       return response.body;
@@ -572,7 +600,7 @@ export class EnclavedExpressClient {
       debugLogger('Failed to sign mpcv2 round 3: %s', err.message);
       throw err;
     }
-  }
+  };
 }
 
 /**
