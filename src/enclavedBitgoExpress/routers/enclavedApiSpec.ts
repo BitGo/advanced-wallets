@@ -89,26 +89,48 @@ const SignMpcRequest = {
   bitgoToUserCommitment: t.union([t.undefined, t.any]),
   bitgoGpgPubKey: t.union([t.undefined, t.string]),
   encryptedDataKey: t.union([t.undefined, t.string]),
+
+  // ECDSA MPCv2 specific fields
+  encryptedUserGpgPrvKey: t.union([t.undefined, t.string]),
+  encryptedRound1Session: t.union([t.undefined, t.string]),
+  encryptedRound2Session: t.union([t.undefined, t.string]),
 };
 
 // Response type for /mpc/sign endpoint
 const SignMpcResponse: HttpResponse = {
   // Response type for MPC transaction signing
   200: t.union([
-    // Commitment share response
+    // EDDSA Commitment share response
     t.type({
       userToBitgoCommitment: t.any,
       encryptedSignerShare: t.any,
       encryptedUserToBitgoRShare: t.any,
       encryptedDataKey: t.string,
     }),
-    // R share response
+    // EDDSA R share response
     t.type({
       rShare: t.any,
     }),
-    // G share response
+    // EDDSA G share response
     t.type({
       gShare: t.any,
+    }),
+    // ECDSA MPCv2 Round 1 response
+    t.type({
+      signatureShareRound1: t.any,
+      userGpgPubKey: t.string,
+      encryptedRound1Session: t.string,
+      encryptedUserGpgPrvKey: t.string,
+      encryptedDataKey: t.string,
+    }),
+    // ECDSA MPCv2 Round 2 response
+    t.type({
+      signatureShareRound2: t.any,
+      encryptedRound2Session: t.string,
+    }),
+    // ECDSA MPCv2 Round 3 response
+    t.type({
+      signatureShareRound3: t.any,
     }),
   ]),
   500: t.type({
