@@ -45,9 +45,9 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-    throw new Error('Wallet is not an on-prem wallet');
-  }
+  // if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
+  //   throw new Error('Wallet is not an on-prem wallet');
+  // }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
   logger.info(`Key ID index: ${keyIdIndex}`);

@@ -1,16 +1,22 @@
 import {
   BaseCoin,
   BitGoBase,
-  commonTssMethods,
   EcdsaMPCv2Utils,
   getTxRequest,
   IRequestTracer,
   RequestType,
   SupplementGenerateWalletOptions,
   Wallet,
+  TxRequest,
 } from '@bitgo/sdk-core';
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
-import logger from '../../../logger';
+import {
+  EnclavedExpressClient,
+  SignMpcV2Round1Response,
+  SignMpcV2Round2Response,
+  createCustomMPCv2SigningRound1Generator,
+  createCustomMPCv2SigningRound2Generator,
+  createCustomMPCv2SigningRound3Generator,
+} from '../clients/enclavedExpressClient';
 
 export async function handleEcdsaSigning(
   bitgo: BitGoBase,
@@ -19,100 +25,79 @@ export async function handleEcdsaSigning(
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   commonKeychain: string,
-  reqId?: IRequestTracer,
+  reqId: IRequestTracer,
 ) {
-  const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin);
+  const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin, wallet);
   const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
 
-  // Get BitGo GPG key for MPCv2
-  const bitgoGpgKey = await ecdsaMPCv2Utils.getBitgoMpcv2PublicGpgKey();
+  // Create state to maintain data between rounds
+  let round1Response: SignMpcV2Round1Response;
+  let round2Response: SignMpcV2Round2Response;
 
-  // Round 1: Generate user's Round 1 share
-  const {
-    signatureShareRound1,
-    userGpgPubKey,
-    encryptedRound1Session,
-    encryptedUserGpgPrvKey,
-    encryptedDataKey,
-  } = await enclavedExpressClient.signMpcV2Round1({
-    txRequest,
-    bitgoGpgPubKey: bitgoGpgKey.armor(),
-    source,
-    pub: commonKeychain,
-  });
-
-  // Send Round 1 share to BitGo and get updated txRequest
-  const round1TxRequest = await commonTssMethods.sendSignatureShareV2(
-    bitgo,
-    wallet.id(),
-    txRequestId,
-    [signatureShareRound1],
-    RequestType.tx,
-    wallet.baseCoin.getMPCAlgorithm(),
-    userGpgPubKey,
-    undefined,
-    wallet.multisigTypeVersion(),
-    reqId,
-  );
-
-  // Round 2: Generate user's Round 2 share
-  const { signatureShareRound2, encryptedRound2Session } =
-    await enclavedExpressClient.signMpcV2Round2({
-      txRequest: round1TxRequest,
-      bitgoGpgPubKey: bitgoGpgKey.armor(),
-      encryptedDataKey,
-      encryptedUserGpgPrvKey,
-      encryptedRound1Session,
+  // Create custom signing methods that maintain state
+  const customRound1Signer = async (params: { txRequest: TxRequest }) => {
+    const response = await createCustomMPCv2SigningRound1Generator(
+      enclavedExpressClient,
       source,
-      pub: commonKeychain,
+      commonKeychain,
+    )(params);
+    round1Response = response;
+    return response;
+  };
+
+  const customRound2Signer = async (params: {
+    txRequest: TxRequest;
+    encryptedUserGpgPrvKey: string;
+    encryptedRound1Session: string;
+    bitgoPublicGpgKey: string;
+  }) => {
+    if (!round1Response) {
+      throw new Error('Round 1 must be completed before Round 2');
+    }
+    const response = await createCustomMPCv2SigningRound2Generator(
+      enclavedExpressClient,
+      source,
+      commonKeychain,
+    )({
+      ...params,
+      encryptedDataKey: round1Response.encryptedDataKey,
+      encryptedRound1Session: round1Response.encryptedRound1Session,
+      encryptedUserGpgPrvKey: round1Response.encryptedUserGpgPrvKey,
+      bitgoGpgPubKey: params.bitgoPublicGpgKey,
     });
+    round2Response = response;
+    return response;
+  };
 
-  // Send Round 2 share to BitGo and get updated txRequest
-  const round2TxRequest = await commonTssMethods.sendSignatureShareV2(
-    bitgo,
-    wallet.id(),
-    txRequestId,
-    [signatureShareRound2],
+  const customRound3Signer = async (params: {
+    txRequest: TxRequest;
+    encryptedUserGpgPrvKey: string;
+    encryptedRound2Session: string;
+    bitgoPublicGpgKey: string;
+  }) => {
+    if (!round2Response) {
+      throw new Error('Round 1 must be completed before Round 3');
+    }
+    return await createCustomMPCv2SigningRound3Generator(
+      enclavedExpressClient,
+      source,
+      commonKeychain,
+    )({
+      ...params,
+      encryptedDataKey: round1Response.encryptedDataKey,
+      encryptedRound2Session: round2Response.encryptedRound2Session,
+      encryptedUserGpgPrvKey: round1Response.encryptedUserGpgPrvKey,
+      bitgoGpgPubKey: params.bitgoPublicGpgKey,
+    });
+  };
+
+  // Use the existing signEcdsaMPCv2TssUsingExternalSigner method with our custom signers
+  return await ecdsaMPCv2Utils.signEcdsaMPCv2TssUsingExternalSigner(
+    { txRequest, reqId },
+    customRound1Signer,
+    customRound2Signer,
+    customRound3Signer,
     RequestType.tx,
-    wallet.baseCoin.getMPCAlgorithm(),
-    userGpgPubKey,
-    undefined,
-    wallet.multisigTypeVersion(),
-    reqId,
-  );
-
-  // Round 3: Generate user's Round 3 share
-  const { signatureShareRound3 } = await enclavedExpressClient.signMpcV2Round3({
-    txRequest: round2TxRequest,
-    bitgoGpgPubKey: bitgoGpgKey.armor(),
-    encryptedDataKey,
-    encryptedUserGpgPrvKey,
-    encryptedRound2Session,
-    source,
-    pub: commonKeychain,
-  });
-
-  // Send Round 3 share to BitGo
-  await commonTssMethods.sendSignatureShareV2(
-    bitgo,
-    wallet.id(),
-    txRequestId,
-    [signatureShareRound3],
-    RequestType.tx,
-    wallet.baseCoin.getMPCAlgorithm(),
-    userGpgPubKey,
-    undefined,
-    wallet.multisigTypeVersion(),
-    reqId,
-  );
-
-  logger.debug('Successfully completed ECDSA MPCv2 signing!');
-  return commonTssMethods.sendTxRequest(
-    bitgo,
-    txRequest.walletId,
-    txRequest.txRequestId,
-    RequestType.tx,
-    reqId,
   );
 }
 
