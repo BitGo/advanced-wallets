@@ -5,7 +5,6 @@ import {
   getBitgoToUserRShare,
   sendUserToBitgoGShare,
   Wallet,
-  TxRequest,
   IRequestTracer,
   EddsaUtils,
 } from '@bitgo/sdk-core';
@@ -16,23 +15,15 @@ import logger from '../../../logger';
 export async function handleEddsaSigning(
   bitgo: BitGoBase,
   wallet: Wallet,
-  txRequest: string | TxRequest,
+  txRequestId: string,
   enclavedExpressClient: EnclavedExpressClient,
   commonKeychain: string,
   reqId?: IRequestTracer,
 ) {
-  let txRequestResolved: TxRequest;
-  let txRequestId: string;
   const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin);
-  if (typeof txRequest === 'string') {
-    txRequestResolved = await getTxRequest(bitgo, wallet.id(), txRequest, reqId);
-    txRequestId = txRequestResolved.txRequestId;
-  } else {
-    txRequestResolved = txRequest;
-    txRequestId = txRequest.txRequestId;
-  }
+  const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
 
-  const { apiVersion } = txRequestResolved;
+  const { apiVersion } = txRequest;
   const bitgoGpgKey = await eddsaUtils.getBitgoPublicGpgKey();
 
   const {
@@ -41,7 +32,7 @@ export async function handleEddsaSigning(
     encryptedUserToBitgoRShare,
     encryptedDataKey,
   } = await enclavedExpressClient.signMpcCommitment({
-    txRequest: txRequestResolved,
+    txRequest,
     bitgoGpgPubKey: bitgoGpgKey.armor(),
     source: 'user',
     pub: commonKeychain,
@@ -58,7 +49,7 @@ export async function handleEddsaSigning(
   );
 
   const { rShare } = await enclavedExpressClient.signMpcRShare({
-    txRequest: txRequestResolved,
+    txRequest,
     encryptedUserToBitgoRShare,
     encryptedDataKey,
     source: 'user',
@@ -76,7 +67,7 @@ export async function handleEddsaSigning(
   );
   const bitgoToUserRShare = await getBitgoToUserRShare(bitgo, wallet.id(), txRequestId, reqId);
   const gSignShareTransactionParams = {
-    txRequest: txRequestResolved,
+    txRequest,
     bitgoToUserRShare: bitgoToUserRShare,
     userToBitgoRShare: rShare,
     bitgoToUserCommitment,

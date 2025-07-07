@@ -124,6 +124,51 @@ interface SignMpcGShareResponse {
   gShare: GShare;
 }
 
+// ECDSA MPCv2 interfaces
+interface SignMpcV2Round1Params {
+  txRequest: TxRequest;
+  bitgoGpgPubKey: string;
+  source: 'user' | 'backup';
+  pub: string;
+}
+
+interface SignMpcV2Round1Response {
+  signatureShareRound1: SignatureShareRecord;
+  userGpgPubKey: string;
+  encryptedRound1Session: string;
+  encryptedUserGpgPrvKey: string;
+  encryptedDataKey: string;
+}
+
+interface SignMpcV2Round2Params {
+  txRequest: TxRequest;
+  bitgoGpgPubKey: string;
+  encryptedDataKey: string;
+  encryptedUserGpgPrvKey: string;
+  encryptedRound1Session: string;
+  source: 'user' | 'backup';
+  pub: string;
+}
+
+interface SignMpcV2Round2Response {
+  signatureShareRound2: SignatureShareRecord;
+  encryptedRound2Session: string;
+}
+
+interface SignMpcV2Round3Params {
+  txRequest: TxRequest;
+  bitgoGpgPubKey: string;
+  encryptedDataKey: string;
+  encryptedUserGpgPrvKey: string;
+  encryptedRound2Session: string;
+  source: 'user' | 'backup';
+  pub: string;
+}
+
+interface SignMpcV2Round3Response {
+  signatureShareRound3: SignatureShareRecord;
+}
+
 export class EnclavedExpressClient {
   private readonly baseUrl: string;
   private readonly enclavedExpressCert: string;
@@ -453,6 +498,78 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpc g-share: %s', err.message);
+      throw err;
+    }
+  }
+
+  async signMpcV2Round1(params: SignMpcV2Round1Params): Promise<SignMpcV2Round1Response> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign an MPCv2 Round 1');
+    }
+
+    try {
+      let request = this.apiClient['v1.mpc.sign'].post({
+        coin: this.coin,
+        shareType: 'mpcv2round1',
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign mpcv2 round 1: %s', err.message);
+      throw err;
+    }
+  }
+
+  async signMpcV2Round2(params: SignMpcV2Round2Params): Promise<SignMpcV2Round2Response> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign an MPCv2 Round 2');
+    }
+
+    try {
+      let request = this.apiClient['v1.mpc.sign'].post({
+        coin: this.coin,
+        shareType: 'mpcv2round2',
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign mpcv2 round 2: %s', err.message);
+      throw err;
+    }
+  }
+
+  async signMpcV2Round3(params: SignMpcV2Round3Params): Promise<SignMpcV2Round3Response> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to sign an MPCv2 Round 3');
+    }
+
+    try {
+      let request = this.apiClient['v1.mpc.sign'].post({
+        coin: this.coin,
+        shareType: 'mpcv2round3',
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign mpcv2 round 3: %s', err.message);
       throw err;
     }
   }

@@ -14,6 +14,7 @@ import {
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { handleEddsaSigning } from './eddsa';
+import { handleEcdsaSigning } from './ecdsa';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 
 /**
@@ -197,7 +198,9 @@ async function signAndSendTxRequests(
   }
 
   let signedTxRequest: TxRequest;
-  if (wallet.baseCoin.getMPCAlgorithm() === 'eddsa') {
+  const mpcAlgorithm = wallet.baseCoin.getMPCAlgorithm();
+
+  if (mpcAlgorithm === 'eddsa') {
     signedTxRequest = await handleEddsaSigning(
       bitgo,
       wallet,
@@ -206,8 +209,18 @@ async function signAndSendTxRequests(
       signingKeychain.commonKeychain,
       reqId,
     );
+  } else if (mpcAlgorithm === 'ecdsa') {
+    signedTxRequest = await handleEcdsaSigning(
+      bitgo,
+      wallet,
+      txRequestId,
+      enclavedExpressClient,
+      signingKeychain.source as 'user' | 'backup',
+      signingKeychain.commonKeychain,
+      reqId,
+    );
   } else {
-    throw new Error('Unsupported MPC algorithm');
+    throw new Error(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
   }
 
   if (!signedTxRequest.txRequestId) {
