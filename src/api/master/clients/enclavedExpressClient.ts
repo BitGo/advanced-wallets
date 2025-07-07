@@ -501,7 +501,7 @@ export class EnclavedExpressClient {
 /**
  * Create custom MPCv2 Round 1 signing function for enclaved express client
  */
-export function createCustomMPCv2SigningRound1Generator(
+export function signMPCv2Round1(
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   pub: string,
@@ -536,7 +536,7 @@ export function createCustomMPCv2SigningRound1Generator(
 /**
  * Create custom MPCv2 Round 2 signing function for enclaved express client
  */
-export function createCustomMPCv2SigningRound2Generator(
+export function signMPCv2Round2(
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   pub: string,
@@ -571,7 +571,7 @@ export function createCustomMPCv2SigningRound2Generator(
 /**
  * Create custom MPCv2 Round 3 signing function for enclaved express client
  */
-export function createCustomMPCv2SigningRound3Generator(
+export function signMPCv2Round3(
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   pub: string,

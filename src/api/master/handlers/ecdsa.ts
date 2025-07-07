@@ -11,9 +11,9 @@ import {
   EnclavedExpressClient,
   SignMpcV2Round1Response,
   SignMpcV2Round2Response,
-  createCustomMPCv2SigningRound1Generator,
-  createCustomMPCv2SigningRound2Generator,
-  createCustomMPCv2SigningRound3Generator,
+  signMPCv2Round1,
+  signMPCv2Round2,
+  signMPCv2Round3,
 } from '../clients/enclavedExpressClient';
 
 export async function handleEcdsaSigning(
@@ -34,11 +34,7 @@ export async function handleEcdsaSigning(
 
   // Create custom signing methods that maintain state
   const customRound1Signer = async (params: { txRequest: TxRequest }) => {
-    const response = await createCustomMPCv2SigningRound1Generator(
-      enclavedExpressClient,
-      source,
-      commonKeychain,
-    )(params);
+    const response = await signMPCv2Round1(enclavedExpressClient, source, commonKeychain)(params);
     round1Response = response;
     return response;
   };
@@ -52,7 +48,7 @@ export async function handleEcdsaSigning(
     if (!round1Response) {
       throw new Error('Round 1 must be completed before Round 2');
     }
-    const response = await createCustomMPCv2SigningRound2Generator(
+    const response = await signMPCv2Round2(
       enclavedExpressClient,
       source,
       commonKeychain,
@@ -76,7 +72,7 @@ export async function handleEcdsaSigning(
     if (!round2Response) {
       throw new Error('Round 1 must be completed before Round 3');
     }
-    return await createCustomMPCv2SigningRound3Generator(
+    return await signMPCv2Round3(
       enclavedExpressClient,
       source,
       commonKeychain,
