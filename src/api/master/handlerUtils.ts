@@ -1,4 +1,4 @@
-import { BitGo, RequestTracer } from 'bitgo';
+import { BitGo, CustomSigningFunction, RequestTracer } from 'bitgo';
 import { EnclavedExpressClient } from './clients/enclavedExpressClient';
 
 /**
@@ -56,7 +56,7 @@ export function makeCustomSigningFunction({
   enclavedExpressClient: EnclavedExpressClient;
   source: 'user' | 'backup';
   pub: string;
-}) {
+}): CustomSigningFunction {
   return async function customSigningFunction(signParams: any) {
     return enclavedExpressClient.signMultisig({
       txPrebuild: signParams.txPrebuild,
