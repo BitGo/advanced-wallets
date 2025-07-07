@@ -1,7 +1,7 @@
 import { RequestTracer, KeyIndices } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../../../shared/coinUtils';
+import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,

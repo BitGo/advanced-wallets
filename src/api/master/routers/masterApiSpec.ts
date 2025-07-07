@@ -23,6 +23,7 @@ import { validateMasterExpressConfig } from '../middleware/middleware';
 import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
 import { handleConsolidate } from '../handlers/handleConsolidate';
 import { handleAccelerate } from '../handlers/handleAccelerate';
+import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -113,9 +114,7 @@ export const ConsolidateRequest = {
 
 // Response type for /consolidate endpoint
 const ConsolidateResponse: HttpResponse = {
-  // TODO: Get type from public types repo / Wallet Platform
   200: t.any,
-  202: t.any, // Partial success
   400: t.any, // All failed
   500: t.type({
     error: t.string,
@@ -187,6 +186,37 @@ const RecoveryWalletRequest = {
 };
 
 export type RecoveryWalletRequest = typeof RecoveryWalletRequest;
+
+export const ConsolidateUnspentsRequest = {
+  pubkey: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  feeRate: t.union([t.undefined, t.number]),
+  maxFeeRate: t.union([t.undefined, t.number]),
+  maxFeePercentage: t.union([t.undefined, t.number]),
+  feeTxConfirmTarget: t.union([t.undefined, t.number]),
+  bulk: t.union([t.undefined, t.boolean]),
+  minValue: t.union([t.undefined, t.union([t.string, t.number])]),
+  maxValue: t.union([t.undefined, t.union([t.string, t.number])]),
+  minHeight: t.union([t.undefined, t.number]),
+  minConfirms: t.union([t.undefined, t.number]),
+  enforceMinConfirmsForChange: t.union([t.undefined, t.boolean]),
+  limit: t.union([t.undefined, t.number]),
+  numUnspentsToMake: t.union([t.undefined, t.number]),
+  targetAddress: t.union([t.undefined, t.string]),
+  txFormat: t.union([t.undefined, t.literal('legacy'), t.literal('psbt'), t.literal('psbt-lite')]),
+};
+
+const ConsolidateUnspentsResponse: HttpResponse = {
+  200: t.type({
+    tx: t.string,
+    txid: t.string,
+  }),
+  400: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
 
 // API Specification
 export const MasterApiSpec = apiSpec({
@@ -263,6 +293,21 @@ export const MasterApiSpec = apiSpec({
       description: 'Accelerate transaction',
     }),
   },
+  'v1.wallet.consolidateunspents': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/wallet/{walletId}/consolidateunspents',
+      request: httpRequest({
+        params: {
+          walletId: t.string,
+          coin: t.string,
+        },
+        body: ConsolidateUnspentsRequest,
+      }),
+      response: ConsolidateUnspentsResponse,
+      description: 'Consolidate unspents',
+    }),
+  },
 });
 
 export type MasterApiSpec = typeof MasterApiSpec;
@@ -327,6 +372,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleAccelerate(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.wallet.consolidateunspents', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleConsolidateUnspents(typedReq);
       return Response.ok(result);
     }),
   ]);

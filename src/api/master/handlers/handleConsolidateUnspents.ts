@@ -3,8 +3,8 @@ import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
 
-export async function handleAccelerate(
-  req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>,
+export async function handleConsolidateUnspents(
+  req: MasterApiSpecRouteRequest<'v1.wallet.consolidateunspents', 'post'>,
 ) {
   const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
@@ -30,20 +30,19 @@ export async function handleAccelerate(
       pub: signingKeychain.pub!,
     });
 
-    // Prepare acceleration parameters
-    const accelerationParams = {
+    // Prepare consolidation parameters
+    const consolidationParams = {
       ...params,
       customSigningFunction,
       reqId,
     };
 
-    // Accelerate transaction
-    const result = await wallet.accelerateTransaction(accelerationParams);
-
+    // Send consolidate unspents
+    const result = await wallet.consolidateUnspents(consolidationParams);
     return result;
   } catch (error) {
     const err = error as Error;
-    logger.error('Failed to accelerate transaction: %s', err.message);
+    logger.error('Failed to consolidate unspents: %s', err.message);
     throw err;
   }
 }
