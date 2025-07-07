@@ -1,6 +1,7 @@
 import { RequestTracer, KeyIndices } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../../../shared/coinUtils';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
@@ -8,14 +9,18 @@ export async function handleConsolidate(
   const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
   const params = req.decoded;
   const walletId = req.params.walletId;
-  const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
+  const coin = req.params.coin;
 
-  if (!wallet) {
-    throw new Error(`Wallet ${walletId} not found`);
-  }
+  const { baseCoin, wallet, signingKeychain } = await getWalletAndSigningKeychain({
+    bitgo,
+    coin,
+    walletId,
+    params,
+    reqId,
+    KeyIndices,
+  });
 
   // Check if the coin supports account consolidations
   if (!baseCoin.allowsAccountConsolidations()) {
@@ -27,30 +32,13 @@ export async function handleConsolidate(
     throw new Error('consolidateAddresses must be an array of addresses');
   }
 
-  // Get the signing keychain based on source
-  const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
-  const signingKeychain = await baseCoin.keychains().get({
-    id: wallet.keyIds()[keyIdIndex],
-  });
-
-  if (!signingKeychain || !signingKeychain.pub) {
-    throw new Error(`Signing keychain for ${params.source} not found`);
-  }
-
-  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
-    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
-  }
-
   try {
     // Create custom signing function that delegates to EBE
-    const customSigningFunction = async (signParams: any) => {
-      const signedTx = await enclavedExpressClient.signMultisig({
-        txPrebuild: signParams.txPrebuild,
-        source: params.source,
-        pub: signingKeychain.pub!,
-      });
-      return signedTx;
-    };
+    const customSigningFunction = makeCustomSigningFunction({
+      enclavedExpressClient,
+      source: params.source,
+      pub: signingKeychain.pub!,
+    });
 
     // Prepare consolidation parameters
     const consolidationParams = {

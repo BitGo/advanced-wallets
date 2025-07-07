@@ -1,8 +1,10 @@
 import { FormattedOfflineVaultTxInfo, BackupKeyRecoveryTransansaction } from '@bitgo/abstract-utxo';
 import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
 import { CoinFamily } from '@bitgo/statics';
-import { BaseCoin } from 'bitgo';
+import { BaseCoin, BitGo } from 'bitgo';
 import { AbstractUtxoCoin, Eos, Stx, Xtz } from 'bitgo/dist/types/src/v2/coins';
+import { RequestTracer } from '@bitgo/sdk-core';
+import { EnclavedExpressClient } from '../api/master/clients/enclavedExpressClient';
 
 export function isEthLikeCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
   const isEthPure = isFamily(coin, CoinFamily.ETH);
@@ -60,4 +62,68 @@ export function isFormattedOfflineVaultTxInfo(
   obj: FormattedOfflineVaultTxInfo | BackupKeyRecoveryTransansaction,
 ): obj is FormattedOfflineVaultTxInfo {
   return obj && 'txInfo' in obj && 'txHex' in obj && 'feeInfo' in obj;
+}
+
+/**
+ * Fetch wallet and signing keychain, with validation for source and pubkey.
+ * Throws with a clear error if not found or mismatched.
+ */
+export async function getWalletAndSigningKeychain({
+  bitgo,
+  coin,
+  walletId,
+  params,
+  reqId,
+  KeyIndices,
+}: {
+  bitgo: BitGo;
+  coin: string;
+  walletId: string;
+  params: { source: 'user' | 'backup'; pubkey?: string };
+  reqId: RequestTracer;
+  KeyIndices: { USER: number; BACKUP: number; BITGO: number };
+}) {
+  const baseCoin = bitgo.coin(coin);
+
+  const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
+
+  if (!wallet) {
+    throw new Error(`Wallet ${walletId} not found`);
+  }
+
+  const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
+  const signingKeychain = await baseCoin.keychains().get({
+    id: wallet.keyIds()[keyIdIndex],
+  });
+
+  if (!signingKeychain || !signingKeychain.pub) {
+    throw new Error(`Signing keychain for ${params.source} not found`);
+  }
+
+  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
+    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
+  }
+
+  return { baseCoin, wallet, signingKeychain };
+}
+
+/**
+ * Create a custom signing function that delegates to enclavedExpressClient.signMultisig.
+ */
+export function makeCustomSigningFunction({
+  enclavedExpressClient,
+  source,
+  pub,
+}: {
+  enclavedExpressClient: EnclavedExpressClient;
+  source: 'user' | 'backup';
+  pub: string;
+}) {
+  return async function customSigningFunction(signParams: any) {
+    return enclavedExpressClient.signMultisig({
+      txPrebuild: signParams.txPrebuild,
+      source,
+      pub,
+    });
+  };
 }

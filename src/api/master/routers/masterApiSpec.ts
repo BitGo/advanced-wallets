@@ -22,6 +22,7 @@ import { handleSendMany } from '../handlers/handleSendMany';
 import { validateMasterExpressConfig } from '../middleware/middleware';
 import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
 import { handleConsolidate } from '../handlers/handleConsolidate';
+import { handleAccelerate } from '../handlers/handleAccelerate';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -116,6 +117,30 @@ const ConsolidateResponse: HttpResponse = {
   200: t.any,
   202: t.any, // Partial success
   400: t.any, // All failed
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
+// Request type for /accelerate endpoint
+export const AccelerateRequest = {
+  pubkey: t.string,
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  cpfpTxIds: t.union([t.undefined, t.array(t.string)]),
+  cpfpFeeRate: t.union([t.undefined, t.number]),
+  maxFee: t.union([t.undefined, t.number]),
+  rbfTxIds: t.union([t.undefined, t.array(t.string)]),
+  feeMultiplier: t.union([t.undefined, t.number]),
+};
+
+// Response type for /accelerate endpoint
+const AccelerateResponse: HttpResponse = {
+  // TODO: Get type from public types repo / Wallet Platform
+  200: t.type({
+    txid: t.string,
+    tx: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -223,6 +248,21 @@ export const MasterApiSpec = apiSpec({
       description: 'Consolidate addresses',
     }),
   },
+  'v1.wallet.accelerate': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/wallet/{walletId}/accelerate',
+      request: httpRequest({
+        params: {
+          walletId: t.string,
+          coin: t.string,
+        },
+        body: AccelerateRequest,
+      }),
+      response: AccelerateResponse,
+      description: 'Accelerate transaction',
+    }),
+  },
 });
 
 export type MasterApiSpec = typeof MasterApiSpec;
@@ -279,6 +319,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleConsolidate(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.wallet.accelerate', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleAccelerate(typedReq);
       return Response.ok(result);
     }),
   ]);
