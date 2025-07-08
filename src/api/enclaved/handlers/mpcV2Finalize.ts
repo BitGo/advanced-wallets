@@ -6,7 +6,6 @@ import {
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { KmsClient } from '../../../kms/kmsClient';
 import assert from 'assert';
-import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 
 export async function mpcV2Finalize(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>,
@@ -35,12 +34,7 @@ export async function mpcV2Finalize(
     throw new Error('Session data is missing for finalization');
   }
   sessionData.dkgSessionBytes = new Uint8Array(Object.values(sessionData.dkgSessionBytes));
-  const session = await DklsDkg.Dkg.restoreSession(
-    3,
-    2,
-    source === 'user' ? MPCv2PartiesEnum.USER : MPCv2PartiesEnum.BACKUP,
-    sessionData,
-  );
+  const session = await DklsDkg.Dkg.restoreSession(3, 2, source === 'user' ? 0 : 1, sessionData);
 
   // processing incoming messages
   const incomingMessages = await DklsComms.decryptAndVerifyIncomingMessages(
@@ -64,6 +58,17 @@ export async function mpcV2Finalize(
     commonKeychain,
     'Source and Bitgo Common keychains do not match',
   );
+
+  await kms.postKey({
+    coin: req.decoded.coin,
+    source: req.decoded.source,
+    pub: commonKeychain,
+    prv: privateMaterial.toString('base64'),
+    type: 'tss',
+    options: {
+      useLocalEncipherment: true,
+    },
+  });
 
   return {
     source,

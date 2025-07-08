@@ -8,16 +8,20 @@ export async function retrieveKmsPrvKey({
   pub,
   source,
   cfg,
+  options,
 }: {
   pub: string;
   source: string;
   cfg: EnclavedConfig;
+  options?: {
+    useLocalEncipherment?: boolean;
+  };
 }): Promise<string> {
   const kms = new KmsClient(cfg);
   // Retrieve the private key from KMS
   let prv: string;
   try {
-    const res = await kms.getKey({ pub, source });
+    const res = await kms.getKey({ pub, source, options });
     prv = res.prv;
     return prv;
   } catch (error: any) {

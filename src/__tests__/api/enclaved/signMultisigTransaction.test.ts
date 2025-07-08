@@ -105,7 +105,7 @@ describe('signMultisigTransaction', () => {
 
     const kmsNock = nock(kmsUrl)
       .get(`/key/${input.pub}`)
-      .query({ source: 'user' })
+      .query({ source: 'user', useLocalEncipherment: false })
       .reply(200, mockKmsResponse);
 
     const response = await agent

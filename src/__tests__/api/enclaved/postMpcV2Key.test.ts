@@ -73,6 +73,28 @@ describe('postMpcV2Key', () => {
       })
       .persist();
 
+    nock(kmsUrl)
+      .post(`/key`)
+      .reply(200, {
+        pub: 'test-pub-key',
+        coin,
+        source: 'user',
+        type: 'tss',
+      })
+      .persist();
+
+    nock(kmsUrl)
+      .post(`/key`)
+      .reply(200, {
+        pub: 'test-pub-key',
+        coin,
+        source: 'backup',
+        type: 'tss',
+      })
+      .persist();
+
+    nock(kmsUrl).post(`/postKey`).reply(200, {}).persist();
+
     // mocking bitgo's GPG key generation session
     const bitgoGpgKey = await bitgoSdk.generateGPGKeyPair('secp256k1');
     const bitgoGpgPub = {
