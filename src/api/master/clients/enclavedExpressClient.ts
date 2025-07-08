@@ -599,30 +599,29 @@ export class EnclavedExpressClient {
     }
   }
 
-/**
- * Create custom MPCv2 Round 1 signing function for enclaved express client
- */
-export function signMPCv2Round1(
-  enclavedExpressClient: EnclavedExpressClient,
-  source: 'user' | 'backup',
-  pub: string,
-): (params: SignMpcV2Round1Params) => Promise<SignMpcV2Round1Response> {
-  return async function (params): Promise<SignMpcV2Round1Response> {
-    if (!enclavedExpressClient['coin']) {
+  /**
+   * Sign MPCv2 Round 1
+   */
+  async signMPCv2Round1(
+    source: 'user' | 'backup',
+    pub: string,
+    params: SignMpcV2Round1Params,
+  ): Promise<SignMpcV2Round1Response> {
+    if (!this['coin']) {
       throw new Error('Coin must be specified to sign an MPCv2 Round 1');
     }
 
     try {
-      let request = enclavedExpressClient['apiClient']['v1.mpc.sign'].post({
-        coin: enclavedExpressClient['coin'],
+      let request = this['apiClient']['v1.mpc.sign'].post({
+        coin: this['coin'],
         shareType: 'mpcv2round1',
         ...params,
         source,
         pub,
       });
 
-      if (enclavedExpressClient['tlsMode'] === TlsMode.MTLS) {
-        request = request.agent(enclavedExpressClient['createHttpsAgent']());
+      if (this['tlsMode'] === TlsMode.MTLS) {
+        request = request.agent(this['createHttpsAgent']());
       }
       const response = await request.decodeExpecting(200);
       return response.body;
@@ -631,33 +630,31 @@ export function signMPCv2Round1(
       debugLogger('Failed to sign mpcv2 round 1: %s', err.message);
       throw err;
     }
-  };
-}
+  }
 
-/**
- * Create custom MPCv2 Round 2 signing function for enclaved express client
- */
-export function signMPCv2Round2(
-  enclavedExpressClient: EnclavedExpressClient,
-  source: 'user' | 'backup',
-  pub: string,
-): (params: SignMpcV2Round2Params) => Promise<SignMpcV2Round2Response> {
-  return async function (params): Promise<SignMpcV2Round2Response> {
-    if (!enclavedExpressClient['coin']) {
+  /**
+   * Sign MPCv2 Round 2
+   */
+  async signMPCv2Round2(
+    source: 'user' | 'backup',
+    pub: string,
+    params: SignMpcV2Round2Params,
+  ): Promise<SignMpcV2Round2Response> {
+    if (!this['coin']) {
       throw new Error('Coin must be specified to sign an MPCv2 Round 2');
     }
 
     try {
-      let request = enclavedExpressClient['apiClient']['v1.mpc.sign'].post({
-        coin: enclavedExpressClient['coin'],
+      let request = this['apiClient']['v1.mpc.sign'].post({
+        coin: this['coin'],
         shareType: 'mpcv2round2',
         ...params,
         source,
         pub,
       });
 
-      if (enclavedExpressClient['tlsMode'] === TlsMode.MTLS) {
-        request = request.agent(enclavedExpressClient['createHttpsAgent']());
+      if (this['tlsMode'] === TlsMode.MTLS) {
+        request = request.agent(this['createHttpsAgent']());
       }
       const response = await request.decodeExpecting(200);
       return response.body;
@@ -666,33 +663,31 @@ export function signMPCv2Round2(
       debugLogger('Failed to sign mpcv2 round 2: %s', err.message);
       throw err;
     }
-  };
-}
+  }
 
-/**
- * Create custom MPCv2 Round 3 signing function for enclaved express client
- */
-export function signMPCv2Round3(
-  enclavedExpressClient: EnclavedExpressClient,
-  source: 'user' | 'backup',
-  pub: string,
-): (params: SignMpcV2Round3Params) => Promise<SignMpcV2Round3Response> {
-  return async function (params): Promise<SignMpcV2Round3Response> {
-    if (!enclavedExpressClient['coin']) {
+  /**
+   * Sign MPCv2 Round 3
+   */
+  async signMPCv2Round3(
+    source: 'user' | 'backup',
+    pub: string,
+    params: SignMpcV2Round3Params,
+  ): Promise<SignMpcV2Round3Response> {
+    if (!this['coin']) {
       throw new Error('Coin must be specified to sign an MPCv2 Round 3');
     }
 
     try {
-      let request = enclavedExpressClient['apiClient']['v1.mpc.sign'].post({
-        coin: enclavedExpressClient['coin'],
+      let request = this['apiClient']['v1.mpc.sign'].post({
+        coin: this['coin'],
         shareType: 'mpcv2round3',
         ...params,
         source,
         pub,
       });
 
-      if (enclavedExpressClient['tlsMode'] === TlsMode.MTLS) {
-        request = request.agent(enclavedExpressClient['createHttpsAgent']());
+      if (this['tlsMode'] === TlsMode.MTLS) {
+        request = request.agent(this['createHttpsAgent']());
       }
       const response = await request.decodeExpecting(200);
       return response.body;
@@ -701,7 +696,7 @@ export function signMPCv2Round3(
       debugLogger('Failed to sign mpcv2 round 3: %s', err.message);
       throw err;
     }
-  };
+  }
 }
 
 /**

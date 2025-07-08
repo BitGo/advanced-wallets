@@ -13,9 +13,6 @@ import {
   EnclavedExpressClient,
   SignMpcV2Round1Response,
   SignMpcV2Round2Response,
-  signMPCv2Round1,
-  signMPCv2Round2,
-  signMPCv2Round3,
 } from '../clients/enclavedExpressClient';
 
 export async function handleEcdsaSigning(
@@ -35,13 +32,13 @@ export async function handleEcdsaSigning(
   let round2Response: SignMpcV2Round2Response;
 
   // Create custom signing methods that maintain state
-  const customRound1Signer = async (params: { txRequest: TxRequest }) => {
-    const response = await signMPCv2Round1(enclavedExpressClient, source, commonKeychain)(params);
+  const customMPCv2Round1Generator = async (params: { txRequest: TxRequest }) => {
+    const response = await enclavedExpressClient.signMPCv2Round1(source, commonKeychain, params);
     round1Response = response;
     return response;
   };
 
-  const customRound2Signer = async (params: {
+  const customMPCv2Round2Generator = async (params: {
     txRequest: TxRequest;
     encryptedUserGpgPrvKey: string;
     encryptedRound1Session: string;
@@ -50,11 +47,7 @@ export async function handleEcdsaSigning(
     if (!round1Response) {
       throw new Error('Round 1 must be completed before Round 2');
     }
-    const response = await signMPCv2Round2(
-      enclavedExpressClient,
-      source,
-      commonKeychain,
-    )({
+    const response = await enclavedExpressClient.signMPCv2Round2(source, commonKeychain, {
       ...params,
       encryptedDataKey: round1Response.encryptedDataKey,
       encryptedRound1Session: round1Response.encryptedRound1Session,
@@ -65,20 +58,16 @@ export async function handleEcdsaSigning(
     return response;
   };
 
-  const customRound3Signer = async (params: {
+  const customMPCv2Round3Generator = async (params: {
     txRequest: TxRequest;
     encryptedUserGpgPrvKey: string;
     encryptedRound2Session: string;
     bitgoPublicGpgKey: string;
   }) => {
     if (!round2Response) {
-      throw new Error('Round 1 must be completed before Round 3');
+      throw new Error('Round 2 must be completed before Round 3');
     }
-    return await signMPCv2Round3(
-      enclavedExpressClient,
-      source,
-      commonKeychain,
-    )({
+    return await enclavedExpressClient.signMPCv2Round3(source, commonKeychain, {
       ...params,
       encryptedDataKey: round1Response.encryptedDataKey,
       encryptedRound2Session: round2Response.encryptedRound2Session,
@@ -90,9 +79,9 @@ export async function handleEcdsaSigning(
   // Use the existing signEcdsaMPCv2TssUsingExternalSigner method with our custom signers
   return await ecdsaMPCv2Utils.signEcdsaMPCv2TssUsingExternalSigner(
     { txRequest, reqId },
-    customRound1Signer,
-    customRound2Signer,
-    customRound3Signer,
+    customMPCv2Round1Generator,
+    customMPCv2Round2Generator,
+    customMPCv2Round3Generator,
     RequestType.tx,
   );
 }
