@@ -196,6 +196,9 @@ async function signAndSendTxRequests(
   if (!signingKeychain.commonKeychain) {
     throw new Error(`Common keychain not found for keychain ${signingKeychain.pub || 'unknown'}`);
   }
+  if (signingKeychain.source === 'backup') {
+    throw new Error('Backup MPC signing not supported for sendMany');
+  }
 
   let signedTxRequest: TxRequest;
   const mpcAlgorithm = wallet.baseCoin.getMPCAlgorithm();

@@ -8,6 +8,8 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo/sdk-core';
 import { Coin } from 'bitgo';
 import assert from 'assert';
+import * as eddsa from '../../../api/master/handlers/eddsa';
+import * as ecdsa from '../../../api/master/handlers/ecdsa';
 
 describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   let agent: request.SuperAgentTest;
@@ -220,6 +222,267 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       keychainGetNock.done();
       signNock.done();
       submitNock.done();
+    });
+  });
+
+  describe('SendMany TSS EDDSA:', () => {
+    it('should send many transactions using EDDSA TSS signing', async () => {
+      // Mock wallet get request for TSS wallet
+      const walletGetNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'cold',
+          subType: 'onPrem',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'tss',
+        });
+
+      // Mock keychain get request for TSS keychain
+      const keychainGetNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: 'user-key-id',
+          pub: 'xpub_user',
+          commonKeychain: 'test-common-keychain',
+          source: 'user',
+          type: 'tss',
+        });
+
+      const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+        txRequestId: 'test-tx-request-id',
+        txHex: 'prebuilt-tx-hex',
+        txInfo: {
+          nP2SHInputs: 1,
+          nSegwitInputs: 0,
+          nOutputs: 2,
+        },
+        walletId,
+      });
+
+      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+
+      // Mock multisigType to return 'tss'
+      const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
+
+      // Mock getMPCAlgorithm to return 'eddsa'
+      const getMPCAlgorithmStub = sinon
+        .stub(Coin.Btc.prototype, 'getMPCAlgorithm')
+        .returns('eddsa');
+
+      // Mock handleEddsaSigning
+      const handleEddsaSigningStub = sinon.stub().resolves({
+        txRequestId: 'test-tx-request-id',
+        state: 'signed',
+        apiVersion: 'full',
+        transactions: [
+          {
+            signedTx: {
+              id: 'test-tx-id',
+              tx: 'signed-transaction',
+            },
+          },
+        ],
+      });
+
+      // Import and stub the handleEddsaSigning function
+      sinon.stub(eddsa, 'handleEddsaSigning').callsFake(handleEddsaSigningStub);
+
+      const response = await agent
+        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [
+            {
+              address: 'tb1qtest1',
+              amount: '100000',
+            },
+            {
+              address: 'tb1qtest2',
+              amount: '200000',
+            },
+          ],
+          source: 'user',
+          pubkey: 'xpub_user',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txRequest');
+      response.body.should.have.property('txid', 'test-tx-id');
+      response.body.should.have.property('tx', 'signed-transaction');
+
+      walletGetNock.done();
+      keychainGetNock.done();
+      sinon.assert.calledOnce(prebuildStub);
+      sinon.assert.calledOnce(verifyStub);
+      sinon.assert.calledTwice(multisigTypeStub);
+      sinon.assert.calledOnce(getMPCAlgorithmStub);
+      sinon.assert.calledOnce(handleEddsaSigningStub);
+    });
+  });
+
+  describe('SendMany TSS ECDSA:', () => {
+    it('should send many transactions using ECDSA TSS signing', async () => {
+      // Mock wallet get request for TSS wallet
+      const walletGetNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'cold',
+          subType: 'onPrem',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'tss',
+        });
+
+      // Mock keychain get request for TSS keychain
+      const keychainGetNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: 'user-key-id',
+          pub: 'xpub_user',
+          commonKeychain: 'test-common-keychain',
+          source: 'user',
+          type: 'tss',
+        });
+
+      const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+        txRequestId: 'test-tx-request-id',
+        txHex: 'prebuilt-tx-hex',
+        txInfo: {
+          nP2SHInputs: 1,
+          nSegwitInputs: 0,
+          nOutputs: 2,
+        },
+        walletId,
+      });
+
+      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+
+      // Mock multisigType to return 'tss'
+      const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
+
+      // Mock getMPCAlgorithm to return 'ecdsa'
+      const getMPCAlgorithmStub = sinon
+        .stub(Coin.Btc.prototype, 'getMPCAlgorithm')
+        .returns('ecdsa');
+
+      // Mock handleEcdsaSigning
+      const handleEcdsaSigningStub = sinon.stub().resolves({
+        txRequestId: 'test-tx-request-id',
+        state: 'signed',
+        apiVersion: 'full',
+        transactions: [
+          {
+            signedTx: {
+              id: 'test-tx-id',
+              tx: 'signed-transaction',
+            },
+          },
+        ],
+      });
+
+      // Import and stub the handleEcdsaSigning function
+      sinon.stub(ecdsa, 'handleEcdsaSigning').callsFake(handleEcdsaSigningStub);
+
+      const response = await agent
+        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [
+            {
+              address: 'tb1qtest1',
+              amount: '100000',
+            },
+            {
+              address: 'tb1qtest2',
+              amount: '200000',
+            },
+          ],
+          source: 'user',
+          pubkey: 'xpub_user',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txRequest');
+      response.body.should.have.property('txid', 'test-tx-id');
+      response.body.should.have.property('tx', 'signed-transaction');
+
+      walletGetNock.done();
+      keychainGetNock.done();
+      sinon.assert.calledOnce(prebuildStub);
+      sinon.assert.calledOnce(verifyStub);
+      sinon.assert.calledTwice(multisigTypeStub);
+      sinon.assert.calledOnce(getMPCAlgorithmStub);
+      sinon.assert.calledOnce(handleEcdsaSigningStub);
+    });
+
+    it('should fail when backup key is used for ECDSA TSS signing', async () => {
+      // Mock wallet get request for TSS wallet
+      const walletGetNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'cold',
+          subType: 'onPrem',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'tss',
+        });
+
+      // Mock keychain get request for backup TSS keychain
+      const keychainGetNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/backup-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: 'backup-key-id',
+          pub: 'xpub_backup',
+          commonKeychain: 'test-common-keychain',
+          source: 'backup',
+          type: 'tss',
+        });
+
+      const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+        txRequestId: 'test-tx-request-id',
+        txHex: 'prebuilt-tx-hex',
+        txInfo: {
+          nP2SHInputs: 1,
+          nSegwitInputs: 0,
+          nOutputs: 2,
+        },
+        walletId,
+      });
+
+      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+
+      // Mock multisigType to return 'tss'
+      const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
+
+      const response = await agent
+        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [
+            {
+              address: 'tb1qtest1',
+              amount: '100000',
+            },
+          ],
+          source: 'backup',
+          pubkey: 'xpub_backup',
+        });
+
+      response.status.should.equal(500);
+      response.body.details.should.equal('Backup MPC signing not supported for sendMany');
+
+      walletGetNock.done();
+      keychainGetNock.done();
+      sinon.assert.calledOnce(prebuildStub);
+      sinon.assert.calledOnce(verifyStub);
+      sinon.assert.calledTwice(multisigTypeStub);
     });
   });
 
