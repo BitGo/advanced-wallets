@@ -25,6 +25,9 @@ import {
   KeyShareType,
   MpcFinalizeResponseType,
   MpcInitializeResponseType,
+  MpcV2FinalizeResponseType,
+  MpcV2InitializeResponseType,
+  MpcV2RoundResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
 
@@ -498,6 +501,105 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpc g-share: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Initialize MPCv2 key generation
+   */
+  async initMpcV2(params: { source: 'user' | 'backup' }): Promise<MpcV2InitializeResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to initialize MPCv2 key generation');
+    }
+
+    try {
+      debugLogger('Initializing MPCv2 key generation for coin: %s', this.coin);
+      let request = this.apiClient['v1.mpcv2.initialize'].post({
+        coin: this.coin,
+        source: params.source,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to initialize MPCv2 key generation: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Execute a round in the MPCv2 protocol
+   */
+  async mpcV2Round(params: {
+    source: 'user' | 'backup';
+    encryptedData: string;
+    encryptedDataKey: string;
+    round: number;
+    bitgoGpgPub?: string;
+    counterPartyGpgPub?: string;
+    broadcastMessages?: { bitgo: any; counterParty: any };
+    p2pMessages?: { bitgo: any; counterParty: any };
+  }): Promise<MpcV2RoundResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified for MPCv2 round');
+    }
+
+    try {
+      debugLogger('Executing MPCv2 round %d for coin: %s', params.round, this.coin);
+      let request = this.apiClient['v1.mpcv2.round'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to execute MPCv2 round: %s', err.message);
+      throw err;
+    }
+  }
+
+  /**
+   * Finalize MPCv2 key generation
+   */
+  async mpcV2Finalize(params: {
+    source: 'user' | 'backup';
+    encryptedData: string;
+    encryptedDataKey: string;
+    broadcastMessages: { bitgo: any; counterParty: any };
+    bitgoCommonKeychain: string;
+  }): Promise<MpcV2FinalizeResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to finalize MPCv2 key generation');
+    }
+
+    try {
+      debugLogger('Finalizing MPCv2 key generation for coin: %s', this.coin);
+      let request = this.apiClient['v1.mpcv2.finalize'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to finalize MPCv2 key generation: %s', err.message);
       throw err;
     }
   }

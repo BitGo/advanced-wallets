@@ -3,6 +3,9 @@ import * as z from 'zod';
 export interface GetKeyParams {
   pub: string;
   source: string;
+  options?: {
+    useLocalEncipherment?: boolean;
+  };
 }
 
 export interface GetKeyResponse {

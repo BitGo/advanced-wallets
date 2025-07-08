@@ -89,9 +89,15 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
 
   const bitgo = req.bitgo;
   const coinInstance = bitgo.coin(coin);
+  const options =
+    coinInstance.getMPCAlgorithm() === 'ecdsa'
+      ? {
+          useLocalEncipherment: true,
+        }
+      : undefined;
 
   // Get private key from KMS
-  const prv = await retrieveKmsPrvKey({ pub, source, cfg: req.config });
+  const prv = await retrieveKmsPrvKey({ pub, source, cfg: req.config, options });
 
   if (!prv) {
     const errorMsg = `Error while MPC signing, missing prv key for pub=${pub}, source=${source}`;

@@ -63,9 +63,10 @@ export class KmsClient {
     // Call KMS to get the key
     let kmsResponse: any;
     try {
-      kmsResponse = await superagent
-        .get(`${this.url}/key/${params.pub}`)
-        .query({ source: params.source });
+      kmsResponse = await superagent.get(`${this.url}/key/${params.pub}`).query({
+        source: params.source,
+        useLocalEncipherment: params.options?.useLocalEncipherment ?? false,
+      });
     } catch (error: any) {
       console.log('Error getting key from KMS', error);
       throw error;

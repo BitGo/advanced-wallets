@@ -7,6 +7,9 @@ export interface PostKeyParams {
   source: string;
   type: 'independent' | 'tss';
   seed?: string; // Optional seed for key generation
+  options?: {
+    useLocalEncipherment?: boolean;
+  };
 }
 
 export interface PostKeyResponse {

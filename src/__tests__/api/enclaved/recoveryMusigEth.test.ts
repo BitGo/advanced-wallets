@@ -78,12 +78,12 @@ describe('recoveryMultisigTransaction', () => {
 
     const kmsNockUser = nock(kmsUrl)
       .get(`/key/${userPub}`)
-      .query({ source: 'user' })
+      .query({ source: 'user', useLocalEncipherment: false })
       .reply(200, mockKmsUserResponse);
 
     const kmsNockBackup = nock(kmsUrl)
       .get(`/key/${backupPub}`)
-      .query({ source: 'backup' })
+      .query({ source: 'backup', useLocalEncipherment: false })
       .reply(200, mockKmsBackupResponse);
 
     console.warn(nock.activeMocks());
@@ -132,12 +132,12 @@ describe('recoveryMultisigTransaction', () => {
 
     const kmsNockUser = nock(kmsUrl)
       .get(`/key/${userPub}`)
-      .query({ source: 'user' })
+      .query({ source: 'user', useLocalEncipherment: false })
       .reply(200, mockKmsUserResponse);
 
     const kmsNockBackup = nock(kmsUrl)
       .get(`/key/${backupPub}`)
-      .query({ source: 'backup' })
+      .query({ source: 'backup', useLocalEncipherment: false })
       .reply(200, mockKmsBackupResponse);
 
     const response = await agent
