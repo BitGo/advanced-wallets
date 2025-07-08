@@ -106,10 +106,11 @@ export const SendManyResponse: HttpResponse = {
 
 // Request type for /consolidate endpoint
 export const ConsolidateRequest = {
-  pubkey: t.string,
+  pubkey: t.union([t.undefined, t.string]),
   source: t.union([t.literal('user'), t.literal('backup')]),
   consolidateAddresses: t.union([t.undefined, t.array(t.string)]),
   apiVersion: t.union([t.undefined, t.literal('full'), t.literal('lite')]),
+  commonKeychain: t.union([t.undefined, t.string]),
 };
 
 // Response type for /consolidate endpoint
