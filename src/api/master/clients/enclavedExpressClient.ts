@@ -508,7 +508,9 @@ export class EnclavedExpressClient {
   /**
    * Initialize MPCv2 key generation
    */
-  async initMpcV2(params: { source: 'user' | 'backup' }): Promise<MpcV2InitializeResponseType> {
+  async initEcdsaMpcV2KeyGenMpcV2(params: {
+    source: 'user' | 'backup';
+  }): Promise<MpcV2InitializeResponseType> {
     if (!this.coin) {
       throw new Error('Coin must be specified to initialize MPCv2 key generation');
     }
@@ -536,7 +538,7 @@ export class EnclavedExpressClient {
   /**
    * Execute a round in the MPCv2 protocol
    */
-  async mpcV2Round(params: {
+  async roundEcdsaMPCv2KeyGen(params: {
     source: 'user' | 'backup';
     encryptedData: string;
     encryptedDataKey: string;
@@ -573,7 +575,7 @@ export class EnclavedExpressClient {
   /**
    * Finalize MPCv2 key generation
    */
-  async mpcV2Finalize(params: {
+  async finalizeEcdsaMPCv2KeyGen(params: {
     source: 'user' | 'backup';
     encryptedData: string;
     encryptedDataKey: string;

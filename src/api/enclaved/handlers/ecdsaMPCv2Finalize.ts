@@ -7,7 +7,7 @@ import {
 import { KmsClient } from '../../../kms/kmsClient';
 import assert from 'assert';
 
-export async function mpcV2Finalize(
+export async function ecdsaMPCv2Finalize(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>,
 ): Promise<MpcV2FinalizeResponseType> {
   const { source, encryptedData, encryptedDataKey, broadcastMessages, bitgoCommonKeychain } =
