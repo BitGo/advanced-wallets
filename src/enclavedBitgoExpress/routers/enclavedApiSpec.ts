@@ -91,7 +91,7 @@ const SignMpcRequest = {
   userToBitgoRShare: t.union([t.undefined, t.any]),
   encryptedUserToBitgoRShare: t.union([t.undefined, t.any]),
   bitgoToUserCommitment: t.union([t.undefined, t.any]),
-  bitgoGpgPubKey: t.union([t.undefined, t.string]),
+  bitgoPublicGpgKey: t.union([t.undefined, t.string]),
   encryptedDataKey: t.union([t.undefined, t.string]),
 
   // ECDSA MPCv2 specific fields
@@ -337,7 +337,14 @@ export const EnclavedAPiSpec = apiSpec({
       request: httpRequest({
         params: {
           coin: t.string,
-          shareType: t.string,
+          shareType: t.union([
+            t.literal('commitment'),
+            t.literal('r'),
+            t.literal('g'),
+            t.literal('mpcv2round1'),
+            t.literal('mpcv2round2'),
+            t.literal('mpcv2round3'),
+          ]),
         },
         body: SignMpcRequest,
       }),

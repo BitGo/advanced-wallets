@@ -35,7 +35,7 @@ export async function handleEddsaSigning(
     encryptedDataKey,
   } = await enclavedExpressClient.signMpcCommitment({
     txRequest,
-    bitgoGpgPubKey: bitgoGpgKey.armor(),
+    bitgoPublicGpgKey: bitgoGpgKey.armor(),
     source: 'user',
     pub: commonKeychain,
   });

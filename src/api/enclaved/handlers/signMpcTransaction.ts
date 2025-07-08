@@ -68,7 +68,7 @@ interface EddsaSigningParams {
   userToBitgoRShare?: SignShare;
   encryptedUserToBitgoRShare?: EncryptedSignerShareRecord;
   bitgoToUserCommitment?: CommitmentShareRecord;
-  bitgoGpgPubKey?: string;
+  bitgoPublicGpgKey?: string;
 }
 
 // Unified parameters for handleEcdsaSigning - includes all possible fields
@@ -77,7 +77,7 @@ interface EcdsaSigningParams {
   shareType: ShareType;
   txRequest: TxRequest;
   prv: string;
-  bitgoGpgPubKey?: string;
+  bitgoPublicGpgKey?: string;
   encryptedDataKey?: string;
   encryptedUserGpgPrvKey?: string;
   encryptedRound1Session?: string;
@@ -119,15 +119,15 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
         userToBitgoRShare: req.decoded.userToBitgoRShare,
         encryptedUserToBitgoRShare: req.decoded.encryptedUserToBitgoRShare,
         bitgoToUserCommitment: req.decoded.bitgoToUserCommitment,
-        bitgoGpgPubKey: req.decoded.bitgoGpgPubKey,
+        bitgoPublicGpgKey: req.decoded.bitgoPublicGpgKey,
       });
     } else if (mpcAlgorithm === MPCType.ECDSA) {
       return await handleEcdsaMpcV2Signing(req.bitgo, req.config, {
         coin: coinInstance,
-        shareType,
+        shareType: shareType as ShareType,
         txRequest: req.decoded.txRequest,
         prv,
-        bitgoGpgPubKey: req.decoded.bitgoGpgPubKey,
+        bitgoPublicGpgKey: req.decoded.bitgoPublicGpgKey,
         encryptedDataKey: req.decoded.encryptedDataKey,
         encryptedUserGpgPrvKey: req.decoded.encryptedUserGpgPrvKey,
         encryptedRound1Session: req.decoded.encryptedRound1Session,
@@ -164,7 +164,7 @@ async function handleEddsaSigning(
     userToBitgoRShare,
     encryptedUserToBitgoRShare,
     bitgoToUserCommitment,
-    bitgoGpgPubKey,
+    bitgoPublicGpgKey,
   } = params;
 
   // Create EddsaUtils instance using the coin's bitgo instance
@@ -172,15 +172,15 @@ async function handleEddsaSigning(
 
   switch (shareType.toLowerCase()) {
     case ShareType.Commitment: {
-      if (!bitgoGpgPubKey) {
-        throw new Error('bitgoGpgPubKey is required for commitment share generation');
+      if (!bitgoPublicGpgKey) {
+        throw new Error('bitgoPublicGpgKey is required for commitment share generation');
       }
       const dataKey = await generateDataKey({ keyType: 'AES-256', cfg });
       const commitmentParams: CommitmentShareParams = {
         txRequest,
         prv,
         walletPassphrase: dataKey.plaintextKey,
-        bitgoGpgPubKey,
+        bitgoGpgPubKey: bitgoPublicGpgKey,
       };
       return {
         ...(await eddsaUtils.createCommitmentShareFromTxRequest(commitmentParams)),
@@ -257,8 +257,8 @@ async function handleEcdsaMpcV2Signing(
       if (!params.encryptedDataKey) {
         throw new Error('encryptedDataKey from Round 1 is required for MPCv2 Round 2');
       }
-      if (!params.bitgoGpgPubKey) {
-        throw new Error('bitgoGpgPubKey is required for MPCv2 Round 2');
+      if (!params.bitgoPublicGpgKey) {
+        throw new Error('bitgoPublicGpgKey is required for MPCv2 Round 2');
       }
       if (!params.encryptedUserGpgPrvKey) {
         throw new Error('encryptedUserGpgPrvKey is required for MPCv2 Round 2');
@@ -274,7 +274,7 @@ async function handleEcdsaMpcV2Signing(
         txRequest: params.txRequest,
         prv: params.prv,
         walletPassphrase: plaintextDataKey,
-        bitgoPublicGpgKey: params.bitgoGpgPubKey,
+        bitgoPublicGpgKey: params.bitgoPublicGpgKey,
         encryptedUserGpgPrvKey: params.encryptedUserGpgPrvKey,
         encryptedRound1Session: params.encryptedRound1Session,
       });
@@ -283,7 +283,7 @@ async function handleEcdsaMpcV2Signing(
       if (!params.encryptedDataKey) {
         throw new Error('encryptedDataKey from Round 1 is required for MPCv2 Round 3');
       }
-      if (!params.bitgoGpgPubKey) {
+      if (!params.bitgoPublicGpgKey) {
         throw new Error('bitgoGpgPubKey is required for MPCv2 Round 3');
       }
       if (!params.encryptedUserGpgPrvKey) {
@@ -300,7 +300,7 @@ async function handleEcdsaMpcV2Signing(
         txRequest: params.txRequest,
         prv: params.prv,
         walletPassphrase: plaintextDataKey,
-        bitgoPublicGpgKey: params.bitgoGpgPubKey,
+        bitgoPublicGpgKey: params.bitgoPublicGpgKey,
         encryptedUserGpgPrvKey: params.encryptedUserGpgPrvKey,
         encryptedRound2Session: params.encryptedRound2Session,
       });

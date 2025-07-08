@@ -90,7 +90,7 @@ interface RecoveryMultisigOptions {
 
 interface SignMpcCommitmentParams {
   txRequest: TxRequest;
-  bitgoGpgPubKey: string;
+  bitgoPublicGpgKey: string;
   source: 'user' | 'backup';
   pub: string;
 }
@@ -146,7 +146,6 @@ interface SignMpcV2Round2Params {
   encryptedRound1Session: string;
   encryptedDataKey: string;
   bitgoPublicGpgKey: string;
-  bitgoGpgPubKey: string;
 }
 
 export interface SignMpcV2Round2Response {
@@ -160,7 +159,6 @@ interface SignMpcV2Round3Params {
   encryptedRound2Session: string;
   encryptedDataKey: string;
   bitgoPublicGpgKey: string;
-  bitgoGpgPubKey: string;
 }
 
 export interface SignMpcV2Round3Response {

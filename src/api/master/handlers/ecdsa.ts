@@ -59,7 +59,7 @@ export async function handleEcdsaSigning(
       encryptedDataKey: round1Response.encryptedDataKey,
       encryptedRound1Session: round1Response.encryptedRound1Session,
       encryptedUserGpgPrvKey: round1Response.encryptedUserGpgPrvKey,
-      bitgoGpgPubKey: params.bitgoPublicGpgKey,
+      bitgoPublicGpgKey: params.bitgoPublicGpgKey,
     });
     round2Response = response;
     return response;
@@ -83,7 +83,7 @@ export async function handleEcdsaSigning(
       encryptedDataKey: round1Response.encryptedDataKey,
       encryptedRound2Session: round2Response.encryptedRound2Session,
       encryptedUserGpgPrvKey: round1Response.encryptedUserGpgPrvKey,
-      bitgoGpgPubKey: params.bitgoPublicGpgKey,
+      bitgoPublicGpgKey: params.bitgoPublicGpgKey,
     });
   };
 
