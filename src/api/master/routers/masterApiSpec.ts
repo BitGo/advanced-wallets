@@ -44,7 +44,7 @@ const GenerateWalletResponse: HttpResponse = {
 // Request type for /generate endpoint
 const GenerateWalletRequest = {
   label: t.string,
-  multisigType: t.union([t.undefined, t.literal('onchain'), t.literal('tss')]),
+  multisigType: t.union([t.literal('onchain'), t.literal('tss')]),
   enterprise: t.string,
   disableTransactionNotifications: t.union([t.undefined, t.boolean]),
   isDistributedCustody: t.union([t.undefined, t.boolean]),

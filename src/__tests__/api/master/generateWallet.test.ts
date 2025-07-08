@@ -116,6 +116,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       .send({
         label: 'test_wallet',
         enterprise: 'test_enterprise',
+        multisigType: 'onchain',
       });
 
     response.status.should.equal(200);
@@ -485,7 +486,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     backupFinalizeNock.done();
     addBackupKeyNock.done();
     addWalletNock.done();
-    response.status.should.equal(200); // TODO: Update to 200 when fully integrated with finalize endpoint
+    response.status.should.equal(200);
   });
 
   it('should generate a TSS MPC v2 wallet by calling the enclaved express service', async () => {
@@ -1136,5 +1137,28 @@ describe('POST /api/:coin/wallet/generate', () => {
     } catch (e) {
       (e as Error).message.should.equal('enclavedExpressUrl and enclavedExpressCert are required');
     }
+  });
+
+  it('should fail when multisig type is invalid / not provided', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'invalid',
+      });
+
+    response.status.should.equal(400);
+
+    const response2 = await agent
+      .post(`/api/${coin}/wallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+      });
+
+    response2.status.should.equal(400);
   });
 });
