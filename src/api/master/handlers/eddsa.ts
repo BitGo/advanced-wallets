@@ -10,6 +10,9 @@ import {
   BaseCoin,
   ApiKeyShare,
   TxRequest,
+  CustomRShareGeneratingFunction,
+  CustomGShareGeneratingFunction,
+  CustomCommitmentGeneratingFunction,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { exchangeEddsaCommitments } from '@bitgo/sdk-core/dist/src/bitgo/tss/common';
@@ -202,4 +205,71 @@ export async function orchestrateEddsaKeyGen({
   };
   walletParams.keys = [userMpcKey.id, backupMpcKey.id, bitgoKeychain.id];
   return { walletParams, keychains };
+}
+
+// Commitment
+export function createCustomCommitmentGenerator(
+  bitgo: BitGoBase,
+  wallet: Wallet,
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  pub: string,
+): CustomCommitmentGeneratingFunction {
+  return async function customCommitmentGeneratingFunction(params) {
+    const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin);
+    const bitgoGpgKey = await eddsaUtils.getBitgoPublicGpgKey();
+    const { txRequest } = params;
+    const response = await enclavedExpressClient.signMpcCommitment({
+      txRequest,
+      bitgoGpgPubKey: bitgoGpgKey.armor(),
+      source,
+      pub,
+    });
+    return {
+      ...response,
+      encryptedUserToBitgoRShare: {
+        ...response.encryptedUserToBitgoRShare,
+        encryptedDataKey: response.encryptedDataKey,
+      },
+    };
+  };
+}
+
+// RShare
+export function createCustomRShareGenerator(
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  pub: string,
+): CustomRShareGeneratingFunction {
+  return async function customRShareGeneratingFunction(params) {
+    const { txRequest, encryptedUserToBitgoRShare } = params;
+    const encryptedDataKey = (encryptedUserToBitgoRShare as any).encryptedDataKey;
+    return await enclavedExpressClient.signMpcRShare({
+      txRequest,
+      encryptedUserToBitgoRShare,
+      encryptedDataKey,
+      source,
+      pub,
+    });
+  };
+}
+
+// GShare
+export function createCustomGShareGenerator(
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  pub: string,
+): CustomGShareGeneratingFunction {
+  return async function customGShareGeneratingFunction(params) {
+    const { txRequest, bitgoToUserRShare, userToBitgoRShare, bitgoToUserCommitment } = params;
+    const response = await enclavedExpressClient.signMpcGShare({
+      txRequest,
+      bitgoToUserRShare,
+      userToBitgoRShare,
+      bitgoToUserCommitment,
+      source,
+      pub,
+    });
+    return response.gShare;
+  };
 }

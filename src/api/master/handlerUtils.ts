@@ -17,7 +17,7 @@ export async function getWalletAndSigningKeychain({
   bitgo: BitGo;
   coin: string;
   walletId: string;
-  params: { source: 'user' | 'backup'; pubkey?: string };
+  params: { source: 'user' | 'backup'; pubkey?: string; commonKeychain?: string };
   reqId: RequestTracer;
   KeyIndices: { USER: number; BACKUP: number; BITGO: number };
 }) {
@@ -34,12 +34,18 @@ export async function getWalletAndSigningKeychain({
     id: wallet.keyIds()[keyIdIndex],
   });
 
-  if (!signingKeychain || !signingKeychain.pub) {
+  if (!signingKeychain) {
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
 
   if (params.pubkey && params.pubkey !== signingKeychain.pub) {
     throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
+  }
+
+  if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
+    throw new Error(
+      `Common keychain provided does not match the keychain on wallet for ${params.source}`,
+    );
   }
 
   return { baseCoin, wallet, signingKeychain };

@@ -1,7 +1,17 @@
-import { RequestTracer, KeyIndices } from '@bitgo/sdk-core';
+import {
+  RequestTracer,
+  KeyIndices,
+  BuildConsolidationTransactionOptions,
+  MPCType,
+} from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
+import {
+  createCustomCommitmentGenerator,
+  createCustomRShareGenerator,
+  createCustomGShareGenerator,
+} from './eddsa';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
@@ -33,19 +43,49 @@ export async function handleConsolidate(
   }
 
   try {
-    // Create custom signing function that delegates to EBE
-    const customSigningFunction = makeCustomSigningFunction({
-      enclavedExpressClient,
-      source: params.source,
-      pub: signingKeychain.pub!,
-    });
-
-    // Prepare consolidation parameters
-    const consolidationParams = {
+    const consolidationParams: BuildConsolidationTransactionOptions = {
       ...params,
-      customSigningFunction,
       reqId,
     };
+
+    // --- TSS/MPC support ---
+    if (wallet._wallet.multisigType === 'tss') {
+      // Always force apiVersion to 'full' for TSS/MPC
+      consolidationParams.apiVersion = 'full';
+
+      // EDDSA (e.g., Solana)
+      if (baseCoin.getMPCAlgorithm() === MPCType.EDDSA) {
+        consolidationParams.customCommitmentGeneratingFunction = createCustomCommitmentGenerator(
+          bitgo,
+          wallet,
+          enclavedExpressClient,
+          params.source,
+          signingKeychain.commonKeychain!,
+        );
+        consolidationParams.customRShareGeneratingFunction = createCustomRShareGenerator(
+          enclavedExpressClient,
+          params.source,
+          signingKeychain.commonKeychain!,
+        );
+        consolidationParams.customGShareGeneratingFunction = createCustomGShareGenerator(
+          enclavedExpressClient,
+          params.source,
+          signingKeychain.commonKeychain!,
+        );
+      }
+      // ECDSA (future-proof, not needed for Solana)
+      else if (baseCoin.getMPCAlgorithm() === MPCType.ECDSA) {
+        // Add ECDSA custom signing hooks here if needed, following SDK pattern
+        throw new Error('ECDSA MPC consolidations not yet implemented');
+      }
+    } else {
+      // Non-TSS: legacy custom signing function
+      consolidationParams.customSigningFunction = makeCustomSigningFunction({
+        enclavedExpressClient,
+        source: params.source,
+        pub: signingKeychain.pub!,
+      });
+    }
 
     // Send account consolidations
     const result = await wallet.sendAccountConsolidations(consolidationParams);
