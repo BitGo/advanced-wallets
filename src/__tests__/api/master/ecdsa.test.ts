@@ -16,7 +16,7 @@ import {
   TransactionState,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
-import { handleEcdsaSigning } from '../../../../src/api/master/handlers/ecdsa';
+import { handleEcdsaMPCv2Signing } from '../../../../src/api/master/handlers/ecdsa';
 import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
 
@@ -238,7 +238,7 @@ describe('Ecdsa Signing Handler', () => {
         signatureShareRound3: round3SignatureShare,
       });
 
-    const result = await handleEcdsaSigning(
+    const result = await handleEcdsaMPCv2Signing(
       bitgo,
       wallet,
       txRequest.txRequestId,

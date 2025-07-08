@@ -15,7 +15,7 @@ import {
   SignMpcV2Round2Response,
 } from '../clients/enclavedExpressClient';
 
-export async function handleEcdsaSigning(
+export async function handleEcdsaMPCv2Signing(
   bitgo: BitGoBase,
   wallet: Wallet,
   txRequestId: string,
@@ -23,7 +23,7 @@ export async function handleEcdsaSigning(
   source: 'user' | 'backup',
   commonKeychain: string,
   reqId: IRequestTracer,
-) {
+): Promise<TxRequest> {
   const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin, wallet);
   const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
 

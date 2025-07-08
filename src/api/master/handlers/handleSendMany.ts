@@ -14,7 +14,7 @@ import {
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { handleEddsaSigning } from './eddsa';
-import { handleEcdsaSigning } from './ecdsa';
+import { handleEcdsaMPCv2Signing } from './ecdsa';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 
 /**
@@ -213,7 +213,7 @@ async function signAndSendTxRequests(
       reqId,
     );
   } else if (mpcAlgorithm === 'ecdsa') {
-    signedTxRequest = await handleEcdsaSigning(
+    signedTxRequest = await handleEcdsaMPCv2Signing(
       bitgo,
       wallet,
       txRequestId,

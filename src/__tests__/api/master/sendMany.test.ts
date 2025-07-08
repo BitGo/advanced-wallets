@@ -371,7 +371,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         .returns('ecdsa');
 
       // Mock handleEcdsaSigning
-      const handleEcdsaSigningStub = sinon.stub().resolves({
+      const handleEcdsaMPCv2Signing = sinon.stub().resolves({
         txRequestId: 'test-tx-request-id',
         state: 'signed',
         apiVersion: 'full',
@@ -386,7 +386,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       });
 
       // Import and stub the handleEcdsaSigning function
-      sinon.stub(ecdsa, 'handleEcdsaSigning').callsFake(handleEcdsaSigningStub);
+      sinon.stub(ecdsa, 'handleEcdsaMPCv2Signing').callsFake(handleEcdsaMPCv2Signing);
 
       const response = await agent
         .post(`/api/${coin}/wallet/${walletId}/sendMany`)
@@ -417,7 +417,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       sinon.assert.calledOnce(verifyStub);
       sinon.assert.calledTwice(multisigTypeStub);
       sinon.assert.calledOnce(getMPCAlgorithmStub);
-      sinon.assert.calledOnce(handleEcdsaSigningStub);
+      sinon.assert.calledOnce(handleEcdsaMPCv2Signing);
     });
 
     it('should fail when backup key is used for ECDSA TSS signing', async () => {

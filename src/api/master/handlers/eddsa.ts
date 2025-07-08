@@ -22,7 +22,7 @@ export async function handleEddsaSigning(
   commonKeychain: string,
   reqId?: IRequestTracer,
 ) {
-  const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin);
+  const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin, wallet);
   const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
 
   const { apiVersion } = txRequest;
