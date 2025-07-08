@@ -7,7 +7,7 @@ import {
 import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 import { KmsClient } from '../../../kms/kmsClient';
 
-export async function mpcV2Round(
+export async function ecdsaMPCv2Round(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>,
 ): Promise<MpcV2RoundResponseType> {
   const { source, encryptedData, encryptedDataKey, round, broadcastMessages, p2pMessages } =

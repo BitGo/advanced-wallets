@@ -25,9 +25,9 @@ import { BitGoRequest } from '../../types/request';
 import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
 import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
 import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
-import { mpcV2Initialize } from '../../api/enclaved/handlers/mpcV2Initialize';
-import { mpcV2Round } from '../../api/enclaved/handlers/mpcV2Round';
-import { mpcV2Finalize } from '../../api/enclaved/handlers/mpcV2Finalize';
+import { ecdsaMPCv2Initialize } from '../../api/enclaved/handlers/ecdsaMPCv2Initialize';
+import { ecdsaMPCv2Round } from '../../api/enclaved/handlers/ecdsaMPCv2Round';
+import { ecdsaMPCv2Finalize } from '../../api/enclaved/handlers/ecdsaMPCv2Finalize';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -508,7 +508,7 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   router.post('v1.mpcv2.initialize', [
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>;
-      const result = await mpcV2Initialize(typedReq);
+      const result = await ecdsaMPCv2Initialize(typedReq);
       return Response.ok(result);
     }),
   ]);
@@ -516,7 +516,7 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   router.post('v1.mpcv2.round', [
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>;
-      const result = await mpcV2Round(typedReq);
+      const result = await ecdsaMPCv2Round(typedReq);
       return Response.ok(result);
     }),
   ]);
@@ -524,7 +524,7 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   router.post('v1.mpcv2.finalize', [
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>;
-      const result = await mpcV2Finalize(typedReq);
+      const result = await ecdsaMPCv2Finalize(typedReq);
       return Response.ok(result);
     }),
   ]);

@@ -8,7 +8,7 @@ import * as bitgoSdk from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 
-export async function mpcV2Initialize(
+export async function ecdsaMPCv2Initialize(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>,
 ): Promise<MpcV2InitializeResponseType> {
   const { source } = req.decoded;
