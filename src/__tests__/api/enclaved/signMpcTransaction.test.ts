@@ -343,7 +343,7 @@ describe('signMpcTransaction', () => {
       const derivationPath = 'm/0';
 
       const [userShare, backupShare, bitgoShare] = await DklsUtils.generateDKGKeyShares();
-      assert(backupShare, 'backupShare is not defined');
+      assert(backupShare, 'Backup share is not defined');
 
       const userKeyShare = userShare.getKeyShare().toString('base64');
 

@@ -74,7 +74,7 @@ interface EddsaSigningParams {
 // Unified parameters for handleEcdsaSigning - includes all possible fields
 interface EcdsaSigningParams {
   coin: BaseCoin;
-  shareType: string;
+  shareType: ShareType;
   txRequest: TxRequest;
   prv: string;
   bitgoGpgPubKey?: string;

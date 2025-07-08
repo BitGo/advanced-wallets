@@ -132,7 +132,7 @@ describe('Ecdsa Signing Handler', () => {
       .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/sign`)
       .matchHeader('any', () => true)
       .reply(200, {
-        txRequest: round1TxRequest,
+        ...round1TxRequest,
       });
 
     const round2SignatureShare: SignatureShareRecord = {
@@ -171,7 +171,7 @@ describe('Ecdsa Signing Handler', () => {
       .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/sign`)
       .matchHeader('any', () => true)
       .reply(200, {
-        txRequest: round2TxRequest,
+        ...round2TxRequest,
       });
 
     const round3SignatureShare: SignatureShareRecord = {
@@ -194,15 +194,13 @@ describe('Ecdsa Signing Handler', () => {
       .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/sign`)
       .matchHeader('any', () => true)
       .reply(200, {
-        txRequest: {
-          ...round2TxRequest,
-          transactions: [
-            {
-              ...round2TxRequest.transactions![0],
-              signatureShares: [round1SignatureShare, round2SignatureShare, round3SignatureShare],
-            },
-          ],
-        },
+        ...round2TxRequest,
+        transactions: [
+          {
+            ...round2TxRequest.transactions![0],
+            signatureShares: [round1SignatureShare, round2SignatureShare, round3SignatureShare],
+          },
+        ],
       });
 
     // Mock sendTxRequest call
