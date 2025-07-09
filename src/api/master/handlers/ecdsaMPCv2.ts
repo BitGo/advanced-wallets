@@ -15,18 +15,14 @@ import {
   SignMpcV2Round2Response,
 } from '../clients/enclavedExpressClient';
 
-export async function handleEcdsaMPCv2Signing(
-  bitgo: BitGoBase,
-  wallet: Wallet,
-  txRequestId: string,
+/**
+ * Creates custom ECDSA MPCv2 signing functions for use with enclaved express client
+ */
+export function createEcdsaMPCv2CustomSigners(
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   commonKeychain: string,
-  reqId: IRequestTracer,
-): Promise<TxRequest> {
-  const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin, wallet);
-  const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
-
+) {
   // Create state to maintain data between rounds
   let round1Response: SignMpcV2Round1Response;
   let round2Response: SignMpcV2Round2Response;
@@ -75,6 +71,29 @@ export async function handleEcdsaMPCv2Signing(
       bitgoPublicGpgKey: params.bitgoPublicGpgKey,
     });
   };
+
+  return {
+    customMPCv2Round1Generator,
+    customMPCv2Round2Generator,
+    customMPCv2Round3Generator,
+  };
+}
+
+export async function handleEcdsaMPCv2Signing(
+  bitgo: BitGoBase,
+  wallet: Wallet,
+  txRequestId: string,
+  enclavedExpressClient: EnclavedExpressClient,
+  source: 'user' | 'backup',
+  commonKeychain: string,
+  reqId: IRequestTracer,
+): Promise<TxRequest> {
+  const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin, wallet);
+  const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
+
+  // Use the shared custom signing functions
+  const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
+    createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
 
   // Use the existing signEcdsaMPCv2TssUsingExternalSigner method with our custom signers
   return await ecdsaMPCv2Utils.signEcdsaMPCv2TssUsingExternalSigner(

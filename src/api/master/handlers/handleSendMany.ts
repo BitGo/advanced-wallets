@@ -14,7 +14,7 @@ import {
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { handleEddsaSigning } from './eddsa';
-import { handleEcdsaMPCv2Signing } from './ecdsaMPCv2';
+import { handleEcdsaMPCv2Signing, createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 
 /**
@@ -28,6 +28,43 @@ interface Recipient {
   data?: string;
   tokenName?: string;
   tokenData?: any;
+}
+
+/**
+ * Creates TSS send parameters for ECDSA MPCv2 signing with custom functions
+ */
+function createEcdsaMPCv2SendParams(
+  req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>,
+  wallet: Wallet,
+  enclavedExpressClient: EnclavedExpressClient,
+  signingKeychain: Keychain,
+): SendManyOptions {
+  const coin = req.bitgo.coin(req.params.coin);
+  const mpcAlgorithm = coin.getMPCAlgorithm();
+
+  if (mpcAlgorithm === 'ecdsa') {
+    // For ECDSA MPCv2, we need to create custom signing functions
+    const source = signingKeychain.source as 'user' | 'backup';
+    const commonKeychain = signingKeychain.commonKeychain;
+
+    if (!commonKeychain) {
+      throw new Error('Common keychain is required for ECDSA MPCv2 signing');
+    }
+
+    // Use the shared custom signing functions
+    const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
+      createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
+
+    return {
+      ...(req.decoded as SendManyOptions),
+      customMPCv2SigningRound1GenerationFunction: customMPCv2Round1Generator,
+      customMPCv2SigningRound2GenerationFunction: customMPCv2Round2Generator,
+      customMPCv2SigningRound3GenerationFunction: customMPCv2Round3Generator,
+    };
+  } else {
+    // For non-ECDSA algorithms, return the original parameters
+    return req.decoded as SendManyOptions;
+  }
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
@@ -45,9 +82,9 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  // if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-  //   throw new Error('Wallet is not an on-prem wallet');
-  // }
+  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
+    throw new Error('Wallet is not an on-prem wallet');
+  }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
   logger.info(`Key ID index: ${keyIdIndex}`);
@@ -64,13 +101,25 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   if (params.pubkey && signingKeychain.pub !== params.pubkey) {
     throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
   }
-  if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
-    throw new Error(
-      `Common keychain provided does not match the keychain on wallet for ${params.source}`,
-    );
-  }
+  // if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
+  //   throw new Error(
+  //     `Common keychain provided does not match the keychain on wallet for ${params.source}`,
+  //   );
+  // }
 
   try {
+    // Create TSS send parameters with custom signing functions if needed
+
+    if (wallet.baseCoin.getMPCAlgorithm() === 'ecdsa') {
+      const ecdsaMPCv2SendParams = createEcdsaMPCv2SendParams(
+        req,
+        wallet,
+        enclavedExpressClient,
+        signingKeychain,
+      );
+      return wallet.sendMany(ecdsaMPCv2SendParams);
+    }
+
     const prebuildParams: PrebuildTransactionOptions = {
       ...params,
       // Convert memo string to Memo object if present
