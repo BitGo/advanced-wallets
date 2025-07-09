@@ -16,7 +16,7 @@ import {
   TransactionState,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
-import { handleEcdsaMPCv2Signing } from '../../../api/master/handlers/ecdsaMPCv2';
+import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../api/master/handlers/ecdsaMPCv2';
 import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
 
@@ -69,7 +69,7 @@ describe('Ecdsa Signing Handler', () => {
   it('should successfully sign an ECDSA MPCv2 transaction', async () => {
     const txRequest: TxRequest = {
       txRequestId: 'test-tx-request-id',
-      apiVersion: '2.0.0' as TxRequestVersion,
+      apiVersion: 'full',
       enterpriseId: 'test-enterprise-id',
       transactions: [],
       state: 'pendingUserSignature',
@@ -88,15 +88,6 @@ describe('Ecdsa Signing Handler', () => {
     const bitgoGpgKey = await openpgpUtils.generateGPGKeyPair('secp256k1');
     const pgpKey = await readKey({ armoredKey: bitgoGpgKey.publicKey });
     sinon.stub(EcdsaMPCv2Utils.prototype, 'getBitgoMpcv2PublicGpgKey').resolves(pgpKey);
-
-    // Mock getTxRequest call
-    const getTxRequestNock = nock(bitgoApiUrl)
-      .get(`/api/v2/wallet/${walletId}/txrequests`)
-      .query({ txRequestIds: 'test-tx-request-id', latest: true })
-      .matchHeader('any', () => true)
-      .reply(200, {
-        txRequests: [txRequest],
-      });
 
     // Mock sendSignatureShareV2 calls for each round
     const round1SignatureShare: SignatureShareRecord = {
@@ -238,10 +229,10 @@ describe('Ecdsa Signing Handler', () => {
         signatureShareRound3: round3SignatureShare,
       });
 
-    const result = await handleEcdsaMPCv2Signing(
+    const result = await signAndSendEcdsaMPCv2FromTxRequest(
       bitgo,
       wallet,
-      txRequest.txRequestId,
+      txRequest,
       enclavedExpressClient,
       'user',
       userPubKey,
@@ -253,7 +244,6 @@ describe('Ecdsa Signing Handler', () => {
       state: 'signed',
     });
 
-    getTxRequestNock.done();
     sendSignatureShareV2Round1Nock.done();
     sendSignatureShareV2Round2Nock.done();
     sendSignatureShareV2Round3Nock.done();

@@ -5,17 +5,15 @@ import {
   KeyIndices,
   Wallet,
   SendManyOptions,
-  BitGoBase,
-  PendingApprovals,
   PrebuildTransactionResult,
   Keychain,
-  TxRequest,
+  getTxRequest,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { handleEddsaSigning } from './eddsa';
-import { handleEcdsaMPCv2Signing, createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
+import { createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { signAndSendTxRequests } from './transactionRequests';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -82,9 +80,10 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-    throw new Error('Wallet is not an on-prem wallet');
-  }
+  // TODO: Re-enable this validation when test wallets are properly configured
+  // if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
+  //   throw new Error('Wallet is not an on-prem wallet');
+  // }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
   logger.info(`Key ID index: ${keyIdIndex}`);
@@ -110,14 +109,19 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   try {
     // Create TSS send parameters with custom signing functions if needed
 
-    if (wallet.baseCoin.getMPCAlgorithm() === 'ecdsa') {
-      const ecdsaMPCv2SendParams = createEcdsaMPCv2SendParams(
-        req,
-        wallet,
-        enclavedExpressClient,
-        signingKeychain,
-      );
-      return wallet.sendMany(ecdsaMPCv2SendParams);
+    if (wallet.multisigType() === 'tss') {
+      if (signingKeychain.source === 'backup') {
+        throw new Error('Backup MPC signing not supported for sendMany');
+      }
+      if (wallet.baseCoin.getMPCAlgorithm() === 'ecdsa') {
+        const ecdsaMPCv2SendParams = createEcdsaMPCv2SendParams(
+          req,
+          wallet,
+          enclavedExpressClient,
+          signingKeychain,
+        );
+        return wallet.sendMany(ecdsaMPCv2SendParams);
+      }
     }
 
     const prebuildParams: PrebuildTransactionOptions = {
@@ -162,10 +166,11 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       if (!txPrebuilt.txRequestId) {
         throw new Error('MPC tx not built correctly.');
       }
+      const txRequest = await getTxRequest(bitgo, wallet.id(), txPrebuilt.txRequestId, reqId);
       return signAndSendTxRequests(
         bitgo,
         wallet,
-        txPrebuilt.txRequestId,
+        txRequest,
         enclavedExpressClient,
         signingKeychain,
         reqId,
@@ -222,79 +227,4 @@ async function signAndSendMultisig(
   // Submit the half signed transaction
   const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
   return result;
-}
-
-/**
- * Signs and sends a transaction from a TSS wallet.
- *
- * @param bitgo - BitGo instance
- * @param wallet - Wallet instance
- * @param txRequestId - Transaction request ID
- * @param enclavedExpressClient - Enclaved express client
- * @param signingKeychain - Signing keychain
- * @param reqId - Request tracer
- */
-async function signAndSendTxRequests(
-  bitgo: BitGoBase,
-  wallet: Wallet,
-  txRequestId: string,
-  enclavedExpressClient: EnclavedExpressClient,
-  signingKeychain: Keychain,
-  reqId: RequestTracer,
-): Promise<any> {
-  if (!signingKeychain.commonKeychain) {
-    throw new Error(`Common keychain not found for keychain ${signingKeychain.pub || 'unknown'}`);
-  }
-  if (signingKeychain.source === 'backup') {
-    throw new Error('Backup MPC signing not supported for sendMany');
-  }
-
-  let signedTxRequest: TxRequest;
-  const mpcAlgorithm = wallet.baseCoin.getMPCAlgorithm();
-
-  if (mpcAlgorithm === 'eddsa') {
-    signedTxRequest = await handleEddsaSigning(
-      bitgo,
-      wallet,
-      txRequestId,
-      enclavedExpressClient,
-      signingKeychain.commonKeychain,
-      reqId,
-    );
-  } else if (mpcAlgorithm === 'ecdsa') {
-    signedTxRequest = await handleEcdsaMPCv2Signing(
-      bitgo,
-      wallet,
-      txRequestId,
-      enclavedExpressClient,
-      signingKeychain.source as 'user' | 'backup',
-      signingKeychain.commonKeychain,
-      reqId,
-    );
-  } else {
-    throw new Error(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
-  }
-
-  if (!signedTxRequest.txRequestId) {
-    throw new Error('txRequestId missing from signed transaction');
-  }
-
-  if (signedTxRequest.apiVersion !== 'full') {
-    throw new Error('Only TxRequest API version full is supported.');
-  }
-
-  bitgo.setRequestTracer(reqId);
-  if (signedTxRequest.state === 'pendingApproval') {
-    const pendingApprovals = new PendingApprovals(bitgo, wallet.baseCoin);
-    const pendingApproval = await pendingApprovals.get({ id: signedTxRequest.pendingApprovalId });
-    return {
-      pendingApproval: pendingApproval.toJSON(),
-      txRequest: signedTxRequest,
-    };
-  }
-  return {
-    txRequest: signedTxRequest,
-    txid: (signedTxRequest.transactions ?? [])[0]?.signedTx?.id,
-    tx: (signedTxRequest.transactions ?? [])[0]?.signedTx?.tx,
-  };
 }

@@ -79,23 +79,22 @@ export function createEcdsaMPCv2CustomSigners(
   };
 }
 
-export async function handleEcdsaMPCv2Signing(
+export async function signAndSendEcdsaMPCv2FromTxRequest(
   bitgo: BitGoBase,
   wallet: Wallet,
-  txRequestId: string,
+  txRequest: TxRequest,
   enclavedExpressClient: EnclavedExpressClient,
   source: 'user' | 'backup',
   commonKeychain: string,
   reqId: IRequestTracer,
 ): Promise<TxRequest> {
   const ecdsaMPCv2Utils = new EcdsaMPCv2Utils(bitgo, wallet.baseCoin, wallet);
-  const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
 
   // Use the shared custom signing functions
   const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
     createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
 
-  // Use the existing signEcdsaMPCv2TssUsingExternalSigner method with our custom signers
+  // This also sends the TxRequest for broadcast
   return await ecdsaMPCv2Utils.signEcdsaMPCv2TssUsingExternalSigner(
     { txRequest, reqId },
     customMPCv2Round1Generator,
