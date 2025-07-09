@@ -53,7 +53,6 @@ export async function handleConsolidate(
       // Always force apiVersion to 'full' for TSS/MPC
       consolidationParams.apiVersion = 'full';
 
-      // EDDSA (e.g., Solana)
       if (baseCoin.getMPCAlgorithm() === MPCType.EDDSA) {
         consolidationParams.customCommitmentGeneratingFunction = createCustomCommitmentGenerator(
           bitgo,
@@ -73,9 +72,7 @@ export async function handleConsolidate(
           signingKeychain.commonKeychain!,
         );
       }
-      // ECDSA (future-proof, not needed for Solana)
       else if (baseCoin.getMPCAlgorithm() === MPCType.ECDSA) {
-        // Add ECDSA custom signing hooks here if needed, following SDK pattern
         throw new Error('ECDSA MPC consolidations not yet implemented');
       }
     } else {
