@@ -24,6 +24,7 @@ import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
 import { handleConsolidate } from '../handlers/handleConsolidate';
 import { handleAccelerate } from '../handlers/handleAccelerate';
 import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
+import { handleSignAndSendTxRequest } from '../handlers/handleSignAndSendTxRequest';
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -218,6 +219,19 @@ const ConsolidateUnspentsResponse: HttpResponse = {
   }),
 };
 
+const SignMpcRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  commonKeychain: t.union([t.undefined, t.string]),
+};
+
+const SignMpcResponse: HttpResponse = {
+  200: t.any,
+  500: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+};
+
 // API Specification
 export const MasterApiSpec = apiSpec({
   'v1.wallet.generate': {
@@ -247,6 +261,22 @@ export const MasterApiSpec = apiSpec({
       }),
       response: SendManyResponse,
       description: 'Send many transactions',
+    }),
+  },
+  'v1.wallet.txrequest.signAndSend': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/wallet/{walletId}/txrequest/{txRequestId}/signAndSend',
+      request: httpRequest({
+        params: {
+          walletId: t.string,
+          coin: t.string,
+          txRequestId: t.string,
+        },
+        body: SignMpcRequest,
+      }),
+      response: SignMpcResponse,
+      description: 'Sign MPC with TxRequest',
     }),
   },
   'v1.wallet.recovery': {
@@ -380,6 +410,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleConsolidateUnspents(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.wallet.txrequest.signAndSend', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleSignAndSendTxRequest(typedReq);
       return Response.ok(result);
     }),
   ]);
