@@ -9,7 +9,7 @@ import { Environments, Wallet } from '@bitgo/sdk-core';
 import { Coin } from 'bitgo';
 import assert from 'assert';
 import * as eddsa from '../../../api/master/handlers/eddsa';
-import * as ecdsa from '../../../api/master/handlers/ecdsa';
+import * as ecdsa from '../../../api/master/handlers/ecdsaMPCv2';
 
 describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   let agent: request.SuperAgentTest;

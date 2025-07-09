@@ -11,7 +11,7 @@ import {
 } from '@bitgo/sdk-core';
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { orchestrateEcdsaKeyGen } from './ecdsa';
+import { orchestrateEcdsaKeyGen } from './ecdsaMPCv2';
 import { orchestrateEddsaKeyGen } from './eddsa';
 
 /**

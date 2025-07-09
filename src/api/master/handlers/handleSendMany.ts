@@ -14,7 +14,7 @@ import {
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { handleEddsaSigning } from './eddsa';
-import { handleEcdsaMPCv2Signing } from './ecdsa';
+import { handleEcdsaMPCv2Signing } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 
 /**

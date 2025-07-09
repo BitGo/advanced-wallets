@@ -16,7 +16,7 @@ import {
   TransactionState,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
-import { handleEcdsaMPCv2Signing } from '../../../../src/api/master/handlers/ecdsa';
+import { handleEcdsaMPCv2Signing } from '../../../api/master/handlers/ecdsaMPCv2';
 import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
 
