@@ -71,8 +71,7 @@ export async function handleConsolidate(
           params.source,
           signingKeychain.commonKeychain!,
         );
-      }
-      else if (baseCoin.getMPCAlgorithm() === MPCType.ECDSA) {
+      } else if (baseCoin.getMPCAlgorithm() === MPCType.ECDSA) {
         throw new Error('ECDSA MPC consolidations not yet implemented');
       }
     } else {

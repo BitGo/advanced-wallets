@@ -56,12 +56,10 @@ describe('POST /api/:coin/wallet/:walletId/consolidate (EDDSA MPC)', () => {
       });
 
     // Mock keychain get request
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .reply(200, {
-        id: 'user-key-id',
-        commonKeychain: 'pubkey',
-      });
+    const keychainGetNock = nock(bitgoApiUrl).get(`/api/v2/${coin}/key/user-key-id`).reply(200, {
+      id: 'user-key-id',
+      commonKeychain: 'pubkey',
+    });
 
     // Mock sendAccountConsolidations on Wallet prototype
     const sendConsolidationsStub = sinon
@@ -80,8 +78,10 @@ describe('POST /api/:coin/wallet/:walletId/consolidate (EDDSA MPC)', () => {
     const mockCommitmentFn = sinon.stub().resolves({ userToBitgoCommitment: 'commitment' });
     const mockRShareFn = sinon.stub().resolves({ rShare: 'rshare' });
     const mockGShareFn = sinon.stub().resolves({ gShare: 'gshare' });
-    
-    const commitmentSpy = sinon.stub(eddsa, 'createCustomCommitmentGenerator').returns(mockCommitmentFn);
+
+    const commitmentSpy = sinon
+      .stub(eddsa, 'createCustomCommitmentGenerator')
+      .returns(mockCommitmentFn);
     const rshareSpy = sinon.stub(eddsa, 'createCustomRShareGenerator').returns(mockRShareFn);
     const gshareSpy = sinon.stub(eddsa, 'createCustomGShareGenerator').returns(mockGShareFn);
 
@@ -119,26 +119,22 @@ describe('POST /api/:coin/wallet/:walletId/consolidate (EDDSA MPC)', () => {
       });
 
     // Mock keychain get request
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .reply(200, {
-        id: 'user-key-id',
-        commonKeychain: 'pubkey',
-      });
+    const keychainGetNock = nock(bitgoApiUrl).get(`/api/v2/${coin}/key/user-key-id`).reply(200, {
+      id: 'user-key-id',
+      commonKeychain: 'pubkey',
+    });
 
     // Mock partial failure response
-    sinon
-      .stub(Wallet.prototype, 'sendAccountConsolidations')
-      .resolves({
-        success: [{ txid: 'success-txid', status: 'signed' }],
-        failure: [{ error: 'Insufficient funds', address: '0xfailed' }],
-      });
+    sinon.stub(Wallet.prototype, 'sendAccountConsolidations').resolves({
+      success: [{ txid: 'success-txid', status: 'signed' }],
+      failure: [{ error: 'Insufficient funds', address: '0xfailed' }],
+    });
 
     // Mock EDDSA hooks
     const mockCommitmentFn = sinon.stub().resolves({ userToBitgoCommitment: 'commitment' });
     const mockRShareFn = sinon.stub().resolves({ rShare: 'rshare' });
     const mockGShareFn = sinon.stub().resolves({ gShare: 'gshare' });
-    
+
     sinon.stub(eddsa, 'createCustomCommitmentGenerator').returns(mockCommitmentFn);
     sinon.stub(eddsa, 'createCustomRShareGenerator').returns(mockRShareFn);
     sinon.stub(eddsa, 'createCustomGShareGenerator').returns(mockGShareFn);
@@ -175,29 +171,25 @@ describe('POST /api/:coin/wallet/:walletId/consolidate (EDDSA MPC)', () => {
       });
 
     // Mock keychain get request
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .reply(200, {
-        id: 'user-key-id',
-        commonKeychain: 'pubkey',
-      });
+    const keychainGetNock = nock(bitgoApiUrl).get(`/api/v2/${coin}/key/user-key-id`).reply(200, {
+      id: 'user-key-id',
+      commonKeychain: 'pubkey',
+    });
 
     // Mock total failure response
-    sinon
-      .stub(Wallet.prototype, 'sendAccountConsolidations')
-      .resolves({
-        success: [],
-        failure: [
-          { error: 'Insufficient funds', address: '0xfailed1' },
-          { error: 'Invalid address', address: '0xfailed2' },
-        ],
-      });
+    sinon.stub(Wallet.prototype, 'sendAccountConsolidations').resolves({
+      success: [],
+      failure: [
+        { error: 'Insufficient funds', address: '0xfailed1' },
+        { error: 'Invalid address', address: '0xfailed2' },
+      ],
+    });
 
     // Mock EDDSA hooks
     const mockCommitmentFn = sinon.stub().resolves({ userToBitgoCommitment: 'commitment' });
     const mockRShareFn = sinon.stub().resolves({ rShare: 'rshare' });
     const mockGShareFn = sinon.stub().resolves({ gShare: 'gshare' });
-    
+
     sinon.stub(eddsa, 'createCustomCommitmentGenerator').returns(mockCommitmentFn);
     sinon.stub(eddsa, 'createCustomRShareGenerator').returns(mockRShareFn);
     sinon.stub(eddsa, 'createCustomGShareGenerator').returns(mockGShareFn);
@@ -213,7 +205,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate (EDDSA MPC)', () => {
     response.status.should.equal(500);
     response.body.should.have.property('error');
     response.body.should.have.property('details').which.match(/All consolidations failed/);
-    
+
     walletGetNock.done();
     keychainGetNock.done();
   });
