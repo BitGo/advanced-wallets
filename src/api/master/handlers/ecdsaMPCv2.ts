@@ -2,7 +2,6 @@ import {
   BaseCoin,
   BitGoBase,
   EcdsaMPCv2Utils,
-  getTxRequest,
   IRequestTracer,
   RequestType,
   SupplementGenerateWalletOptions,

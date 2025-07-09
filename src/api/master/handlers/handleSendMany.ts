@@ -80,10 +80,9 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  // TODO: Re-enable this validation when test wallets are properly configured
-  // if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-  //   throw new Error('Wallet is not an on-prem wallet');
-  // }
+  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
+    throw new Error('Wallet is not an on-prem wallet');
+  }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
   logger.info(`Key ID index: ${keyIdIndex}`);
@@ -100,11 +99,11 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   if (params.pubkey && signingKeychain.pub !== params.pubkey) {
     throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
   }
-  // if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
-  //   throw new Error(
-  //     `Common keychain provided does not match the keychain on wallet for ${params.source}`,
-  //   );
-  // }
+  if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
+    throw new Error(
+      `Common keychain provided does not match the keychain on wallet for ${params.source}`,
+    );
+  }
 
   try {
     // Create TSS send parameters with custom signing functions if needed

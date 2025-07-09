@@ -612,7 +612,7 @@ export class EnclavedExpressClient {
     }
 
     try {
-      let request = this['apiClient']['v1.mpc.sign'].post({
+      let request = this.apiClient['v1.mpc.sign'].post({
         coin: this['coin'],
         shareType: 'mpcv2round1',
         ...params,
@@ -645,7 +645,7 @@ export class EnclavedExpressClient {
     }
 
     try {
-      let request = this['apiClient']['v1.mpc.sign'].post({
+      let request = this.apiClient['v1.mpc.sign'].post({
         coin: this['coin'],
         shareType: 'mpcv2round2',
         ...params,
@@ -678,7 +678,7 @@ export class EnclavedExpressClient {
     }
 
     try {
-      let request = this['apiClient']['v1.mpc.sign'].post({
+      let request = this.apiClient['v1.mpc.sign'].post({
         coin: this['coin'],
         shareType: 'mpcv2round3',
         ...params,

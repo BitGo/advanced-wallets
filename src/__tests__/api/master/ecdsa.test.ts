@@ -6,7 +6,6 @@ import {
   Wallet,
   TxRequest,
   IRequestTracer,
-  TxRequestVersion,
   Environments,
   RequestTracer,
   EcdsaMPCv2Utils,
