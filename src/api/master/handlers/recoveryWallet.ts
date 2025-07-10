@@ -17,9 +17,6 @@ import {
 } from '../../../shared/recoveryUtils';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { recoverEddsaWallets } from './recoverEddsaWallets';
-import { EnvironmentName } from '../../../shared/types';
-import logger from '../../../logger';
 
 interface RecoveryParams {
   userKey: string;
@@ -64,35 +61,6 @@ async function handleEthLikeRecovery(
     });
 
     return fullSignedRecoveryTx;
-  } catch (err) {
-    throw err;
-  }
-}
-
-async function handleEddsaRecovery(
-  bitgo: BitGoAPI,
-  sdkCoin: BaseCoin,
-  commonRecoveryParams: RecoveryParams,
-  enclavedExpressClient: EnclavedExpressClient,
-  params: EnclavedRecoveryParams,
-) {
-  const { recoveryDestination, userKey } = commonRecoveryParams;
-  try {
-    const unsignedSweepPrebuildTx = await recoverEddsaWallets(bitgo, sdkCoin, {
-      bitgoKey: userKey,
-      recoveryDestination,
-      apiKey: params.apiKey,
-    });
-    logger.info('Unsigned sweep tx: ', JSON.stringify(unsignedSweepPrebuildTx, null, 2));
-
-    return await enclavedExpressClient.recoveryMPC({
-      userPub: params.userPub,
-      backupPub: params.backupPub,
-      apiKey: params.apiKey,
-      unsignedSweepPrebuildTx,
-      coinSpecificParams: params.coinSpecificParams,
-      walletContractAddress: params.walletContractAddress,
-    });
   } catch (err) {
     throw err;
   }

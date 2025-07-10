@@ -28,9 +28,6 @@ import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import { ecdsaMPCv2Initialize } from '../../api/enclaved/handlers/ecdsaMPCv2Initialize';
 import { ecdsaMPCv2Round } from '../../api/enclaved/handlers/ecdsaMPCv2Round';
 import { ecdsaMPCv2Finalize } from '../../api/enclaved/handlers/ecdsaMPCv2Finalize';
-import { signEddsaRecoveryTransaction } from '../../api/enclaved/handlers/signEddsaRecoveryTransaction';
-import { isEddsaCoin } from '../../shared/coinUtils';
-import { MethodNotImplementedError } from '@bitgo/sdk-core';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -76,31 +73,6 @@ const RecoveryMultisigRequest = {
 
 // Response type for /multisig/recovery endpoint
 const RecoveryMultisigResponse: HttpResponse = {
-  200: t.type({
-    txHex: t.string,
-  }), // the full signed tx
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
-};
-
-const RecoveryMpcRequest = {
-  commonKeychain: t.string,
-  unsignedSweepPrebuildTx: t.type({
-    txRequests: t.array(
-      t.type({
-        unsignedTx: t.string,
-        signableHex: t.string,
-        derivationPath: t.string,
-      }),
-    ),
-  }),
-};
-
-export type RecoveryMpcRequest = typeof RecoveryMpcRequest;
-
-const RecoveryMpcResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
@@ -326,20 +298,6 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Recover a multisig transaction',
     }),
   },
-  'v1.mpc.recovery': {
-    post: httpRoute({
-      method: 'POST',
-      path: `/api/{coin}/mpc/recovery`,
-      request: httpRequest({
-        params: {
-          coin: t.string,
-        },
-        body: RecoveryMpcRequest,
-      }),
-      response: RecoveryMpcResponse,
-      description: 'Sign a recovery transaction with EdDSA user & backup keyshares',
-    }),
-  },
   'v1.key.independent': {
     post: httpRoute({
       method: 'POST',
@@ -519,28 +477,6 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>;
       const result = await signMpcTransaction(typedReq);
       return Response.ok(result);
-    }),
-  ]);
-
-  router.post('v1.mpc.recovery', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.recovery', 'post'>;
-      const coin = typedReq.bitgo.coin(typedReq.decoded.coin);
-      if (isEddsaCoin(coin)) {
-        const result = await signEddsaRecoveryTransaction({
-          sdk: typedReq.bitgo,
-          request: {
-            commonKeychain: typedReq.decoded.commonKeychain,
-            signableHex: typedReq.decoded.unsignedSweepPrebuildTx.txRequests[0].signableHex,
-            derivationPath: typedReq.decoded.unsignedSweepPrebuildTx.txRequests[0].derivationPath,
-          },
-          cfg: typedReq.config,
-          coin,
-        });
-        return Response.ok(result);
-      } else {
-        throw new MethodNotImplementedError();
-      }
     }),
   ]);
 
