@@ -109,11 +109,16 @@ export async function eddsaFinalize(
       throw new Error('Failed to create user keychain - commonKeychains do not match.');
     }
 
-    const sourceSigningMaterial: bitgoSdk.SigningMaterial = {
+    const baseSigningMaterial: bitgoSdk.SigningMaterial = {
       uShare: sourcePrivateShare,
       bitgoYShare: bitgoToSourceYShare,
-      backupYShare: counterPartyToSourceYShare,
     };
+    const sourceSigningMaterial: bitgoSdk.SigningMaterial = baseSigningMaterial;
+    if (source === 'user') {
+      sourceSigningMaterial.backupYShare = counterPartyToSourceYShare;
+    } else {
+      sourceSigningMaterial.userYShare = counterPartyToSourceYShare;
+    }
 
     debugLogger(`Common keychain for ${source}:`, commonKeychain);
     await kms.postKey({

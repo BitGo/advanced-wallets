@@ -27,6 +27,11 @@
     "@api-ts/typed-express-router": "^1.1.13",
     "@bitgo/sdk-core": "^35.3.0",
     "@bitgo-beta/sdk-lib-mpc": "8.2.1-alpha.291",
+    "@bitgo/sdk-coin-ada": "^4.11.5",
+    "@bitgo/sdk-coin-dot": "^4.3.5",
+    "@bitgo/sdk-coin-sui": "^5.15.5",
+    "@bitgo/sdk-coin-near": "^2.7.0",
+    "@bitgo/sdk-coin-sol": "^4.12.5",
     "bitgo": "^48.1.0",
     "@bitgo/abstract-utxo": "^9.21.4",
     "@bitgo/statics": "^54.6.0",
@@ -43,6 +48,9 @@
     "superagent": "^8.0.9",
     "winston": "^3.11.0",
     "zod": "^3.25.48"
+  },
+  "resolutions": {
+    "@bitgo/sdk-core": "^35.3.0"
   },
   "devDependencies": {
     "@api-ts/openapi-generator": "^5.7.0",

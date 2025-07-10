@@ -6,6 +6,120 @@
     "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS"
   },
   "paths": {
+    "/api/{coin}/wallet/{walletId}/accelerate": {
+      "post": {
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pubkey": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "backup"
+                    ]
+                  },
+                  "cpfpTxIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cpfpFeeRate": {
+                    "type": "number"
+                  },
+                  "maxFee": {
+                    "type": "number"
+                  },
+                  "rbfTxIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "feeMultiplier": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pubkey",
+                  "source"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "txid": {
+                      "type": "string"
+                    },
+                    "tx": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "txid",
+                    "tx"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "details"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/{coin}/wallet/{walletId}/consolidate": {
       "post": {
         "parameters": [
@@ -141,9 +255,6 @@
                       "user",
                       "backup"
                     ]
-                  },
-                  "walletPassphrase": {
-                    "type": "string"
                   },
                   "feeRate": {
                     "type": "number"
@@ -561,17 +672,42 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "userPub": {
-                    "type": "string"
+                  "isTssRecovery": {
+                    "type": "boolean"
                   },
-                  "backupPub": {
-                    "type": "string"
+                  "tssRecoveryParams": {
+                    "type": "object",
+                    "properties": {
+                      "commonKeychain": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "commonKeychain"
+                    ]
                   },
-                  "bitgoPub": {
-                    "type": "string"
-                  },
-                  "walletContractAddress": {
-                    "type": "string"
+                  "multiSigRecoveryParams": {
+                    "type": "object",
+                    "properties": {
+                      "backupPub": {
+                        "type": "string"
+                      },
+                      "bitgoPub": {
+                        "type": "string"
+                      },
+                      "userPub": {
+                        "type": "string"
+                      },
+                      "walletContractAddress": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "backupPub",
+                      "bitgoPub",
+                      "userPub",
+                      "walletContractAddress"
+                    ]
                   },
                   "recoveryDestinationAddress": {
                     "type": "string"
@@ -605,11 +741,7 @@
                   }
                 },
                 "required": [
-                  "userPub",
-                  "backupPub",
-                  "walletContractAddress",
-                  "recoveryDestinationAddress",
-                  "apiKey"
+                  "recoveryDestinationAddress"
                 ]
               }
             }

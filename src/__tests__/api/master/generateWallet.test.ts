@@ -144,7 +144,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       .get('/api/v1/client/constants')
       // Not sure why the nock is not matching any headers, but this works
       .matchHeader('accept-encoding', 'gzip, deflate')
-      .matchHeader('bitgo-sdk-version', '48.2.1')
+      .matchHeader('bitgo-sdk-version', '48.3.0')
       .reply(200, {
         constants: {
           mpc: {
@@ -493,7 +493,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     const constantsNock = nock(bitgoApiUrl)
       .get('/api/v1/client/constants')
       .matchHeader('accept-encoding', 'gzip, deflate')
-      .matchHeader('bitgo-sdk-version', '48.2.1')
+      .matchHeader('bitgo-sdk-version', '48.3.0')
       .reply(200, {
         constants: {
           mpc: {
