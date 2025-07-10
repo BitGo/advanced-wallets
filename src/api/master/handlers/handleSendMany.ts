@@ -192,7 +192,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
 }
 
-async function signAndSendMultisig(
+export async function signAndSendMultisig(
   wallet: Wallet,
   source: 'user' | 'backup',
   txPrebuilt: PrebuildTransactionResult,
@@ -214,16 +214,96 @@ async function signAndSendMultisig(
     pub: signingKeychain.pub,
   });
 
+  console.log('Signed transaction:', JSON.stringify(signedTx, null, 2));
+
   // Get extra prebuild parameters
-  const extraParams = await wallet.baseCoin.getExtraPrebuildParams({
-    ...params,
-    wallet,
-  });
+  const extraParams =
+    Array.isArray(params.recipients) && params.recipients.length > 0
+      ? await wallet.baseCoin.getExtraPrebuildParams({
+          ...params,
+          wallet,
+        })
+      : {};
 
   // Combine the signed transaction with extra parameters
   const finalTxParams = { ...signedTx, ...extraParams };
 
+  console.log('Final transaction parameters:', JSON.stringify(finalTxParams, null, 2));
   // Submit the half signed transaction
-  const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
-  return result;
+  return await wallet.submitTransaction(finalTxParams, reqId);
+}
+
+/**
+ * Signs and sends a transaction from a TSS wallet.
+ *
+ * @param bitgo - BitGo instance
+ * @param wallet - Wallet instance
+ * @param txRequestId - Transaction request ID
+ * @param enclavedExpressClient - Enclaved express client
+ * @param signingKeychain - Signing keychain
+ * @param reqId - Request tracer
+ */
+export async function signAndSendTxRequests(
+  bitgo: BitGoBase,
+  wallet: Wallet,
+  txRequestId: string,
+  enclavedExpressClient: EnclavedExpressClient,
+  signingKeychain: Keychain,
+  reqId: RequestTracer,
+): Promise<any> {
+  if (!signingKeychain.commonKeychain) {
+    throw new Error(`Common keychain not found for keychain ${signingKeychain.pub || 'unknown'}`);
+  }
+  if (signingKeychain.source === 'backup') {
+    throw new Error('Backup MPC signing not supported for sendMany');
+  }
+
+  let signedTxRequest: TxRequest;
+  const mpcAlgorithm = wallet.baseCoin.getMPCAlgorithm();
+
+  if (mpcAlgorithm === 'eddsa') {
+    signedTxRequest = await handleEddsaSigning(
+      bitgo,
+      wallet,
+      txRequestId,
+      enclavedExpressClient,
+      signingKeychain.commonKeychain,
+      reqId,
+    );
+  } else if (mpcAlgorithm === 'ecdsa') {
+    signedTxRequest = await handleEcdsaSigning(
+      bitgo,
+      wallet,
+      txRequestId,
+      enclavedExpressClient,
+      signingKeychain.source as 'user' | 'backup',
+      signingKeychain.commonKeychain,
+      reqId,
+    );
+  } else {
+    throw new Error(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
+  }
+
+  if (!signedTxRequest.txRequestId) {
+    throw new Error('txRequestId missing from signed transaction');
+  }
+
+  if (signedTxRequest.apiVersion !== 'full') {
+    throw new Error('Only TxRequest API version full is supported.');
+  }
+
+  bitgo.setRequestTracer(reqId);
+  if (signedTxRequest.state === 'pendingApproval') {
+    const pendingApprovals = new PendingApprovals(bitgo, wallet.baseCoin);
+    const pendingApproval = await pendingApprovals.get({ id: signedTxRequest.pendingApprovalId });
+    return {
+      pendingApproval: pendingApproval.toJSON(),
+      txRequest: signedTxRequest,
+    };
+  }
+  return {
+    txRequest: signedTxRequest,
+    txid: (signedTxRequest.transactions ?? [])[0]?.signedTx?.id,
+    tx: (signedTxRequest.transactions ?? [])[0]?.signedTx?.tx,
+  };
 }

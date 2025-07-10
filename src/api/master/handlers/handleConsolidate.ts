@@ -2,16 +2,12 @@ import {
   RequestTracer,
   KeyIndices,
   BuildConsolidationTransactionOptions,
-  MPCType,
+  PrebuildAndSignTransactionOptions,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
-import {
-  createCustomCommitmentGenerator,
-  createCustomRShareGenerator,
-  createCustomGShareGenerator,
-} from './eddsa';
+import { getWalletAndSigningKeychain } from '../handlerUtils';
+import { signAndSendMultisig, signAndSendTxRequests } from './handleSendMany';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
@@ -42,59 +38,70 @@ export async function handleConsolidate(
     throw new Error('consolidateAddresses must be an array of addresses');
   }
 
+  const isMPC = wallet._wallet.multisigType === 'tss';
+
   try {
     const consolidationParams: BuildConsolidationTransactionOptions = {
       ...params,
       reqId,
     };
 
-    // --- TSS/MPC support ---
-    if (wallet._wallet.multisigType === 'tss') {
-      // Always force apiVersion to 'full' for TSS/MPC
-      consolidationParams.apiVersion = 'full';
+    isMPC && (consolidationParams.apiVersion = 'full');
 
-      if (baseCoin.getMPCAlgorithm() === MPCType.EDDSA) {
-        consolidationParams.customCommitmentGeneratingFunction = createCustomCommitmentGenerator(
-          bitgo,
-          wallet,
-          enclavedExpressClient,
-          params.source,
-          signingKeychain.commonKeychain!,
+    const successfulTxs: any[] = [];
+    const failedTxs = new Array<Error>();
+
+    const unsignedBuilds = await wallet.buildAccountConsolidations(consolidationParams);
+
+    logger.info(
+      `Consolidation request for wallet ${walletId} with ${unsignedBuilds.length} unsigned builds`,
+    );
+
+    if (unsignedBuilds && unsignedBuilds.length > 0) {
+      for (const unsignedBuild of unsignedBuilds) {
+        const unsignedBuildWithOptions: PrebuildAndSignTransactionOptions = Object.assign(
+          {},
+          consolidationParams,
         );
-        consolidationParams.customRShareGeneratingFunction = createCustomRShareGenerator(
-          enclavedExpressClient,
-          params.source,
-          signingKeychain.commonKeychain!,
-        );
-        consolidationParams.customGShareGeneratingFunction = createCustomGShareGenerator(
-          enclavedExpressClient,
-          params.source,
-          signingKeychain.commonKeychain!,
-        );
-      } else if (baseCoin.getMPCAlgorithm() === MPCType.ECDSA) {
-        throw new Error('ECDSA MPC consolidations not yet implemented');
+        unsignedBuildWithOptions.apiVersion = consolidationParams.apiVersion;
+        unsignedBuildWithOptions.prebuildTx = unsignedBuild;
+
+        try {
+          const sendTx = isMPC
+            ? await signAndSendTxRequests(
+                bitgo,
+                wallet,
+                unsignedBuild.txRequestId!,
+                enclavedExpressClient,
+                signingKeychain,
+                reqId,
+              )
+            : await signAndSendMultisig(
+                wallet,
+                params.source,
+                unsignedBuild,
+                unsignedBuildWithOptions,
+                enclavedExpressClient,
+                signingKeychain,
+                reqId,
+              );
+
+          successfulTxs.push(sendTx);
+        } catch (e) {
+          console.dir(e);
+          failedTxs.push(e as any);
+        }
       }
-    } else {
-      // Non-TSS: legacy custom signing function
-      consolidationParams.customSigningFunction = makeCustomSigningFunction({
-        enclavedExpressClient,
-        source: params.source,
-        pub: signingKeychain.pub!,
-      });
     }
 
-    // Send account consolidations
-    const result = await wallet.sendAccountConsolidations(consolidationParams);
-
     // Handle failures
-    if (result.failure && result.failure.length > 0) {
-      logger.debug('Consolidation result: %s', JSON.stringify(result, null, 2));
+    if (failedTxs.length > 0) {
       let msg = '';
       let status = 202;
 
-      if (result.success && result.success.length > 0) {
+      if (successfulTxs.length > 0) {
         // Some succeeded, some failed
-        msg = `Consolidations failed: ${result.failure.length} and succeeded: ${result.success.length}`;
+        msg = `Consolidations failed: ${failedTxs.length} and succeeded: ${successfulTxs.length}`;
       } else {
         // All failed
         status = 400;
@@ -103,11 +110,17 @@ export async function handleConsolidate(
 
       const error = new Error(msg);
       (error as any).status = status;
-      (error as any).result = result;
+      (error as any).result = {
+        success: successfulTxs,
+        failure: failedTxs,
+      };
       throw error;
     }
 
-    return result;
+    return {
+      success: successfulTxs,
+      failure: failedTxs,
+    };
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to consolidate account: %s', err.message);
