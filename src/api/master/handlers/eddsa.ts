@@ -9,6 +9,7 @@ import {
   EddsaUtils,
   BaseCoin,
   ApiKeyShare,
+  TxRequest,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { exchangeEddsaCommitments } from '@bitgo/sdk-core/dist/src/bitgo/tss/common';

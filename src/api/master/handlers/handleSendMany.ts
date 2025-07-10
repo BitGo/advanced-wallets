@@ -214,21 +214,16 @@ export async function signAndSendMultisig(
     pub: signingKeychain.pub,
   });
 
-  console.log('Signed transaction:', JSON.stringify(signedTx, null, 2));
-
   // Get extra prebuild parameters
-  const extraParams =
-    Array.isArray(params.recipients) && params.recipients.length > 0
-      ? await wallet.baseCoin.getExtraPrebuildParams({
-          ...params,
-          wallet,
-        })
-      : {};
+  const extraParams = await wallet.baseCoin.getExtraPrebuildParams({
+    ...params,
+    wallet,
+  });
 
   // Combine the signed transaction with extra parameters
   const finalTxParams = { ...signedTx, ...extraParams };
 
-  console.log('Final transaction parameters:', JSON.stringify(finalTxParams, null, 2));
   // Submit the half signed transaction
-  return await wallet.submitTransaction(finalTxParams, reqId);
+  const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
+  return result;
 }

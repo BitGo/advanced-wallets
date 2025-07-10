@@ -2,13 +2,11 @@ import {
   RequestTracer,
   KeyIndices,
   BuildConsolidationTransactionOptions,
-  PrebuildAndSignTransactionOptions,
   getTxRequest,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { getWalletAndSigningKeychain } from '../handlerUtils';
-import { signAndSendMultisig } from './handleSendMany';
+import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
 import { signAndSendTxRequests } from './transactionRequests';
 
 export async function handleConsolidate(
@@ -55,42 +53,43 @@ export async function handleConsolidate(
 
     const unsignedBuilds = await wallet.buildAccountConsolidations(consolidationParams);
 
-    logger.info(
+    logger.debug(
       `Consolidation request for wallet ${walletId} with ${unsignedBuilds.length} unsigned builds`,
     );
 
     if (unsignedBuilds && unsignedBuilds.length > 0) {
       for (const unsignedBuild of unsignedBuilds) {
-        const unsignedBuildWithOptions: PrebuildAndSignTransactionOptions = Object.assign(
-          {},
-          consolidationParams,
-        );
-        unsignedBuildWithOptions.apiVersion = consolidationParams.apiVersion;
-        unsignedBuildWithOptions.prebuildTx = unsignedBuild;
-
-        const txRequest = await getTxRequest(bitgo, wallet.id(), unsignedBuild.txRequestId!, reqId);
-
         try {
-          const sendTx = isMPC
+          const result = isMPC
             ? await signAndSendTxRequests(
                 bitgo,
                 wallet,
-                txRequest,
+                await getTxRequest(
+                  bitgo,
+                  wallet.id(),
+                  (() => {
+                    if (!unsignedBuild.txRequestId) {
+                      throw new Error('Missing txRequestId in unsigned build');
+                    }
+                    return unsignedBuild.txRequestId;
+                  })(),
+                  reqId,
+                ),
                 enclavedExpressClient,
                 signingKeychain,
                 reqId,
               )
-            : await signAndSendMultisig(
-                wallet,
-                params.source,
-                unsignedBuild,
-                unsignedBuildWithOptions,
-                enclavedExpressClient,
-                signingKeychain,
-                reqId,
-              );
+            : await wallet.sendAccountConsolidation({
+                ...consolidationParams,
+                prebuildTx: unsignedBuild,
+                customSigningFunction: makeCustomSigningFunction({
+                  enclavedExpressClient,
+                  source: params.source,
+                  pub: signingKeychain.pub!,
+                }),
+              });
 
-          successfulTxs.push(sendTx);
+          successfulTxs.push(result);
         } catch (e) {
           console.dir(e);
           failedTxs.push(e as any);
