@@ -9,6 +9,7 @@ import {
   EddsaUtils,
   BaseCoin,
   ApiKeyShare,
+  TxRequest,
 } from '@bitgo/sdk-core';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { exchangeEddsaCommitments } from '@bitgo/sdk-core/dist/src/bitgo/tss/common';
@@ -17,13 +18,12 @@ import logger from '../../../logger';
 export async function handleEddsaSigning(
   bitgo: BitGoBase,
   wallet: Wallet,
-  txRequestId: string,
+  txRequest: TxRequest,
   enclavedExpressClient: EnclavedExpressClient,
   commonKeychain: string,
   reqId?: IRequestTracer,
 ) {
-  const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin);
-  const txRequest = await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
+  const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin, wallet);
 
   const { apiVersion } = txRequest;
   const bitgoGpgKey = await eddsaUtils.getBitgoPublicGpgKey();
@@ -35,7 +35,7 @@ export async function handleEddsaSigning(
     encryptedDataKey,
   } = await enclavedExpressClient.signMpcCommitment({
     txRequest,
-    bitgoGpgPubKey: bitgoGpgKey.armor(),
+    bitgoPublicGpgKey: bitgoGpgKey.armor(),
     source: 'user',
     pub: commonKeychain,
   });
@@ -43,7 +43,7 @@ export async function handleEddsaSigning(
   const { commitmentShare: bitgoToUserCommitment } = await exchangeEddsaCommitments(
     bitgo,
     wallet.id(),
-    txRequestId,
+    txRequest.txRequestId,
     userToBitgoCommitment,
     encryptedSignerShare,
     apiVersion,
@@ -61,13 +61,18 @@ export async function handleEddsaSigning(
   await offerUserToBitgoRShare(
     bitgo,
     wallet.id(),
-    txRequestId,
+    txRequest.txRequestId,
     rShare,
     encryptedSignerShare.share,
     apiVersion,
     reqId,
   );
-  const bitgoToUserRShare = await getBitgoToUserRShare(bitgo, wallet.id(), txRequestId, reqId);
+  const bitgoToUserRShare = await getBitgoToUserRShare(
+    bitgo,
+    wallet.id(),
+    txRequest.txRequestId,
+    reqId,
+  );
   const gSignShareTransactionParams = {
     txRequest,
     bitgoToUserRShare: bitgoToUserRShare,
@@ -80,9 +85,9 @@ export async function handleEddsaSigning(
     pub: commonKeychain,
   });
 
-  await sendUserToBitgoGShare(bitgo, wallet.id(), txRequestId, gShare, apiVersion, reqId);
+  await sendUserToBitgoGShare(bitgo, wallet.id(), txRequest.txRequestId, gShare, apiVersion, reqId);
   logger.debug('Successfully completed signing!');
-  return await getTxRequest(bitgo, wallet.id(), txRequestId, reqId);
+  return await getTxRequest(bitgo, wallet.id(), txRequest.txRequestId, reqId);
 }
 
 interface OrchestrateEddsaKeyGenParams {

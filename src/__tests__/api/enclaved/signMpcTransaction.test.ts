@@ -122,7 +122,7 @@ describe('signMpcTransaction', () => {
         source: 'user',
         pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
         txRequest: mockTxRequest,
-        bitgoGpgPubKey: bitgoGpgPubKey,
+        bitgoPublicGpgKey: bitgoGpgPubKey,
       };
 
       const mockDataKeyResponse = {
@@ -275,46 +275,19 @@ describe('signMpcTransaction', () => {
     });
 
     it('should fail for unsupported share type', async () => {
-      const user = MPC.keyShare(1, 2, 3);
-      const backup = MPC.keyShare(2, 2, 3);
-      const bitgo = MPC.keyShare(3, 2, 3);
-
-      const userSigningMaterial = {
-        uShare: user.uShare,
-        bitgoYShare: bitgo.yShares[1],
-        backupYShare: backup.yShares[1],
-      };
-
-      const mockKmsResponse = {
-        prv: JSON.stringify(userSigningMaterial),
-        pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
-        source: 'user',
-        type: 'independent',
-      };
-
       const input = {
         source: 'user',
         pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
         txRequest: mockTxRequest,
       };
 
-      const kmsNock = nock(kmsUrl)
-        .get(`/key/${input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: false })
-        .reply(200, mockKmsResponse);
-
       const response = await agent
         .post(`/api/${coin}/mpc/sign/invalid`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(input);
 
-      response.status.should.equal(500);
+      response.status.should.equal(400);
       response.body.should.have.property('error');
-      response.body.details.should.equal(
-        'Share type invalid not supported for EDDSA, only commitment, G and R share generation is supported.',
-      );
-
-      kmsNock.done();
     });
 
     it('should fail when required fields are missing', async () => {
@@ -343,7 +316,7 @@ describe('signMpcTransaction', () => {
       const derivationPath = 'm/0';
 
       const [userShare, backupShare, bitgoShare] = await DklsUtils.generateDKGKeyShares();
-      assert(backupShare, 'backupShare is not defined');
+      assert(backupShare, 'Backup share is not defined');
 
       const userKeyShare = userShare.getKeyShare().toString('base64');
 
@@ -389,7 +362,7 @@ describe('signMpcTransaction', () => {
         source: 'user',
         pub: 'mock-ecdsa-public-key',
         txRequest: mockTxRequest,
-        bitgoGpgPubKey: bitgoGpgKey.public,
+        bitgoPublicGpgKey: bitgoGpgKey.public,
       };
 
       const mockDataKeyResponse = {
@@ -449,7 +422,7 @@ describe('signMpcTransaction', () => {
         source: 'user',
         pub: 'mock-ecdsa-public-key',
         txRequest: txRequestRound1,
-        bitgoGpgPubKey: bitgoGpgKey.public,
+        bitgoPublicGpgKey: bitgoGpgKey.public,
         encryptedDataKey,
         encryptedUserGpgPrvKey,
         encryptedRound1Session,
@@ -501,7 +474,7 @@ describe('signMpcTransaction', () => {
         source: 'user',
         pub: 'mock-ecdsa-public-key',
         txRequest: txRequestRound2,
-        bitgoGpgPubKey: bitgoGpgKey.public,
+        bitgoPublicGpgKey: bitgoGpgKey.public,
         encryptedDataKey,
         encryptedUserGpgPrvKey,
         encryptedRound2Session,
@@ -643,36 +616,19 @@ describe('signMpcTransaction', () => {
     });
 
     it('should fail for unsupported share type', async () => {
-      const mockKmsResponse = {
-        prv: 'mock-ecdsa-private-key',
-        pub: 'mock-ecdsa-public-key',
-        source: 'user',
-        type: 'independent',
-      };
-
       const input = {
         source: 'user',
         pub: 'mock-ecdsa-public-key',
         txRequest: mockTxRequest,
       };
 
-      const kmsNock = nock(kmsUrl)
-        .get(`/key/${input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: true })
-        .reply(200, mockKmsResponse);
-
       const response = await agent
         .post(`/api/${coin}/mpc/sign/invalid`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(input);
 
-      response.status.should.equal(500);
+      response.status.should.equal(400);
       response.body.should.have.property('error');
-      response.body.details.should.equal(
-        'Share type invalid not supported for MPCv2, only MPCv2Round1, MPCv2Round2 and MPCv2Round3 is supported.',
-      );
-
-      kmsNock.done();
     });
   });
 });

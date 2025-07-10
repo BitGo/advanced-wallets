@@ -5,17 +5,15 @@ import {
   KeyIndices,
   Wallet,
   SendManyOptions,
-  BitGoBase,
-  PendingApprovals,
   PrebuildTransactionResult,
   Keychain,
-  TxRequest,
+  getTxRequest,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
-import { handleEddsaSigning } from './eddsa';
-import { handleEcdsaSigning } from './ecdsa';
+import { createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { signAndSendTxRequests } from './transactionRequests';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -28,6 +26,43 @@ interface Recipient {
   data?: string;
   tokenName?: string;
   tokenData?: any;
+}
+
+/**
+ * Creates TSS send parameters for ECDSA MPCv2 signing with custom functions
+ */
+function createEcdsaMPCv2SendParams(
+  req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>,
+  wallet: Wallet,
+  enclavedExpressClient: EnclavedExpressClient,
+  signingKeychain: Keychain,
+): SendManyOptions {
+  const coin = req.bitgo.coin(req.params.coin);
+  const mpcAlgorithm = coin.getMPCAlgorithm();
+
+  if (mpcAlgorithm === 'ecdsa') {
+    // For ECDSA MPCv2, we need to create custom signing functions
+    const source = signingKeychain.source as 'user' | 'backup';
+    const commonKeychain = signingKeychain.commonKeychain;
+
+    if (!commonKeychain) {
+      throw new Error('Common keychain is required for ECDSA MPCv2 signing');
+    }
+
+    // Use the shared custom signing functions
+    const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
+      createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
+
+    return {
+      ...(req.decoded as SendManyOptions),
+      customMPCv2SigningRound1GenerationFunction: customMPCv2Round1Generator,
+      customMPCv2SigningRound2GenerationFunction: customMPCv2Round2Generator,
+      customMPCv2SigningRound3GenerationFunction: customMPCv2Round3Generator,
+    };
+  } else {
+    // For non-ECDSA algorithms, return the original parameters
+    return req.decoded as SendManyOptions;
+  }
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
@@ -71,6 +106,23 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
 
   try {
+    // Create TSS send parameters with custom signing functions if needed
+
+    if (wallet.multisigType() === 'tss') {
+      if (signingKeychain.source === 'backup') {
+        throw new Error('Backup MPC signing not supported for sendMany');
+      }
+      if (wallet.baseCoin.getMPCAlgorithm() === 'ecdsa') {
+        const ecdsaMPCv2SendParams = createEcdsaMPCv2SendParams(
+          req,
+          wallet,
+          enclavedExpressClient,
+          signingKeychain,
+        );
+        return wallet.sendMany(ecdsaMPCv2SendParams);
+      }
+    }
+
     const prebuildParams: PrebuildTransactionOptions = {
       ...params,
       // Convert memo string to Memo object if present
@@ -113,10 +165,11 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       if (!txPrebuilt.txRequestId) {
         throw new Error('MPC tx not built correctly.');
       }
+      const txRequest = await getTxRequest(bitgo, wallet.id(), txPrebuilt.txRequestId, reqId);
       return signAndSendTxRequests(
         bitgo,
         wallet,
-        txPrebuilt.txRequestId,
+        txRequest,
         enclavedExpressClient,
         signingKeychain,
         reqId,
@@ -173,79 +226,4 @@ async function signAndSendMultisig(
   // Submit the half signed transaction
   const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
   return result;
-}
-
-/**
- * Signs and sends a transaction from a TSS wallet.
- *
- * @param bitgo - BitGo instance
- * @param wallet - Wallet instance
- * @param txRequestId - Transaction request ID
- * @param enclavedExpressClient - Enclaved express client
- * @param signingKeychain - Signing keychain
- * @param reqId - Request tracer
- */
-async function signAndSendTxRequests(
-  bitgo: BitGoBase,
-  wallet: Wallet,
-  txRequestId: string,
-  enclavedExpressClient: EnclavedExpressClient,
-  signingKeychain: Keychain,
-  reqId: RequestTracer,
-): Promise<any> {
-  if (!signingKeychain.commonKeychain) {
-    throw new Error(`Common keychain not found for keychain ${signingKeychain.pub || 'unknown'}`);
-  }
-  if (signingKeychain.source === 'backup') {
-    throw new Error('Backup MPC signing not supported for sendMany');
-  }
-
-  let signedTxRequest: TxRequest;
-  const mpcAlgorithm = wallet.baseCoin.getMPCAlgorithm();
-
-  if (mpcAlgorithm === 'eddsa') {
-    signedTxRequest = await handleEddsaSigning(
-      bitgo,
-      wallet,
-      txRequestId,
-      enclavedExpressClient,
-      signingKeychain.commonKeychain,
-      reqId,
-    );
-  } else if (mpcAlgorithm === 'ecdsa') {
-    signedTxRequest = await handleEcdsaSigning(
-      bitgo,
-      wallet,
-      txRequestId,
-      enclavedExpressClient,
-      signingKeychain.source as 'user' | 'backup',
-      signingKeychain.commonKeychain,
-      reqId,
-    );
-  } else {
-    throw new Error(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
-  }
-
-  if (!signedTxRequest.txRequestId) {
-    throw new Error('txRequestId missing from signed transaction');
-  }
-
-  if (signedTxRequest.apiVersion !== 'full') {
-    throw new Error('Only TxRequest API version full is supported.');
-  }
-
-  bitgo.setRequestTracer(reqId);
-  if (signedTxRequest.state === 'pendingApproval') {
-    const pendingApprovals = new PendingApprovals(bitgo, wallet.baseCoin);
-    const pendingApproval = await pendingApprovals.get({ id: signedTxRequest.pendingApprovalId });
-    return {
-      pendingApproval: pendingApproval.toJSON(),
-      txRequest: signedTxRequest,
-    };
-  }
-  return {
-    txRequest: signedTxRequest,
-    txid: (signedTxRequest.transactions ?? [])[0]?.signedTx?.id,
-    tx: (signedTxRequest.transactions ?? [])[0]?.signedTx?.tx,
-  };
 }

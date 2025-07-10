@@ -9,15 +9,14 @@ import { Environments, Wallet } from '@bitgo/sdk-core';
 import { Coin } from 'bitgo';
 import assert from 'assert';
 import * as eddsa from '../../../api/master/handlers/eddsa';
-import * as ecdsa from '../../../api/master/handlers/ecdsa';
 
 describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   let agent: request.SuperAgentTest;
   const enclavedExpressUrl = 'http://enclaved.invalid';
   const bitgoApiUrl = Environments.test.uri;
-  const coin = 'tbtc';
   const accessToken = 'test-token';
   const walletId = 'test-wallet-id';
+  const coin = 'tbtc';
 
   before(() => {
     nock.disableNetConnect();
@@ -49,6 +48,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   });
 
   describe('SendMany Multisig:', () => {
+    const coin = 'tbtc';
     it('should send many transactions by calling the enclaved express service', async () => {
       // Mock wallet get request
       const walletGetNock = nock(bitgoApiUrl)
@@ -226,7 +226,27 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   });
 
   describe('SendMany TSS EDDSA:', () => {
+    const coin = 'tsol';
     it('should send many transactions using EDDSA TSS signing', async () => {
+      const mockTxRequest = {
+        txRequestId: 'test-tx-request-id',
+        state: 'signed',
+        apiVersion: 'full',
+        pendingApprovalId: 'test-pending-approval-id',
+        transactions: [
+          {
+            unsignedTx: {
+              derivationPath: 'm/0',
+              signableHex: 'testMessage',
+            },
+            signedTx: {
+              id: 'test-tx-id',
+              tx: 'signed-transaction',
+            },
+          },
+        ],
+      };
+
       // Mock wallet get request for TSS wallet
       const walletGetNock = nock(bitgoApiUrl)
         .get(`/api/v2/${coin}/wallet/${walletId}`)
@@ -262,33 +282,27 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         walletId,
       });
 
-      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+      const verifyStub = sinon.stub(Coin.Tsol.prototype, 'verifyTransaction').resolves(true);
 
       // Mock multisigType to return 'tss'
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
 
-      // Mock getMPCAlgorithm to return 'eddsa'
-      const getMPCAlgorithmStub = sinon
-        .stub(Coin.Btc.prototype, 'getMPCAlgorithm')
-        .returns('eddsa');
-
       // Mock handleEddsaSigning
       const handleEddsaSigningStub = sinon.stub().resolves({
-        txRequestId: 'test-tx-request-id',
-        state: 'signed',
-        apiVersion: 'full',
-        transactions: [
-          {
-            signedTx: {
-              id: 'test-tx-id',
-              tx: 'signed-transaction',
-            },
-          },
-        ],
+        ...mockTxRequest,
       });
 
-      // Import and stub the handleEddsaSigning function
+      // Import and stub the signAndSendTxRequests function
       sinon.stub(eddsa, 'handleEddsaSigning').callsFake(handleEddsaSigningStub);
+
+      // Mock getTxRequest call
+      const getTxRequestNock = nock(bitgoApiUrl)
+        .get(`/api/v2/wallet/${walletId}/txrequests`)
+        .query({ txRequestIds: 'test-tx-request-id', latest: true })
+        .matchHeader('any', () => true)
+        .reply(200, {
+          txRequests: [mockTxRequest],
+        });
 
       const response = await agent
         .post(`/api/${coin}/wallet/${walletId}/sendMany`)
@@ -317,13 +331,14 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       keychainGetNock.done();
       sinon.assert.calledOnce(prebuildStub);
       sinon.assert.calledOnce(verifyStub);
-      sinon.assert.calledTwice(multisigTypeStub);
-      sinon.assert.calledOnce(getMPCAlgorithmStub);
+      sinon.assert.calledThrice(multisigTypeStub);
       sinon.assert.calledOnce(handleEddsaSigningStub);
+      getTxRequestNock.done();
     });
   });
 
   describe('SendMany TSS ECDSA:', () => {
+    const coin = 'hteth';
     it('should send many transactions using ECDSA TSS signing', async () => {
       // Mock wallet get request for TSS wallet
       const walletGetNock = nock(bitgoApiUrl)
@@ -349,44 +364,34 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
           type: 'tss',
         });
 
-      const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
-        txRequestId: 'test-tx-request-id',
-        txHex: 'prebuilt-tx-hex',
-        txInfo: {
-          nP2SHInputs: 1,
-          nSegwitInputs: 0,
-          nOutputs: 2,
+      const sendManyStub = sinon.stub(Wallet.prototype, 'sendMany').resolves({
+        txRequest: {
+          txRequestId: 'test-tx-request-id',
+          state: 'signed',
+          apiVersion: 'full',
+          pendingApprovalId: 'test-pending-approval-id',
+          transactions: [
+            {
+              state: 'signed',
+              unsignedTx: {
+                derivationPath: 'm/0',
+                signableHex: 'testMessage',
+                serializedTxHex: 'testSerializedTxHex',
+              },
+              signatureShares: [],
+              signedTx: {
+                id: 'test-tx-id',
+                tx: 'signed-transaction',
+              },
+            },
+          ],
         },
-        walletId,
+        txid: 'test-tx-id',
+        tx: 'signed-transaction',
       });
-
-      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
 
       // Mock multisigType to return 'tss'
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
-
-      // Mock getMPCAlgorithm to return 'ecdsa'
-      const getMPCAlgorithmStub = sinon
-        .stub(Coin.Btc.prototype, 'getMPCAlgorithm')
-        .returns('ecdsa');
-
-      // Mock handleEcdsaSigning
-      const handleEcdsaSigningStub = sinon.stub().resolves({
-        txRequestId: 'test-tx-request-id',
-        state: 'signed',
-        apiVersion: 'full',
-        transactions: [
-          {
-            signedTx: {
-              id: 'test-tx-id',
-              tx: 'signed-transaction',
-            },
-          },
-        ],
-      });
-
-      // Import and stub the handleEcdsaSigning function
-      sinon.stub(ecdsa, 'handleEcdsaSigning').callsFake(handleEcdsaSigningStub);
 
       const response = await agent
         .post(`/api/${coin}/wallet/${walletId}/sendMany`)
@@ -413,11 +418,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
       walletGetNock.done();
       keychainGetNock.done();
-      sinon.assert.calledOnce(prebuildStub);
-      sinon.assert.calledOnce(verifyStub);
-      sinon.assert.calledTwice(multisigTypeStub);
-      sinon.assert.calledOnce(getMPCAlgorithmStub);
-      sinon.assert.calledOnce(handleEcdsaSigningStub);
+      sinon.assert.calledOnce(sendManyStub);
+      sinon.assert.calledOnce(multisigTypeStub);
     });
 
     it('should fail when backup key is used for ECDSA TSS signing', async () => {
@@ -445,18 +447,16 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
           type: 'tss',
         });
 
-      const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
-        txRequestId: 'test-tx-request-id',
-        txHex: 'prebuilt-tx-hex',
-        txInfo: {
-          nP2SHInputs: 1,
-          nSegwitInputs: 0,
-          nOutputs: 2,
+      const sendManyStub = sinon.stub(Wallet.prototype, 'sendMany').resolves({
+        txRequest: {
+          txRequestId: 'test-tx-request-id',
+          state: 'signed',
+          apiVersion: 'full',
+          pendingApprovalId: 'test-pending-approval-id',
         },
-        walletId,
+        txid: 'test-tx-id',
+        tx: 'signed-transaction',
       });
-
-      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
 
       // Mock multisigType to return 'tss'
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
@@ -480,9 +480,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
       walletGetNock.done();
       keychainGetNock.done();
-      sinon.assert.calledOnce(prebuildStub);
-      sinon.assert.calledOnce(verifyStub);
-      sinon.assert.calledTwice(multisigTypeStub);
+      sinon.assert.notCalled(sendManyStub);
+      sinon.assert.calledOnce(multisigTypeStub);
     });
   });
 

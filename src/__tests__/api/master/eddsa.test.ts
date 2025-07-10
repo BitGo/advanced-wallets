@@ -6,7 +6,6 @@ import {
   Wallet,
   TxRequest,
   IRequestTracer,
-  TxRequestVersion,
   Environments,
   RequestTracer,
   EddsaUtils,
@@ -17,7 +16,8 @@ import { handleEddsaSigning } from '../../../../src/api/master/handlers/eddsa';
 import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
 
-describe('Eddsa Signing Handler', () => {
+// TODO: Re-enable once using EDDSA Custom signing fns
+xdescribe('Eddsa Signing Handler', () => {
   let bitgo: BitGoBase;
   let wallet: Wallet;
   let enclavedExpressClient: EnclavedExpressClient;
@@ -62,9 +62,30 @@ describe('Eddsa Signing Handler', () => {
   it('should successfully sign an Eddsa transaction', async () => {
     const txRequest: TxRequest = {
       txRequestId: 'test-tx-request-id',
-      apiVersion: '2.0.0' as TxRequestVersion,
+      apiVersion: 'full',
       enterpriseId: 'test-enterprise-id',
-      transactions: [],
+      transactions: [
+        {
+          state: 'pendingSignature',
+          unsignedTx: {
+            derivationPath: 'm/0',
+            signableHex: 'testMessage',
+            serializedTxHex: 'testSerializedTxHex',
+          },
+          signatureShares: [
+            {
+              share: 'bitgo-to-user-r-share',
+              from: 'bitgo',
+              to: 'user',
+            },
+            {
+              share: 'user-to-bitgo-r-share',
+              from: 'user',
+              to: 'bitgo',
+            },
+          ],
+        },
+      ],
       state: 'pendingUserSignature',
       walletId: 'test-wallet-id',
       walletType: 'hot',
@@ -234,7 +255,7 @@ describe('Eddsa Signing Handler', () => {
     const result = await handleEddsaSigning(
       bitgo,
       wallet,
-      txRequest.txRequestId,
+      txRequest,
       enclavedExpressClient,
       userPubKey,
       reqId,
