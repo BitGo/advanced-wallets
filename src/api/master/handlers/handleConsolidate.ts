@@ -3,11 +3,13 @@ import {
   KeyIndices,
   BuildConsolidationTransactionOptions,
   PrebuildAndSignTransactionOptions,
+  getTxRequest,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { getWalletAndSigningKeychain } from '../handlerUtils';
-import { signAndSendMultisig, signAndSendTxRequests } from './handleSendMany';
+import { signAndSendMultisig } from './handleSendMany';
+import { signAndSendTxRequests } from './transactionRequests';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
@@ -66,12 +68,14 @@ export async function handleConsolidate(
         unsignedBuildWithOptions.apiVersion = consolidationParams.apiVersion;
         unsignedBuildWithOptions.prebuildTx = unsignedBuild;
 
+        const txRequest = await getTxRequest(bitgo, wallet.id(), unsignedBuild.txRequestId!, reqId);
+
         try {
           const sendTx = isMPC
             ? await signAndSendTxRequests(
                 bitgo,
                 wallet,
-                unsignedBuild.txRequestId!,
+                txRequest,
                 enclavedExpressClient,
                 signingKeychain,
                 reqId,
