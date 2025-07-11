@@ -95,7 +95,7 @@ interface SignMpcCommitmentParams {
   pub: string;
 }
 
-interface SignMpcCommitmentResponse {
+export interface SignMpcCommitmentResponse {
   userToBitgoCommitment: CommitmentShareRecord;
   encryptedSignerShare: EncryptedSignerShareRecord;
   encryptedUserToBitgoRShare: EncryptedSignerShareRecord;

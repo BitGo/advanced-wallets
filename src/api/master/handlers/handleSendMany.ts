@@ -7,13 +7,12 @@ import {
   SendManyOptions,
   PrebuildTransactionResult,
   Keychain,
-  getTxRequest,
 } from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
-import { signAndSendTxRequests } from './transactionRequests';
+import { createEddsaCustomSigningFunctions } from './eddsa';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -31,25 +30,21 @@ interface Recipient {
 /**
  * Creates TSS send parameters for ECDSA MPCv2 signing with custom functions
  */
-function createEcdsaMPCv2SendParams(
+function createMPCSendParamsWithCustomSigningFns(
   req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>,
-  wallet: Wallet,
   enclavedExpressClient: EnclavedExpressClient,
   signingKeychain: Keychain,
 ): SendManyOptions {
   const coin = req.bitgo.coin(req.params.coin);
+  const source = signingKeychain.source as 'user' | 'backup';
+  const commonKeychain = signingKeychain.commonKeychain;
   const mpcAlgorithm = coin.getMPCAlgorithm();
 
+  if (!commonKeychain) {
+    throw new Error('Common keychain is required for MPC signing');
+  }
+
   if (mpcAlgorithm === 'ecdsa') {
-    // For ECDSA MPCv2, we need to create custom signing functions
-    const source = signingKeychain.source as 'user' | 'backup';
-    const commonKeychain = signingKeychain.commonKeychain;
-
-    if (!commonKeychain) {
-      throw new Error('Common keychain is required for ECDSA MPCv2 signing');
-    }
-
-    // Use the shared custom signing functions
     const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
       createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
 
@@ -59,10 +54,19 @@ function createEcdsaMPCv2SendParams(
       customMPCv2SigningRound2GenerationFunction: customMPCv2Round2Generator,
       customMPCv2SigningRound3GenerationFunction: customMPCv2Round3Generator,
     };
-  } else {
-    // For non-ECDSA algorithms, return the original parameters
-    return req.decoded as SendManyOptions;
+  } else if (mpcAlgorithm === 'eddsa') {
+    const { customCommitmentGenerator, customRShareGenerator, customGShareGenerator } =
+      createEddsaCustomSigningFunctions(enclavedExpressClient, source, commonKeychain);
+
+    return {
+      ...(req.decoded as SendManyOptions),
+      customCommitmentGeneratingFunction: customCommitmentGenerator,
+      customRShareGeneratingFunction: customRShareGenerator,
+      customGShareGeneratingFunction: customGShareGenerator,
+    };
   }
+
+  throw new Error(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
@@ -106,22 +110,20 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
 
   try {
-    // Create TSS send parameters with custom signing functions if needed
-
+    // Create MPC send parameters with custom signing functions
     if (wallet.multisigType() === 'tss') {
       if (signingKeychain.source === 'backup') {
         throw new Error('Backup MPC signing not supported for sendMany');
       }
-      if (wallet.baseCoin.getMPCAlgorithm() === 'ecdsa') {
-        const ecdsaMPCv2SendParams = createEcdsaMPCv2SendParams(
-          req,
-          wallet,
-          enclavedExpressClient,
-          signingKeychain,
-        );
-        return wallet.sendMany(ecdsaMPCv2SendParams);
-      }
+      const mpcSendParams = createMPCSendParamsWithCustomSigningFns(
+        req,
+        enclavedExpressClient,
+        signingKeychain,
+      );
+      return wallet.sendMany(mpcSendParams);
     }
+
+    /** Multisig */
 
     const prebuildParams: PrebuildTransactionOptions = {
       ...params,
@@ -160,31 +162,15 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
 
     logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
 
-    // Need to branch off for multisig and tss
-    if (wallet.multisigType() === 'tss') {
-      if (!txPrebuilt.txRequestId) {
-        throw new Error('MPC tx not built correctly.');
-      }
-      const txRequest = await getTxRequest(bitgo, wallet.id(), txPrebuilt.txRequestId, reqId);
-      return signAndSendTxRequests(
-        bitgo,
-        wallet,
-        txRequest,
-        enclavedExpressClient,
-        signingKeychain,
-        reqId,
-      );
-    } else {
-      return signAndSendMultisig(
-        wallet,
-        req.decoded.source,
-        txPrebuilt,
-        prebuildParams,
-        enclavedExpressClient,
-        signingKeychain,
-        reqId,
-      );
-    }
+    return signAndSendMultisig(
+      wallet,
+      req.decoded.source,
+      txPrebuilt,
+      prebuildParams,
+      enclavedExpressClient,
+      signingKeychain,
+      reqId,
+    );
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to send many: %s', err.message);

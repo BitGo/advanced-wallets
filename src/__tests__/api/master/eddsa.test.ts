@@ -17,7 +17,7 @@ import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
 
 // TODO: Re-enable once using EDDSA Custom signing fns
-xdescribe('Eddsa Signing Handler', () => {
+describe('Eddsa Signing Handler', () => {
   let bitgo: BitGoBase;
   let wallet: Wallet;
   let enclavedExpressClient: EnclavedExpressClient;
@@ -104,30 +104,6 @@ xdescribe('Eddsa Signing Handler', () => {
 
     const pgpKey = await readKey({ armoredKey: bitgoGpgKey.publicKey });
     sinon.stub(EddsaUtils.prototype, 'getBitgoPublicGpgKey').resolves(pgpKey);
-
-    // Mock getTxRequest call
-    const getTxRequestNock = nock(bitgoApiUrl)
-      .get(`/api/v2/wallet/${walletId}/txrequests`)
-      .query({ txRequestIds: 'test-tx-request-id', latest: true })
-      .matchHeader('any', () => true)
-      .reply(200, {
-        txRequests: [
-          {
-            txRequestId: 'test-tx-request-id',
-            state: 'signed',
-            apiVersion: 'full',
-            pendingApprovalId: 'test-pending-approval-id',
-            transactions: [
-              {
-                unsignedTx: {
-                  derivationPath: 'm/0',
-                  signableHex: 'testMessage',
-                },
-              },
-            ],
-          },
-        ],
-      });
 
     // Mock exchangeEddsaCommitments call
     const exchangeCommitmentsNock = nock(bitgoApiUrl)
@@ -266,7 +242,6 @@ xdescribe('Eddsa Signing Handler', () => {
       state: 'signed',
     });
 
-    getTxRequestNock.done();
     exchangeCommitmentsNock.done();
     offerRShareNock.done();
     getBitgoRShareNock.done();
