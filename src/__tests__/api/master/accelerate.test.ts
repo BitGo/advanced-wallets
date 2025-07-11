@@ -157,8 +157,10 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
         cpfpTxIds: ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'],
       });
 
-    response.status.should.equal(500);
+    response.status.should.equal(404);
     response.body.should.have.property('error');
+    response.body.error.should.equal('ApiResponseError');
+    response.body.details.should.deepEqual({ error: 'Wallet not found' });
 
     walletGetNock.done();
   });
@@ -190,8 +192,10 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
         cpfpTxIds: ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'],
       });
 
-    response.status.should.equal(500);
+    response.status.should.equal(404);
     response.body.should.have.property('error');
+    response.body.error.should.equal('ApiResponseError');
+    response.body.details.should.deepEqual({ error: 'Keychain not found' });
 
     walletGetNock.done();
     keychainGetNock.done();

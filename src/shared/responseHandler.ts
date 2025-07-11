@@ -1,7 +1,7 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
 import { Config } from '../shared/types';
 import { BitGoRequest } from '../types/request';
-import { EnclavedError } from '../errors';
+import { ApiResponseError } from 'bitgo';
 
 // Extend Express Response to include sendEncoded
 interface EncodedResponse extends ExpressResponse {
@@ -38,21 +38,31 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
         return res.sendEncoded(apiError.type, apiError.payload);
       }
 
-      // If it's an EnclavedError, use its status code
-      if (error instanceof EnclavedError) {
-        return res.sendEncoded(error.status, {
-          error: error.message,
-          name: error.name,
-          details: error.message,
-        });
+      if ((error as any).name === 'ApiResponseError') {
+        const apiError = error as ApiResponseError;
+        const body = {
+          error: apiError.name,
+          details: apiError.result,
+        };
+        return res.sendEncoded(apiError.status, body);
       }
 
-      // Default error response
-      return res.sendEncoded(500, {
-        error: 'Internal Server Error',
-        name: error instanceof Error ? error.name : 'Error',
-        details: error instanceof Error ? error.message : String(error),
-      });
+      // Handle all other errors
+      const errorObj = error as any;
+      const status = errorObj.status || errorObj.statusCode || 500;
+
+      // For error status codes (400+), ensure we match the expected schema
+      if (status >= 400) {
+        const body = {
+          error: errorObj.name || errorObj.error || 'Internal Server Error',
+          details: errorObj.details || errorObj.message || String(error),
+        };
+        return res.sendEncoded(status, body);
+      }
+
+      // For non-error status codes, return the error object as-is
+      const body = errorObj.result || errorObj.body || errorObj;
+      return res.sendEncoded(status, body);
     }
   };
 }

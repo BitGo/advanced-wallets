@@ -35,6 +35,14 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
 const GenerateWalletResponse: HttpResponse = {
   // TODO: Get type from public types repo
   200: t.any,
+  400: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -57,6 +65,7 @@ export const SendManyRequest = {
     t.undefined,
     t.literal('transfer'),
     t.literal('acceleration'),
+    t.literal('fillNonce'),
     t.literal('accountSet'),
     t.literal('enabletoken'),
     t.literal('stakingLock'),
@@ -66,7 +75,7 @@ export const SendManyRequest = {
   ]),
   commonKeychain: t.union([t.undefined, t.string]),
   source: t.union([t.literal('user'), t.literal('backup')]),
-  recipients: t.array(t.any),
+  recipients: t.union([t.undefined, t.array(t.any)]),
   numBlocks: t.union([t.undefined, t.number]),
   feeRate: t.union([t.undefined, t.number]),
   feeMultiplier: t.union([t.undefined, t.number]),
@@ -98,6 +107,11 @@ export const SendManyRequest = {
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
   200: t.any,
+  400: t.any,
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -115,7 +129,12 @@ export const ConsolidateRequest = {
 // Response type for /consolidate endpoint
 const ConsolidateResponse: HttpResponse = {
   200: t.any,
+  202: t.any,
   400: t.any, // All failed
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -140,6 +159,14 @@ const AccelerateResponse: HttpResponse = {
     txid: t.string,
     tx: t.string,
   }),
+  400: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+  404: t.type({
+    error: t.string,
+    details: t.any,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -151,6 +178,14 @@ const RecoveryWalletResponse: HttpResponse = {
   // TODO: Get type from public types repo
   200: t.type({
     txHex: t.string, // the full signed transaction hex
+  }),
+  400: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+  404: t.type({
+    error: t.string,
+    details: t.string,
   }),
   500: t.type({
     error: t.string,
@@ -212,6 +247,10 @@ const ConsolidateUnspentsResponse: HttpResponse = {
     txid: t.string,
   }),
   400: t.any,
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,

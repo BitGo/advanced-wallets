@@ -14,6 +14,10 @@ const PingEnclavedResponse: HttpResponse = {
     status: t.string,
     enclavedResponse: PingResponseType,
   }),
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -22,6 +26,10 @@ const PingEnclavedResponse: HttpResponse = {
 
 const VersionEnclavedResponse: HttpResponse = {
   200: VersionResponseType,
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,

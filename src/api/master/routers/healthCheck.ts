@@ -4,14 +4,23 @@ import { Response } from '@api-ts/response';
 import pjson from '../../../../package.json';
 import { responseHandler } from '../../../shared/middleware';
 import { PingResponseType, VersionResponseType } from '../../../types/health';
+import * as t from 'io-ts';
 
 // API Response types
 const PingResponse: HttpResponse = {
   200: PingResponseType,
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
 };
 
 const VersionResponse: HttpResponse = {
   200: VersionResponseType,
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
 };
 
 // API Specification

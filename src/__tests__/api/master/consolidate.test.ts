@@ -145,11 +145,21 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
         consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
       });
 
-    response.status.should.equal(500);
-    response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have
-      .property('details')
-      .which.match(/Consolidations failed: 1 and succeeded: 1/);
+    response.status.should.equal(202);
+    response.body.should.deepEqual({
+      success: [
+        {
+          txid: 'consolidation-tx-1',
+          status: 'signed',
+        },
+      ],
+      failure: [
+        {
+          error: 'Insufficient funds',
+          address: '0xfedcba0987654321',
+        },
+      ],
+    });
 
     walletGetNock.done();
     keychainGetNock.done();

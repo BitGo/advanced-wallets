@@ -39,6 +39,10 @@ const IndependentKeyRequest = {
 const IndependentKeyResponse: HttpResponse = {
   // TODO: Define proper response type
   200: t.any,
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -56,6 +60,14 @@ const SignMultisigRequest = {
 const SignMultisigResponse: HttpResponse = {
   // TODO: Define proper response type for signed multisig transaction
   200: t.any,
+  400: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -76,6 +88,14 @@ const RecoveryMultisigResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
+  400: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -137,6 +157,14 @@ const SignMpcResponse: HttpResponse = {
       signatureShareRound3: t.any,
     }),
   ]),
+  400: t.type({
+    error: t.string,
+    details: t.string,
+  }),
+  404: t.type({
+    error: t.string,
+    details: t.string,
+  }),
   500: t.type({
     error: t.string,
     details: t.string,
@@ -322,6 +350,14 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: {
         200: t.type(MpcInitializeResponse),
+        400: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+        404: t.type({
+          error: t.string,
+          details: t.string,
+        }),
         500: t.type({
           error: t.string,
           details: t.string,
@@ -363,6 +399,14 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: {
         200: MpcFinalizeResponseType,
+        400: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+        404: t.type({
+          error: t.string,
+          details: t.string,
+        }),
         500: t.type({
           error: t.string,
           details: t.string,
@@ -381,6 +425,14 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: {
         200: MpcV2InitializeResponseType,
+        400: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+        404: t.type({
+          error: t.string,
+          details: t.string,
+        }),
         500: t.type({
           error: t.string,
           details: t.string,
@@ -399,6 +451,14 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: {
         200: MpcV2RoundResponseType,
+        400: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+        404: t.type({
+          error: t.string,
+          details: t.string,
+        }),
         500: t.type({
           error: t.string,
           details: t.string,
@@ -417,6 +477,14 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: {
         200: MpcV2FinalizeResponseType,
+        400: t.type({
+          error: t.string,
+          details: t.string,
+        }),
+        404: t.type({
+          error: t.string,
+          details: t.string,
+        }),
         500: t.type({
           error: t.string,
           details: t.string,

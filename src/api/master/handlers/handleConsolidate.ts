@@ -61,7 +61,7 @@ export async function handleConsolidate(
         msg = `Consolidations failed: ${result.failure.length} and succeeded: ${result.success.length}`;
       } else {
         // All failed
-        status = 400;
+        status = 500;
         msg = 'All consolidations failed';
       }
 

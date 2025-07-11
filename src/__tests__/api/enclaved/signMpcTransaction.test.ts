@@ -269,7 +269,7 @@ describe('signMpcTransaction', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .send(input);
 
-      response.status.should.equal(500);
+      response.status.should.equal(404);
       response.body.should.have.property('error');
       kmsNock.done();
     });

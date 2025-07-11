@@ -30,6 +30,7 @@ import {
   MpcV2RoundResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
+import { EnclavedError } from '../../../errors';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -242,7 +243,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to create independent keychain: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to create independent keychain: ${err.message}`, 500);
     }
   }
 
@@ -272,7 +273,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign multisig: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign multisig transaction: ${err.message}`, 500);
     }
   }
 
@@ -296,7 +297,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Enclaved express service ping failed: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to ping enclaved express service: ${err.message}`, 500);
     }
   }
 
@@ -319,7 +320,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to get version information: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to get version information: ${err.message}`, 500);
     }
   }
 
@@ -344,7 +345,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to recover multisig: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to recover multisig transaction: ${err.message}`, 500);
     }
   }
 
@@ -376,7 +377,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to initialize MPC key generation: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to initialize MPC key generation: ${err.message}`, 500);
     }
   }
 
@@ -422,7 +423,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to finalize MPC key generation: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to finalize MPC key generation: ${err.message}`, 500);
     }
   }
 
@@ -446,7 +447,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpc commitment: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign MPC commitment: ${err.message}`, 500);
     }
   }
 
@@ -470,7 +471,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpc r-share: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign MPC R-share: ${err.message}`, 500);
     }
   }
 
@@ -494,7 +495,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpc g-share: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign MPC G-share: ${err.message}`, 500);
     }
   }
 
@@ -524,7 +525,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to initialize MPCv2 key generation: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to initialize MPCv2 key generation: ${err.message}`, 500);
     }
   }
 
@@ -561,7 +562,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to execute MPCv2 round: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to execute MPCv2 round: ${err.message}`, 500);
     }
   }
 
@@ -595,7 +596,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to finalize MPCv2 key generation: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to finalize MPCv2 key generation: ${err.message}`, 500);
     }
   }
 
@@ -628,7 +629,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpcv2 round 1: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign MPCv2 Round 1: ${err.message}`, 500);
     }
   }
 
@@ -661,7 +662,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpcv2 round 2: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign MPCv2 Round 2: ${err.message}`, 500);
     }
   }
 
@@ -694,7 +695,7 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpcv2 round 3: %s', err.message);
-      throw err;
+      throw new EnclavedError(`Failed to sign MPCv2 Round 3: ${err.message}`, 500);
     }
   }
 }
