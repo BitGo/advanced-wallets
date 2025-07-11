@@ -11,7 +11,7 @@ import * as handlerUtils from '../../../api/master/handlerUtils';
 
 describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
   let agent: request.SuperAgentTest;
-  const coin = 'btc';
+  const coin = 'hteth';
   const walletId = 'test-wallet-id';
   const accessToken = 'test-access-token';
   const bitgoApiUrl = Environments.test.uri;
