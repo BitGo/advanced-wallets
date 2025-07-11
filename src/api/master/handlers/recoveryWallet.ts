@@ -1,214 +1,65 @@
-import { BaseCoin, BitGoAPI, MethodNotImplementedError } from 'bitgo';
-
-import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
-
-import assert from 'assert';
-
-import {
-  isEddsaCoin,
-  isEthLikeCoin,
-  isFormattedOfflineVaultTxInfo,
-  isUtxoCoin,
-} from '../../../shared/coinUtils';
-import {
-  DEFAULT_MUSIG_ETH_GAS_PARAMS,
-  getReplayProtectionOptions,
-} from '../../../shared/recoveryUtils';
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import logger from '../../../logger';
+import { isSolCoin } from '../../../shared/coinUtils';
+import { MPCTx } from 'bitgo';
+import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
 
-interface RecoveryParams {
-  userKey: string;
-  backupKey: string;
-  walletContractAddress: string;
-  recoveryDestination: string;
-  apiKey: string;
-}
-
-interface EnclavedRecoveryParams {
-  userPub: string;
-  backupPub: string;
-  apiKey: string;
-  unsignedSweepPrebuildTx: any; // TODO: type this properly once we have the SDK types
-  coinSpecificParams?: Record<string, undefined>;
-  walletContractAddress: string;
-}
-
-async function handleEthLikeRecovery(
-  sdkCoin: BaseCoin,
-  commonRecoveryParams: RecoveryParams,
-  enclavedExpressClient: any,
-  params: EnclavedRecoveryParams,
-  env: EnvironmentName,
-) {
-  try {
-    const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
-    const unsignedSweepPrebuildTx = await (sdkCoin as AbstractEthLikeNewCoins).recover({
-      ...commonRecoveryParams,
-      gasPrice,
-      gasLimit,
-      eip1559: {
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-      },
-      replayProtectionOptions: getReplayProtectionOptions(env),
-    });
-
-    const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
-      ...params,
-      unsignedSweepPrebuildTx,
-    });
-
-    return fullSignedRecoveryTx;
-  } catch (err) {
-    throw err;
-  }
-}
-
-export type UtxoCoinSpecificRecoveryParams = Pick<
-  Parameters<AbstractUtxoCoin['recover']>[0],
-  | 'apiKey'
-  | 'userKey'
-  | 'backupKey'
-  | 'bitgoKey'
-  | 'ignoreAddressTypes'
-  | 'scan'
-  | 'feeRate'
-  | 'recoveryDestination'
->;
-
-async function handleUtxoLikeRecovery(
-  sdkCoin: BaseCoin,
-  enclavedClient: EnclavedExpressClient,
-  recoveryParams: UtxoCoinSpecificRecoveryParams,
-): Promise<{ txHex: string }> {
-  const abstractUtxoCoin = sdkCoin as unknown as AbstractUtxoCoin;
-  const recoverTx = await abstractUtxoCoin.recover(recoveryParams);
-
-  logger.info('UTXO recovery transaction created:', recoverTx);
-  if (!isFormattedOfflineVaultTxInfo(recoverTx)) {
-    throw new MethodNotImplementedError(`Unknown transaction ${JSON.stringify(recoverTx)} created`);
-  }
-
-  return (await enclavedClient.recoveryMultisig({
-    userPub: recoveryParams.userKey,
-    backupPub: recoveryParams.backupKey,
-    bitgoPub: recoveryParams.bitgoKey,
-    unsignedSweepPrebuildTx: recoverTx,
-    walletContractAddress: '',
-  })) as { txHex: string };
-}
-
-export async function handleRecoveryWalletOnPrem(
-  req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
+// Handler for recovery from receive addresses (consolidation sweeps)
+export async function handleRecoveryConsolidationsOnPrem(
+  req: MasterApiSpecRouteRequest<'v1.wallet.recoveryConsolidations', 'post'>,
 ) {
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
   const enclavedExpressClient = req.enclavedExpressClient;
-  const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
+
+  const { userPub, backupPub, bitgoPub } = req.decoded;
 
   const sdkCoin = bitgo.coin(coin);
-
-  // Handle TSS recovery
-  if (req.decoded.isTssRecovery) {
-    assert(req.decoded.tssRecoveryParams, 'TSS recovery parameters are required');
-    const { commonKeychain } = req.decoded.tssRecoveryParams;
-    if (!commonKeychain) {
-      throw new Error('Common keychain is required for TSS recovery');
-    }
-
-    if (isEddsaCoin(sdkCoin)) {
-      return handleEddsaRecovery(
-        req.bitgo,
-        sdkCoin,
-        {
-          userKey: commonKeychain,
-          backupKey: commonKeychain,
-          walletContractAddress: '',
-          recoveryDestination: recoveryDestinationAddress,
-          apiKey: req.decoded.apiKey || '',
-        },
-        enclavedExpressClient,
-        {
-          userPub: commonKeychain,
-          backupPub: commonKeychain,
-          apiKey: '',
-          walletContractAddress: '',
-          unsignedSweepPrebuildTx: undefined,
-          coinSpecificParams: undefined,
-        },
-      );
-    } else {
-      throw new MethodNotImplementedError(
-        `TSS recovery is not implemented for coin: ${coin}. Supported coins are Eddsa coins.`,
-      );
-    }
+  let txs: MPCTx[] | RecoveryTransaction[] = [];
+  // 1. Build unsigned consolidations
+  if (isSolCoin(sdkCoin) && !req.decoded.durableNonces) {
+    throw new Error('durableNonces is required for Solana consolidation recovery');
   }
 
-  // Handle standard recovery
-  if (!req.decoded.multiSigRecoveryParams) {
-    throw new Error('MultiSig recovery parameters are required for standard recovery');
+  if (typeof (sdkCoin as any).recoverConsolidations !== 'function') {
+    throw new Error(`recoverConsolidations is not supported for coin: ${coin}`);
   }
 
-  const { userPub, backupPub, bitgoPub, walletContractAddress } =
-    req.decoded.multiSigRecoveryParams;
-  const apiKey = req.decoded.apiKey || '';
-
-  if (!userPub || !backupPub) {
-    throw new Error('Missing required fields for standard recovery');
-  }
-
-  // Check if the public key is valid
-  if (!sdkCoin.isValidPub(userPub)) {
-    throw new Error('Invalid user public key format');
-  } else if (!sdkCoin.isValidPub(backupPub)) {
-    throw new Error('Invalid backup public key format');
-  }
-
-  const commonRecoveryParams: RecoveryParams = {
+  // Use type assertion to access recoverConsolidations
+  const result = await (sdkCoin as any).recoverConsolidations({
+    ...req.decoded,
     userKey: userPub,
     backupKey: backupPub,
-    walletContractAddress,
-    recoveryDestination: recoveryDestinationAddress,
-    apiKey,
-  };
+    bitgoKey: bitgoPub,
+    durableNonces: req.decoded.durableNonces,
+  });
 
-  if (isEthLikeCoin(sdkCoin)) {
-    if (!walletContractAddress) {
-      throw new Error('Missing walletContract address');
-    }
-    return handleEthLikeRecovery(
-      sdkCoin,
-      commonRecoveryParams,
-      enclavedExpressClient,
-      {
+  if ('transactions' in result) {
+    txs = result.transactions;
+  } else if ('txRequests' in result) {
+    txs = result.txRequests;
+  } else {
+    throw new Error('recoverConsolidations did not return expected transactions');
+  }
+
+  logger.debug(`Found ${txs.length} unsigned consolidation transactions`);
+
+  // 2. For each unsigned sweep, get it signed by EBE (using recoveryMultisig)
+  const signedTxs = [];
+  try {
+    for (const tx of txs) {
+      const signedTx = await enclavedExpressClient.recoveryMultisig({
         userPub,
         backupPub,
-        apiKey,
-        unsignedSweepPrebuildTx: undefined,
-        coinSpecificParams: undefined,
-        walletContractAddress,
-      },
-      bitgo.env as EnvironmentName,
-    );
-  }
-  if (!bitgoPub) {
-    throw new Error('BitGo public key is required for recovery');
-  }
+        unsignedSweepPrebuildTx: tx,
+        walletContractAddress: '',
+      });
+      signedTxs.push(signedTx);
+    }
 
-  if (isUtxoCoin(sdkCoin)) {
-    return handleUtxoLikeRecovery(sdkCoin, req.enclavedExpressClient, {
-      userKey: userPub,
-      backupKey: backupPub,
-      bitgoKey: bitgoPub,
-      ignoreAddressTypes: coinSpecificParams?.ignoreAddressTypes ?? [],
-      scan: coinSpecificParams?.addressScan,
-      feeRate: coinSpecificParams?.feeRate,
-      recoveryDestination: recoveryDestinationAddress,
-      apiKey,
-    });
+    return { signedTxs };
+  } catch (err) {
+    logger.error('Error during consolidation recovery:', err);
+    throw err;
   }
-
-  throw new MethodNotImplementedError('Recovery wallet is not supported for this coin: ' + coin);
 }
