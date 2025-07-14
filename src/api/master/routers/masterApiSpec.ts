@@ -202,11 +202,12 @@ const RecoveryConsolidationsWalletRequest = {
   userPub: t.union([t.undefined, t.string]),
   backupPub: t.union([t.undefined, t.string]),
   bitgoPub: t.union([t.undefined, t.string]),
+  multisigType: t.union([t.literal('onchain'), t.literal('tss')]),
   commonKeychain: t.union([t.undefined, t.string]),
   tokenContractAddress: t.union([t.undefined, t.string]),
   startingScanIndex: t.union([t.undefined, t.number]),
   endingScanIndex: t.union([t.undefined, t.number]),
-  apiKey: t.string,
+  apiKey: t.union([t.undefined, t.string]),
   durableNonces: t.union([
     t.undefined,
     t.type({

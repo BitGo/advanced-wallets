@@ -71,9 +71,9 @@ export async function handleRecoveryConsolidationsOnPrem(
   const coin = req.decoded.coin;
   const enclavedExpressClient = req.enclavedExpressClient;
 
-  const isMPC = true;
+  const isMPC = req.decoded.multisigType === 'tss';
 
-  const { commonKeychain, apiKey } = req.decoded;
+  const { commonKeychain, apiKey = '' } = req.decoded;
   let { userPub, backupPub, bitgoPub } = req.decoded;
 
   if (isMPC) {

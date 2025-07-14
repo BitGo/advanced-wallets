@@ -16,6 +16,7 @@ import {
   MPCTx,
   MPCSweepTxs,
   MPCTxs,
+  MPCUnsignedTx,
 } from '@bitgo/sdk-core';
 import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
@@ -205,6 +206,11 @@ export class EnclavedExpressClient {
           txRequest.signableHex = firstTx.unsignedTx?.serializedTx || '';
           txRequest.derivationPath = firstTx.unsignedTx?.derivationPath || '';
         }
+      } else if ('transactions' in tx && Array.isArray(tx.transactions)) {
+        // RecoveryTxRequest
+        const firstTransaction = tx.transactions[0] as MPCUnsignedTx;
+        txRequest.signableHex = firstTransaction.unsignedTx?.serializedTx || '';
+        txRequest.derivationPath = firstTransaction.unsignedTx?.derivationPath || '';
       } else if ('signableHex' in tx) {
         // MPCTx format
         txRequest.signableHex = tx.signableHex || '';
