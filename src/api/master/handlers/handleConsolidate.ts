@@ -38,7 +38,7 @@ export async function handleConsolidate(
     throw new Error('consolidateAddresses must be an array of addresses');
   }
 
-  const isMPC = wallet._wallet.multisigType === 'tss';
+  const isMPC = wallet.multisigType() === 'tss';
 
   try {
     const consolidationParams: BuildConsolidationTransactionOptions = {
@@ -91,7 +91,7 @@ export async function handleConsolidate(
 
           successfulTxs.push(result);
         } catch (e) {
-          console.dir(e);
+          logger.error('Error during account consolidation: %s', (e as Error).message, e);
           failedTxs.push(e as any);
         }
       }
@@ -107,7 +107,7 @@ export async function handleConsolidate(
         msg = `Consolidations failed: ${failedTxs.length} and succeeded: ${successfulTxs.length}`;
       } else {
         // All failed
-        status = 400;
+        status = 500;
         msg = 'All consolidations failed';
       }
 
