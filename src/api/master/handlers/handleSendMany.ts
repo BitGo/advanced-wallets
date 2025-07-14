@@ -178,7 +178,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
 }
 
-async function signAndSendMultisig(
+export async function signAndSendMultisig(
   wallet: Wallet,
   source: 'user' | 'backup',
   txPrebuilt: PrebuildTransactionResult,

@@ -168,6 +168,9 @@
                       "full",
                       "lite"
                     ]
+                  },
+                  "commonKeychain": {
+                    "type": "string"
                   }
                 },
                 "required": [

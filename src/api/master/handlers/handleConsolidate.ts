@@ -1,7 +1,13 @@
-import { RequestTracer, KeyIndices } from '@bitgo/sdk-core';
+import {
+  RequestTracer,
+  KeyIndices,
+  BuildConsolidationTransactionOptions,
+  getTxRequest,
+} from '@bitgo/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
+import { signAndSendTxRequests } from './transactionRequests';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
@@ -32,46 +38,92 @@ export async function handleConsolidate(
     throw new Error('consolidateAddresses must be an array of addresses');
   }
 
-  try {
-    // Create custom signing function that delegates to EBE
-    const customSigningFunction = makeCustomSigningFunction({
-      enclavedExpressClient,
-      source: params.source,
-      pub: signingKeychain.pub!,
-    });
+  const isMPC = wallet.multisigType() === 'tss';
 
-    // Prepare consolidation parameters
-    const consolidationParams = {
+  try {
+    const consolidationParams: BuildConsolidationTransactionOptions = {
       ...params,
-      customSigningFunction,
       reqId,
     };
 
-    // Send account consolidations
-    const result = await wallet.sendAccountConsolidations(consolidationParams);
+    isMPC && (consolidationParams.apiVersion = 'full');
+
+    const successfulTxs: any[] = [];
+    const failedTxs = new Array<Error>();
+
+    const unsignedBuilds = await wallet.buildAccountConsolidations(consolidationParams);
+
+    logger.debug(
+      `Consolidation request for wallet ${walletId} with ${unsignedBuilds.length} unsigned builds`,
+    );
+
+    if (unsignedBuilds && unsignedBuilds.length > 0) {
+      for (const unsignedBuild of unsignedBuilds) {
+        try {
+          const result = isMPC
+            ? await signAndSendTxRequests(
+                bitgo,
+                wallet,
+                await getTxRequest(
+                  bitgo,
+                  wallet.id(),
+                  (() => {
+                    if (!unsignedBuild.txRequestId) {
+                      throw new Error('Missing txRequestId in unsigned build');
+                    }
+                    return unsignedBuild.txRequestId;
+                  })(),
+                  reqId,
+                ),
+                enclavedExpressClient,
+                signingKeychain,
+                reqId,
+              )
+            : await wallet.sendAccountConsolidation({
+                ...consolidationParams,
+                prebuildTx: unsignedBuild,
+                customSigningFunction: makeCustomSigningFunction({
+                  enclavedExpressClient,
+                  source: params.source,
+                  pub: signingKeychain.pub!,
+                }),
+              });
+
+          successfulTxs.push(result);
+        } catch (e) {
+          logger.error('Error during account consolidation: %s', (e as Error).message, e);
+          failedTxs.push(e as any);
+        }
+      }
+    }
 
     // Handle failures
-    if (result.failure && result.failure.length > 0) {
-      logger.debug('Consolidation result: %s', JSON.stringify(result, null, 2));
+    if (failedTxs.length > 0) {
       let msg = '';
       let status = 202;
 
-      if (result.success && result.success.length > 0) {
+      if (successfulTxs.length > 0) {
         // Some succeeded, some failed
-        msg = `Consolidations failed: ${result.failure.length} and succeeded: ${result.success.length}`;
+        msg = `Consolidations failed: ${failedTxs.length} and succeeded: ${successfulTxs.length}`;
       } else {
         // All failed
-        status = 400;
+        status = 500;
         msg = 'All consolidations failed';
       }
 
       const error = new Error(msg);
       (error as any).status = status;
-      (error as any).result = result;
+      (error as any).result = {
+        success: successfulTxs,
+        failure: failedTxs,
+      };
       throw error;
     }
 
-    return result;
+    return {
+      success: successfulTxs,
+      failure: failedTxs,
+    };
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to consolidate account: %s', err.message);
