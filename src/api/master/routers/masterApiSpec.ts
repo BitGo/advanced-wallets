@@ -198,16 +198,22 @@ const RecoveryWalletRequest = {
   ),
 };
 
-export type RecoveryWalletRequest = typeof RecoveryWalletRequest;
-
 const RecoveryConsolidationsWalletRequest = {
-  userPub: t.string,
-  backupPub: t.string,
+  userPub: t.union([t.undefined, t.string]),
+  backupPub: t.union([t.undefined, t.string]),
   bitgoPub: t.union([t.undefined, t.string]),
-  walletContractAddress: t.string,
-  recoveryDestinationAddress: t.string,
+  commonKeychain: t.union([t.undefined, t.string]),
+  tokenContractAddress: t.union([t.undefined, t.string]),
+  startingScanIndex: t.union([t.undefined, t.number]),
+  endingScanIndex: t.union([t.undefined, t.number]),
   apiKey: t.string,
-  durableNonces: t.union([t.undefined, t.boolean]),
+  durableNonces: t.union([
+    t.undefined,
+    t.type({
+      secretKey: t.string,
+      publicKeys: t.array(t.string),
+    }),
+  ]),
 };
 
 // Response type for /recoveryconsolidations endpoint
@@ -218,7 +224,6 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
     details: t.string,
   }),
 };
-
 
 export const ConsolidateUnspentsRequest = {
   pubkey: t.string,

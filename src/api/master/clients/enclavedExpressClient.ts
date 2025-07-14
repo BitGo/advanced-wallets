@@ -14,6 +14,8 @@ import {
   Keychain,
   ApiKeyShare,
   MPCTx,
+  MPCSweepTxs,
+  MPCTxs,
 } from '@bitgo/sdk-core';
 import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
@@ -32,6 +34,7 @@ import {
   MpcV2RoundResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
+import { RecoveryTxRequest } from 'bitgo';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -171,7 +174,7 @@ export interface SignMpcV2Round3Response {
 
 export class EnclavedExpressClient {
   async recoveryMPC(params: {
-    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs;
+    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs | RecoveryTxRequest;
     userPub: string;
     backupPub: string;
     apiKey: string;

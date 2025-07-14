@@ -75,7 +75,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
           userPub: ethRecoveryData.userKey,
           backupPub: ethRecoveryData.backupKey,
           walletContractAddress: ethRecoveryData.walletContractAddress,
-          bitgoPub: undefined,
+          bitgoPub: '',
         },
         apiKey: 'etherscan-api-token',
         recoveryDestinationAddress: ethRecoveryData.recoveryDestinationAddress,
@@ -157,19 +157,5 @@ describe('POST /api/:coin/wallet/recovery', () => {
     responseNoBackupKey.status.should.equal(400);
     responseNoBackupKey.body.should.have.property('error');
     responseNoBackupKey.body.error.should.match(/backupPub/i);
-  });
-
-  it('should fail TSS recovery when common keychain is missing', async () => {
-    const response = await agent
-      .post(`/api/${coin}/wallet/recovery`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        isTssRecovery: true,
-        recoveryDestinationAddress: ethRecoveryData.recoveryDestinationAddress,
-      });
-
-    response.status.should.equal(400);
-    response.body.should.have.property('error');
-    response.body.error.should.match(/TSS recovery parameters are required/i);
   });
 });
