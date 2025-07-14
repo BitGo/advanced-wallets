@@ -161,12 +161,22 @@ const RecoveryWalletResponse: HttpResponse = {
 
 // Request type for /recovery endpoint
 const RecoveryWalletRequest = {
-  userPub: t.string,
-  backupPub: t.string,
-  bitgoPub: t.union([t.undefined, t.string]),
-  walletContractAddress: t.string,
+  isTssRecovery: t.union([t.undefined, t.boolean]),
+  tssRecoveryParams: optional(
+    t.type({
+      commonKeychain: t.string,
+    }),
+  ),
+  multiSigRecoveryParams: optional(
+    t.type({
+      userPub: t.string,
+      backupPub: t.string,
+      bitgoPub: t.string,
+      walletContractAddress: t.string,
+    }),
+  ),
   recoveryDestinationAddress: t.string,
-  apiKey: t.string,
+  apiKey: optional(t.string),
   coinSpecificParams: optional(
     t.partial({
       ignoreAddressTypes: optional(

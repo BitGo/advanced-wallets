@@ -13,6 +13,9 @@ import {
   GShare,
   Keychain,
   ApiKeyShare,
+  MPCSweepTxs,
+  MPCTx,
+  MPCTxs,
 } from '@bitgo/sdk-core';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
@@ -166,6 +169,72 @@ export interface SignMpcV2Round3Response {
 }
 
 export class EnclavedExpressClient {
+  async recoveryMPC(params: {
+    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs;
+    userPub: string;
+    backupPub: string;
+    apiKey: string;
+    coinSpecificParams?: Record<string, unknown>;
+    walletContractAddress: string;
+  }): Promise<SignedTransaction> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to recover MPC');
+    }
+
+    try {
+      debugLogger('Recovering MPC for coin: %s', this.coin);
+
+      // Extract the required information from the sweep tx
+      const tx = params.unsignedSweepPrebuildTx;
+      const txRequest = {
+        unsignedTx: '',
+        signableHex: '',
+        derivationPath: '',
+      };
+
+      // Handle different tx formats
+      if ('txRequests' in tx && Array.isArray(tx.txRequests)) {
+        // MPCTxs format
+        const firstRequest = tx.txRequests[0];
+        if (firstRequest && firstRequest.transactions && firstRequest.transactions[0]) {
+          const firstTx = firstRequest.transactions[0];
+          txRequest.signableHex = firstTx.unsignedTx?.serializedTx || '';
+          txRequest.derivationPath = firstTx.unsignedTx?.derivationPath || '';
+        }
+      } else if ('signableHex' in tx) {
+        // MPCTx format
+        txRequest.signableHex = tx.signableHex || '';
+        txRequest.derivationPath = tx.derivationPath || '';
+      } else if (Array.isArray(tx) && tx.length > 0) {
+        // MPCSweepTxs format
+        const firstTx = tx[0];
+        if (firstTx && firstTx.transactions && firstTx.transactions[0]) {
+          const transaction = firstTx.transactions[0];
+          txRequest.signableHex = transaction.unsignedTx?.signableHex || '';
+          txRequest.derivationPath = transaction.unsignedTx?.derivationPath || '';
+        }
+      }
+
+      let request = this.apiClient['v1.mpc.recovery'].post({
+        coin: this.coin,
+        commonKeychain: params.userPub,
+        unsignedSweepPrebuildTx: {
+          txRequests: [txRequest],
+        },
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to recover MPC: %s', err.message);
+      throw err;
+    }
+  }
   private readonly baseUrl: string;
   private readonly enclavedExpressCert: string;
   private readonly tlsKey?: string;

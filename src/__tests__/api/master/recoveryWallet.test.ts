@@ -153,11 +153,13 @@ describe('utxo recovery', () => {
       .post(`/api/${coin}/wallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        userPub,
-        backupPub,
-        bitgoPub,
+        multiSigRecoveryParams: {
+          userPub,
+          backupPub,
+          bitgoPub,
+          walletContractAddress: '',
+        },
         recoveryDestinationAddress: recoveryDestination,
-        walletContractAddress: '',
         coin,
         apiKey: 'key',
         coinSpecificParams: {

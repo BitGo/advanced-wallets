@@ -759,17 +759,42 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "userPub": {
-                    "type": "string"
+                  "isTssRecovery": {
+                    "type": "boolean"
                   },
-                  "backupPub": {
-                    "type": "string"
+                  "tssRecoveryParams": {
+                    "type": "object",
+                    "properties": {
+                      "commonKeychain": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "commonKeychain"
+                    ]
                   },
-                  "bitgoPub": {
-                    "type": "string"
-                  },
-                  "walletContractAddress": {
-                    "type": "string"
+                  "multiSigRecoveryParams": {
+                    "type": "object",
+                    "properties": {
+                      "backupPub": {
+                        "type": "string"
+                      },
+                      "bitgoPub": {
+                        "type": "string"
+                      },
+                      "userPub": {
+                        "type": "string"
+                      },
+                      "walletContractAddress": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "backupPub",
+                      "bitgoPub",
+                      "userPub",
+                      "walletContractAddress"
+                    ]
                   },
                   "recoveryDestinationAddress": {
                     "type": "string"
@@ -803,11 +828,7 @@
                   }
                 },
                 "required": [
-                  "userPub",
-                  "backupPub",
-                  "walletContractAddress",
-                  "recoveryDestinationAddress",
-                  "apiKey"
+                  "recoveryDestinationAddress"
                 ]
               }
             }

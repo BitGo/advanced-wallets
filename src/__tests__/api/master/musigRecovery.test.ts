@@ -71,10 +71,13 @@ describe('POST /api/:coin/wallet/recovery', () => {
       })
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        userPub: ethRecoveryData.userKey,
-        backupPub: ethRecoveryData.backupKey,
+        multiSigRecoveryParams: {
+          userPub: ethRecoveryData.userKey,
+          backupPub: ethRecoveryData.backupKey,
+          walletContractAddress: ethRecoveryData.walletContractAddress,
+          bitgoPub: '',
+        },
         apiKey: 'etherscan-api-token',
-        walletContractAddress: ethRecoveryData.walletContractAddress,
         recoveryDestinationAddress: ethRecoveryData.recoveryDestinationAddress,
       });
 
@@ -89,10 +92,13 @@ describe('POST /api/:coin/wallet/recovery', () => {
       .post(`/api/${coin}/wallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        userPub: ethRecoveryData.userKey,
-        backupPub: ethRecoveryData.backupKey,
+        multiSigRecoveryParams: {
+          userPub: ethRecoveryData.userKey,
+          backupPub: ethRecoveryData.backupKey,
+          walletContractAddress: undefined,
+          bitgoPub: undefined,
+        },
         apiKey: 'etherscan-api-token',
-        walletContractAddress: undefined,
         recoveryDestinationAddress: ethRecoveryData.recoveryDestinationAddress,
       });
 
@@ -105,9 +111,12 @@ describe('POST /api/:coin/wallet/recovery', () => {
       .post(`/api/${coin}/wallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        userPub: ethRecoveryData.userKey,
-        backupPub: ethRecoveryData.backupKey,
-        walletContractAddress: ethRecoveryData.walletContractAddress,
+        multiSigRecoveryParams: {
+          userPub: ethRecoveryData.userKey,
+          backupPub: ethRecoveryData.backupKey,
+          walletContractAddress: ethRecoveryData.walletContractAddress,
+          bitgoPub: undefined,
+        },
         recoveryDestinationAddress: undefined,
       });
 
@@ -120,8 +129,11 @@ describe('POST /api/:coin/wallet/recovery', () => {
       .post(`/api/${coin}/wallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        backupPub: ethRecoveryData.backupKey,
-        walletContractAddress: ethRecoveryData.walletContractAddress,
+        multiSigRecoveryParams: {
+          backupPub: ethRecoveryData.backupKey,
+          walletContractAddress: ethRecoveryData.walletContractAddress,
+          bitgoPub: undefined,
+        },
         recoveryDestinationAddress: undefined,
       });
 
@@ -129,9 +141,12 @@ describe('POST /api/:coin/wallet/recovery', () => {
       .post(`/api/${coin}/wallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        userPub: ethRecoveryData.userKey,
+        multiSigRecoveryParams: {
+          userPub: ethRecoveryData.userKey,
+          walletContractAddress: ethRecoveryData.walletContractAddress,
+          bitgoPub: undefined,
+        },
         apiKey: 'etherscan-api-token',
-        walletContractAddress: ethRecoveryData.walletContractAddress,
         recoveryDestinationAddress: undefined,
       });
 
