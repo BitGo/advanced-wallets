@@ -1,9 +1,9 @@
 import {
   apiSpec,
-  Method as HttpMethod,
   httpRequest,
   HttpResponse,
   httpRoute,
+  Method as HttpMethod,
   optional,
 } from '@api-ts/io-ts-http';
 import { Response } from '@api-ts/response';
@@ -15,6 +15,7 @@ import {
 import express from 'express';
 import * as t from 'io-ts';
 import { MasterExpressConfig } from '../../../shared/types';
+import * as utxolib from '@bitgo/utxo-lib';
 import { prepareBitGo, responseHandler } from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { handleGenerateWalletOnPrem } from '../handlers/generateWallet';
@@ -26,6 +27,61 @@ import { handleAccelerate } from '../handlers/handleAccelerate';
 import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 import { handleSignAndSendTxRequest } from '../handlers/handleSignAndSendTxRequest';
 import { handleRecoveryConsolidationsOnPrem } from '../handlers/recoveryConsolidationsWallet';
+
+export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
+
+// Recovery parameter types
+export const RecoveryParamTypes = {
+  // UTXO specific recovery parameters
+  utxoRecoveryOptions: t.partial({
+    ignoreAddressTypes: t.array(t.string),
+    userKeyPath: t.string,
+    feeRate: t.number,
+    scan: optional(t.number),
+  }),
+
+  // ETH-like specific recovery parameters
+  ethLikeRecoveryOptions: t.partial({
+    gasPrice: t.number,
+    gasLimit: t.number,
+    eip1559: t.type({
+      maxPriorityFeePerGas: t.number,
+      maxFeePerGas: t.number,
+    }),
+    replayProtectionOptions: t.type({
+      chain: t.union([t.string, t.number]),
+      hardfork: t.string,
+    }),
+    scan: optional(t.number),
+  }),
+
+  // Solana specific recovery parameters
+  solanaRecoveryOptions: t.partial({
+    durableNonce: optional(
+      t.type({
+        publicKey: t.string,
+        secretKey: t.string,
+      }),
+    ),
+    tokenContractAddress: t.string,
+    closeAtaAddress: t.string,
+    recoveryDestinationAtaAddress: t.string,
+    programId: t.string,
+  }),
+};
+
+export type EvmRecoveryOptions = typeof RecoveryParamTypes.ethLikeRecoveryOptions._A;
+export type UtxoRecoveryOptions = typeof RecoveryParamTypes.utxoRecoveryOptions._A;
+export type SolanaRecoveryOptions = typeof RecoveryParamTypes.solanaRecoveryOptions._A;
+
+// Combined coin specific parameters
+const CoinSpecificParams = t.partial({
+  utxoRecoveryOptions: RecoveryParamTypes.utxoRecoveryOptions,
+  evmRecoveryOptions: RecoveryParamTypes.ethLikeRecoveryOptions,
+  solanaRecoveryOptions: RecoveryParamTypes.solanaRecoveryOptions,
+});
+
+export type CoinSpecificParams = t.TypeOf<typeof CoinSpecificParams>;
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -179,23 +235,7 @@ const RecoveryWalletRequest = {
   ),
   recoveryDestinationAddress: t.string,
   apiKey: optional(t.string),
-  coinSpecificParams: optional(
-    t.partial({
-      ignoreAddressTypes: optional(
-        t.array(
-          t.union([
-            t.literal('p2sh'),
-            t.literal('p2shP2wsh'),
-            t.literal('p2wsh'),
-            t.literal('p2tr'),
-            t.literal('p2trMusig2'),
-          ]),
-        ),
-      ),
-      addressScan: optional(t.number),
-      feeRate: optional(t.number),
-    }),
-  ),
+  coinSpecificParams: optional(CoinSpecificParams),
 };
 
 const RecoveryConsolidationsWalletRequest = {

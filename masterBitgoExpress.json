@@ -174,7 +174,6 @@
                   }
                 },
                 "required": [
-                  "pubkey",
                   "source"
                 ]
               }
@@ -808,23 +807,107 @@
                   "coinSpecificParams": {
                     "type": "object",
                     "properties": {
-                      "addressScan": {
-                        "type": "number"
+                      "evmRecoveryOptions": {
+                        "type": "object",
+                        "properties": {
+                          "eip1559": {
+                            "type": "object",
+                            "properties": {
+                              "maxFeePerGas": {
+                                "type": "number"
+                              },
+                              "maxPriorityFeePerGas": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "maxFeePerGas",
+                              "maxPriorityFeePerGas"
+                            ]
+                          },
+                          "gasLimit": {
+                            "type": "number"
+                          },
+                          "gasPrice": {
+                            "type": "number"
+                          },
+                          "replayProtectionOptions": {
+                            "type": "object",
+                            "properties": {
+                              "chain": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "hardfork": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "chain",
+                              "hardfork"
+                            ]
+                          },
+                          "scan": {
+                            "type": "number"
+                          }
+                        }
                       },
-                      "feeRate": {
-                        "type": "number"
+                      "solanaRecoveryOptions": {
+                        "type": "object",
+                        "properties": {
+                          "closeAtaAddress": {
+                            "type": "string"
+                          },
+                          "durableNonce": {
+                            "type": "object",
+                            "properties": {
+                              "publicKey": {
+                                "type": "string"
+                              },
+                              "secretKey": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "publicKey",
+                              "secretKey"
+                            ]
+                          },
+                          "programId": {
+                            "type": "string"
+                          },
+                          "recoveryDestinationAtaAddress": {
+                            "type": "string"
+                          },
+                          "tokenContractAddress": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "ignoreAddressTypes": {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "p2sh",
-                            "p2shP2wsh",
-                            "p2wsh",
-                            "p2tr",
-                            "p2trMusig2"
-                          ]
+                      "utxoRecoveryOptions": {
+                        "type": "object",
+                        "properties": {
+                          "feeRate": {
+                            "type": "number"
+                          },
+                          "ignoreAddressTypes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "scan": {
+                            "type": "number"
+                          },
+                          "userKeyPath": {
+                            "type": "string"
+                          }
                         }
                       }
                     }
