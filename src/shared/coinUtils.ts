@@ -2,11 +2,7 @@ import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
 import { BackupKeyRecoveryTransansaction, FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
 import { CoinFamily } from '@bitgo/statics';
 import { BaseCoin } from 'bitgo';
-import { AbstractUtxoCoin, Eos, Sol, Stx, Xtz } from 'bitgo/dist/types/src/v2/coins';
-
-export function isSolCoin(coin: BaseCoin): coin is Sol {
-  return isFamily(coin, CoinFamily.SOL);
-}
+import { AbstractUtxoCoin, Eos, Stx, Xtz } from 'bitgo/dist/types/src/v2/coins';
 
 export function isEthLikeCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
   const isEthPure = isFamily(coin, CoinFamily.ETH);

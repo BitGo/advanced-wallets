@@ -13,10 +13,12 @@ import {
   GShare,
   Keychain,
   ApiKeyShare,
-  MPCSweepTxs,
   MPCTx,
+  MPCSweepTxs,
   MPCTxs,
+  MPCUnsignedTx,
 } from '@bitgo/sdk-core';
+import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
 import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
@@ -33,6 +35,7 @@ import {
   MpcV2RoundResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
+import { RecoveryTxRequest } from 'bitgo';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 
@@ -87,7 +90,9 @@ interface RecoveryMultisigOptions {
     | RecoveryInfo
     | OfflineVaultTxInfo
     | UnsignedSweepTxMPCv2
-    | FormattedOfflineVaultTxInfo;
+    | FormattedOfflineVaultTxInfo
+    | MPCTx
+    | RecoveryTransaction;
   walletContractAddress: string;
 }
 
@@ -170,7 +175,7 @@ export interface SignMpcV2Round3Response {
 
 export class EnclavedExpressClient {
   async recoveryMPC(params: {
-    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs;
+    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs | RecoveryTxRequest;
     userPub: string;
     backupPub: string;
     apiKey: string;
@@ -201,6 +206,11 @@ export class EnclavedExpressClient {
           txRequest.signableHex = firstTx.unsignedTx?.serializedTx || '';
           txRequest.derivationPath = firstTx.unsignedTx?.derivationPath || '';
         }
+      } else if ('transactions' in tx && Array.isArray(tx.transactions)) {
+        // RecoveryTxRequest
+        const firstTransaction = tx.transactions[0] as MPCUnsignedTx;
+        txRequest.signableHex = firstTransaction.unsignedTx?.serializedTx || '';
+        txRequest.derivationPath = firstTransaction.unsignedTx?.derivationPath || '';
       } else if ('signableHex' in tx) {
         // MPCTx format
         txRequest.signableHex = tx.signableHex || '';
