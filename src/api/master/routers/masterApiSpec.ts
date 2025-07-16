@@ -199,22 +199,21 @@ const RecoveryWalletRequest = {
 };
 
 const RecoveryConsolidationsWalletRequest = {
-  userPub: t.union([t.undefined, t.string]),
-  backupPub: t.union([t.undefined, t.string]),
-  bitgoPub: t.union([t.undefined, t.string]),
+  userPub: optional(t.string),
+  backupPub: optional(t.string),
+  bitgoPub: optional(t.string),
   multisigType: t.union([t.literal('onchain'), t.literal('tss')]),
-  commonKeychain: t.union([t.undefined, t.string]),
-  tokenContractAddress: t.union([t.undefined, t.string]),
-  startingScanIndex: t.union([t.undefined, t.number]),
-  endingScanIndex: t.union([t.undefined, t.number]),
-  apiKey: t.union([t.undefined, t.string]),
-  durableNonces: t.union([
-    t.undefined,
+  commonKeychain: optional(t.string),
+  tokenContractAddress: optional(t.string),
+  startingScanIndex: optional(t.number),
+  endingScanIndex: optional(t.number),
+  apiKey: optional(t.string),
+  durableNonces: optional(
     t.type({
       secretKey: t.string,
       publicKeys: t.array(t.string),
     }),
-  ]),
+  ),
 };
 
 // Response type for /recoveryconsolidations endpoint

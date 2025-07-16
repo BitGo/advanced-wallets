@@ -179,7 +179,7 @@ export class EnclavedExpressClient {
     userPub: string;
     backupPub: string;
     apiKey: string;
-    coinSpecificParams: any;
+    coinSpecificParams?: Record<string, unknown>;
     walletContractAddress: string;
   }): Promise<SignedTransaction> {
     if (!this.coin) {
