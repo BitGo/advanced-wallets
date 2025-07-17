@@ -116,6 +116,7 @@ export const SendManyRequest = {
   type: t.union([
     t.undefined,
     t.literal('transfer'),
+    t.literal('fillNonce'),
     t.literal('acceleration'),
     t.literal('accountSet'),
     t.literal('enabletoken'),
@@ -126,7 +127,7 @@ export const SendManyRequest = {
   ]),
   commonKeychain: t.union([t.undefined, t.string]),
   source: t.union([t.literal('user'), t.literal('backup')]),
-  recipients: t.array(t.any),
+  recipients: t.union([t.undefined, t.array(t.any)]),
   numBlocks: t.union([t.undefined, t.number]),
   feeRate: t.union([t.undefined, t.number]),
   feeMultiplier: t.union([t.undefined, t.number]),
@@ -153,6 +154,7 @@ export const SendManyRequest = {
   eip1559: t.union([t.undefined, t.any]),
   gasLimit: t.union([t.undefined, t.number]),
   custodianTransactionId: t.union([t.undefined, t.string]),
+  nonce: t.union([t.undefined, t.string]),
 };
 
 export const SendManyResponse: HttpResponse = {

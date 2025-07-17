@@ -100,19 +100,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -193,7 +181,9 @@
             "description": "Bad Request",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -202,19 +192,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -355,7 +333,9 @@
             "description": "Bad Request",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -364,19 +344,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -417,6 +385,7 @@
                     "type": "string",
                     "enum": [
                       "transfer",
+                      "fillNonce",
                       "acceleration",
                       "accountSet",
                       "enabletoken",
@@ -532,11 +501,13 @@
                   },
                   "custodianTransactionId": {
                     "type": "string"
+                  },
+                  "nonce": {
+                    "type": "string"
                   }
                 },
                 "required": [
-                  "source",
-                  "recipients"
+                  "source"
                 ]
               }
             }
@@ -556,19 +527,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -642,19 +601,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -723,19 +670,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -939,6 +874,113 @@
               }
             }
           },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/{coin}/wallet/recoveryconsolidations": {
+      "post": {
+        "parameters": [
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userPub": {
+                    "type": "string"
+                  },
+                  "backupPub": {
+                    "type": "string"
+                  },
+                  "bitgoPub": {
+                    "type": "string"
+                  },
+                  "multisigType": {
+                    "type": "string",
+                    "enum": [
+                      "onchain",
+                      "tss"
+                    ]
+                  },
+                  "commonKeychain": {
+                    "type": "string"
+                  },
+                  "tokenContractAddress": {
+                    "type": "string"
+                  },
+                  "startingScanIndex": {
+                    "type": "number"
+                  },
+                  "endingScanIndex": {
+                    "type": "number"
+                  },
+                  "apiKey": {
+                    "type": "string"
+                  },
+                  "durableNonces": {
+                    "type": "object",
+                    "properties": {
+                      "publicKeys": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "secretKey": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "publicKeys",
+                      "secretKey"
+                    ]
+                  }
+                },
+                "required": [
+                  "multisigType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
             "content": {
@@ -1121,6 +1163,22 @@
         "required": [
           "status",
           "timestamp"
+        ]
+      },
+      "ErrorResponse": {
+        "title": "ErrorResponse",
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "details"
         ]
       }
     }
