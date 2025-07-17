@@ -1,7 +1,8 @@
-import { BaseCoin, BitGoAPI, MethodNotImplementedError } from 'bitgo';
+import { BaseCoin, BitGoAPI, MethodNotImplementedError, MPCRecoveryOptions } from 'bitgo';
 
 import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
 import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
+import { type SolRecoveryOptions } from '@bitgo/sdk-coin-sol';
 
 import assert from 'assert';
 
@@ -15,11 +16,21 @@ import {
   DEFAULT_MUSIG_ETH_GAS_PARAMS,
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
+
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import {
+  CoinSpecificParams,
+  EvmRecoveryOptions,
+  MasterApiSpecRouteRequest,
+  ScriptType2Of3,
+  SolanaRecoveryOptions,
+  UtxoRecoveryOptions,
+} from '../routers/masterApiSpec';
 import { recoverEddsaWallets } from './recoverEddsaWallets';
 import { EnvironmentName } from '../../../shared/types';
 import logger from '../../../logger';
+import { CoinFamily } from '@bitgo/statics';
+import { ValidationError } from '../../../shared/errors';
 
 interface RecoveryParams {
   userKey: string;
@@ -34,8 +45,28 @@ interface EnclavedRecoveryParams {
   backupPub: string;
   apiKey: string;
   unsignedSweepPrebuildTx: any; // TODO: type this properly once we have the SDK types
-  coinSpecificParams?: Record<string, undefined>;
+  coinSpecificParams?: EvmRecoveryOptions | UtxoRecoveryOptions | SolanaRecoveryOptions;
   walletContractAddress: string;
+}
+
+function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) {
+  if (!params) {
+    return;
+  }
+
+  if (isUtxoCoin(sdkCoin)) {
+    if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
+      throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
+    }
+  } else if (isEthLikeCoin(sdkCoin)) {
+    if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
+      throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
+    }
+  } else if (isEddsaCoin(sdkCoin)) {
+    if (params.evmRecoveryOptions || params.utxoRecoveryOptions) {
+      throw new ValidationError('Invalid parameters provided for Solana coin recovery');
+    }
+  }
 }
 
 async function handleEthLikeRecovery(
@@ -78,11 +109,30 @@ async function handleEddsaRecovery(
 ) {
   const { recoveryDestination, userKey } = commonRecoveryParams;
   try {
-    const unsignedSweepPrebuildTx = await recoverEddsaWallets(bitgo, sdkCoin, {
+    const options: MPCRecoveryOptions = {
       bitgoKey: userKey,
       recoveryDestination,
       apiKey: params.apiKey,
-    });
+    };
+    let unsignedSweepPrebuildTx: Awaited<ReturnType<typeof recoverEddsaWallets>>;
+    if (sdkCoin.getFamily() === CoinFamily.SOL) {
+      const solanaParams = params.coinSpecificParams as SolanaRecoveryOptions;
+      const solanaRecoveryOptions: SolRecoveryOptions = { ...options };
+      solanaRecoveryOptions.recoveryDestinationAtaAddress =
+        solanaParams.recoveryDestinationAtaAddress;
+      solanaRecoveryOptions.closeAtaAddress = solanaParams.closeAtaAddress;
+      solanaRecoveryOptions.tokenContractAddress = solanaParams.tokenContractAddress;
+      solanaRecoveryOptions.programId = solanaParams.programId;
+      if (solanaParams.durableNonce) {
+        solanaRecoveryOptions.durableNonce = {
+          publicKey: solanaParams.durableNonce.publicKey,
+          secretKey: solanaParams.durableNonce.secretKey,
+        };
+      }
+      unsignedSweepPrebuildTx = await recoverEddsaWallets(bitgo, sdkCoin, solanaRecoveryOptions);
+    } else {
+      unsignedSweepPrebuildTx = await recoverEddsaWallets(bitgo, sdkCoin, options);
+    }
     logger.info('Unsigned sweep tx: ', JSON.stringify(unsignedSweepPrebuildTx, null, 2));
 
     return await enclavedExpressClient.recoveryMPC({
@@ -141,6 +191,8 @@ export async function handleRecoveryWalletOnPrem(
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
 
   const sdkCoin = bitgo.coin(coin);
+  // Validate that we have correct parameters for recovery
+  validateRecoveryParams(sdkCoin, coinSpecificParams);
 
   // Handle TSS recovery
   if (req.decoded.isTssRecovery) {
@@ -168,7 +220,7 @@ export async function handleRecoveryWalletOnPrem(
           apiKey: '',
           walletContractAddress: '',
           unsignedSweepPrebuildTx: undefined,
-          coinSpecificParams: undefined,
+          coinSpecificParams: coinSpecificParams?.solanaRecoveryOptions,
         },
       );
     } else {
@@ -219,7 +271,7 @@ export async function handleRecoveryWalletOnPrem(
         backupPub,
         apiKey,
         unsignedSweepPrebuildTx: undefined,
-        coinSpecificParams: undefined,
+        coinSpecificParams: coinSpecificParams?.evmRecoveryOptions,
         walletContractAddress,
       },
       bitgo.env as EnvironmentName,
@@ -234,9 +286,10 @@ export async function handleRecoveryWalletOnPrem(
       userKey: userPub,
       backupKey: backupPub,
       bitgoKey: bitgoPub,
-      ignoreAddressTypes: coinSpecificParams?.ignoreAddressTypes ?? [],
-      scan: coinSpecificParams?.addressScan,
-      feeRate: coinSpecificParams?.feeRate,
+      ignoreAddressTypes:
+        (coinSpecificParams?.utxoRecoveryOptions?.ignoreAddressTypes as ScriptType2Of3[]) ?? [],
+      scan: coinSpecificParams?.utxoRecoveryOptions?.scan,
+      feeRate: coinSpecificParams?.utxoRecoveryOptions?.feeRate,
       recoveryDestination: recoveryDestinationAddress,
       apiKey,
     });

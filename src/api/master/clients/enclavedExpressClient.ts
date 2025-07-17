@@ -1,31 +1,31 @@
+import assert from 'assert';
 import https from 'https';
 import debug from 'debug';
 import superagent from 'superagent';
 
 import {
-  SignedTransaction,
-  TransactionPrebuild,
-  TxRequest,
-  EncryptedSignerShareRecord,
-  SignatureShareRecord,
-  SignShare,
+  ApiKeyShare,
   CommitmentShareRecord,
+  EncryptedSignerShareRecord,
   GShare,
   Keychain,
-  ApiKeyShare,
-  MPCTx,
   MPCSweepTxs,
+  MPCTx,
   MPCTxs,
-  MPCUnsignedTx,
+  SignatureShareRecord,
+  SignedTransaction,
+  SignShare,
+  TransactionPrebuild,
+  TxRequest,
 } from '@bitgo/sdk-core';
 import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
-import { superagentRequestFactory, buildApiClient, ApiClient } from '@api-ts/superagent-wrapper';
+import { ApiClient, buildApiClient, superagentRequestFactory } from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
-import assert from 'assert';
 import { MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { EnclavedApiSpec } from '../../../enclavedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../../../types/health';
+import { extractTransactionRequestInfo } from '../../../shared/transactionUtils';
 import {
   KeyShareType,
   MpcFinalizeResponseType,
@@ -189,41 +189,15 @@ export class EnclavedExpressClient {
     try {
       debugLogger('Recovering MPC for coin: %s', this.coin);
 
-      // Extract the required information from the sweep tx
+      // Extract the required information from the sweep tx using our utility function
       const tx = params.unsignedSweepPrebuildTx;
+      const { signableHex, derivationPath } = extractTransactionRequestInfo(tx);
+
       const txRequest = {
         unsignedTx: '',
-        signableHex: '',
-        derivationPath: '',
+        signableHex,
+        derivationPath,
       };
-
-      // Handle different tx formats
-      if ('txRequests' in tx && Array.isArray(tx.txRequests)) {
-        // MPCTxs format
-        const firstRequest = tx.txRequests[0];
-        if (firstRequest && firstRequest.transactions && firstRequest.transactions[0]) {
-          const firstTx = firstRequest.transactions[0];
-          txRequest.signableHex = firstTx.unsignedTx?.serializedTx || '';
-          txRequest.derivationPath = firstTx.unsignedTx?.derivationPath || '';
-        }
-      } else if ('transactions' in tx && Array.isArray(tx.transactions)) {
-        // RecoveryTxRequest
-        const firstTransaction = tx.transactions[0] as MPCUnsignedTx;
-        txRequest.signableHex = firstTransaction.unsignedTx?.serializedTx || '';
-        txRequest.derivationPath = firstTransaction.unsignedTx?.derivationPath || '';
-      } else if ('signableHex' in tx) {
-        // MPCTx format
-        txRequest.signableHex = tx.signableHex || '';
-        txRequest.derivationPath = tx.derivationPath || '';
-      } else if (Array.isArray(tx) && tx.length > 0) {
-        // MPCSweepTxs format
-        const firstTx = tx[0];
-        if (firstTx && firstTx.transactions && firstTx.transactions[0]) {
-          const transaction = firstTx.transactions[0];
-          txRequest.signableHex = transaction.unsignedTx?.signableHex || '';
-          txRequest.derivationPath = transaction.unsignedTx?.derivationPath || '';
-        }
-      }
 
       let request = this.apiClient['v1.mpc.recovery'].post({
         coin: this.coin,
@@ -316,7 +290,6 @@ export class EnclavedExpressClient {
       }
 
       const response = await request.decodeExpecting(200);
-      console.log(response);
       return response.body;
     } catch (error) {
       const err = error as Error;
