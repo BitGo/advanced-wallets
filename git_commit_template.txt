@@ -1,0 +1,34 @@
+
+# ^ Subject Line
+#   Capitalize, do not end with a period, use the imperative mood
+#   Limit the subject line to no more than 72 characters: end here --> |
+
+
+# ^ Body
+#   Separate subject from body with a blank line, wrap at 72 characters|
+#   Use the body to explain what and why
+
+Ticket: PROJECT-NUMBER
+# ^ Metadata: keyword: <value>
+
+########################################################################
+#                                                                      #
+#                  BitGo Commit Message Standard                       #
+#                   (info inlined above as well)                       #
+#                                                                      #
+#                                                                      #
+########################################################################
+# Commit Message SHALL
+#   …limit the subject line to no more than 72 characters
+#   …capitalize the subject line
+#   …not end the subject line with a period
+#   …use the imperative mood in the subject line
+#   …separate subject from body with a blank line
+#   …wrap the body at 72 characters
+#
+# Commit Message SHOULD use the body to explain what and why vs. how
+#
+# Commit Message metadata SHALL be at the bottom of the commit message
+# Commit Message metadata MUST follow format “keyword: <value>”
+# Commit Message metadata SHOULD contain a ticket reference in the format “Ticket: PROJECT-NUMBER”
+#

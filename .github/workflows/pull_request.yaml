@@ -12,6 +12,10 @@ permissions:
   packages: read # required for ArgoCD deploy
 
 jobs:
+  commit-lint:
+    name: Commit Lint
+    uses: ./.github/workflows/commit-lint.yaml
+  
   build-and-test:
     name: Build & Test (CI)
     uses: ./.github/workflows/build-and-test.yaml
