@@ -228,9 +228,10 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(422);
       response.body.should.have.property('error');
-      response.body.error.should.containEql('Invalid parameters provided for UTXO coin recovery');
+      response.body.should.have.property('details');
+      response.body.details.should.containEql('Invalid parameters provided for UTXO coin recovery');
     });
 
     it('should reject incorrect Solana parameters for a UTXO coin', async () => {
@@ -262,9 +263,10 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(422);
       response.body.should.have.property('error');
-      response.body.error.should.containEql('Invalid parameters provided for UTXO coin recovery');
+      response.body.should.have.property('details');
+      response.body.details.should.containEql('Invalid parameters provided for UTXO coin recovery');
     });
 
     it('should reject using legacy coinSpecificParams format', async () => {
@@ -307,7 +309,6 @@ describe('Recovery Tests', () => {
         recover: sinon.stub().resolves({ txHex: 'eth-tx-hex' }),
         isValidPub: sinon.stub().returns(true),
         getFamily: sinon.stub().returns(CoinFamily.ETH),
-        getMpcAlgorithm: sinon.stub().returns('ecdsa'),
       };
       coinStub.withArgs(ethCoinId).returns(ethCoin);
 
@@ -324,6 +325,7 @@ describe('Recovery Tests', () => {
     it('should reject incorrect UTXO parameters for an ETH coin', async () => {
       const userPub = 'xpub_user';
       const backupPub = 'xpub_backup';
+      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = '0x1234567890123456789012345678901234567890';
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
 
@@ -334,7 +336,7 @@ describe('Recovery Tests', () => {
           multiSigRecoveryParams: {
             userPub,
             backupPub,
-            bitgoPub: undefined,
+            bitgoPub,
             walletContractAddress,
           },
           recoveryDestinationAddress: recoveryDestination,
@@ -348,9 +350,10 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(422);
       response.body.should.have.property('error');
-      response.body.error.should.containEql(
+      response.body.should.have.property('details');
+      response.body.details.should.containEql(
         'Invalid parameters provided for ETH-like coin recovery',
       );
     });
@@ -358,6 +361,7 @@ describe('Recovery Tests', () => {
     it('should reject incorrect Solana parameters for an ETH coin', async () => {
       const userPub = 'xpub_user';
       const backupPub = 'xpub_backup';
+      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = '0x1234567890123456789012345678901234567890';
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
 
@@ -368,7 +372,7 @@ describe('Recovery Tests', () => {
           multiSigRecoveryParams: {
             userPub,
             backupPub,
-            bitgoPub: undefined,
+            bitgoPub,
             walletContractAddress,
           },
           recoveryDestinationAddress: recoveryDestination,
@@ -384,9 +388,10 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(422);
       response.body.should.have.property('error');
-      response.body.error.should.containEql(
+      response.body.should.have.property('details');
+      response.body.details.should.containEql(
         'Invalid parameters provided for ETH-like coin recovery',
       );
     });
@@ -401,7 +406,7 @@ describe('Recovery Tests', () => {
       solCoin = {
         isValidPub: sinon.stub().returns(true),
         getFamily: sinon.stub().returns(CoinFamily.SOL),
-        getMpcAlgorithm: sinon.stub().returns('eddsa'),
+        getMPCAlgorithm: sinon.stub().returns('eddsa'),
       };
       coinStub.withArgs(solCoinId).returns(solCoin);
 
@@ -438,9 +443,12 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(422);
       response.body.should.have.property('error');
-      response.body.error.should.containEql('Invalid parameters provided for Solana coin recovery');
+      response.body.should.have.property('details');
+      response.body.details.should.containEql(
+        'Invalid parameters provided for Solana coin recovery',
+      );
     });
 
     it('should reject incorrect EVM parameters for a Solana coin', async () => {
@@ -466,9 +474,12 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(422);
       response.body.should.have.property('error');
-      response.body.error.should.containEql('Invalid parameters provided for Solana coin recovery');
+      response.body.should.have.property('details');
+      response.body.details.should.containEql(
+        'Invalid parameters provided for Solana coin recovery',
+      );
     });
   });
 });

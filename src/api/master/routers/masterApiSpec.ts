@@ -27,6 +27,11 @@ import { handleAccelerate } from '../handlers/handleAccelerate';
 import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 import { handleSignAndSendTxRequest } from '../handlers/handleSignAndSendTxRequest';
 import { handleRecoveryConsolidationsOnPrem } from '../handlers/recoveryConsolidationsWallet';
+import {
+  BadRequestResponse,
+  InternalServerErrorResponse,
+  UnprocessableEntityResponse,
+} from '../../../shared/errors';
 
 export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
 
@@ -93,10 +98,7 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
 const GenerateWalletResponse: HttpResponse = {
   // TODO: Get type from public types repo
   200: t.any,
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /generate endpoint
@@ -156,10 +158,7 @@ export const SendManyRequest = {
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
   200: t.any,
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /consolidate endpoint
@@ -174,11 +173,8 @@ export const ConsolidateRequest = {
 // Response type for /consolidate endpoint
 const ConsolidateResponse: HttpResponse = {
   200: t.any,
-  400: t.any, // All failed
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...BadRequestResponse, // All failed
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /accelerate endpoint
@@ -199,10 +195,7 @@ const AccelerateResponse: HttpResponse = {
     txid: t.string,
     tx: t.string,
   }),
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // Response type for /recovery endpoint
@@ -211,10 +204,8 @@ const RecoveryWalletResponse: HttpResponse = {
   200: t.type({
     txHex: t.string, // the full signed transaction hex
   }),
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...UnprocessableEntityResponse,
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /recovery endpoint
@@ -289,11 +280,8 @@ const ConsolidateUnspentsResponse: HttpResponse = {
     tx: t.string,
     txid: t.string,
   }),
-  400: t.any,
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...BadRequestResponse,
+  ...InternalServerErrorResponse,
 };
 
 const SignMpcRequest = {
@@ -303,10 +291,7 @@ const SignMpcRequest = {
 
 const SignMpcResponse: HttpResponse = {
   200: t.any,
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // API Specification

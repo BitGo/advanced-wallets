@@ -1,35 +1,29 @@
-import { BaseCoin, BitGoAPI, MethodNotImplementedError, MPCRecoveryOptions } from 'bitgo';
+import {BaseCoin, BitGoAPI, MethodNotImplementedError, MPCRecoveryOptions} from 'bitgo';
 
-import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
+import {AbstractEthLikeNewCoins} from '@bitgo/abstract-eth';
+import {AbstractUtxoCoin} from '@bitgo/abstract-utxo';
 
 import assert from 'assert';
 
-import {
-  isEddsaCoin,
-  isEthLikeCoin,
-  isFormattedOfflineVaultTxInfo,
-  isUtxoCoin,
-} from '../../../shared/coinUtils';
-import {
-  DEFAULT_MUSIG_ETH_GAS_PARAMS,
-  getReplayProtectionOptions,
-} from '../../../shared/recoveryUtils';
+import {isEddsaCoin, isEthLikeCoin, isFormattedOfflineVaultTxInfo, isUtxoCoin,} from '../../../shared/coinUtils';
+import {DEFAULT_MUSIG_ETH_GAS_PARAMS, getReplayProtectionOptions,} from '../../../shared/recoveryUtils';
 
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import {EnclavedExpressClient} from '../clients/enclavedExpressClient';
 import {
-  CoinSpecificParams,
-  EvmRecoveryOptions,
-  MasterApiSpecRouteRequest,
-  ScriptType2Of3,
-  SolanaRecoveryOptions,
-  UtxoRecoveryOptions,
+    CoinSpecificParams,
+    EvmRecoveryOptions,
+    MasterApiSpecRouteRequest,
+    ScriptType2Of3,
+    SolanaRecoveryOptions,
+    UtxoRecoveryOptions,
 } from '../routers/masterApiSpec';
-import { recoverEddsaWallets } from './recoverEddsaWallets';
-import { EnvironmentName } from '../../../shared/types';
+import {recoverEddsaWallets} from './recoverEddsaWallets';
+import {EnvironmentName} from '../../../shared/types';
 import logger from '../../../logger';
-import { CoinFamily } from '@bitgo/statics';
-import { type SolRecoveryOptions } from '@bitgo/sdk-coin-sol';
+import {CoinFamily} from '@bitgo/statics';
+import {type SolRecoveryOptions} from '@bitgo/sdk-coin-sol';
+// Validation function to ensure correct params are used with correct coin types
+import {ValidationError} from '../../../shared/errors';
 
 interface RecoveryParams {
   userKey: string;
@@ -48,7 +42,6 @@ interface EnclavedRecoveryParams {
   walletContractAddress: string;
 }
 
-// Validation function to ensure correct params are used with correct coin types
 function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) {
   if (!params) {
     return;
@@ -56,15 +49,15 @@ function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) 
 
   if (isUtxoCoin(sdkCoin)) {
     if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
-      throw new Error('Invalid parameters provided for UTXO coin recovery');
+      throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
     }
   } else if (isEthLikeCoin(sdkCoin)) {
     if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
-      throw new Error('Invalid parameters provided for ETH-like coin recovery');
+      throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
     }
   } else if (isEddsaCoin(sdkCoin)) {
     if (params.evmRecoveryOptions || params.utxoRecoveryOptions) {
-      throw new Error('Invalid parameters provided for Solana coin recovery');
+      throw new ValidationError('Invalid parameters provided for Solana coin recovery');
     }
   }
 }
@@ -117,7 +110,6 @@ async function handleEddsaRecovery(
     let unsignedSweepPrebuildTx: Awaited<ReturnType<typeof recoverEddsaWallets>>;
     if (sdkCoin.getFamily() === CoinFamily.SOL) {
       const solanaParams = params.coinSpecificParams as SolanaRecoveryOptions;
-      console.log(params);
       const solanaRecoveryOptions: SolRecoveryOptions = { ...options };
       solanaRecoveryOptions.recoveryDestinationAtaAddress =
         solanaParams.recoveryDestinationAtaAddress;
