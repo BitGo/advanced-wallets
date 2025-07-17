@@ -1,29 +1,36 @@
-import {BaseCoin, BitGoAPI, MethodNotImplementedError, MPCRecoveryOptions} from 'bitgo';
+import { BaseCoin, BitGoAPI, MethodNotImplementedError, MPCRecoveryOptions } from 'bitgo';
 
-import {AbstractEthLikeNewCoins} from '@bitgo/abstract-eth';
-import {AbstractUtxoCoin} from '@bitgo/abstract-utxo';
+import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
+import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
+import { type SolRecoveryOptions } from '@bitgo/sdk-coin-sol';
 
 import assert from 'assert';
 
-import {isEddsaCoin, isEthLikeCoin, isFormattedOfflineVaultTxInfo, isUtxoCoin,} from '../../../shared/coinUtils';
-import {DEFAULT_MUSIG_ETH_GAS_PARAMS, getReplayProtectionOptions,} from '../../../shared/recoveryUtils';
-
-import {EnclavedExpressClient} from '../clients/enclavedExpressClient';
 import {
-    CoinSpecificParams,
-    EvmRecoveryOptions,
-    MasterApiSpecRouteRequest,
-    ScriptType2Of3,
-    SolanaRecoveryOptions,
-    UtxoRecoveryOptions,
+  isEddsaCoin,
+  isEthLikeCoin,
+  isFormattedOfflineVaultTxInfo,
+  isUtxoCoin,
+} from '../../../shared/coinUtils';
+import {
+  DEFAULT_MUSIG_ETH_GAS_PARAMS,
+  getReplayProtectionOptions,
+} from '../../../shared/recoveryUtils';
+
+import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import {
+  CoinSpecificParams,
+  EvmRecoveryOptions,
+  MasterApiSpecRouteRequest,
+  ScriptType2Of3,
+  SolanaRecoveryOptions,
+  UtxoRecoveryOptions,
 } from '../routers/masterApiSpec';
-import {recoverEddsaWallets} from './recoverEddsaWallets';
-import {EnvironmentName} from '../../../shared/types';
+import { recoverEddsaWallets } from './recoverEddsaWallets';
+import { EnvironmentName } from '../../../shared/types';
 import logger from '../../../logger';
-import {CoinFamily} from '@bitgo/statics';
-import {type SolRecoveryOptions} from '@bitgo/sdk-coin-sol';
-// Validation function to ensure correct params are used with correct coin types
-import {ValidationError} from '../../../shared/errors';
+import { CoinFamily } from '@bitgo/statics';
+import { ValidationError } from '../../../shared/errors';
 
 interface RecoveryParams {
   userKey: string;
