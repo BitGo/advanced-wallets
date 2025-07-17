@@ -9,6 +9,28 @@ on:
         default: '22.1.0'
 
 jobs:
+  commit-lint:
+    name: Commit Lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Validate PR commits with commitlint
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -31,6 +53,7 @@ jobs:
   lint:
     name: Run lint
     runs-on: ubuntu-latest
+    needs: [commit-lint]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

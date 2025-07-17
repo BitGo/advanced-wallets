@@ -1,0 +1,16 @@
+{
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "footer-max-line-length": [0, "always"],
+    "header-max-length": [2, "always", 72],
+    "references-empty": [1, "never"],
+    "subject-case": [0],
+    "scope-enum": [2, "always", ["mbe", "ebe", "docker"]],
+    "scope-empty": [0, "never"]
+  },
+  "parserPreset": {
+    "parserOpts": {
+      "issuePrefixes": ["BTC-", "COIN-", "WP-"]
+    }
+  }
+}
