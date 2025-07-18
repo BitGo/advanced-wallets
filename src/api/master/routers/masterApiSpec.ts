@@ -31,6 +31,7 @@ import {
   BadRequestResponse,
   InternalServerErrorResponse,
   UnprocessableEntityResponse,
+  NotFoundResponse,
 } from '../../../shared/errors';
 
 export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
@@ -158,6 +159,8 @@ export const SendManyRequest = {
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
   200: t.any,
+  ...BadRequestResponse,
+  ...NotFoundResponse,
   ...InternalServerErrorResponse,
 };
 

@@ -13,6 +13,7 @@ import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { createEddsaCustomSigningFunctions } from './eddsa';
+import { BadRequestError, NotFoundError } from '../../../shared/errors';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -41,7 +42,7 @@ function createMPCSendParamsWithCustomSigningFns(
   const mpcAlgorithm = coin.getMPCAlgorithm();
 
   if (!commonKeychain) {
-    throw new Error('Common keychain is required for MPC signing');
+    throw new BadRequestError('Common keychain is required for MPC signing');
   }
 
   if (mpcAlgorithm === 'ecdsa') {
@@ -66,7 +67,7 @@ function createMPCSendParamsWithCustomSigningFns(
     };
   }
 
-  throw new Error(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
+  throw new BadRequestError(`Unsupported MPC algorithm: ${mpcAlgorithm}`);
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
@@ -81,11 +82,11 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   const walletId = req.params.walletId;
   const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
   if (!wallet) {
-    throw new Error(`Wallet ${walletId} not found`);
+    throw new NotFoundError(`Wallet ${walletId} not found`);
   }
 
   if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-    throw new Error('Wallet is not an on-prem wallet');
+    throw new NotFoundError('Wallet is not an on-prem wallet');
   }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
@@ -98,13 +99,15 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   });
 
   if (!signingKeychain) {
-    throw new Error(`Signing keychain for ${params.source} not found`);
+    throw new NotFoundError(`Signing keychain for ${params.source} not found`);
   }
   if (params.pubkey && signingKeychain.pub !== params.pubkey) {
-    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
+    throw new BadRequestError(
+      `Pub provided does not match the keychain on wallet for ${params.source}`,
+    );
   }
   if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
-    throw new Error(
+    throw new BadRequestError(
       `Common keychain provided does not match the keychain on wallet for ${params.source}`,
     );
   }
@@ -113,7 +116,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     // Create MPC send parameters with custom signing functions
     if (wallet.multisigType() === 'tss') {
       if (signingKeychain.source === 'backup') {
-        throw new Error('Backup MPC signing not supported for sendMany');
+        throw new BadRequestError('Backup MPC signing not supported for sendMany');
       }
       const mpcSendParams = createMPCSendParamsWithCustomSigningFns(
         req,
@@ -150,14 +153,14 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
         walletType: wallet.multisigType(),
       });
       if (!verified) {
-        throw new Error('Transaction prebuild failed local validation');
+        throw new BadRequestError('Transaction prebuild failed local validation');
       }
       logger.debug('Transaction prebuild verified');
     } catch (e) {
       const err = e as Error;
       logger.error('transaction prebuild failed local validation:', err.message);
       logger.error('transaction prebuild:', JSON.stringify(txPrebuilt, null, 2));
-      throw new Error(`Transaction prebuild failed local validation: ${err.message}`);
+      throw new BadRequestError(`Transaction prebuild failed local validation: ${err.message}`);
     }
 
     logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
@@ -188,7 +191,7 @@ export async function signAndSendMultisig(
   reqId: RequestTracer,
 ) {
   if (!signingKeychain.pub) {
-    throw new Error(`Signing keychain pub not found for ${source}`);
+    throw new BadRequestError(`Signing keychain pub not found for ${source}`);
   }
   logger.info(`Signing with ${source} keychain, pub: ${signingKeychain.pub}`);
   logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
