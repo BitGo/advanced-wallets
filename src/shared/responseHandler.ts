@@ -1,7 +1,7 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
 import { Config } from '../shared/types';
 import { BitGoRequest } from '../types/request';
-import { EnclavedError } from '../errors';
+import { ApiResponseError, EnclavedError } from '../errors';
 import {
   BitgoExpressError,
   ValidationError,
@@ -45,6 +45,15 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       if (error && typeof error === 'object' && 'type' in error && 'payload' in error) {
         const apiError = error as ApiResponse;
         return res.sendEncoded(apiError.type, apiError.payload);
+      }
+
+      if ((error as any).name === 'ApiResponseError') {
+        const apiError = error as ApiResponseError;
+        const body = {
+          error: 'BitGoApiResponseError',
+          details: apiError.result,
+        };
+        return res.status(apiError.status).json(body);
       }
 
       // If it's a BitgoExpressError, map to appropriate status code

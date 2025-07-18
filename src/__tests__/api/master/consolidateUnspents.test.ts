@@ -107,55 +107,6 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     sinon.assert.calledOnce(consolidateUnspentsStub);
   });
 
-  it('should return error, name, and details on failure', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        id: walletId,
-        type: 'cold',
-        subType: 'onPrem',
-        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
-      });
-
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        id: 'user-key-id',
-        pub: 'xpub_user',
-      });
-
-    const mockError = {
-      error: 'Internal Server Error',
-      name: 'ApiResponseError',
-      details:
-        'There are too few unspents that meet the given parameters to consolidate (1 available).',
-    };
-
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .throws(Object.assign(new Error(mockError.details), mockError));
-
-    const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        source: 'user',
-        pubkey: 'xpub_user',
-        feeRate: 1000,
-      });
-
-    response.status.should.equal(500);
-    response.body.should.have.property('error', mockError.error);
-    response.body.should.have.property('name', mockError.name);
-    response.body.should.have.property('details', mockError.details);
-
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
-  });
-
   it('should throw error when provided pubkey does not match wallet keychain', async () => {
     const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)

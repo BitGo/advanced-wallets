@@ -84,3 +84,4 @@ const ErrorResponse = t.type({
 export const BadRequestResponse = { 400: ErrorResponse };
 export const UnprocessableEntityResponse = { 422: ErrorResponse };
 export const InternalServerErrorResponse = { 500: ErrorResponse };
+export const NotFoundResponse = { 404: ErrorResponse };

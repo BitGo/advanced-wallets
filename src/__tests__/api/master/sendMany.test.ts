@@ -5,7 +5,7 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { Environments, Wallet } from '@bitgo/sdk-core';
+import { ApiResponseError, Environments, Wallet } from '@bitgo/sdk-core';
 import { Coin } from 'bitgo';
 import assert from 'assert';
 
@@ -522,7 +522,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
           pubkey: 'xpub_backup',
         });
 
-      response.status.should.equal(500);
+      response.status.should.equal(400);
       response.body.details.should.equal('Backup MPC signing not supported for sendMany');
 
       walletGetNock.done();
@@ -567,8 +567,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         pubkey: 'wrong_pubkey',
       });
 
-    // TODO: Fix this to expect the error message when the middleware on MBE is fixed to handle errors
-    response.status.should.equal(500);
+    response.status.should.equal(400);
 
     walletGetNock.done();
     keychainGetNock.done();
@@ -648,7 +647,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         pubkey: 'xpub_user',
       });
 
-    response.status.should.equal(500);
+    response.status.should.equal(400);
 
     walletGetNock.done();
     keychainGetNock.done();
@@ -706,11 +705,85 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         pubkey: 'xpub_user',
       });
 
-    response.status.should.equal(500);
+    response.status.should.equal(400);
 
     walletGetNock.done();
     keychainGetNock.done();
     sinon.assert.calledOnce(prebuildStub);
     sinon.assert.calledOnce(verifyStub);
+  });
+
+  it('should handle BitGoApiResponseError correctly', async () => {
+    // Mock wallet get request
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: walletId,
+        type: 'cold',
+        subType: 'onPrem',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+      });
+
+    // Mock keychain get request
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+      });
+
+    const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+      txHex: 'prebuilt-tx-hex',
+      txInfo: {
+        nP2SHInputs: 1,
+        nSegwitInputs: 0,
+        nOutputs: 2,
+      },
+      walletId,
+    });
+
+    const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+
+    // Mock enclaved express sign request to return an error
+    const signNock = nock(enclavedExpressUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .replyWithError(
+        new ApiResponseError('Custom API error', 500, {
+          error: 'Custom API error',
+          requestId: 'test-request-id',
+        }),
+      );
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [
+          {
+            address: 'tb1qtest1',
+            amount: '100000',
+          },
+        ],
+        source: 'user',
+        pubkey: 'xpub_user',
+      });
+
+    // The response should be a 500 error with the enclaved error details
+    response.status.should.equal(500);
+    response.body.should.have.property('error');
+    response.body.should.have.property('details');
+    response.body.error.should.equal('BitGoApiResponseError');
+    response.body.details.should.deepEqual({
+      error: 'Custom API error',
+      requestId: 'test-request-id',
+    });
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(prebuildStub);
+    sinon.assert.calledOnce(verifyStub);
+    signNock.done();
   });
 });
