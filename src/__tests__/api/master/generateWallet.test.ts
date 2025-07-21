@@ -754,7 +754,7 @@ describe('POST /api/:coin/wallet/generate', () => {
             to: 1,
             payload: {
               encryptedMessage: 'test-p2p-message-user-to-backup-3',
-              signature: 'test-signature-backup-to-user-3',
+              signature: 'test-signature-user-to-backup-3',
             },
             commitment: 'test-commitment-user-3',
           },
@@ -875,7 +875,7 @@ describe('POST /api/:coin/wallet/generate', () => {
             to: 0,
             payload: {
               encryptedMessage: 'test-p2p-message-backup-to-user-3',
-              signature: 'test-signature-user-to-backup-3',
+              signature: 'test-signature-backup-to-user-3',
             },
             commitment: 'test-commitment-backup-3',
           },
