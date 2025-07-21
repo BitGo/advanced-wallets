@@ -3,7 +3,7 @@
   "info": {
     "title": "@bitgo/master-bitgo-express",
     "version": "1.0.0",
-    "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS"
+    "description": "BitGo secured Express - Secure enclave for BitGo signing operations with mTLS"
   },
   "paths": {
     "/api/{coin}/wallet/{walletId}/accelerate": {
@@ -1023,7 +1023,7 @@
         }
       }
     },
-    "/ping/enclavedExpress": {
+    "/ping/securedExpress": {
       "post": {
         "parameters": [],
         "responses": {
@@ -1037,13 +1037,13 @@
                     "status": {
                       "type": "string"
                     },
-                    "enclavedResponse": {
+                    "securedResponse": {
                       "$ref": "#/components/schemas/PingResponseType"
                     }
                   },
                   "required": [
                     "status",
-                    "enclavedResponse"
+                    "securedResponse"
                   ]
                 }
               }
@@ -1091,7 +1091,7 @@
         }
       }
     },
-    "/version/enclavedExpress": {
+    "/version/securedExpress": {
       "get": {
         "parameters": [],
         "responses": {

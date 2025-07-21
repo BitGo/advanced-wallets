@@ -6,7 +6,7 @@ import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 export async function handleSignAndSendTxRequest(
   req: MasterApiSpecRouteRequest<'v1.wallet.txrequest.signAndSend', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const securedExpressClient = req.securedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
@@ -55,7 +55,7 @@ export async function handleSignAndSendTxRequest(
     bitgo,
     wallet,
     txRequest,
-    enclavedExpressClient,
+    securedExpressClient,
     signingKeychain,
     reqId,
   );

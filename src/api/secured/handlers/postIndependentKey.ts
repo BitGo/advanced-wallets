@@ -1,9 +1,9 @@
 import { BitGo } from 'bitgo';
 import { KmsClient } from '../../../kms/kmsClient';
-import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { SecuredExpressApiSpecRouteRequest } from '../../../securedBitgoExpress/routers/securedExpressApiSpec';
 
 export async function postIndependentKey(
-  req: EnclavedApiSpecRouteRequest<'v1.key.independent', 'post'>,
+  req: SecuredExpressApiSpecRouteRequest<'v1.key.independent', 'post'>,
 ) {
   const { source, seed }: { source: string; seed?: string } = req.decoded;
   if (!source) {

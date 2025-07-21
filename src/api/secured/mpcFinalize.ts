@@ -2,16 +2,16 @@ import debug from 'debug';
 import * as bitgoSdk from '@bitgo/sdk-core';
 
 import {
-  EnclavedApiSpecRouteRequest,
+  SecuredExpressApiSpecRouteRequest,
   MpcFinalizeRequestType,
-} from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
+} from '../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { KmsClient } from '../../kms/kmsClient';
 import { gpgDecrypt, gpgEncrypt } from './utils';
 
-const debugLogger = debug('bitgo:enclavedBitGoExpress:mpcFinalize');
+const debugLogger = debug('bitgo:securedBitGoExpress:mpcFinalize');
 
 export async function eddsaFinalize(
-  req: EnclavedApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>,
+  req: SecuredExpressApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>,
 ) {
   // request parsing
   const {

@@ -5,14 +5,14 @@ import { Response } from '@api-ts/response';
 import { MasterExpressConfig } from '../../../shared/types';
 import logger from '../../../logger';
 import { responseHandler } from '../../../shared/middleware';
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../clients/securedExpressClient';
 import { PingResponseType, VersionResponseType } from '../../../types/health';
 
-// Response type for /ping/enclavedExpress endpoint
-const PingEnclavedResponse: HttpResponse = {
+// Response type for /ping/securedExpress endpoint
+export const PingSecuredResponse: HttpResponse = {
   200: t.type({
     status: t.string,
-    enclavedResponse: PingResponseType,
+    securedResponse: PingResponseType,
   }),
   500: t.type({
     error: t.string,
@@ -20,7 +20,7 @@ const PingEnclavedResponse: HttpResponse = {
   }),
 };
 
-const VersionEnclavedResponse: HttpResponse = {
+export const VersionSecuredResponse: HttpResponse = {
   200: VersionResponseType,
   500: t.type({
     error: t.string,
@@ -29,78 +29,75 @@ const VersionEnclavedResponse: HttpResponse = {
 };
 
 // API Specification
-export const EnclavedExpressApiSpec = apiSpec({
-  'v1.enclaved.ping': {
+export const securedExpressApiSpec = apiSpec({
+  'v1.secured.ping': {
     post: httpRoute({
       method: 'POST',
-      path: '/ping/enclavedExpress',
+      path: '/ping/securedExpress',
       request: httpRequest({}),
-      response: PingEnclavedResponse,
-      description: 'Ping the enclaved express server',
+      response: PingSecuredResponse,
+      description: 'Ping the secured express server',
     }),
   },
-  'v1.enclaved.version': {
+  'v1.secured.version': {
     get: httpRoute({
       method: 'GET',
-      path: '/version/enclavedExpress',
+      path: '/version/securedExpress',
       request: httpRequest({}),
-      response: VersionEnclavedResponse,
-      description: 'Get the version of the enclaved express server',
+      response: VersionSecuredResponse,
+      description: 'Get the version of the secured express server',
     }),
   },
 });
 
 // Create router with handlers
-export function createEnclavedExpressRouter(
+export function createSecuredExpressRouter(
   cfg: MasterExpressConfig,
-): WrappedRouter<typeof EnclavedExpressApiSpec> {
-  const router = createRouter(EnclavedExpressApiSpec);
+): WrappedRouter<typeof securedExpressApiSpec> {
+  const router = createRouter(securedExpressApiSpec);
 
-  // Create an instance of EnclavedExpressClient
-  const enclavedClient = new EnclavedExpressClient(cfg);
+  // Create an instance of securedExpressClient
+  const securedExpressClient = new SecuredExpressClient(cfg);
 
   // Ping endpoint handler
-  router.post('v1.enclaved.ping', [
+  router.post('v1.secured.ping', [
     responseHandler(async () => {
-      logger.debug('Pinging enclaved express');
+      logger.debug('Pinging secured express');
 
       try {
         // Use the client's ping method instead of direct HTTP request
-        const pingResponse = await enclavedClient.ping();
+        const pingResponse = await securedExpressClient.ping();
 
         return Response.ok({
-          status: 'Successfully pinged enclaved express',
-          enclavedResponse: {
-            status: pingResponse.status,
-            timestamp: pingResponse.timestamp,
-          },
+          status: 'Successfully pinged secured express',
+          securedResponse: pingResponse,
         });
       } catch (error) {
-        logger.error('Failed to ping enclaved express:', { error });
+        logger.error('Failed to ping secured express:', { error });
         return Response.internalError({
-          error: 'Failed to ping enclaved express',
+          error: 'Failed to ping secured express',
           details: error instanceof Error ? error.message : String(error),
         });
       }
     }),
   ]);
 
-  router.get('v1.enclaved.version', [
+  router.get('v1.secured.version', [
     responseHandler(async () => {
-      logger.debug('Getting version from enclaved express');
+      logger.debug('Getting version from secured express');
 
       try {
         // Use the client's getVersion method instead of direct HTTP request
-        const versionResponse = await enclavedClient.getVersion();
+        const versionResponse = await securedExpressClient.getVersion();
 
         return Response.ok({
           version: versionResponse.version,
           name: versionResponse.name,
         });
       } catch (error) {
-        logger.error('Failed to get version from enclaved express:', { error });
+        logger.error('Failed to get version from secured express:', { error });
         return Response.internalError({
-          error: 'Failed to get version from enclaved express',
+          error: 'Failed to get version from secured express',
           details: error instanceof Error ? error.message : String(error),
         });
       }

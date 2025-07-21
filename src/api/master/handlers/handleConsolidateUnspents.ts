@@ -6,7 +6,7 @@ import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handl
 export async function handleConsolidateUnspents(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidateunspents', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const securedExpressClient = req.securedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;
@@ -25,7 +25,7 @@ export async function handleConsolidateUnspents(
   try {
     // Create custom signing function that delegates to EBE
     const customSigningFunction = makeCustomSigningFunction({
-      enclavedExpressClient,
+      securedExpressClient,
       source: params.source,
       pub: signingKeychain.pub!,
     });

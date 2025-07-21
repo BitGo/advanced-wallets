@@ -1,5 +1,5 @@
 import 'should';
-import { initConfig, isEnclavedConfig, TlsMode } from '../initConfig';
+import { initConfig, isSecuredExpressConfig, TlsMode } from '../initConfig';
 
 describe('Configuration', () => {
   const originalEnv = process.env;
@@ -18,20 +18,20 @@ describe('Configuration', () => {
 
   it('should throw error when APP_MODE is not set', () => {
     (() => initConfig()).should.throw(
-      'APP_MODE environment variable is required. Set APP_MODE to either "enclaved" or "master-express"',
+      'APP_MODE environment variable is required. Set APP_MODE to either "secured" or "master-express"',
     );
   });
 
   it('should throw error when APP_MODE is invalid', () => {
     process.env.APP_MODE = 'invalid';
     (() => initConfig()).should.throw(
-      'Invalid APP_MODE: invalid. Must be either "enclaved" or "master-express"',
+      'Invalid APP_MODE: invalid. Must be either "secured" or "master-express"',
     );
   });
 
-  describe('Enclaved Mode', () => {
+  describe('secured Mode', () => {
     beforeEach(() => {
-      process.env.APP_MODE = 'enclaved';
+      process.env.APP_MODE = 'secured';
       process.env.KMS_URL = 'http://localhost:3000';
       // Set default TLS certificates
       process.env.TLS_KEY = mockTlsKey;
@@ -40,8 +40,8 @@ describe('Configuration', () => {
 
     it('should use default configuration when no environment variables are set', () => {
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isSecuredExpressConfig(cfg).should.be.true();
+      if (isSecuredExpressConfig(cfg)) {
         cfg.port.should.equal(3080);
         cfg.bind.should.equal('localhost');
         cfg.tlsMode.should.equal(TlsMode.MTLS);
@@ -53,10 +53,10 @@ describe('Configuration', () => {
     });
 
     it('should read port from environment variable', () => {
-      process.env.ENCLAVED_EXPRESS_PORT = '4000';
+      process.env.SECURED_EXPRESS_PORT = '4000';
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isSecuredExpressConfig(cfg).should.be.true();
+      if (isSecuredExpressConfig(cfg)) {
         cfg.port.should.equal(4000);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -68,8 +68,8 @@ describe('Configuration', () => {
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
       let cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isSecuredExpressConfig(cfg).should.be.true();
+      if (isSecuredExpressConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
         cfg.kmsUrl.should.equal('http://localhost:3000');
       }
@@ -77,8 +77,8 @@ describe('Configuration', () => {
       // Test with mTLS explicitly enabled
       process.env.TLS_MODE = 'mtls';
       cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isSecuredExpressConfig(cfg).should.be.true();
+      if (isSecuredExpressConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -94,8 +94,8 @@ describe('Configuration', () => {
       // Test with no TLS mode (should default to MTLS)
       delete process.env.TLS_MODE;
       cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isSecuredExpressConfig(cfg).should.be.true();
+      if (isSecuredExpressConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -109,8 +109,8 @@ describe('Configuration', () => {
       process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
 
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isSecuredExpressConfig(cfg).should.be.true();
+      if (isSecuredExpressConfig(cfg)) {
         cfg.mtlsRequestCert!.should.be.true();
         cfg.mtlsAllowedClientFingerprints!.should.deepEqual(['ABC123', 'DEF456']);
         cfg.kmsUrl.should.equal('http://localhost:3000');

@@ -1,5 +1,5 @@
-import { AppMode, EnclavedConfig, TlsMode } from '../../../initConfig';
-import { app as enclavedApp } from '../../../enclavedApp';
+import { AppMode, SecuredExpressConfig, TlsMode } from '../../../initConfig';
+import { app as securedApp } from '../../../securedExpressApp';
 
 import express from 'express';
 import nock from 'nock';
@@ -12,7 +12,7 @@ import { DklsComms, DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 
 describe('postMpcV2Key', () => {
-  let cfg: EnclavedConfig;
+  let cfg: SecuredExpressConfig;
   let app: express.Application;
   let agent: request.SuperAgentTest;
 
@@ -31,7 +31,7 @@ describe('postMpcV2Key', () => {
 
     // app config
     cfg = {
-      appMode: AppMode.ENCLAVED,
+      appMode: AppMode.SECURED,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
@@ -45,7 +45,7 @@ describe('postMpcV2Key', () => {
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
 
     // app setup
-    app = enclavedApp(cfg);
+    app = securedApp(cfg);
     agent = request.agent(app);
   });
 

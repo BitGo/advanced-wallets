@@ -1,7 +1,7 @@
 import { SignFinalOptions } from '@bitgo/abstract-eth';
 import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
 import { HalfSignedUtxoTransaction, MethodNotImplementedError, TransactionRecipient } from 'bitgo';
-import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { SecuredExpressApiSpecRouteRequest } from '../../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { EnvironmentName } from '../../../initConfig';
 import logger from '../../../logger';
 import {
@@ -18,7 +18,7 @@ import { SignedEthLikeRecoveryTx } from '../../../types/transaction';
 import { retrieveKmsPrvKey } from '../utils';
 
 export async function recoveryMultisigTransaction(
-  req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
+  req: SecuredExpressApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
 ): Promise<any> {
   const { userPub, backupPub, bitgoPub, unsignedSweepPrebuildTx, walletContractAddress, coin } =
     req.decoded;

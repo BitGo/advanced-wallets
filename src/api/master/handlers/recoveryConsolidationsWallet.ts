@@ -69,7 +69,7 @@ export async function handleRecoveryConsolidationsOnPrem(
 ) {
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const securedExpressClient = req.securedExpressClient;
 
   const isMPC = req.decoded.multisigType === 'tss';
 
@@ -117,7 +117,7 @@ export async function handleRecoveryConsolidationsOnPrem(
   try {
     for (const tx of txs) {
       const signedTx = isMPC
-        ? await enclavedExpressClient.recoveryMPC({
+        ? await securedExpressClient.recoveryMPC({
             userPub,
             backupPub,
             apiKey,
@@ -125,7 +125,7 @@ export async function handleRecoveryConsolidationsOnPrem(
             coinSpecificParams: {},
             walletContractAddress: '',
           })
-        : await enclavedExpressClient.recoveryMultisig({
+        : await securedExpressClient.recoveryMultisig({
             userPub,
             backupPub,
             unsignedSweepPrebuildTx: tx as RecoveryTransaction,

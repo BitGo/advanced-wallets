@@ -2,8 +2,8 @@ import 'should';
 
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as enclavedApp } from '../../../enclavedApp';
-import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
+import { app as securedApp } from '../../../securedExpressApp';
+import { AppMode, SecuredExpressConfig, TlsMode } from '../../../shared/types';
 import express from 'express';
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
@@ -17,7 +17,7 @@ import createKeccakHash from 'keccak';
 import { bitgoGpgKey } from '../../mocks/gpgKeys';
 
 describe('signMpcTransaction', () => {
-  let cfg: EnclavedConfig;
+  let cfg: SecuredExpressConfig;
   let app: express.Application;
   let agent: request.SuperAgentTest;
 
@@ -36,7 +36,7 @@ describe('signMpcTransaction', () => {
 
     // app config
     cfg = {
-      appMode: AppMode.ENCLAVED,
+      appMode: AppMode.SECURED,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
@@ -50,7 +50,7 @@ describe('signMpcTransaction', () => {
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
 
     // app setup
-    app = enclavedApp(cfg);
+    app = securedApp(cfg);
     agent = request.agent(app);
   });
 

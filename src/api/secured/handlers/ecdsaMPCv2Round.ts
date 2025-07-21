@@ -1,14 +1,14 @@
 import { DklsComms, DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import {
-  EnclavedApiSpecRouteRequest,
+  SecuredExpressApiSpecRouteRequest,
   MpcV2RoundResponseType,
   MpcV2RoundState,
-} from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+} from '../../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 import { KmsClient } from '../../../kms/kmsClient';
 
 export async function ecdsaMPCv2Round(
-  req: EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>,
+  req: SecuredExpressApiSpecRouteRequest<'v1.mpcv2.round', 'post'>,
 ): Promise<MpcV2RoundResponseType> {
   const { source, encryptedData, encryptedDataKey, round, broadcastMessages, p2pMessages } =
     req.decoded;

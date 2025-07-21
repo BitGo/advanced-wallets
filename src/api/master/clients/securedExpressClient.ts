@@ -23,7 +23,7 @@ import { ApiClient, buildApiClient, superagentRequestFactory } from '@api-ts/sup
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
 
 import { MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { EnclavedApiSpec } from '../../../enclavedBitgoExpress/routers';
+import { SecuredExpressApiSpec } from '../../../securedBitgoExpress/routers';
 import { PingResponseType, VersionResponseType } from '../../../types/health';
 import { extractTransactionRequestInfo } from '../../../shared/transactionUtils';
 import {
@@ -33,11 +33,11 @@ import {
   MpcV2FinalizeResponseType,
   MpcV2InitializeResponseType,
   MpcV2RoundResponseType,
-} from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+} from '../../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
 import { RecoveryTxRequest } from 'bitgo';
 
-const debugLogger = debug('bitgo:express:enclavedExpressClient');
+const debugLogger = debug('bitgo:express:securedExpressClient');
 
 export type InitMpcKeyGenerationParams = {
   source: 'user' | 'backup';
@@ -173,7 +173,7 @@ export interface SignMpcV2Round3Response {
   signatureShareRound3: SignatureShareRecord;
 }
 
-export class EnclavedExpressClient {
+export class SecuredExpressClient {
   async recoveryMPC(params: {
     unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs | RecoveryTxRequest;
     userPub: string;
@@ -220,25 +220,25 @@ export class EnclavedExpressClient {
     }
   }
   private readonly baseUrl: string;
-  private readonly enclavedExpressCert: string;
+  private readonly securedExpressCert: string;
   private readonly tlsKey?: string;
   private readonly tlsCert?: string;
   private readonly allowSelfSigned: boolean;
   private readonly coin?: string;
   private readonly tlsMode: TlsMode;
 
-  private readonly apiClient: ApiClient<superagent.Request, typeof EnclavedApiSpec>;
+  private readonly apiClient: ApiClient<superagent.Request, typeof SecuredExpressApiSpec>;
 
   constructor(cfg: MasterExpressConfig, coin?: string) {
-    if (!cfg.enclavedExpressUrl || !cfg.enclavedExpressCert) {
-      throw new Error('enclavedExpressUrl and enclavedExpressCert are required');
+    if (!cfg.securedExpressUrl || !cfg.securedExpressCert) {
+      throw new Error('securedExpressUrl and securedExpressCert are required');
     }
     if (cfg.tlsMode === TlsMode.MTLS && (!cfg.tlsKey || !cfg.tlsCert)) {
       throw new Error('tlsKey and tlsCert are required for mTLS communication');
     }
 
-    this.baseUrl = cfg.enclavedExpressUrl;
-    this.enclavedExpressCert = cfg.enclavedExpressCert;
+    this.baseUrl = cfg.securedExpressUrl;
+    this.securedExpressCert = cfg.securedExpressCert;
     this.tlsKey = cfg.tlsKey;
     this.tlsCert = cfg.tlsCert;
     this.allowSelfSigned = cfg.allowSelfSigned ?? false;
@@ -249,9 +249,9 @@ export class EnclavedExpressClient {
     const requestFactory = superagentRequestFactory(superagent, this.baseUrl);
 
     // Build the type-safe API client
-    this.apiClient = buildApiClient(requestFactory, EnclavedApiSpec);
+    this.apiClient = buildApiClient(requestFactory, SecuredExpressApiSpec);
 
-    debugLogger('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
+    debugLogger('securedExpressClient initialized with URL: %s', this.baseUrl);
   }
 
   private createHttpsAgent(): https.Agent {
@@ -260,8 +260,8 @@ export class EnclavedExpressClient {
     }
     return new https.Agent({
       rejectUnauthorized: !this.allowSelfSigned,
-      ca: this.enclavedExpressCert,
-      // Use Master Express's own certificate as client cert when connecting to Enclaved Express
+      ca: this.securedExpressCert,
+      // Use Master Express's own certificate as client cert when connecting to secured Express
       key: this.tlsKey,
       cert: this.tlsCert,
     });
@@ -329,12 +329,12 @@ export class EnclavedExpressClient {
   }
 
   /**
-   * Ping the enclaved express service to check if it's available
+   * Ping the secured express service to check if it's available
    * @returns {Promise<PingResponseType>}
    */
   async ping(): Promise<PingResponseType> {
     try {
-      debugLogger('Pinging enclaved express service at: %s', this.baseUrl);
+      debugLogger('Pinging secured express service at: %s', this.baseUrl);
       let request = this.apiClient['v1.health.ping'].post({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -343,21 +343,21 @@ export class EnclavedExpressClient {
 
       const response = await request.decodeExpecting(200);
 
-      debugLogger('Enclaved express service ping successful');
+      debugLogger('secured express service ping successful');
       return response.body;
     } catch (error) {
       const err = error as Error;
-      debugLogger('Enclaved express service ping failed: %s', err.message);
+      debugLogger('secured express service ping failed: %s', err.message);
       throw err;
     }
   }
 
   /**
-   * Get the version information from the enclaved express service
+   * Get the version information from the secured express service
    */
   async getVersion(): Promise<VersionResponseType> {
     try {
-      debugLogger('Getting version information from enclaved express service');
+      debugLogger('Getting version information from secured express service');
       let request = this.apiClient['v1.health.version'].get({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -752,17 +752,17 @@ export class EnclavedExpressClient {
 }
 
 /**
- * Create an enclaved express client if the configuration is present
+ * Create an secured express client if the configuration is present
  */
-export function createEnclavedExpressClient(
+export function createSecuredExpressClient(
   cfg: MasterExpressConfig,
   coin?: string,
-): EnclavedExpressClient | undefined {
+): SecuredExpressClient | undefined {
   try {
-    return new EnclavedExpressClient(cfg, coin);
+    return new SecuredExpressClient(cfg, coin);
   } catch (error) {
     const err = error as Error;
-    debugLogger('Failed to create enclaved express client: %s', err.message);
+    debugLogger('Failed to create SecuredExpressClient:', err.message);
     return undefined;
   }
 }

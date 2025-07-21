@@ -12,7 +12,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
   const walletId = 'test-wallet-id';
   const accessToken = 'test-access-token';
   const bitgoApiUrl = Environments.test.uri;
-  const enclavedExpressUrl = 'https://test-enclaved-express.com';
+  const securedExpressUrl = 'https://test-secured-express.com';
 
   before(() => {
     nock.disableNetConnect();
@@ -27,8 +27,8 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'test-cert',
+      securedExpressUrl: securedExpressUrl,
+      securedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       mtlsRequestCert: false,
       allowSelfSigned: true,
@@ -43,7 +43,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
     sinon.restore();
   });
 
-  it('should accelerate transaction by calling the enclaved express service', async () => {
+  it('should accelerate transaction by calling the secured express service', async () => {
     // Mock wallet get request
     const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)

@@ -17,7 +17,7 @@ import {
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
 
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../clients/securedExpressClient';
 import {
   CoinSpecificParams,
   EvmRecoveryOptions,
@@ -40,7 +40,7 @@ interface RecoveryParams {
   apiKey: string;
 }
 
-interface EnclavedRecoveryParams {
+interface securedRecoveryParams {
   userPub: string;
   backupPub: string;
   apiKey: string;
@@ -72,8 +72,8 @@ function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) 
 async function handleEthLikeRecovery(
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  enclavedExpressClient: any,
-  params: EnclavedRecoveryParams,
+  securedExpressClient: any,
+  params: securedRecoveryParams,
   env: EnvironmentName,
 ) {
   try {
@@ -89,7 +89,7 @@ async function handleEthLikeRecovery(
       replayProtectionOptions: getReplayProtectionOptions(env),
     });
 
-    const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
+    const fullSignedRecoveryTx = await securedExpressClient.recoveryMultisig({
       ...params,
       unsignedSweepPrebuildTx,
     });
@@ -104,8 +104,8 @@ async function handleEddsaRecovery(
   bitgo: BitGoAPI,
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  enclavedExpressClient: EnclavedExpressClient,
-  params: EnclavedRecoveryParams,
+  securedExpressClient: SecuredExpressClient,
+  params: securedRecoveryParams,
 ) {
   const { recoveryDestination, userKey } = commonRecoveryParams;
   try {
@@ -135,7 +135,7 @@ async function handleEddsaRecovery(
     }
     logger.info('Unsigned sweep tx: ', JSON.stringify(unsignedSweepPrebuildTx, null, 2));
 
-    return await enclavedExpressClient.recoveryMPC({
+    return await securedExpressClient.recoveryMPC({
       userPub: params.userPub,
       backupPub: params.backupPub,
       apiKey: params.apiKey,
@@ -162,7 +162,7 @@ export type UtxoCoinSpecificRecoveryParams = Pick<
 
 async function handleUtxoLikeRecovery(
   sdkCoin: BaseCoin,
-  enclavedClient: EnclavedExpressClient,
+  securedClient: SecuredExpressClient,
   recoveryParams: UtxoCoinSpecificRecoveryParams,
 ): Promise<{ txHex: string }> {
   const abstractUtxoCoin = sdkCoin as unknown as AbstractUtxoCoin;
@@ -173,7 +173,7 @@ async function handleUtxoLikeRecovery(
     throw new MethodNotImplementedError(`Unknown transaction ${JSON.stringify(recoverTx)} created`);
   }
 
-  return (await enclavedClient.recoveryMultisig({
+  return (await securedClient.recoveryMultisig({
     userPub: recoveryParams.userKey,
     backupPub: recoveryParams.backupKey,
     bitgoPub: recoveryParams.bitgoKey,
@@ -187,7 +187,7 @@ export async function handleRecoveryWalletOnPrem(
 ) {
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const securedExpressClient = req.securedExpressClient;
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
 
   const sdkCoin = bitgo.coin(coin);
@@ -213,7 +213,7 @@ export async function handleRecoveryWalletOnPrem(
           recoveryDestination: recoveryDestinationAddress,
           apiKey: req.decoded.apiKey || '',
         },
-        enclavedExpressClient,
+        securedExpressClient,
         {
           userPub: commonKeychain,
           backupPub: commonKeychain,
@@ -265,7 +265,7 @@ export async function handleRecoveryWalletOnPrem(
     return handleEthLikeRecovery(
       sdkCoin,
       commonRecoveryParams,
-      enclavedExpressClient,
+      securedExpressClient,
       {
         userPub,
         backupPub,
@@ -282,7 +282,7 @@ export async function handleRecoveryWalletOnPrem(
   }
 
   if (isUtxoCoin(sdkCoin)) {
-    return handleUtxoLikeRecovery(sdkCoin, req.enclavedExpressClient, {
+    return handleUtxoLikeRecovery(sdkCoin, req.securedExpressClient, {
       userKey: userPub,
       backupKey: backupPub,
       bitgoKey: bitgoPub,

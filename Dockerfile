@@ -91,4 +91,4 @@ USER bitgo
 EXPOSE ${PORT}
 
 # Start the application using the binary
-CMD ["./bin/enclaved-bitgo-express"]
+CMD ["./bin/secured-bitgo-express"]

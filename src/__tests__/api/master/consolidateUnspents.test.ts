@@ -12,7 +12,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
   const walletId = 'test-wallet-id';
   const accessToken = 'test-access-token';
   const bitgoApiUrl = Environments.test.uri;
-  const enclavedExpressUrl = 'https://test-enclaved-express.com';
+  const securedExpressUrl = 'https://test-secured-express.com';
 
   before(() => {
     nock.disableNetConnect();
@@ -27,8 +27,8 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'test-cert',
+      securedExpressUrl: securedExpressUrl,
+      securedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       mtlsRequestCert: false,
       allowSelfSigned: true,

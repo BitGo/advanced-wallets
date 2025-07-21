@@ -1,14 +1,14 @@
 import { DklsComms, DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import {
-  EnclavedApiSpecRouteRequest,
+  SecuredExpressApiSpecRouteRequest,
   MpcV2FinalizeResponseType,
   MpcV2RoundState,
-} from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+} from '../../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { KmsClient } from '../../../kms/kmsClient';
 import assert from 'assert';
 
 export async function ecdsaMPCv2Finalize(
-  req: EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>,
+  req: SecuredExpressApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>,
 ): Promise<MpcV2FinalizeResponseType> {
   const { source, encryptedData, encryptedDataKey, broadcastMessages, bitgoCommonKeychain } =
     req.decoded;

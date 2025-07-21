@@ -1,4 +1,4 @@
-import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import { SecuredExpressApiSpecRouteRequest } from '../../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { decryptDataKey, generateDataKey, retrieveKmsPrvKey } from '../utils';
 import logger from '../../../logger';
 import {
@@ -11,7 +11,7 @@ import {
   SignatureShareRecord,
   GShare,
 } from '@bitgo/sdk-core';
-import { EnclavedConfig } from '../../../shared/types';
+import { SecuredExpressConfig } from '../../../shared/types';
 import { BitGoBase, BaseCoin } from 'bitgo';
 
 // Define share types for different MPC algorithms
@@ -84,7 +84,9 @@ interface EcdsaSigningParams {
   encryptedRound2Session?: string;
 }
 
-export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>) {
+export async function signMpcTransaction(
+  req: SecuredExpressApiSpecRouteRequest<'v1.mpc.sign', 'post'>,
+) {
   const { source, pub, coin, encryptedDataKey, shareType } = req.decoded;
 
   const bitgo = req.bitgo;
@@ -144,7 +146,7 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
 
 async function handleEddsaSigning(
   bitgo: BitGoBase,
-  cfg: EnclavedConfig,
+  cfg: SecuredExpressConfig,
   params: EddsaSigningParams,
 ): Promise<{
   userToBitgoCommitment?: CommitmentShareRecord;
@@ -233,7 +235,7 @@ async function handleEddsaSigning(
 
 async function handleEcdsaMpcV2Signing(
   bitgo: BitGoBase,
-  cfg: EnclavedConfig,
+  cfg: SecuredExpressConfig,
   params: EcdsaSigningParams,
 ): Promise<any> {
   const { coin, shareType } = params;

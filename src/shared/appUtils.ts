@@ -192,13 +192,13 @@ export function validateTlsCertificates(config: {
  * Validate Master Express configuration
  */
 export function validateMasterExpressConfig(config: {
-  enclavedExpressUrl: string;
-  enclavedExpressCert: string;
+  securedExpressUrl: string;
+  securedExpressCert: string;
 }): void {
-  if (!config.enclavedExpressUrl) {
-    throw new Error('ENCLAVED_EXPRESS_URL is required for Master Express mode');
+  if (!config.securedExpressUrl) {
+    throw new Error('SECURED_EXPRESS_URL is required for Master Express mode');
   }
-  if (!config.enclavedExpressCert) {
-    throw new Error('ENCLAVED_EXPRESS_CERT is required for Master Express mode');
+  if (!config.securedExpressCert) {
+    throw new Error('SECURED_EXPRESS_CERT is required for Master Express mode');
   }
 }

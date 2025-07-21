@@ -14,7 +14,7 @@ import {
   SignatureShareType,
   TransactionState,
 } from '@bitgo/sdk-core';
-import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../../../../src/api/master/clients/securedExpressClient';
 import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../api/master/handlers/ecdsaMPCv2';
 import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
@@ -22,10 +22,10 @@ import { readKey } from 'openpgp';
 describe('Ecdsa Signing Handler', () => {
   let bitgo: BitGoBase;
   let wallet: Wallet;
-  let enclavedExpressClient: EnclavedExpressClient;
+  let securedExpressClient: SecuredExpressClient;
   let reqId: IRequestTracer;
   const bitgoApiUrl = Environments.local.uri;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const coin = 'hteth'; // Use hteth for ECDSA testing
   const walletId = 'test-wallet-id';
 
@@ -43,10 +43,10 @@ describe('Ecdsa Signing Handler', () => {
       },
       multisigTypeVersion: () => 2,
     } as unknown as Wallet;
-    enclavedExpressClient = new EnclavedExpressClient(
+    securedExpressClient = new SecuredExpressClient(
       {
-        enclavedExpressUrl,
-        enclavedExpressCert: 'dummy-cert',
+        securedExpressUrl,
+        securedExpressCert: 'dummy-cert',
         tlsMode: 'disabled',
         allowSelfSigned: true,
       } as any,
@@ -203,7 +203,7 @@ describe('Ecdsa Signing Handler', () => {
       });
 
     // Mock MPCv2 Round 1 signing
-    const signMpcV2Round1NockEbe = nock(enclavedExpressUrl)
+    const signMpcV2Round1NockSbe = nock(securedExpressUrl)
       .post(`/api/${coin}/mpc/sign/mpcv2round1`)
       .reply(200, {
         signatureShareRound1: round1SignatureShare,
@@ -214,7 +214,7 @@ describe('Ecdsa Signing Handler', () => {
       });
 
     // Mock MPCv2 Round 2 signing
-    const signMpcV2Round2NockEbe = nock(enclavedExpressUrl)
+    const signMpcV2Round2NockSbe = nock(securedExpressUrl)
       .post(`/api/${coin}/mpc/sign/mpcv2round2`)
       .reply(200, {
         signatureShareRound2: round2SignatureShare,
@@ -222,7 +222,7 @@ describe('Ecdsa Signing Handler', () => {
       });
 
     // Mock MPCv2 Round 3 signing
-    const signMpcV2Round3NockEbe = nock(enclavedExpressUrl)
+    const signMpcV2Round3NockSbe = nock(securedExpressUrl)
       .post(`/api/${coin}/mpc/sign/mpcv2round3`)
       .reply(200, {
         signatureShareRound3: round3SignatureShare,
@@ -232,7 +232,7 @@ describe('Ecdsa Signing Handler', () => {
       bitgo,
       wallet,
       txRequest,
-      enclavedExpressClient,
+      securedExpressClient,
       'user',
       userPubKey,
       reqId,
@@ -247,8 +247,8 @@ describe('Ecdsa Signing Handler', () => {
     sendSignatureShareV2Round2Nock.done();
     sendSignatureShareV2Round3Nock.done();
     sendTxRequestNock.done();
-    signMpcV2Round1NockEbe.done();
-    signMpcV2Round2NockEbe.done();
-    signMpcV2Round3NockEbe.done();
+    signMpcV2Round1NockSbe.done();
+    signMpcV2Round2NockSbe.done();
+    signMpcV2Round3NockSbe.done();
   });
 });

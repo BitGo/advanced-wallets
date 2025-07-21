@@ -11,7 +11,7 @@ import assert from 'assert';
 
 describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const bitgoApiUrl = Environments.test.uri;
   const accessToken = 'test-token';
   const walletId = 'test-wallet-id';
@@ -21,6 +21,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
+    // If MasterExpressConfig does not allow securedExpressUrl/securedExpressCert, use type assertion or extend the type for test purposes
     const config: MasterExpressConfig = {
       appMode: AppMode.MASTER_EXPRESS,
       port: 0, // Let OS assign a free port
@@ -30,8 +31,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      securedExpressUrl: securedExpressUrl, // keep property name as in original config
+      securedExpressCert: 'dummy-cert', // keep property name as in original config
       tlsMode: TlsMode.DISABLED,
       mtlsRequestCert: false,
       allowSelfSigned: true,
@@ -48,7 +49,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
   describe('SendMany Multisig:', () => {
     const coin = 'tbtc';
-    it('should send many transactions by calling the enclaved express service', async () => {
+    it('should send many transactions by calling the secured express service', async () => {
       // Mock wallet get request
       const walletGetNock = nock(bitgoApiUrl)
         .get(`/api/v2/${coin}/wallet/${walletId}`)
@@ -82,8 +83,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
       const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
 
-      // Mock enclaved express sign request
-      const signNock = nock(enclavedExpressUrl)
+      // Mock secured express sign request
+      const signNock = nock(securedExpressUrl)
         .post(`/api/${coin}/multisig/sign`)
         .reply(200, {
           halfSigned: {
@@ -171,8 +172,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
       const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
 
-      // Mock enclaved express sign request
-      const signNock = nock(enclavedExpressUrl)
+      // Mock secured express sign request
+      const signNock = nock(securedExpressUrl)
         .post(`/api/${coin}/multisig/sign`)
         .reply(200, {
           halfSigned: {
@@ -573,8 +574,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     keychainGetNock.done();
   });
 
-  it('should fail when enclaved express client is not configured', async () => {
-    // Create a config without enclaved express settings
+  it('should fail when secured express client is not configured', async () => {
+    // Create a config without secured express settings
     const invalidConfig: Partial<MasterExpressConfig> = {
       appMode: AppMode.MASTER_EXPRESS,
       port: 0,
@@ -591,10 +592,10 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
     try {
       expressApp(invalidConfig as MasterExpressConfig);
-      assert(false, 'Expected error to be thrown when enclaved express client is not configured');
+      assert(false, 'Expected error to be thrown when secured express client is not configured');
     } catch (error) {
       (error as Error).message.should.equal(
-        'enclavedExpressUrl and enclavedExpressCert are required',
+        'securedExpressUrl and securedExpressCert are required',
       );
     }
   });
@@ -746,8 +747,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
     const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
 
-    // Mock enclaved express sign request to return an error
-    const signNock = nock(enclavedExpressUrl)
+    // Mock secured express sign request to return an error
+    const signNock = nock(securedExpressUrl)
       .post(`/api/${coin}/multisig/sign`)
       .replyWithError(
         new ApiResponseError('Custom API error', 500, {
@@ -770,7 +771,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         pubkey: 'xpub_user',
       });
 
-    // The response should be a 500 error with the enclaved error details
+    // The response should be a 500 error with the secured error details
     response.status.should.equal(500);
     response.body.should.have.property('error');
     response.body.should.have.property('details');

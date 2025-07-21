@@ -4,7 +4,7 @@ export enum TlsMode {
 }
 
 export enum AppMode {
-  ENCLAVED = 'enclaved',
+  SECURED = 'secured',
   MASTER_EXPRESS = 'master-express',
 }
 
@@ -23,9 +23,9 @@ interface BaseConfig {
   headersTimeout?: number;
 }
 
-// Enclaved mode specific configuration
-export interface EnclavedConfig extends BaseConfig {
-  appMode: AppMode.ENCLAVED;
+// Secured mode specific configuration
+export interface SecuredExpressConfig extends BaseConfig {
+  appMode: AppMode.SECURED;
   // KMS settings
   kmsUrl: string;
   // mTLS settings
@@ -47,8 +47,8 @@ export interface MasterExpressConfig extends BaseConfig {
   customRootUri?: string;
   disableEnvCheck?: boolean;
   authVersion?: number;
-  enclavedExpressUrl: string;
-  enclavedExpressCert: string;
+  securedExpressUrl: string;
+  securedExpressCert: string;
   customBitcoinNetwork?: string;
   // mTLS settings
   keyPath?: string;
@@ -62,14 +62,14 @@ export interface MasterExpressConfig extends BaseConfig {
 }
 
 // Union type for the configuration
-export type Config = EnclavedConfig | MasterExpressConfig;
+export type Config = SecuredExpressConfig | MasterExpressConfig;
 
 // Type guard for MasterExpressConfig
 export function isMasterExpressConfig(config: Config): config is MasterExpressConfig {
   return config.appMode === AppMode.MASTER_EXPRESS;
 }
 
-// Type guard for EnclavedConfig
-export function isEnclavedConfig(config: Config): config is EnclavedConfig {
-  return config.appMode === AppMode.ENCLAVED;
+// Type guard for SecuredExpressConfig
+export function isSecuredExpressConfig(config: Config): config is SecuredExpressConfig {
+  return config.appMode === AppMode.SECURED;
 }

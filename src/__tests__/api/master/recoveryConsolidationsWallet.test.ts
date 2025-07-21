@@ -7,11 +7,11 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Trx } from '@bitgo/sdk-coin-trx';
 import { Sol } from '@bitgo/sdk-coin-sol';
 import { Sui } from '@bitgo/sdk-coin-sui';
-import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../../../api/master/clients/securedExpressClient';
 
 describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const accessToken = 'test-token';
 
   before(() => {
@@ -26,8 +26,8 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      securedExpressUrl,
+      securedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       mtlsRequestCert: false,
       allowSelfSigned: true,
@@ -55,7 +55,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
         });
 
       const recoveryMultisigStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+        .stub(SecuredExpressClient.prototype, 'recoveryMultisig')
         .resolves({ txHex: 'signed-tx' });
 
       const response = await agent
@@ -97,7 +97,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
         });
 
       const recoveryMultisigStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+        .stub(SecuredExpressClient.prototype, 'recoveryMultisig')
         .resolves({ txHex: 'signed-tx' });
 
       const response = await agent
@@ -152,7 +152,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
         });
 
       const recoveryMPCStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
+        .stub(SecuredExpressClient.prototype, 'recoveryMPC')
         .resolves({ txHex: 'signed-mpc-tx' });
 
       const response = await agent
@@ -196,7 +196,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
         });
 
       const recoveryMPCStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
+        .stub(SecuredExpressClient.prototype, 'recoveryMPC')
         .resolves({ txHex: 'signed-mpc-tx' });
 
       const response = await agent

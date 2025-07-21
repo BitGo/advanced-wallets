@@ -1,6 +1,6 @@
 import debug from 'debug';
 import * as superagent from 'superagent';
-import { EnclavedConfig, isMasterExpressConfig } from '../shared/types';
+import { SecuredExpressConfig, isMasterExpressConfig } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 import {
@@ -19,9 +19,9 @@ const debugLogger = debug('bitgo:express:kmsClient');
 export class KmsClient {
   private readonly url: string;
 
-  constructor(cfg: EnclavedConfig) {
+  constructor(cfg: SecuredExpressConfig) {
     if (isMasterExpressConfig(cfg)) {
-      throw new Error('Configuration is not in enclaved express mode');
+      throw new Error('Configuration is not in secured express mode');
     }
 
     if (!cfg.kmsUrl) {

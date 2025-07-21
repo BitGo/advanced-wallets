@@ -43,7 +43,7 @@ export function createHealthCheckRouter(): WrappedRouter<typeof HealthCheckApiSp
   router.post('v1.health.ping', [
     responseHandler(() =>
       Response.ok({
-        status: 'enclaved express server is ok!',
+        status: 'secured express server is ok!',
         timestamp: new Date().toISOString(),
       }),
     ),

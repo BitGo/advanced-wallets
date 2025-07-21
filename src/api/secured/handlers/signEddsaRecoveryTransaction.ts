@@ -11,7 +11,7 @@ import { Ed25519Bip32HdTree } from '@bitgo/sdk-lib-mpc';
 import { CoinFamily, coins } from '@bitgo/statics';
 import { type KeyPair as SolKeyPair } from '@bitgo/sdk-coin-sol';
 import { retrieveKmsPrvKey } from '../utils';
-import { EnclavedConfig } from '../../../shared/types';
+import { SecuredExpressConfig } from '../../../shared/types';
 import logger from '../../../logger';
 
 async function setupTransactionBuilder(
@@ -75,7 +75,7 @@ export type SignEddsaRecoveryTransactionParams = {
     signableHex: string;
     derivationPath: string;
   };
-  cfg: EnclavedConfig;
+  cfg: SecuredExpressConfig;
   coin: BaseCoin;
 };
 

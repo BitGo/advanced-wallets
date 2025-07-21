@@ -3,14 +3,14 @@ import nock from 'nock';
 import sinon from 'sinon';
 import supertest from 'supertest';
 import { Utils } from '@bitgo/sdk-coin-sol';
-import * as kmsUtils from '../../../api/enclaved/utils';
-import { app as expressApp } from '../../../enclavedApp';
-import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
+import * as kmsUtils from '../../../api/secured/utils';
+import { app as expressApp } from '../../../securedExpressApp';
+import { AppMode, SecuredExpressConfig, TlsMode } from '../../../shared/types';
 
 describe('EdDSA Recovery Signing', () => {
   let agent: supertest.SuperTest<supertest.Test>;
-  const config: EnclavedConfig = {
-    appMode: AppMode.ENCLAVED,
+  const config: SecuredExpressConfig = {
+    appMode: AppMode.SECURED,
     port: 0,
     bind: 'localhost',
     timeout: 60000,

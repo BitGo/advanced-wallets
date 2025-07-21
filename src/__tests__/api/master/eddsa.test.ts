@@ -11,7 +11,7 @@ import {
   EddsaUtils,
   openpgpUtils,
 } from '@bitgo/sdk-core';
-import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../../../../src/api/master/clients/securedExpressClient';
 import { handleEddsaSigning } from '../../../../src/api/master/handlers/eddsa';
 import { BitGo } from 'bitgo';
 import { readKey } from 'openpgp';
@@ -20,10 +20,10 @@ import { readKey } from 'openpgp';
 describe('Eddsa Signing Handler', () => {
   let bitgo: BitGoBase;
   let wallet: Wallet;
-  let enclavedExpressClient: EnclavedExpressClient;
+  let securedExpressClient: SecuredExpressClient;
   let reqId: IRequestTracer;
   const bitgoApiUrl = Environments.local.uri;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const coin = 'tbtc';
   const walletId = 'test-wallet-id';
 
@@ -37,10 +37,10 @@ describe('Eddsa Signing Handler', () => {
     wallet = {
       id: () => 'test-wallet-id',
     } as Wallet;
-    enclavedExpressClient = new EnclavedExpressClient(
+    securedExpressClient = new SecuredExpressClient(
       {
-        enclavedExpressUrl,
-        enclavedExpressCert: 'dummy-cert',
+        securedExpressUrl,
+        securedExpressCert: 'dummy-cert',
         tlsMode: 'disabled',
         allowSelfSigned: true,
       } as any,
@@ -190,7 +190,7 @@ describe('Eddsa Signing Handler', () => {
       });
 
     // Mock MPC commitment signing
-    const signMpcCommitmentNockEbe = nock(enclavedExpressUrl)
+    const signMpcCommitmentNockSbe = nock(securedExpressUrl)
       .post(`/api/${coin}/mpc/sign/commitment`)
       .reply(200, {
         userToBitgoCommitment: { share: 'user-commitment-share' },
@@ -200,7 +200,7 @@ describe('Eddsa Signing Handler', () => {
       });
 
     // Mock MPC R-share signing
-    const signMpcRShareNockEbe = nock(enclavedExpressUrl)
+    const signMpcRShareNockSbe = nock(securedExpressUrl)
       .post(`/api/${coin}/mpc/sign/r`)
       .reply(200, {
         rShare: {
@@ -214,7 +214,7 @@ describe('Eddsa Signing Handler', () => {
       });
 
     // Mock MPC G-share signing
-    const signMpcGShareNockEbe = nock(enclavedExpressUrl)
+    const signMpcGShareNockSbe = nock(securedExpressUrl)
       .post(`/api/${coin}/mpc/sign/g`)
       .reply(200, {
         gShare: {
@@ -232,7 +232,7 @@ describe('Eddsa Signing Handler', () => {
       bitgo,
       wallet,
       txRequest,
-      enclavedExpressClient,
+      securedExpressClient,
       userPubKey,
       reqId,
     );
@@ -247,8 +247,8 @@ describe('Eddsa Signing Handler', () => {
     getBitgoRShareNock.done();
     sendGShareNock.done();
     finalGetTxRequestNock.done();
-    signMpcCommitmentNockEbe.done();
-    signMpcRShareNockEbe.done();
-    signMpcGShareNockEbe.done();
+    signMpcCommitmentNockSbe.done();
+    signMpcRShareNockSbe.done();
+    signMpcGShareNockSbe.done();
   });
 });

@@ -6,7 +6,7 @@ import {
   TxRequest,
   Wallet,
 } from '@bitgo/sdk-core';
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../clients/securedExpressClient';
 import { handleEddsaSigning } from './eddsa';
 import { signAndSendEcdsaMPCv2FromTxRequest } from './ecdsaMPCv2';
 
@@ -16,7 +16,7 @@ import { signAndSendEcdsaMPCv2FromTxRequest } from './ecdsaMPCv2';
  * @param bitgo - BitGo instance
  * @param wallet - Wallet instance
  * @param txRequestId - Transaction request ID
- * @param enclavedExpressClient - Enclaved express client
+ * @param securedExpressClient - secured express client
  * @param signingKeychain - Signing keychain
  * @param reqId - Request tracer
  */
@@ -24,7 +24,7 @@ export async function signAndSendTxRequests(
   bitgo: BitGoBase,
   wallet: Wallet,
   txRequest: TxRequest,
-  enclavedExpressClient: EnclavedExpressClient,
+  securedExpressClient: SecuredExpressClient,
   signingKeychain: Keychain,
   reqId: RequestTracer,
 ): Promise<any> {
@@ -40,7 +40,7 @@ export async function signAndSendTxRequests(
       bitgo,
       wallet,
       txRequest,
-      enclavedExpressClient,
+      securedExpressClient,
       signingKeychain.commonKeychain,
       reqId,
     );
@@ -49,7 +49,7 @@ export async function signAndSendTxRequests(
       bitgo,
       wallet,
       txRequest,
-      enclavedExpressClient,
+      securedExpressClient,
       signingKeychain.source as 'user' | 'backup',
       signingKeychain.commonKeychain,
       reqId,

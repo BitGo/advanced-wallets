@@ -4,9 +4,9 @@ import http from 'http';
 import morgan from 'morgan';
 import { SSL_OP_NO_TLSv1, SSL_OP_NO_TLSv1_1 } from 'constants';
 
-import { EnclavedConfig, TlsMode, isEnclavedConfig } from './shared/types';
+import { SecuredExpressConfig, TlsMode, isSecuredExpressConfig } from './shared/types';
 import { initConfig } from './initConfig';
-import { setupRoutes } from './routes/enclaved';
+import { setupRoutes } from './routes/secured';
 import {
   setupLogging,
   setupCommonMiddleware,
@@ -21,9 +21,9 @@ import logger from './logger';
 /**
  * Create a startup function which will be run upon server initialization
  */
-export function startup(config: EnclavedConfig, baseUri: string): () => void {
+export function startup(config: SecuredExpressConfig, baseUri: string): () => void {
   return function () {
-    logger.info('BitGo Enclaved Express running');
+    logger.info('BitGo Secured Express running');
     logger.info(`Base URI: ${baseUri}`);
     logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
@@ -38,7 +38,7 @@ export function startup(config: EnclavedConfig, baseUri: string): () => void {
   };
 }
 
-function isTLS(config: EnclavedConfig): boolean {
+function isTLS(config: SecuredExpressConfig): boolean {
   const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
   if (tlsMode === TlsMode.DISABLED) return false;
   return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
@@ -46,7 +46,7 @@ function isTLS(config: EnclavedConfig): boolean {
 
 async function createHttpsServer(
   app: express.Application,
-  config: EnclavedConfig,
+  config: SecuredExpressConfig,
 ): Promise<https.Server> {
   const { tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
 
@@ -70,7 +70,7 @@ async function createHttpsServer(
 }
 
 export async function createServer(
-  config: EnclavedConfig,
+  config: SecuredExpressConfig,
   app: express.Application,
 ): Promise<https.Server | http.Server> {
   const server = isTLS(config) ? await createHttpsServer(app, config) : createHttpServer(app);
@@ -78,7 +78,7 @@ export async function createServer(
   return server;
 }
 
-export function createBaseUri(config: EnclavedConfig): string {
+export function createBaseUri(config: SecuredExpressConfig): string {
   const { bind, port } = config;
   const tls = config.tlsMode === TlsMode.MTLS;
   const isStandardPort = (port === 80 && !tls) || (port === 443 && tls);
@@ -88,7 +88,7 @@ export function createBaseUri(config: EnclavedConfig): string {
 /**
  * Create and configure the express application
  */
-export function app(cfg: EnclavedConfig): express.Application {
+export function app(cfg: SecuredExpressConfig): express.Application {
   logger.debug('app is initializing');
 
   const app = express();
@@ -120,10 +120,10 @@ export function app(cfg: EnclavedConfig): express.Application {
 export async function init(): Promise<void> {
   const cfg = initConfig();
 
-  // Type-safe validation that we're in enclaved mode
-  if (!isEnclavedConfig(cfg)) {
+  // Type-safe validation that we're in secured mode
+  if (!isSecuredExpressConfig(cfg)) {
     throw new Error(
-      `This application only supports enclaved mode. Current mode: ${cfg.appMode}. Set APP_MODE=enclaved to use this application.`,
+      `This application only supports secured mode. Current mode: ${cfg.appMode}. Set APP_MODE=secured to use this application.`,
     );
   }
 

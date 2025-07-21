@@ -2,7 +2,7 @@ import { createMessage, decrypt, encrypt, readKey, readMessage, readPrivateKey }
 
 import { KmsClient } from '../../kms/kmsClient';
 import { GenerateDataKeyResponse } from '../../kms/types/dataKey';
-import { EnclavedConfig } from '../../shared/types';
+import { SecuredExpressConfig } from '../../shared/types';
 
 export async function retrieveKmsPrvKey({
   pub,
@@ -12,7 +12,7 @@ export async function retrieveKmsPrvKey({
 }: {
   pub: string;
   source: string;
-  cfg: EnclavedConfig;
+  cfg: SecuredExpressConfig;
   options?: {
     useLocalEncipherment?: boolean;
   };
@@ -85,7 +85,7 @@ export async function generateDataKey({
   cfg,
 }: {
   keyType: 'AES-256' | 'RSA-2048' | 'ECDSA-P256';
-  cfg: EnclavedConfig;
+  cfg: SecuredExpressConfig;
 }): Promise<GenerateDataKeyResponse> {
   try {
     const kms = new KmsClient(cfg);
@@ -103,7 +103,7 @@ export async function decryptDataKey({
   cfg,
 }: {
   encryptedDataKey: string;
-  cfg: EnclavedConfig;
+  cfg: SecuredExpressConfig;
 }): Promise<string> {
   try {
     const kms = new KmsClient(cfg);

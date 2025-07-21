@@ -3,16 +3,16 @@ import * as bitgoSdk from '@bitgo/sdk-core';
 import { assert } from 'console';
 import { KmsClient } from '../../kms/kmsClient';
 import {
-  EnclavedApiSpecRouteRequest,
+  SecuredExpressApiSpecRouteRequest,
   KeyShareType,
   MpcInitializeRequestType,
-} from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
+} from '../../securedBitgoExpress/routers/securedExpressApiSpec';
 import { gpgEncrypt } from './utils';
 
-const debugLogger = debug('bitgo:enclavedExpress:mpcInitialize');
+const debugLogger = debug('bitgo:securedExpress:mpcInitialize');
 
 export async function eddsaInitialize(
-  req: EnclavedApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>,
+  req: SecuredExpressApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>,
 ) {
   // request parsing. counterPartyGpgPub can be undefined
   const { source, bitgoGpgPub, counterPartyGpgPub }: MpcInitializeRequestType = req.decoded;

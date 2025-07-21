@@ -15,20 +15,20 @@ import {
 } from '@api-ts/typed-express-router';
 import express from 'express';
 import * as t from 'io-ts';
-import { postIndependentKey } from '../../api/enclaved/handlers/postIndependentKey';
-import { recoveryMultisigTransaction } from '../../api/enclaved/handlers/recoveryMultisigTransaction';
-import { signMultisigTransaction } from '../../api/enclaved/handlers/signMultisigTransaction';
-import { signMpcTransaction } from '../../api/enclaved/handlers/signMpcTransaction';
+import { postIndependentKey } from '../../api/secured/handlers/postIndependentKey';
+import { recoveryMultisigTransaction } from '../../api/secured/handlers/recoveryMultisigTransaction';
+import { signMultisigTransaction } from '../../api/secured/handlers/signMultisigTransaction';
+import { signMpcTransaction } from '../../api/secured/handlers/signMpcTransaction';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
-import { EnclavedConfig } from '../../shared/types';
+import { SecuredExpressConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
-import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
-import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
+import { eddsaInitialize } from '../../api/secured/mpcInitialize';
+import { eddsaFinalize } from '../../api/secured/mpcFinalize';
 import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
-import { ecdsaMPCv2Initialize } from '../../api/enclaved/handlers/ecdsaMPCv2Initialize';
-import { ecdsaMPCv2Round } from '../../api/enclaved/handlers/ecdsaMPCv2Round';
-import { ecdsaMPCv2Finalize } from '../../api/enclaved/handlers/ecdsaMPCv2Finalize';
-import { signEddsaRecoveryTransaction } from '../../api/enclaved/handlers/signEddsaRecoveryTransaction';
+import { ecdsaMPCv2Initialize } from '../../api/secured/handlers/ecdsaMPCv2Initialize';
+import { ecdsaMPCv2Round } from '../../api/secured/handlers/ecdsaMPCv2Round';
+import { ecdsaMPCv2Finalize } from '../../api/secured/handlers/ecdsaMPCv2Finalize';
+import { signEddsaRecoveryTransaction } from '../../api/secured/handlers/signEddsaRecoveryTransaction';
 import { isEddsaCoin } from '../../shared/coinUtils';
 import { MethodNotImplementedError } from '@bitgo/sdk-core';
 
@@ -297,7 +297,7 @@ const MpcV2FinalizeResponseType = t.type(MpcV2FinalizeResponse);
 export type MpcV2FinalizeResponseType = t.TypeOf<typeof MpcV2FinalizeResponseType>;
 
 // API Specification
-export const EnclavedAPiSpec = apiSpec({
+export const SecuredExpressApiSpec = apiSpec({
   'v1.multisig.sign': {
     post: httpRoute({
       method: 'POST',
@@ -469,29 +469,32 @@ export const EnclavedAPiSpec = apiSpec({
   },
 });
 
-export type EnclavedApiSpecRouteHandler<
-  ApiName extends keyof typeof EnclavedAPiSpec,
-  Method extends keyof (typeof EnclavedAPiSpec)[ApiName] & HttpMethod,
-> = TypedRequestHandler<typeof EnclavedAPiSpec, ApiName, Method>;
+export type SecuredExpressApiSpecRouteHandler<
+  ApiName extends keyof typeof SecuredExpressApiSpec,
+  Method extends keyof (typeof SecuredExpressApiSpec)[ApiName] & HttpMethod,
+> = TypedRequestHandler<typeof SecuredExpressApiSpec, ApiName, Method>;
 
-export type EnclavedApiSpecRouteRequest<
-  ApiName extends keyof typeof EnclavedAPiSpec,
-  Method extends keyof (typeof EnclavedAPiSpec)[ApiName] & HttpMethod,
-> = BitGoRequest<EnclavedConfig> & Parameters<EnclavedApiSpecRouteHandler<ApiName, Method>>[0];
+export type SecuredExpressApiSpecRouteRequest<
+  ApiName extends keyof typeof SecuredExpressApiSpec,
+  Method extends keyof (typeof SecuredExpressApiSpec)[ApiName] & HttpMethod,
+> = BitGoRequest<SecuredExpressConfig> &
+  Parameters<SecuredExpressApiSpecRouteHandler<ApiName, Method>>[0];
 
-export type GenericEnclavedApiSpecRouteRequest = EnclavedApiSpecRouteRequest<any, any>;
+export type GenericSecuredExpressApiSpecRouteRequest = SecuredExpressApiSpecRouteRequest<any, any>;
 
 // Create router with handlers
-export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof EnclavedAPiSpec> {
-  const router = createRouter(EnclavedAPiSpec);
+export function createKeyGenRouter(
+  config: SecuredExpressConfig,
+): WrappedRouter<typeof SecuredExpressApiSpec> {
+  const router = createRouter(SecuredExpressApiSpec);
   // Add middleware
   router.use(express.json());
   router.use(prepareBitGo(config));
 
   // Independent key generation endpoint handler
   router.post('v1.key.independent', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.key.independent', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.key.independent', 'post'>;
       const result = await postIndependentKey(typedReq);
       return Response.ok(result);
     }),
@@ -499,32 +502,32 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
 
   // Multisig transaction signing endpoint handler
   router.post('v1.multisig.sign', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.multisig.sign', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.multisig.sign', 'post'>;
       const result = await signMultisigTransaction(typedReq);
       return Response.ok(result);
     }),
   ]);
 
   router.post('v1.multisig.recovery', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.multisig.recovery', 'post'>;
       const result = await recoveryMultisigTransaction(typedReq);
       return Response.ok(result);
     }),
   ]);
 
   router.post('v1.mpc.sign', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.sign', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.mpc.sign', 'post'>;
       const result = await signMpcTransaction(typedReq);
       return Response.ok(result);
     }),
   ]);
 
   router.post('v1.mpc.recovery', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.recovery', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.mpc.recovery', 'post'>;
       const coin = typedReq.bitgo.coin(typedReq.decoded.coin);
       if (isEddsaCoin(coin)) {
         const result = await signEddsaRecoveryTransaction({
@@ -545,9 +548,9 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   ]);
 
   router.post('v1.mpc.key.initialize', [
-    responseHandler<EnclavedConfig>(async (_req) => {
+    responseHandler<SecuredExpressConfig>(async (_req) => {
       try {
-        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>;
+        const typedReq = _req as SecuredExpressApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>;
         const response = await eddsaInitialize(typedReq);
         return Response.ok(response);
       } catch (error) {
@@ -561,9 +564,9 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   ]);
 
   router.post('v1.mpc.key.finalize', [
-    responseHandler<EnclavedConfig>(async (_req) => {
+    responseHandler<SecuredExpressConfig>(async (_req) => {
       try {
-        const typedReq = _req as EnclavedApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>;
+        const typedReq = _req as SecuredExpressApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>;
         const response = await eddsaFinalize(typedReq);
         return Response.ok(response);
       } catch (error) {
@@ -577,24 +580,24 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   ]);
 
   router.post('v1.mpcv2.initialize', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>;
       const result = await ecdsaMPCv2Initialize(typedReq);
       return Response.ok(result);
     }),
   ]);
 
   router.post('v1.mpcv2.round', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.mpcv2.round', 'post'>;
       const result = await ecdsaMPCv2Round(typedReq);
       return Response.ok(result);
     }),
   ]);
 
   router.post('v1.mpcv2.finalize', [
-    responseHandler<EnclavedConfig>(async (req) => {
-      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>;
+    responseHandler<SecuredExpressConfig>(async (req) => {
+      const typedReq = req as SecuredExpressApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>;
       const result = await ecdsaMPCv2Finalize(typedReq);
       return Response.ok(result);
     }),

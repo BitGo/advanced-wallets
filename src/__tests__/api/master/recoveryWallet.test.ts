@@ -8,14 +8,14 @@ import * as middleware from '../../../shared/middleware';
 import * as masterMiddleware from '../../../api/master/middleware/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { BitGo } from 'bitgo';
-import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
+import { SecuredExpressClient } from '../../../api/master/clients/securedExpressClient';
 import { CoinFamily } from '@bitgo/statics';
 
 describe('Recovery Tests', () => {
   let agent: request.SuperAgentTest;
   let mockBitgo: BitGo;
   let coinStub: sinon.SinonStub;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const accessToken = 'test-token';
   const config: MasterExpressConfig = {
     appMode: AppMode.MASTER_EXPRESS,
@@ -26,8 +26,8 @@ describe('Recovery Tests', () => {
     env: 'test',
     disableEnvCheck: true,
     authVersion: 2,
-    enclavedExpressUrl: enclavedExpressUrl,
-    enclavedExpressCert: 'dummy-cert',
+    securedExpressUrl: securedExpressUrl,
+    securedExpressCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
     mtlsRequestCert: false,
     allowSelfSigned: true,
@@ -127,21 +127,23 @@ describe('Recovery Tests', () => {
       // Setup coin middleware
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, coin);
+        (req as BitGoRequest<MasterExpressConfig>).securedExpressClient = new SecuredExpressClient(
+          config,
+          coin,
+        );
         next();
         return undefined;
       });
     });
 
-    it('should recover a UTXO wallet by calling the enclaved express service', async () => {
+    it('should recover a UTXO wallet by calling the secured express service', async () => {
       const userPub = 'xpub_user';
       const backupPub = 'xpub_backup';
       const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
-      // Mock the enclaved express recovery call
-      const recoveryNock = nock(enclavedExpressUrl)
+      // Mock the secured express recovery call
+      const recoveryNock = nock(securedExpressUrl)
         .post(`/api/${coin}/multisig/recovery`, {
           userPub,
           backupPub,
@@ -197,7 +199,7 @@ describe('Recovery Tests', () => {
         })
         .should.be.true();
 
-      // Verify enclaved express call
+      // Verify secured express call
       recoveryNock.done();
     });
 
@@ -315,8 +317,10 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for ETH coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: ethCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, ethCoinId);
+        (req as BitGoRequest<MasterExpressConfig>).securedExpressClient = new SecuredExpressClient(
+          config,
+          ethCoinId,
+        );
         next();
         return undefined;
       });
@@ -413,8 +417,10 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for Solana coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: solCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, solCoinId);
+        (req as BitGoRequest<MasterExpressConfig>).securedExpressClient = new SecuredExpressClient(
+          config,
+          solCoinId,
+        );
         next();
         return undefined;
       });

@@ -3,17 +3,17 @@ import 'should';
 import express from 'express';
 import nock from 'nock';
 import * as request from 'supertest';
-import { app as enclavedApp } from '../../../enclavedApp';
-import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
+import { app as securedApp } from '../../../securedExpressApp';
+import { AppMode, SecuredExpressConfig, TlsMode } from '../../../shared/types';
 
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
 
-import { ebeData } from '../../mocks/ethRecoveryMusigMockData';
+import { sbeData } from '../../mocks/ethRecoveryMusigMockData';
 import unsignedSweepRecJSON from '../../mocks/unsigned-sweep-prebuild-hteth-musig-recovery.json';
 
 describe('recoveryMultisigTransaction', () => {
-  let cfg: EnclavedConfig;
+  let cfg: SecuredExpressConfig;
   let app: express.Application;
   let agent: request.SuperAgentTest;
 
@@ -32,7 +32,7 @@ describe('recoveryMultisigTransaction', () => {
 
     // app config
     cfg = {
-      appMode: AppMode.ENCLAVED,
+      appMode: AppMode.SECURED,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
@@ -46,7 +46,7 @@ describe('recoveryMultisigTransaction', () => {
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
 
     // app setup
-    app = enclavedApp(cfg);
+    app = securedApp(cfg);
     agent = request.agent(app);
   });
 
@@ -59,7 +59,7 @@ describe('recoveryMultisigTransaction', () => {
   });
 
   it('should generate a successful txHex from unsigned sweep prebuild data', async () => {
-    const { userPub, backupPub, walletContractAddress, userPrv, backupPrv, txHexResult } = ebeData;
+    const { userPub, backupPub, walletContractAddress, userPrv, backupPrv, txHexResult } = sbeData;
     const unsignedSweepPrebuildTx = unsignedSweepRecJSON as unknown as any;
 
     const mockKmsUserResponse = {
@@ -109,7 +109,7 @@ describe('recoveryMultisigTransaction', () => {
   });
 
   it('should fail when prv keys non related to pub keys', async () => {
-    const { userPub, backupPub, walletContractAddress } = ebeData;
+    const { userPub, backupPub, walletContractAddress } = sbeData;
     const unsignedSweepPrebuildTx = unsignedSweepRecJSON as unknown as any;
 
     // Use invalid private keys

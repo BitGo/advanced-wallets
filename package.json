@@ -1,11 +1,11 @@
 {
-  "name": "@bitgo/enclaved-bitgo-express",
+  "name": "@bitgo/secured-bitgo-express",
   "version": "1.0.0",
-  "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS",
+  "description": "Secured BitGo Express - for sensitive key management operations like key generation and signing",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "bin": {
-    "enclaved-bitgo-express": "./bin/enclaved-bitgo-express"
+    "secured-bitgo-express": "./bin/secured-bitgo-express"
   },
   "scripts": {
     "start": "nodemon",

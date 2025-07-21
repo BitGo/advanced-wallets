@@ -37,7 +37,7 @@ export const data = {
   recoveryDestinationAddress: '0x927324f364a6fd1bf4648310a445b58063f5bb64',
 };
 
-export const ebeData = {
+export const sbeData = {
   userPub:
     'xpub661MyMwAqRbcGvbtjkhDJ5uiFWb6eK9nFQmLLgW1jDwJzJ2vQPyp2uKLmUBgGZKiA9HDUFYfuDoyP1dF3tj3Ucod25tmiEG2k26UX97S3Wz',
   backupPub:

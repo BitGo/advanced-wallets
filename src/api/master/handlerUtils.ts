@@ -1,5 +1,5 @@
 import { BitGo, CustomSigningFunction, RequestTracer } from 'bitgo';
-import { EnclavedExpressClient } from './clients/enclavedExpressClient';
+import { SecuredExpressClient } from './clients/securedExpressClient';
 
 /**
  * Fetch wallet and signing keychain, with validation for source and pubkey.
@@ -51,20 +51,20 @@ export async function getWalletAndSigningKeychain({
   return { baseCoin, wallet, signingKeychain };
 }
 /**
- * Create a custom signing function that delegates to enclavedExpressClient.signMultisig.
+ * Create a custom signing function that delegates to securedExpressClient.signMultisig.
  */
 
 export function makeCustomSigningFunction({
-  enclavedExpressClient,
+  securedExpressClient,
   source,
   pub,
 }: {
-  enclavedExpressClient: EnclavedExpressClient;
+  securedExpressClient: SecuredExpressClient;
   source: 'user' | 'backup';
   pub: string;
 }): CustomSigningFunction {
   return async function customSigningFunction(signParams: any) {
-    return enclavedExpressClient.signMultisig({
+    return securedExpressClient.signMultisig({
       txPrebuild: signParams.txPrebuild,
       source,
       pub,

@@ -30,7 +30,7 @@ export async function handleGenerateWalletOnPrem(
 }
 
 /**
- * This route is used to generate a multisig wallet when enclaved express is enabled
+ * This route is used to generate a multisig wallet when secured express is enabled
  */
 async function handleGenerateOnPremOnChainWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
@@ -38,8 +38,8 @@ async function handleGenerateOnPremOnChainWallet(
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.params.coin);
 
-  // The enclavedExpressClient is now available from the request
-  const enclavedExpressClient = req.enclavedExpressClient;
+  // The securedExpressClient is now available from the request
+  const securedExpressClient = req.securedExpressClient;
 
   const reqId = new RequestTracer();
 
@@ -64,7 +64,7 @@ async function handleGenerateOnPremOnChainWallet(
   }
 
   const userKeychainPromise = async (): Promise<Keychain> => {
-    const userKeychain = await enclavedExpressClient.createIndependentKeychain({
+    const userKeychain = await securedExpressClient.createIndependentKeychain({
       source: 'user',
       coin: req.params.coin,
       type: 'independent',
@@ -81,7 +81,7 @@ async function handleGenerateOnPremOnChainWallet(
   };
 
   const backupKeychainPromise = async (): Promise<Keychain> => {
-    const backupKeychain = await enclavedExpressClient.createIndependentKeychain({
+    const backupKeychain = await securedExpressClient.createIndependentKeychain({
       source: 'backup',
       coin: req.params.coin,
       type: 'independent',
@@ -140,7 +140,7 @@ async function handleGenerateOnPremMpcWallet(
 ) {
   const bitgo = req.bitgo;
   const baseCoin = bitgo.coin(req.decoded.coin);
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const securedExpressClient = req.securedExpressClient;
 
   if (!baseCoin.supportsTss()) {
     throw new NotImplementedError(
@@ -148,8 +148,8 @@ async function handleGenerateOnPremMpcWallet(
     );
   }
 
-  if (!enclavedExpressClient) {
-    throw new Error('Enclaved express client is required for MPC wallet generation');
+  if (!securedExpressClient) {
+    throw new Error('secured express client is required for MPC wallet generation');
   }
 
   const reqId = new RequestTracer();
@@ -179,7 +179,7 @@ async function handleGenerateOnPremMpcWallet(
       orchestrateResult = await orchestrateEcdsaKeyGen({
         bitgo,
         baseCoin,
-        enclavedExpressClient,
+        securedExpressClient,
         enterprise,
         walletParams,
       });
@@ -188,7 +188,7 @@ async function handleGenerateOnPremMpcWallet(
       orchestrateResult = await orchestrateEddsaKeyGen({
         bitgo,
         baseCoin,
-        enclavedExpressClient,
+        securedExpressClient,
         walletParams,
         enterprise,
       });

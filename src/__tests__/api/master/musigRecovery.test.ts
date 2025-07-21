@@ -10,7 +10,7 @@ import { data as ethRecoveryData } from '../../mocks/ethRecoveryMusigMockData';
 
 describe('POST /api/:coin/wallet/recovery', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const coin = 'hteth';
   const accessToken = 'test-token';
 
@@ -27,8 +27,8 @@ describe('POST /api/:coin/wallet/recovery', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      securedExpressUrl: securedExpressUrl,
+      securedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       mtlsRequestCert: false,
       allowSelfSigned: true,
@@ -51,7 +51,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
 
     // the call to eve.recoverWallet(...)
     // that contains the calls to sdk.signTransaction
-    const eveRecoverWalletNock = nock(enclavedExpressUrl)
+    const eveRecoverWalletNock = nock(securedExpressUrl)
       .post(`/api/${coin}/multisig/recovery`, {
         userPub: ethRecoveryData.userKey,
         backupPub: ethRecoveryData.backupKey,

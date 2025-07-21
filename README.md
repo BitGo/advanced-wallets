@@ -1,20 +1,20 @@
-# Enclaved BitGo Express
+# Secured BitGo Express
 
-A secure, mTLS-enabled cryptocurrency signing server with two operational modes: Enclaved Express (dedicated signer) and Master Express (API gateway with integrated signing capabilities).
+A secure, mTLS-enabled cryptocurrency signing server with two operational modes: Secured Express (dedicated signer) and Master Express (API gateway with integrated signing capabilities).
 
 ## Overview
 
 This application provides secure cryptocurrency operations with mutual TLS (mTLS) authentication:
 
-- **Enclaved Mode**: Lightweight signing server for secure key operations
+- **Secured Mode**: Lightweight signing server for secure key operations
 - **Master Express Mode**: Full BitGo Express functionality with integrated signing
 - **mTLS Security**: Client certificate validation for secure communications
 - **Flexible Configuration**: Environment-based setup with file or variable-based certificates
 
 ## Architecture
 
-- **Enclaved Express** (Port 3080): Focused signing operations with KMS integration
-- **Master Express** (Port 3081): Full BitGo API functionality with secure communication to Enclaved Express
+- **Secured Express** (Port 3080): Focused signing operations with KMS integration
+- **Master Express** (Port 3081): Full BitGo API functionality with secure communication to Secured Express
 
 ## Configuration
 
@@ -22,7 +22,7 @@ Configuration is managed through environment variables:
 
 ### Required Settings
 
-- `APP_MODE` - Application mode (required: "enclaved" or "master-express")
+- `APP_MODE` - Application mode (required: "secured" or "master-express")
 
 ### Network Settings
 
@@ -31,9 +31,9 @@ Configuration is managed through environment variables:
 - `KEEP_ALIVE_TIMEOUT` - Keep-alive timeout (optional)
 - `HEADERS_TIMEOUT` - Headers timeout (optional)
 
-#### Enclaved Mode Specific
+#### Secured Mode Specific
 
-- `ENCLAVED_EXPRESS_PORT` - Port to listen on (default: 3080)
+- `SECURED_EXPRESS_PORT` - Port to listen on (default: 3080)
 - `KMS_URL` - KMS service URL (required)
 
 #### Master Express Mode Specific
@@ -44,8 +44,8 @@ Configuration is managed through environment variables:
 - `BITGO_AUTH_VERSION` - Authentication version (default: 2)
 - `BITGO_CUSTOM_ROOT_URI` - Custom BitGo API root URI (optional)
 - `BITGO_CUSTOM_BITCOIN_NETWORK` - Custom Bitcoin network (optional)
-- `ENCLAVED_EXPRESS_URL` - Enclaved Express server URL (required)
-- `ENCLAVED_EXPRESS_CERT` - Path to Enclaved Express server certificate (required)
+- `SECURED_EXPRESS_URL` - Secured Express server URL (required)
+- `SECURED_EXPRESS_CERT` - Path to Secured Express server certificate (required)
 
 ### TLS/mTLS Configuration
 
@@ -76,7 +76,7 @@ Both modes use the same TLS configuration variables:
 ### Logging and Debug
 
 - `LOGFILE` - Path to log file (optional)
-- `DEBUG_NAMESPACE` - Debug namespaces to enable (e.g., 'enclaved:\*')
+- `DEBUG_NAMESPACE` - Debug namespaces to enable (e.g., 'secured:\*')
 
 ## Quick Start
 
@@ -92,10 +92,10 @@ openssl genrsa -out server.key 2048
 openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=localhost"
 ```
 
-### 2. Start Enclaved Express
+### 2. Start Secured Express
 
 ```bash
-APP_MODE=enclaved \
+APP_MODE=secured \
 KMS_URL=https://your-kms-service \
 TLS_KEY_PATH=./server.key \
 TLS_CERT_PATH=./server.crt \
@@ -113,8 +113,8 @@ APP_MODE=master-express \
 BITGO_ENV=test \
 TLS_KEY_PATH=./server.key \
 TLS_CERT_PATH=./server.crt \
-ENCLAVED_EXPRESS_URL=https://localhost:3080 \
-ENCLAVED_EXPRESS_CERT=./server.crt \
+SECURED_EXPRESS_URL=https://localhost:3080 \
+SECURED_EXPRESS_CERT=./server.crt \
 MTLS_REQUEST_CERT=false \
 ALLOW_SELF_SIGNED=true \
 yarn start
@@ -122,10 +122,10 @@ yarn start
 
 ### 4. Test the Connection
 
-Test that Master Express can communicate with Enclaved Express:
+Test that Master Express can communicate with Secured Express:
 
 ```bash
-curl -k -X POST https://localhost:3081/ping/enclavedExpress
+curl -k -X POST https://localhost:3081/ping/securedExpress
 ```
 
 ## Production Configuration
@@ -141,13 +141,13 @@ curl -k -X POST https://localhost:3081/ping/enclavedExpress
 
 ### Production Setup Example
 
-#### Enclaved Express (Production)
+#### Secured Express (Production)
 
 ```bash
-APP_MODE=enclaved \
+APP_MODE=secured \
 KMS_URL=https://production-kms.example.com \
-TLS_KEY_PATH=/secure/path/enclaved.key \
-TLS_CERT_PATH=/secure/path/enclaved.crt \
+TLS_KEY_PATH=/secure/path/secured.key \
+TLS_CERT_PATH=/secure/path/secured.crt \
 MTLS_REQUEST_CERT=true \
 ALLOW_SELF_SIGNED=false \
 MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456... \
@@ -161,8 +161,8 @@ APP_MODE=master-express \
 BITGO_ENV=prod \
 TLS_KEY_PATH=/secure/path/master.key \
 TLS_CERT_PATH=/secure/path/master.crt \
-ENCLAVED_EXPRESS_URL=https://enclaved.internal.example.com:3080 \
-ENCLAVED_EXPRESS_CERT=/secure/path/enclaved.crt \
+SECURED_EXPRESS_URL=https://secured.internal.example.com:3080 \
+SECURED_EXPRESS_CERT=/secure/path/secured.crt \
 MTLS_REQUEST_CERT=true \
 ALLOW_SELF_SIGNED=false \
 yarn start
@@ -176,22 +176,22 @@ First, build the container image:
 # For Master Express (default port 3081)
 yarn container:build
 
-# For Enclaved Express (port 3080)
+# For Secured Express (port 3080)
 yarn container:build --build-arg PORT=3080
 ```
 
-For local development, you'll need to run both the Enclaved Express and Master Express containers:
+For local development, you'll need to run both the Secured Express and Master Express containers:
 
 ```bash
-# Start Enclaved Express container
+# Start Secured Express container
 podman run -d \
   -p 3080:3080 \
   -v $(pwd)/certs:/app/certs:Z \
-  -e APP_MODE=enclaved \
+  -e APP_MODE=secured \
   -e BIND=0.0.0.0 \
   -e TLS_MODE=mtls \
-  -e TLS_KEY_PATH=/app/certs/enclaved-express-key.pem \
-  -e TLS_CERT_PATH=/app/certs/enclaved-express-cert.pem \
+  -e TLS_KEY_PATH=/app/certs/secured-express-key.pem \
+  -e TLS_CERT_PATH=/app/certs/secured-express-cert.pem \
   -e KMS_URL=host.containers.internal:3000 \
   -e NODE_ENV=development \
   -e ALLOW_SELF_SIGNED=true \
@@ -212,8 +212,8 @@ podman run -d \
   -e TLS_MODE=mtls \
   -e TLS_KEY_PATH=/app/certs/test-ssl-key.pem \
   -e TLS_CERT_PATH=/app/certs/test-ssl-cert.pem \
-  -e ENCLAVED_EXPRESS_URL=https://host.containers.internal:3080 \
-  -e ENCLAVED_EXPRESS_CERT=/app/certs/enclaved-express-cert.pem \
+  -e SECURED_EXPRESS_URL=https://host.containers.internal:3080 \
+  -e SECURED_EXPRESS_CERT=/app/certs/secured-express-cert.pem \
   -e ALLOW_SELF_SIGNED=true \
   bitgo-onprem-express
 
@@ -221,24 +221,25 @@ podman run -d \
 podman logs -f <container_id>
 
 # Test the endpoints (note: using https and mTLS)
-# For Enclaved Express
-curl -k --cert certs/test-ssl-cert.pem --key certs/enclaved-express-key.pem -X POST https://localhost:3080/ping
+# For Secured Express
+curl -k --cert certs/test-ssl-cert.pem --key certs/secured-express-key.pem -X POST https://localhost:3080/ping
 
 # For Master Express
 curl -k --cert certs/test-ssl-cert.pem --key certs/test-ssl-key.pem -X POST https://localhost:3081/ping
 
 # Test the connection
-curl -k -X POST https://localhost:3081/ping/enclavedExpress
+curl -k -X POST https://localhost:3081/ping/securedExpress
 ```
 
 Notes:
+
 - `host.containers.internal` is a special DNS name that resolves to the host machine from inside containers
 - The `:Z` option in volume mounts is specific to SELinux-enabled systems and ensures proper volume labeling
 - The logs directory will be created with appropriate permissions if it doesn't exist
 
 ## API Endpoints
 
-### Enclaved Express (Port 3080)
+### Secured Express (Port 3080)
 
 - `POST /ping` - Health check
 - `GET /version` - Version information
@@ -248,8 +249,8 @@ Notes:
 
 - `POST /ping` - Health check
 - `GET /version` - Version information
-- `POST /ping/enclavedExpress` - Test connection to Enclaved Express
-- `POST /api/:coin/wallet/generate` - Generate wallet (with Enclaved Express integration)
+- `POST /ping/securedExpress` - Test connection to Secured Express
+- `POST /api/:coin/wallet/generate` - Generate wallet (with Secured Express integration)
 
 ## Troubleshooting
 
@@ -282,7 +283,7 @@ openssl x509 -in certificate.crt -text -noout
 
 ```bash
 # Check that required variables are set
-env | grep -E "(APP_MODE|KMS_URL|ENCLAVED_EXPRESS|TLS_)"
+env | grep -E "(APP_MODE|KMS_URL|SECURED_EXPRESS|TLS_)"
 ```
 
 ### Debug Mode
@@ -290,7 +291,7 @@ env | grep -E "(APP_MODE|KMS_URL|ENCLAVED_EXPRESS|TLS_)"
 Enable debug logging for detailed troubleshooting:
 
 ```bash
-DEBUG_NAMESPACE=enclaved:*,master:* yarn start
+DEBUG_NAMESPACE=secured:*,master:* yarn start
 ```
 
 ## License

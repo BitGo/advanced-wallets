@@ -1,13 +1,13 @@
 import { apiSpec } from '@api-ts/io-ts-http';
 import { HealthCheckApiSpec } from './healthCheck';
 import { MasterApiSpec } from './masterApiSpec';
-import { EnclavedExpressApiSpec } from './enclavedExpressHealth';
+import { securedExpressApiSpec } from './securedExpressHealth';
 
 // Combine all API specifications
 const combinedSpec = apiSpec({
   ...HealthCheckApiSpec,
   ...MasterApiSpec,
-  ...EnclavedExpressApiSpec,
+  ...securedExpressApiSpec,
 });
 
 export const FullApiSpec = combinedSpec;

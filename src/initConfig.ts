@@ -1,7 +1,7 @@
 import fs from 'fs';
 import {
   Config,
-  EnclavedConfig,
+  SecuredExpressConfig,
   MasterExpressConfig,
   TlsMode,
   AppMode,
@@ -10,7 +10,7 @@ import {
 import logger from './logger';
 import { validateTlsCertificates, validateMasterExpressConfig } from './shared/appUtils';
 
-export { Config, EnclavedConfig, MasterExpressConfig, TlsMode, AppMode, EnvironmentName };
+export { Config, SecuredExpressConfig, MasterExpressConfig, TlsMode, AppMode, EnvironmentName };
 
 function isNilOrNaN(val: unknown): val is null | undefined | number {
   return val == null || (typeof val === 'number' && isNaN(val));
@@ -26,26 +26,26 @@ function determineAppMode(): AppMode {
   const mode = readEnvVar('APP_MODE') || readEnvVar('BITGO_APP_MODE');
   if (!mode) {
     throw new Error(
-      'APP_MODE environment variable is required. Set APP_MODE to either "enclaved" or "master-express"',
+      'APP_MODE environment variable is required. Set APP_MODE to either "secured" or "master-express"',
     );
+  }
+  if (mode === 'secured') {
+    return AppMode.SECURED;
   }
   if (mode === 'master-express') {
     return AppMode.MASTER_EXPRESS;
   }
-  if (mode === 'enclaved') {
-    return AppMode.ENCLAVED;
-  }
-  throw new Error(`Invalid APP_MODE: ${mode}. Must be either "enclaved" or "master-express"`);
+  throw new Error(`Invalid APP_MODE: ${mode}. Must be either "secured" or "master-express"`);
 }
 
 export { determineAppMode };
 
 // ============================================================================
-// ENCLAVED MODE CONFIGURATION
+// SECURED MODE CONFIGURATION
 // ============================================================================
 
-const defaultEnclavedConfig: EnclavedConfig = {
-  appMode: AppMode.ENCLAVED,
+const defaultSecuredExpressConfig: SecuredExpressConfig = {
+  appMode: AppMode.SECURED,
   port: 3080,
   bind: 'localhost',
   timeout: 305 * 1000,
@@ -75,7 +75,7 @@ function determineTlsMode(): TlsMode {
   throw new Error(`Invalid TLS_MODE: ${tlsMode}. Must be either "disabled" or "mtls"`);
 }
 
-function enclavedEnvConfig(): Partial<EnclavedConfig> {
+function securedEnvConfig(): Partial<SecuredExpressConfig> {
   const kmsUrl = readEnvVar('KMS_URL');
 
   if (!kmsUrl) {
@@ -84,8 +84,8 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
   }
 
   return {
-    appMode: AppMode.ENCLAVED,
-    port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
+    appMode: AppMode.SECURED,
+    port: Number(readEnvVar('SECURED_EXPRESS_PORT')),
     bind: readEnvVar('BIND'),
     ipc: readEnvVar('IPC'),
     debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
@@ -107,17 +107,19 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
   };
 }
 
-function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedConfig {
-  function get<T extends keyof EnclavedConfig>(k: T): EnclavedConfig[T] {
+function mergeSecuredExpressConfigs(
+  ...configs: Partial<SecuredExpressConfig>[]
+): SecuredExpressConfig {
+  function get<T extends keyof SecuredExpressConfig>(k: T): SecuredExpressConfig[T] {
     return configs.reduce(
-      (entry: EnclavedConfig[T], config) =>
-        !isNilOrNaN(config[k]) ? (config[k] as EnclavedConfig[T]) : entry,
-      defaultEnclavedConfig[k],
+      (entry: SecuredExpressConfig[T], config) =>
+        !isNilOrNaN(config[k]) ? (config[k] as SecuredExpressConfig[T]) : entry,
+      defaultSecuredExpressConfig[k],
     );
   }
 
   return {
-    appMode: AppMode.ENCLAVED,
+    appMode: AppMode.SECURED,
     port: get('port'),
     bind: get('bind'),
     ipc: get('ipc'),
@@ -138,9 +140,9 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
   };
 }
 
-function configureEnclavedMode(): EnclavedConfig {
-  const env = enclavedEnvConfig();
-  let config = mergeEnclavedConfigs(env);
+function configureSecuredMode(): SecuredExpressConfig {
+  const env = securedEnvConfig();
+  let config = mergeSecuredExpressConfigs(env);
 
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
@@ -189,8 +191,8 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   env: 'test',
   disableEnvCheck: true,
   authVersion: 2,
-  enclavedExpressUrl: '', // Will be overridden by environment variable
-  enclavedExpressCert: '', // Will be overridden by environment variable
+  securedExpressUrl: '', // Will be overridden by environment variable
+  securedExpressCert: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
   mtlsRequestCert: true,
   allowSelfSigned: false,
@@ -206,16 +208,16 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
 }
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
-  const enclavedExpressUrl = readEnvVar('ENCLAVED_EXPRESS_URL');
-  const enclavedExpressCert = readEnvVar('ENCLAVED_EXPRESS_CERT');
+  const securedExpressUrl = readEnvVar('SECURED_EXPRESS_URL');
+  const securedExpressCert = readEnvVar('SECURED_EXPRESS_CERT');
   const tlsMode = determineTlsMode();
 
-  if (!enclavedExpressUrl) {
-    throw new Error('ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty');
+  if (!securedExpressUrl) {
+    throw new Error('SECURED_EXPRESS_URL environment variable is required and cannot be empty');
   }
 
-  if (tlsMode === TlsMode.MTLS && !enclavedExpressCert) {
-    throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required for MTLS mode.');
+  if (tlsMode === TlsMode.MTLS && !securedExpressCert) {
+    throw new Error('SECURED_EXPRESS_CERT environment variable is required for MTLS mode.');
   }
 
   // Debug mTLS environment variables
@@ -239,8 +241,8 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     customRootUri: readEnvVar('BITGO_CUSTOM_ROOT_URI'),
     disableEnvCheck: readEnvVar('BITGO_DISABLE_ENV_CHECK') === 'true',
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
-    enclavedExpressUrl,
-    enclavedExpressCert,
+    securedExpressUrl,
+    securedExpressCert,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
@@ -279,8 +281,8 @@ function mergeMasterExpressConfigs(
     customRootUri: get('customRootUri'),
     disableEnvCheck: get('disableEnvCheck'),
     authVersion: get('authVersion'),
-    enclavedExpressUrl: get('enclavedExpressUrl'),
-    enclavedExpressCert: get('enclavedExpressCert'),
+    securedExpressUrl: get('securedExpressUrl'),
+    securedExpressCert: get('securedExpressCert'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
@@ -302,12 +304,8 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   if (config.customRootUri) {
     updates.customRootUri = determineProtocol(config.customRootUri, config.tlsMode, true);
   }
-  if (config.enclavedExpressUrl) {
-    updates.enclavedExpressUrl = determineProtocol(
-      config.enclavedExpressUrl,
-      config.tlsMode,
-      false,
-    );
+  if (config.securedExpressUrl) {
+    updates.securedExpressUrl = determineProtocol(config.securedExpressUrl, config.tlsMode, false);
   }
   config = { ...config, ...updates };
 
@@ -342,26 +340,26 @@ export function configureMasterExpressMode(): MasterExpressConfig {
     validateTlsCertificates(config);
   }
 
-  // Handle cert loading for Enclaved Express (always required for Master Express)
-  if (config.enclavedExpressCert) {
+  // Handle cert loading for Secured Express (always required for Master Express)
+  if (config.securedExpressCert) {
     try {
-      if (fs.existsSync(config.enclavedExpressCert)) {
+      if (fs.existsSync(config.securedExpressCert)) {
         config = {
           ...config,
-          enclavedExpressCert: fs.readFileSync(config.enclavedExpressCert, 'utf-8'),
+          securedExpressCert: fs.readFileSync(config.securedExpressCert, 'utf-8'),
         };
         logger.info(
-          `Successfully loaded Enclaved Express certificate from file: ${config.enclavedExpressCert.substring(
+          `Successfully loaded Secured Express certificate from file: ${config.securedExpressCert.substring(
             0,
             50,
           )}...`,
         );
       } else {
-        throw new Error(`Certificate file not found: ${config.enclavedExpressCert}`);
+        throw new Error(`Certificate file not found: ${config.securedExpressCert}`);
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read enclaved express cert: ${err.message}`);
+      throw new Error(`Failed to read secured express cert: ${err.message}`);
     }
   }
 
@@ -378,8 +376,8 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 export function initConfig(): Config {
   const appMode = determineAppMode();
 
-  if (appMode === AppMode.ENCLAVED) {
-    return configureEnclavedMode();
+  if (appMode === AppMode.SECURED) {
+    return configureSecuredMode();
   } else if (appMode === AppMode.MASTER_EXPRESS) {
     return configureMasterExpressMode();
   } else {
@@ -388,8 +386,8 @@ export function initConfig(): Config {
 }
 
 // Type guards for working with the union type
-export function isEnclavedConfig(config: Config): config is EnclavedConfig {
-  return config.appMode === AppMode.ENCLAVED;
+export function isSecuredExpressConfig(config: Config): config is SecuredExpressConfig {
+  return config.appMode === AppMode.SECURED;
 }
 
 export function isMasterExpressConfig(config: Config): config is MasterExpressConfig {

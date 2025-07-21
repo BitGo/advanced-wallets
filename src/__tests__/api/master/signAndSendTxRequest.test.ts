@@ -24,7 +24,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
   let bitgo: BitGoBase;
   let baseCoin: IBaseCoin;
   let wallet: Wallet;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const securedExpressUrl = 'http://secured.invalid';
   const bitgoApiUrl = Environments.test.uri;
   const accessToken = 'test-token';
   const walletId = 'test-wallet-id';
@@ -48,8 +48,8 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      securedExpressUrl: securedExpressUrl,
+      securedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       mtlsRequestCert: false,
       allowSelfSigned: true,
