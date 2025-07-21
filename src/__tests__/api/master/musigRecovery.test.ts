@@ -1,7 +1,7 @@
 import 'should';
 import sinon from 'sinon';
 
-import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
+import { AbstractEthLikeNewCoins } from '@bitgo-beta/abstract-eth';
 import nock from 'nock';
 import * as request from 'supertest';
 import { app as expressApp } from '../../../masterExpressApp';

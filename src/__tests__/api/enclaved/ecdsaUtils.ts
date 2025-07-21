@@ -1,7 +1,7 @@
 // ECDSA MPCv2 specific imports
-import { DklsTypes, DklsComms, DklsDsg } from '@bitgo/sdk-lib-mpc';
+import { DklsTypes, DklsComms, DklsDsg } from '@bitgo-beta/sdk-lib-mpc';
 
-import { TxRequest, SignatureShareRecord, SignatureShareType } from '@bitgo/sdk-core';
+import { TxRequest, SignatureShareRecord, SignatureShareType } from '@bitgo-beta/sdk-core';
 
 // MPCv2 type definitions
 import {

@@ -1,4 +1,4 @@
-import { type Recipient, type SignedTransaction } from 'bitgo';
+import { type Recipient, type SignedTransaction } from '@bitgo-beta/sdk-core';
 
 export type SignedEthLikeRecoveryTx = SignedTransaction & {
   signatures?: string;

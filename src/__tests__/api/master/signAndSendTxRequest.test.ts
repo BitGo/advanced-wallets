@@ -5,19 +5,20 @@ import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import {
+  BitGoBase,
   Environments,
-  Wallet,
-  TxRequest,
+  IBaseCoin,
+  PendingApproval,
   PendingApprovals,
   State,
+  TxRequest,
   Type,
-  PendingApproval,
-  BitGoBase,
-  IBaseCoin,
-} from '@bitgo/sdk-core';
-import { BitGo } from 'bitgo';
+  Wallet,
+} from '@bitgo-beta/sdk-core';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as mpcv2 from '../../../api/master/handlers/ecdsaMPCv2';
 import * as eddsa from '../../../api/master/handlers/eddsa';
+import coinFactory from '../../../shared/coinFactory';
 
 describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', () => {
   let agent: request.SuperAgentTest;
@@ -35,7 +36,11 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    bitgo = new BitGo({ env: 'local' });
+    bitgo = new BitGoAPI({ env: 'local' });
+    // Mock coinFactory to return bitgo.coin result for testing
+    sinon
+      .stub(coinFactory, 'getCoin')
+      .callsFake((coinName, sdk) => Promise.resolve(sdk.coin(coinName)));
     baseCoin = bitgo.coin(coin);
     wallet = new Wallet(bitgo, baseCoin, walletId);
 

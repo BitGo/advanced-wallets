@@ -1,5 +1,5 @@
 import debug from 'debug';
-import * as bitgoSdk from '@bitgo/sdk-core';
+import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import { assert } from 'console';
 import { KmsClient } from '../../kms/kmsClient';
 import {

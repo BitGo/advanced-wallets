@@ -2,7 +2,7 @@ import 'should';
 import nock from 'nock';
 import sinon from 'sinon';
 import supertest from 'supertest';
-import { Utils } from '@bitgo/sdk-coin-sol';
+import { Utils } from '@bitgo-beta/sdk-coin-sol';
 import * as kmsUtils from '../../../api/enclaved/utils';
 import { app as expressApp } from '../../../enclavedApp';
 import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';

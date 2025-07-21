@@ -5,8 +5,8 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { ApiResponseError, Environments, Wallet } from '@bitgo/sdk-core';
-import { Coin } from 'bitgo';
+import { ApiResponseError, Environments, Wallet } from '@bitgo-beta/sdk-core';
+import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import assert from 'assert';
 
 describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
@@ -80,7 +80,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         walletId,
       });
 
-      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+      const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
       // Mock enclaved express sign request
       const signNock = nock(enclavedExpressUrl)
@@ -169,7 +169,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         walletId,
       });
 
-      const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+      const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
       // Mock enclaved express sign request
       const signNock = nock(enclavedExpressUrl)
@@ -631,7 +631,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     });
 
     // Mock verifyTransaction to return false
-    const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(false);
+    const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(false);
 
     const response = await agent
       .post(`/api/${coin}/wallet/${walletId}/sendMany`)
@@ -688,7 +688,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
     // Mock verifyTransaction to throw an error
     const verifyStub = sinon
-      .stub(Coin.Btc.prototype, 'verifyTransaction')
+      .stub(Tbtc.prototype, 'verifyTransaction')
       .rejects(new Error('Invalid transaction'));
 
     const response = await agent
@@ -744,7 +744,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       walletId,
     });
 
-    const verifyStub = sinon.stub(Coin.Btc.prototype, 'verifyTransaction').resolves(true);
+    const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
     // Mock enclaved express sign request to return an error
     const signNock = nock(enclavedExpressUrl)

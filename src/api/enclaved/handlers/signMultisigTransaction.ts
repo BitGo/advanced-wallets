@@ -1,7 +1,8 @@
 import { KmsClient } from '../../../kms/kmsClient';
-import { TransactionPrebuild } from 'bitgo';
+import { TransactionPrebuild } from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import coinFactory from '../../../shared/coinFactory';
 
 export async function signMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.sign', 'post'>,
@@ -34,7 +35,7 @@ export async function signMultisigTransaction(
   }
 
   // Sign the transaction using BitGo SDK
-  const coin = bitgo.coin(req.params.coin);
+  const coin = await coinFactory.getCoin(req.params.coin, bitgo);
   try {
     const signedTx = await coin.signTransaction({ txPrebuild, prv });
     // The signed transaction format depends on the coin type

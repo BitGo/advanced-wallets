@@ -1,5 +1,7 @@
-import { BitGo, CustomSigningFunction, RequestTracer } from 'bitgo';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import { CustomSigningFunction, RequestTracer } from '@bitgo-beta/sdk-core';
 import { EnclavedExpressClient } from './clients/enclavedExpressClient';
+import coinFactory from '../../shared/coinFactory';
 
 /**
  * Fetch wallet and signing keychain, with validation for source and pubkey.
@@ -14,14 +16,14 @@ export async function getWalletAndSigningKeychain({
   reqId,
   KeyIndices,
 }: {
-  bitgo: BitGo;
+  bitgo: BitGoAPI;
   coin: string;
   walletId: string;
   params: { source: 'user' | 'backup'; pubkey?: string; commonKeychain?: string };
   reqId: RequestTracer;
   KeyIndices: { USER: number; BACKUP: number; BITGO: number };
 }) {
-  const baseCoin = bitgo.coin(coin);
+  const baseCoin = await coinFactory.getCoin(coin, bitgo);
 
   const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
 

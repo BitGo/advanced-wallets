@@ -15,7 +15,7 @@ import {
 import express from 'express';
 import * as t from 'io-ts';
 import { MasterExpressConfig } from '../../../shared/types';
-import * as utxolib from '@bitgo/utxo-lib';
+import * as utxolib from '@bitgo-beta/utxo-lib';
 import { prepareBitGo, responseHandler } from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { handleGenerateWalletOnPrem } from '../handlers/generateWallet';

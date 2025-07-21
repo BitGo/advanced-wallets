@@ -1,7 +1,8 @@
-import { getTxRequest, KeyIndices, RequestTracer } from '@bitgo/sdk-core';
+import { getTxRequest, KeyIndices, RequestTracer } from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
 import { signAndSendTxRequests } from './transactionRequests';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import coinFactory from '../../../shared/coinFactory';
 
 export async function handleSignAndSendTxRequest(
   req: MasterApiSpecRouteRequest<'v1.wallet.txrequest.signAndSend', 'post'>,
@@ -9,7 +10,7 @@ export async function handleSignAndSendTxRequest(
   const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
+  const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
 
   const params = req.decoded;
 

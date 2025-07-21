@@ -4,8 +4,8 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { Environments, Wallet } from '@bitgo/sdk-core';
-import { Hteth } from '@bitgo/sdk-coin-eth';
+import { Environments, Wallet } from '@bitgo-beta/sdk-core';
+import { Hteth } from '@bitgo-beta/sdk-coin-eth';
 import * as transactionRequests from '../../../api/master/handlers/transactionRequests';
 import * as handlerUtils from '../../../api/master/handlerUtils';
 

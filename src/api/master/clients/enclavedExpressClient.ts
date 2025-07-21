@@ -17,10 +17,10 @@ import {
   SignShare,
   TransactionPrebuild,
   TxRequest,
-} from '@bitgo/sdk-core';
-import { RecoveryTransaction } from '@bitgo/sdk-coin-trx';
+} from '@bitgo-beta/sdk-core';
+import { RecoveryTransaction } from '@bitgo-beta/sdk-coin-trx';
 import { ApiClient, buildApiClient, superagentRequestFactory } from '@api-ts/superagent-wrapper';
-import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo/sdk-coin-eth';
+import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo-beta/sdk-coin-eth';
 
 import { MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { EnclavedApiSpec } from '../../../enclavedBitgoExpress/routers';
@@ -34,8 +34,8 @@ import {
   MpcV2InitializeResponseType,
   MpcV2RoundResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import { FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
-import { RecoveryTxRequest } from 'bitgo';
+import { FormattedOfflineVaultTxInfo } from '@bitgo-beta/abstract-utxo';
+import { RecoveryTxRequest } from '@bitgo-beta/sdk-core';
 
 const debugLogger = debug('bitgo:express:enclavedExpressClient');
 

@@ -3,17 +3,17 @@ import nock from 'nock';
 import * as sinon from 'sinon';
 import {
   BitGoBase,
-  Wallet,
-  TxRequest,
-  IRequestTracer,
-  Environments,
-  RequestTracer,
   EddsaUtils,
+  Environments,
+  IRequestTracer,
   openpgpUtils,
-} from '@bitgo/sdk-core';
-import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
-import { handleEddsaSigning } from '../../../../src/api/master/handlers/eddsa';
-import { BitGo } from 'bitgo';
+  RequestTracer,
+  TxRequest,
+  Wallet,
+} from '@bitgo-beta/sdk-core';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
+import { handleEddsaSigning } from '../../../api/master/handlers/eddsa';
 import { readKey } from 'openpgp';
 
 // TODO: Re-enable once using EDDSA Custom signing fns
@@ -33,7 +33,7 @@ describe('Eddsa Signing Handler', () => {
   });
 
   beforeEach(() => {
-    bitgo = new BitGo({ env: 'local' });
+    bitgo = new BitGoAPI({ env: 'local' });
     wallet = {
       id: () => 'test-wallet-id',
     } as Wallet;

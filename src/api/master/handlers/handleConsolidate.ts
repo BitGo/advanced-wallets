@@ -3,7 +3,7 @@ import {
   KeyIndices,
   BuildConsolidationTransactionOptions,
   getTxRequest,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';

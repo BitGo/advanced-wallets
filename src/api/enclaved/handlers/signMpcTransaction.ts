@@ -2,17 +2,19 @@ import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/route
 import { decryptDataKey, generateDataKey, retrieveKmsPrvKey } from '../utils';
 import logger from '../../../logger';
 import {
-  TxRequest,
-  EddsaUtils,
-  EcdsaMPCv2Utils,
+  BaseCoin,
   CommitmentShareRecord,
+  EcdsaMPCv2Utils,
+  EddsaUtils,
   EncryptedSignerShareRecord,
-  SignShare,
-  SignatureShareRecord,
   GShare,
-} from '@bitgo/sdk-core';
+  SignatureShareRecord,
+  SignShare,
+  TxRequest,
+} from '@bitgo-beta/sdk-core';
 import { EnclavedConfig } from '../../../shared/types';
-import { BitGoBase, BaseCoin } from 'bitgo';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import coinFactory from '../../../shared/coinFactory';
 
 // Define share types for different MPC algorithms
 enum ShareType {
@@ -88,7 +90,7 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
   const { source, pub, coin, encryptedDataKey, shareType } = req.decoded;
 
   const bitgo = req.bitgo;
-  const coinInstance = bitgo.coin(coin);
+  const coinInstance = await coinFactory.getCoin(coin, bitgo);
   const options =
     coinInstance.getMPCAlgorithm() === 'ecdsa'
       ? {
@@ -143,7 +145,7 @@ export async function signMpcTransaction(req: EnclavedApiSpecRouteRequest<'v1.mp
 }
 
 async function handleEddsaSigning(
-  bitgo: BitGoBase,
+  bitgo: BitGoAPI,
   cfg: EnclavedConfig,
   params: EddsaSigningParams,
 ): Promise<{
@@ -232,7 +234,7 @@ async function handleEddsaSigning(
 }
 
 async function handleEcdsaMpcV2Signing(
-  bitgo: BitGoBase,
+  bitgo: BitGoAPI,
   cfg: EnclavedConfig,
   params: EcdsaSigningParams,
 ): Promise<any> {

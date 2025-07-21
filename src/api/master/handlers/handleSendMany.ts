@@ -7,13 +7,14 @@ import {
   SendManyOptions,
   PrebuildTransactionResult,
   Keychain,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { createEddsaCustomSigningFunctions } from './eddsa';
 import { BadRequestError, NotFoundError } from '../../../shared/errors';
+import coinFactory from '../../../shared/coinFactory';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -31,12 +32,12 @@ interface Recipient {
 /**
  * Creates TSS send parameters for ECDSA MPCv2 signing with custom functions
  */
-function createMPCSendParamsWithCustomSigningFns(
+async function createMPCSendParamsWithCustomSigningFns(
   req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>,
   enclavedExpressClient: EnclavedExpressClient,
   signingKeychain: Keychain,
-): SendManyOptions {
-  const coin = req.bitgo.coin(req.params.coin);
+): Promise<SendManyOptions> {
+  const coin = await coinFactory.getCoin(req.params.coin, req.bitgo);
   const source = signingKeychain.source as 'user' | 'backup';
   const commonKeychain = signingKeychain.commonKeychain;
   const mpcAlgorithm = coin.getMPCAlgorithm();
@@ -74,7 +75,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   const enclavedExpressClient = req.enclavedExpressClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
+  const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
 
   const params = req.decoded;
   params.recipients = params.recipients as Recipient[];
@@ -118,7 +119,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       if (signingKeychain.source === 'backup') {
         throw new BadRequestError('Backup MPC signing not supported for sendMany');
       }
-      const mpcSendParams = createMPCSendParamsWithCustomSigningFns(
+      const mpcSendParams = await createMPCSendParamsWithCustomSigningFns(
         req,
         enclavedExpressClient,
         signingKeychain,

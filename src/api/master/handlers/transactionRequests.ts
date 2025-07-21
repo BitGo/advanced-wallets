@@ -5,7 +5,7 @@ import {
   RequestTracer,
   TxRequest,
   Wallet,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { handleEddsaSigning } from './eddsa';
 import { signAndSendEcdsaMPCv2FromTxRequest } from './ecdsaMPCv2';

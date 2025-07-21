@@ -1,4 +1,4 @@
-import { BitGoAPI } from '@bitgo/sdk-api';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import {
   BaseCoin,
   BaseTransactionBuilder,
@@ -6,10 +6,10 @@ import {
   EDDSAMethods,
   EDDSAMethodTypes,
   PublicKey,
-} from '@bitgo/sdk-core';
-import { Ed25519Bip32HdTree } from '@bitgo/sdk-lib-mpc';
-import { CoinFamily, coins } from '@bitgo/statics';
-import { type KeyPair as SolKeyPair } from '@bitgo/sdk-coin-sol';
+} from '@bitgo-beta/sdk-core';
+import { Ed25519Bip32HdTree } from '@bitgo-beta/sdk-lib-mpc';
+import { CoinFamily, coins } from '@bitgo-beta/statics';
+import { type KeyPair as SolKeyPair } from '@bitgo-beta/sdk-coin-sol';
 import { retrieveKmsPrvKey } from '../utils';
 import { EnclavedConfig } from '../../../shared/types';
 import logger from '../../../logger';
@@ -23,19 +23,19 @@ async function setupTransactionBuilder(
   let modules;
   switch (coinFamily) {
     case CoinFamily.NEAR:
-      modules = await import('@bitgo/sdk-coin-near');
+      modules = await import('@bitgo-beta/sdk-coin-near');
       break;
     case CoinFamily.DOT:
-      modules = await import('@bitgo/sdk-coin-dot');
+      modules = await import('@bitgo-beta/sdk-coin-dot');
       break;
     case CoinFamily.SUI:
-      modules = await import('@bitgo/sdk-coin-sui');
+      modules = await import('@bitgo-beta/sdk-coin-sui');
       break;
     case CoinFamily.ADA:
-      modules = await import('@bitgo/sdk-coin-ada');
+      modules = await import('@bitgo-beta/sdk-coin-ada');
       break;
     case CoinFamily.SOL:
-      modules = await import('@bitgo/sdk-coin-sol');
+      modules = await import('@bitgo-beta/sdk-coin-sol');
       break;
     default:
       throw new Error(`Unsupported coin family: ${coinFamily}`);

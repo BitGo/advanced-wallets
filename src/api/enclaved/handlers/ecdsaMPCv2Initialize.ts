@@ -4,9 +4,9 @@ import {
   MpcV2RoundState,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { KmsClient } from '../../../kms/kmsClient';
-import * as bitgoSdk from '@bitgo/sdk-core';
+import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
-import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
+import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 
 export async function ecdsaMPCv2Initialize(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>,

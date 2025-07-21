@@ -7,9 +7,9 @@ import 'should';
 import * as request from 'supertest';
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
-import * as bitgoSdk from '@bitgo/sdk-core';
+import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import { DklsComms, DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
-import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
+import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 
 describe('postMpcV2Key', () => {
   let cfg: EnclavedConfig;
