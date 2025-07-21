@@ -6,9 +6,6 @@ export async function postIndependentKey(
   req: EnclavedApiSpecRouteRequest<'v1.key.independent', 'post'>,
 ) {
   const { source, seed }: { source: string; seed?: string } = req.decoded;
-  if (!source) {
-    throw new Error('Source is required for key generation');
-  }
 
   // setup clients
   const bitgo: BitGo = req.bitgo;

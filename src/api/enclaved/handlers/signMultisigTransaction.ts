@@ -12,12 +12,6 @@ export async function signMultisigTransaction(
     txPrebuild,
   }: { source: string; pub: string; txPrebuild: TransactionPrebuild } = req.body;
 
-  if (!source || !pub) {
-    throw new Error('Source and public key are required for signing');
-  } else if (!txPrebuild) {
-    throw new Error('Transaction prebuild is required for signing');
-  }
-
   const bitgo = req.bitgo;
   const kms = new KmsClient(req.config);
 
