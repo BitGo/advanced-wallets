@@ -50,9 +50,9 @@ const defaultEnclavedConfig: EnclavedConfig = {
   bind: 'localhost',
   timeout: 305 * 1000,
   logFile: '',
+  debugNamespace: [],
   kmsUrl: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
-  mtlsRequestCert: true,
   allowSelfSigned: false,
 };
 
@@ -101,7 +101,6 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     tlsKey: readEnvVar('TLS_KEY'),
     tlsCert: readEnvVar('TLS_CERT'),
     tlsMode: determineTlsMode(),
-    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT')?.toLowerCase() !== 'false',
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
   };
@@ -132,7 +131,6 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     tlsKey: get('tlsKey'),
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
-    mtlsRequestCert: get('mtlsRequestCert'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     allowSelfSigned: get('allowSelfSigned'),
   };
@@ -186,13 +184,13 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   bind: 'localhost',
   timeout: 305 * 1000,
   logFile: '',
+  debugNamespace: [],
   env: 'test',
   disableEnvCheck: true,
   authVersion: 2,
   enclavedExpressUrl: '', // Will be overridden by environment variable
   enclavedExpressCert: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
-  mtlsRequestCert: true,
   allowSelfSigned: false,
 };
 
@@ -219,9 +217,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   }
 
   // Debug mTLS environment variables
-  const mtlsRequestCertRaw = readEnvVar('MTLS_REQUEST_CERT');
   const allowSelfSignedRaw = readEnvVar('ALLOW_SELF_SIGNED');
-  const mtlsRequestCert = mtlsRequestCertRaw?.toLowerCase() !== 'false';
   const allowSelfSigned = allowSelfSignedRaw === 'true';
 
   return {
@@ -248,7 +244,6 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     tlsKey: readEnvVar('TLS_KEY'),
     tlsCert: readEnvVar('TLS_CERT'),
     tlsMode,
-    mtlsRequestCert,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned,
   };
@@ -287,7 +282,6 @@ function mergeMasterExpressConfigs(
     tlsKey: get('tlsKey'),
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
-    mtlsRequestCert: get('mtlsRequestCert'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     allowSelfSigned: get('allowSelfSigned'),
   };

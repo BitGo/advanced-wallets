@@ -10,55 +10,52 @@ export enum AppMode {
 
 export type EnvironmentName = 'prod' | 'test' | 'staging' | 'dev' | 'local';
 
-// Common base configuration shared by both modes
-interface BaseConfig {
-  appMode: AppMode;
+// Enclaved mode specific configuration
+export interface EnclavedConfig {
+  appMode: AppMode.ENCLAVED;
   port: number;
   bind: string;
   ipc?: string;
-  debugNamespace?: string[];
-  logFile?: string;
+  debugNamespace: string[];
+  logFile: string;
   timeout: number;
   keepAliveTimeout?: number;
   headersTimeout?: number;
-}
-
-// Enclaved mode specific configuration
-export interface EnclavedConfig extends BaseConfig {
-  appMode: AppMode.ENCLAVED;
-  // KMS settings
   kmsUrl: string;
-  // mTLS settings
   keyPath?: string;
   crtPath?: string;
   tlsKey?: string;
   tlsCert?: string;
   tlsMode: TlsMode;
-  mtlsRequestCert: boolean;
   mtlsAllowedClientFingerprints?: string[];
-  allowSelfSigned?: boolean;
+  allowSelfSigned: boolean;
 }
 
 // Master Express mode specific configuration
-export interface MasterExpressConfig extends BaseConfig {
+export interface MasterExpressConfig {
   appMode: AppMode.MASTER_EXPRESS;
-  // BitGo API settings
+  port: number;
+  bind: string;
+  ipc?: string;
+  debugNamespace: string[];
+  logFile: string;
+  timeout: number;
+  keepAliveTimeout?: number;
+  headersTimeout?: number;
   env: EnvironmentName;
   customRootUri?: string;
-  disableEnvCheck?: boolean;
-  authVersion?: number;
+  disableEnvCheck: boolean;
+  authVersion: number;
   enclavedExpressUrl: string;
   enclavedExpressCert: string;
   customBitcoinNetwork?: string;
-  // mTLS settings
   keyPath?: string;
   crtPath?: string;
   tlsKey?: string;
   tlsCert?: string;
   tlsMode: TlsMode;
-  mtlsRequestCert: boolean;
   mtlsAllowedClientFingerprints?: string[];
-  allowSelfSigned?: boolean;
+  allowSelfSigned: boolean;
 }
 
 // Union type for the configuration
