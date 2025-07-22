@@ -2,7 +2,6 @@ import express from 'express';
 import { MasterExpressConfig } from '../shared/types';
 import { createHealthCheckRouter } from '../api/master/routers/healthCheck';
 import { createEnclavedExpressRouter } from '../api/master/routers/enclavedExpressHealth';
-import logger from '../logger';
 import { createMasterApiRouter } from '../api/master/routers/masterApiSpec';
 
 /**
@@ -17,6 +16,4 @@ export function setupRoutes(app: express.Application, cfg: MasterExpressConfig):
   app.use(createEnclavedExpressRouter(cfg));
 
   app.use(createMasterApiRouter(cfg));
-
-  logger.debug('Master express routes configured');
 }

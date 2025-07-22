@@ -11,6 +11,7 @@ import {
   ForbiddenError,
   ConflictError,
 } from './errors';
+import logger from '../logger';
 
 // Extend Express Response to include sendEncoded
 interface EncodedResponse extends ExpressResponse {
@@ -41,6 +42,8 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       const result = await fn(req as BitGoRequest<T>, res, next);
       return res.sendEncoded(result.type, result.payload);
     } catch (error) {
+      logger.error('Error in responseHandler:', error);
+
       // If it's already a Response object (e.g. from Response.error)
       if (error && typeof error === 'object' && 'type' in error && 'payload' in error) {
         const apiError = error as ApiResponse;

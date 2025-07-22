@@ -90,8 +90,6 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;
-  logger.info(`Key ID index: ${keyIdIndex}`);
-  logger.info(`Key IDs: ${JSON.stringify(wallet.keyIds(), null, 2)}`);
 
   // Get the signing keychains
   const signingKeychain = await baseCoin.keychains().get({
@@ -140,8 +138,6 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       reqId,
     });
 
-    logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
-
     // verify transaction prebuild
     try {
       const verified = await baseCoin.verifyTransaction({
@@ -162,8 +158,6 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       logger.error('transaction prebuild:', JSON.stringify(txPrebuilt, null, 2));
       throw new BadRequestError(`Transaction prebuild failed local validation: ${err.message}`);
     }
-
-    logger.debug('Tx prebuild: %s', JSON.stringify(txPrebuilt, null, 2));
 
     return signAndSendMultisig(
       wallet,

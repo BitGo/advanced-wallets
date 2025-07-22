@@ -87,8 +87,6 @@ export function createEnclavedExpressRouter(
 
   router.get('v1.enclaved.version', [
     responseHandler(async () => {
-      logger.debug('Getting version from enclaved express');
-
       try {
         // Use the client's getVersion method instead of direct HTTP request
         const versionResponse = await enclavedClient.getVersion();

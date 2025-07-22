@@ -101,8 +101,6 @@ export async function handleRecoveryConsolidationsOnPrem(
     bitgoKey: bitgoPub,
   });
 
-  console.log(`Recovery consolidations result: ${JSON.stringify(result)}`);
-
   if (result.transactions) {
     txs = result.transactions;
   } else if (result.txRequests) {
@@ -111,7 +109,7 @@ export async function handleRecoveryConsolidationsOnPrem(
     throw new Error('recoverConsolidations did not return expected transactions');
   }
 
-  logger.debug(`Found ${txs.length} unsigned consolidation transactions`);
+  logger.info(`Found ${txs.length} unsigned consolidation transactions`);
 
   const signedTxs = [];
   try {

@@ -42,8 +42,7 @@ export async function ecdsaMPCv2Initialize(
       encryptedData,
     };
   } catch (error) {
-    logger.debug('Failed to initialize mpc key generation', error);
-    console.error('Encryption error details:', error);
+    logger.error('Failed to initialize mpc key generation', error);
     throw error;
   }
 }
