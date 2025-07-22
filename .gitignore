@@ -7,3 +7,4 @@ tsconfig.tsbuildinfo
 out/
 .vscode/
 *.iml
+.nyc_output/
