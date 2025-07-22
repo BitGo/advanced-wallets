@@ -83,4 +83,13 @@ describe('postIndependentKey', () => {
 
     kmsNock.done();
   });
+
+  it('should fail to post an independent key if source is not provided', async () => {
+    const response = await agent
+      .post(`/api/${coin}/key/independent`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    response.status.should.equal(400);
+  });
 });
