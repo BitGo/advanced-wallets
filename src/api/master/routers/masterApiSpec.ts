@@ -142,7 +142,6 @@ export const SendManyRequest = {
   sequenceId: t.union([t.undefined, t.string]),
   lastLedgerSequence: t.union([t.undefined, t.number]),
   ledgerSequenceDelta: t.union([t.undefined, t.number]),
-  gasPrice: t.union([t.undefined, t.number]),
   noSplitChange: t.union([t.undefined, t.boolean]),
   unspents: t.union([t.undefined, t.array(t.string)]),
   comment: t.union([t.undefined, t.string]),
