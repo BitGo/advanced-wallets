@@ -11,6 +11,7 @@ import {
   ForbiddenError,
   ConflictError,
 } from './errors';
+import logger from '../logger';
 
 // Extend Express Response to include sendEncoded
 interface EncodedResponse extends ExpressResponse {
@@ -53,6 +54,7 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
           error: 'BitGoApiResponseError',
           details: apiError.result,
         };
+        logger.error(JSON.stringify(apiError.result, null, 2));
         return res.status(apiError.status).json(body);
       }
 
@@ -74,6 +76,13 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
           statusCode = 409;
         }
 
+        const errorBody = {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        };
+        // Log the error details for debugging
+        logger.error(JSON.stringify(errorBody, null, 2));
         return res.sendEncoded(statusCode, {
           error: error.message,
           name: error.name,
@@ -91,11 +100,13 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       }
 
       // Default error response
-      return res.sendEncoded(500, {
+      const errorBody = {
         error: 'Internal Server Error',
         name: error instanceof Error ? error.name : 'Error',
         details: error instanceof Error ? error.message : String(error),
-      });
+      };
+      logger.error(JSON.stringify(errorBody, null, 2));
+      return res.sendEncoded(500, errorBody);
     }
   };
 }

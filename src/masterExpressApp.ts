@@ -88,13 +88,11 @@ export function createBaseUri(config: MasterExpressConfig): string {
  * Create and configure the express application for master express mode
  */
 export function app(cfg: MasterExpressConfig): express.Application {
-  logger.debug('master express app is initializing');
+  logger.info('Master express app is initializing');
 
   const app = express();
 
   setupLogging(app, cfg);
-  logger.debug('logging setup');
-
   setupCommonMiddleware(app, cfg);
 
   // Add mTLS middleware before routes if in mTLS mode

@@ -89,12 +89,11 @@ export function createBaseUri(config: EnclavedConfig): string {
  * Create and configure the express application
  */
 export function app(cfg: EnclavedConfig): express.Application {
-  logger.debug('app is initializing');
+  logger.info('App is initializing');
 
   const app = express();
 
   setupLogging(app, cfg);
-  logger.debug('logging setup');
 
   // Add custom morgan token for mTLS client certificate
   morgan.token('remote-user', function (req: express.Request) {

@@ -154,7 +154,7 @@ function configureEnclavedMode(): EnclavedConfig {
         throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
       }
     } else if (config.tlsKey) {
-      logger.debug('Using TLS private key from environment variable');
+      logger.info('Using TLS private key from environment variable');
     }
 
     if (!config.tlsCert && config.crtPath) {
@@ -166,7 +166,7 @@ function configureEnclavedMode(): EnclavedConfig {
         throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
       }
     } else if (config.tlsCert) {
-      logger.debug('Using TLS certificate from environment variable');
+      logger.info('Using TLS certificate from environment variable');
     }
 
     // Validate that certificates are properly loaded when TLS is enabled
@@ -323,7 +323,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
         throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
       }
     } else if (config.tlsKey) {
-      logger.debug('Using TLS private key from environment variable');
+      logger.info('Using TLS private key from environment variable');
     }
 
     if (!config.tlsCert && config.crtPath) {
@@ -335,7 +335,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
         throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
       }
     } else if (config.tlsCert) {
-      logger.debug('Using TLS certificate from environment variable');
+      logger.info('Using TLS certificate from environment variable');
     }
 
     // Validate that certificates are properly loaded when TLS is enabled

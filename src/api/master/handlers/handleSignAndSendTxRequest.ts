@@ -41,15 +41,10 @@ export async function handleSignAndSendTxRequest(
     );
   }
 
-  logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
-  logger.debug(`Params: ${JSON.stringify(params, null, 2)}`);
-
   const txRequest = await getTxRequest(bitgo, wallet.id(), req.params.txRequestId, reqId);
   if (!txRequest) {
     throw new Error(`TxRequest ${req.params.txRequestId} not found`);
   }
-
-  logger.debug(`TxRequest: ${JSON.stringify(txRequest, null, 2)}`);
 
   return signAndSendTxRequests(
     bitgo,
