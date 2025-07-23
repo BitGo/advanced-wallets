@@ -1,8 +1,9 @@
-import { BaseCoin, BitGoAPI, MethodNotImplementedError, MPCRecoveryOptions } from 'bitgo';
-
-import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
-import { type SolRecoveryOptions } from '@bitgo/sdk-coin-sol';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import { BaseCoin, MethodNotImplementedError, MPCRecoveryOptions } from '@bitgo-beta/sdk-core';
+import { AbstractEthLikeNewCoins } from '@bitgo-beta/abstract-eth';
+import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
+import { type SolRecoveryOptions } from '@bitgo-beta/sdk-coin-sol';
+import coinFactory from '../../../shared/coinFactory';
 
 import assert from 'assert';
 
@@ -29,7 +30,7 @@ import {
 import { recoverEddsaWallets } from './recoverEddsaWallets';
 import { EnvironmentName } from '../../../shared/types';
 import logger from '../../../logger';
-import { CoinFamily } from '@bitgo/statics';
+import { CoinFamily } from '@bitgo-beta/statics';
 import { ValidationError } from '../../../shared/errors';
 
 interface RecoveryParams {
@@ -190,7 +191,7 @@ export async function handleRecoveryWalletOnPrem(
   const enclavedExpressClient = req.enclavedExpressClient;
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
 
-  const sdkCoin = bitgo.coin(coin);
+  const sdkCoin = await coinFactory.getCoin(coin, bitgo);
   // Validate that we have correct parameters for recovery
   validateRecoveryParams(sdkCoin, coinSpecificParams);
 

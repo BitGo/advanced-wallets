@@ -30,7 +30,8 @@ import { ecdsaMPCv2Round } from '../../api/enclaved/handlers/ecdsaMPCv2Round';
 import { ecdsaMPCv2Finalize } from '../../api/enclaved/handlers/ecdsaMPCv2Finalize';
 import { signEddsaRecoveryTransaction } from '../../api/enclaved/handlers/signEddsaRecoveryTransaction';
 import { isEddsaCoin } from '../../shared/coinUtils';
-import { MethodNotImplementedError } from '@bitgo/sdk-core';
+import { MethodNotImplementedError } from '@bitgo-beta/sdk-core';
+import coinFactory from '../../shared/coinFactory';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -525,7 +526,7 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
   router.post('v1.mpc.recovery', [
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpc.recovery', 'post'>;
-      const coin = typedReq.bitgo.coin(typedReq.decoded.coin);
+      const coin = await coinFactory.getCoin(typedReq.decoded.coin, typedReq.bitgo);
       if (isEddsaCoin(coin)) {
         const result = await signEddsaRecoveryTransaction({
           sdk: typedReq.bitgo,

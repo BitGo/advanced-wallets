@@ -13,7 +13,7 @@ import {
   CustomCommitmentGeneratingFunction,
   CustomRShareGeneratingFunction,
   CustomGShareGeneratingFunction,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 import { EnclavedExpressClient, SignMpcCommitmentResponse } from '../clients/enclavedExpressClient';
 
 /**

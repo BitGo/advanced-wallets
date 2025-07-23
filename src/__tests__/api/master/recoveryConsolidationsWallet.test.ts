@@ -4,9 +4,9 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { Trx } from '@bitgo/sdk-coin-trx';
-import { Sol } from '@bitgo/sdk-coin-sol';
-import { Sui } from '@bitgo/sdk-coin-sui';
+import { Trx } from '@bitgo-beta/sdk-coin-trx';
+import { Sol } from '@bitgo-beta/sdk-coin-sol';
+import { Sui } from '@bitgo-beta/sdk-coin-sui';
 import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
 
 describe('POST /api/:coin/wallet/recoveryconsolidations', () => {

@@ -1,5 +1,5 @@
 import debug from 'debug';
-import * as bitgoSdk from '@bitgo/sdk-core';
+import * as bitgoSdk from '@bitgo-beta/sdk-core';
 
 import {
   EnclavedApiSpecRouteRequest,
@@ -7,6 +7,7 @@ import {
 } from '../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { KmsClient } from '../../kms/kmsClient';
 import { gpgDecrypt, gpgEncrypt } from './utils';
+import coinFactory from '../../shared/coinFactory';
 
 const debugLogger = debug('bitgo:enclavedBitGoExpress:mpcFinalize');
 
@@ -27,7 +28,8 @@ export async function eddsaFinalize(
   // setup clients
   const kms = new KmsClient(req.config);
   const MPC = await bitgoSdk.Eddsa.initialize();
-  const eddsaUtils = new bitgoSdk.EddsaUtils(req.bitgo, req.bitgo.coin(coin));
+  const coinInstance = await coinFactory.getCoin(coin, req.bitgo);
+  const eddsaUtils = new bitgoSdk.EddsaUtils(req.bitgo, coinInstance);
 
   // indexes
   const sourceIndex = source === 'user' ? 1 : 2;

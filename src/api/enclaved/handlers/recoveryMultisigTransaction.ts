@@ -1,6 +1,10 @@
-import { SignFinalOptions } from '@bitgo/abstract-eth';
-import { AbstractUtxoCoin } from '@bitgo/abstract-utxo';
-import { HalfSignedUtxoTransaction, MethodNotImplementedError, TransactionRecipient } from 'bitgo';
+import { SignFinalOptions } from '@bitgo-beta/abstract-eth';
+import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
+import {
+  HalfSignedUtxoTransaction,
+  MethodNotImplementedError,
+  TransactionRecipient,
+} from '@bitgo-beta/sdk-core';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { EnvironmentName } from '../../../initConfig';
 import logger from '../../../logger';
@@ -16,6 +20,7 @@ import {
 } from '../../../shared/recoveryUtils';
 import { SignedEthLikeRecoveryTx } from '../../../types/transaction';
 import { retrieveKmsPrvKey } from '../utils';
+import coinFactory from '../../../shared/coinFactory';
 
 export async function recoveryMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
@@ -34,7 +39,7 @@ export async function recoveryMultisigTransaction(
   }
 
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(coin);
+  const baseCoin = await coinFactory.getCoin(coin, bitgo);
 
   // The signed transaction format depends on the coin type so we do this check as a guard
   // If you check the type of coin before and after the "if", you may see "BaseCoin" vs "AbstractEthLikeCoin"

@@ -1,8 +1,14 @@
-import { AbstractEthLikeNewCoins } from '@bitgo/abstract-eth';
-import { BackupKeyRecoveryTransansaction, FormattedOfflineVaultTxInfo } from '@bitgo/abstract-utxo';
-import { CoinFamily } from '@bitgo/statics';
-import { BaseCoin } from 'bitgo';
-import { AbstractUtxoCoin, Eos, Stx, Xtz } from 'bitgo/dist/types/src/v2/coins';
+import { AbstractEthLikeNewCoins } from '@bitgo-beta/abstract-eth';
+import {
+  BackupKeyRecoveryTransansaction,
+  FormattedOfflineVaultTxInfo,
+} from '@bitgo-beta/abstract-utxo';
+import { CoinFamily } from '@bitgo-beta/statics';
+import { BaseCoin } from '@bitgo-beta/sdk-core';
+import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
+import { type Xtz, type Txtz } from '@bitgo-beta/sdk-coin-xtz';
+import { type Eos, type Teos } from '@bitgo-beta/sdk-coin-eos';
+import { type Stx, type Tstx } from '@bitgo-beta/sdk-coin-stx';
 
 export function isEthLikeCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
   const isEthPure = isFamily(coin, CoinFamily.ETH);
@@ -40,15 +46,15 @@ export function isUtxoCoin(coin: BaseCoin): coin is AbstractUtxoCoin {
   return isBtc || isBtcLike;
 }
 
-export function isEosCoin(coin: BaseCoin): coin is Eos {
+export function isEosCoin(coin: BaseCoin): coin is Eos | Teos {
   return isFamily(coin, CoinFamily.EOS);
 }
 
-export function isStxCoin(coin: BaseCoin): coin is Stx {
+export function isStxCoin(coin: BaseCoin): coin is Stx | Tstx {
   return isFamily(coin, CoinFamily.STX);
 }
 
-export function isXtzCoin(coin: BaseCoin): coin is Xtz {
+export function isXtzCoin(coin: BaseCoin): coin is Xtz | Txtz {
   return isFamily(coin, CoinFamily.XTZ);
 }
 

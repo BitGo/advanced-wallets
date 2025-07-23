@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { Environments, Wallet } from '@bitgo/sdk-core';
+import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 
 describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
   let agent: request.SuperAgentTest;

@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "@bitgo/master-bitgo-express",
-    "version": "1.0.0",
+    "version": "0.0.0-semantically-released",
     "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS"
   },
   "paths": {
@@ -519,6 +519,26 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },

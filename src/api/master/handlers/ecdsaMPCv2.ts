@@ -7,7 +7,7 @@ import {
   SupplementGenerateWalletOptions,
   Wallet,
   TxRequest,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 import {
   EnclavedExpressClient,
   SignMpcV2Round1Response,

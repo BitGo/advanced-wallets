@@ -1,11 +1,24 @@
 import 'should';
+import assert from 'assert';
 
 import * as request from 'supertest';
 import nock from 'nock';
+import sinon from 'sinon';
 import { app as expressApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { Environments } from '@bitgo/sdk-core';
-import assert from 'assert';
+import { Environments } from '@bitgo-beta/sdk-core';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import * as middleware from '../../../shared/middleware';
+import { BitGoRequest } from '../../../types/request';
+
+/**
+ * This test suite demonstrates how to mock the BitGo SDK's fetchConstants method
+ * instead of using nock to intercept HTTP requests to the constants endpoint.
+ *
+ * By using sinon to stub the fetchConstants method directly, we make the tests more
+ * focused on behavior rather than implementation details, and less brittle to changes
+ * in how the constants are fetched.
+ */
 
 describe('POST /api/:coin/wallet/generate', () => {
   let agent: request.SuperAgentTest;
@@ -16,9 +29,14 @@ describe('POST /api/:coin/wallet/generate', () => {
   const ecdsaCoin = 'hteth';
   const accessToken = 'test-token';
 
+  let bitgo: BitGoAPI;
+
   before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
+
+    // Create a BitGo instance that we'll use for stubbing
+    bitgo = new BitGoAPI({ env: 'test' });
 
     const config: MasterExpressConfig = {
       appMode: AppMode.MASTER_EXPRESS,
@@ -36,12 +54,20 @@ describe('POST /api/:coin/wallet/generate', () => {
       allowSelfSigned: true,
     };
 
+    // Setup middleware stubs before creating app
+    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
+      (req as BitGoRequest<MasterExpressConfig>).bitgo = bitgo;
+      (req as BitGoRequest<MasterExpressConfig>).config = config;
+      next();
+    });
+
     const app = expressApp(config);
     agent = request.agent(app);
   });
 
   afterEach(() => {
     nock.cleanAll();
+    sinon.restore();
   });
 
   it('should generate a wallet by calling the enclaved express service', async () => {
@@ -140,18 +166,12 @@ describe('POST /api/:coin/wallet/generate', () => {
   });
 
   it('should generate a TSS MPC v1 wallet by calling the enclaved express service', async () => {
-    const constantsNock = nock(bitgoApiUrl)
-      .get('/api/v1/client/constants')
-      // Not sure why the nock is not matching any headers, but this works
-      .matchHeader('accept-encoding', 'gzip, deflate')
-      .matchHeader('bitgo-sdk-version', '48.3.0')
-      .reply(200, {
-        constants: {
-          mpc: {
-            bitgoPublicKey: 'test-bitgo-public-key',
-          },
-        },
-      });
+    // Mock fetchConstants instead of using nock for URL mocking
+    sinon.stub(bitgo, 'fetchConstants').resolves({
+      mpc: {
+        bitgoPublicKey: 'test-bitgo-public-key',
+      },
+    });
 
     const userInitNock = nock(enclavedExpressUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
@@ -477,7 +497,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         multisigType: 'tss',
       });
 
-    constantsNock.done();
+    // No need to check constantsNock since we're using sinon stub
     userInitNock.done();
     backupInitNock.done();
     bitgoAddKeychainNock.done();
@@ -490,17 +510,12 @@ describe('POST /api/:coin/wallet/generate', () => {
   });
 
   it('should generate a TSS MPC v2 wallet by calling the enclaved express service', async () => {
-    const constantsNock = nock(bitgoApiUrl)
-      .get('/api/v1/client/constants')
-      .matchHeader('accept-encoding', 'gzip, deflate')
-      .matchHeader('bitgo-sdk-version', '48.3.0')
-      .reply(200, {
-        constants: {
-          mpc: {
-            bitgoMPCv2PublicKey: 'test-bitgo-public-key',
-          },
-        },
-      });
+    // Mock fetchConstants instead of using nock for URL mocking
+    sinon.stub(bitgo, 'fetchConstants').resolves({
+      mpc: {
+        bitgoMPCv2PublicKey: 'test-bitgo-public-key',
+      },
+    });
     // init round
     const userInitNock = nock(enclavedExpressUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/initialize`, {
@@ -1093,7 +1108,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       subType: 'onPrem',
     });
 
-    constantsNock.done();
+    // No need to check constantsNock since we're using sinon stub
     userInitNock.done();
     backupInitNock.done();
     userRound1Nock.done();

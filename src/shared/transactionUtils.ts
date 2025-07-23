@@ -7,7 +7,7 @@ import {
   type MPCTxs,
   type MPCUnsignedTx,
   type RecoveryTxRequest,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 
 /**
  * Type guard to check if the object is an MPCTxs format
@@ -57,7 +57,7 @@ export function isRecoveryTxRequest(tx: any): tx is RecoveryTxRequest {
 }
 
 export function isMPCUnsignedTx(tx: any): tx is MPCUnsignedTx {
-  return 'unsignedTx' in tx && isMPCTx(tx);
+  return 'unsignedTx' in tx && isMPCTx(tx.unsignedTx);
 }
 /**
  * Extracts transaction request information from various transaction formats

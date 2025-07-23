@@ -6,12 +6,11 @@ import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
 import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
-import { BitGo } from 'bitgo';
+import { BitGoAPI as BitGo } from '@bitgo-beta/sdk-api';
 import * as kmsUtils from '../../../api/enclaved/utils';
 
 describe('UTXO recovery', () => {
   let agent: request.SuperAgentTest;
-  let mockBitgo: BitGo;
   let mockRetrieveKmsPrvKey: sinon.SinonStub;
   const coin = 'tbtc';
   const config: EnclavedConfig = {
@@ -36,17 +35,9 @@ describe('UTXO recovery', () => {
       accessToken: 'test_token',
     });
 
-    // Create mock BitGo instance
-    mockBitgo = {
-      _coinFactory: {},
-      _useAms: false,
-      initCoinFactory: sinon.stub(),
-      coin: bitgo.coin.bind(bitgo), // Use the real coin method from initialized BitGo
-    } as unknown as BitGo;
-
     // Setup middleware stubs before creating app
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
-      (req as BitGoRequest<EnclavedConfig>).bitgo = mockBitgo;
+      (req as BitGoRequest<EnclavedConfig>).bitgo = bitgo;
       (req as BitGoRequest<EnclavedConfig>).config = config;
       next();
     });

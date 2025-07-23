@@ -2,25 +2,24 @@ import 'should';
 import nock from 'nock';
 import * as sinon from 'sinon';
 import {
-  BitGoBase,
-  Wallet,
-  TxRequest,
-  IRequestTracer,
-  Environments,
-  RequestTracer,
   EcdsaMPCv2Utils,
+  Environments,
+  IRequestTracer,
   openpgpUtils,
+  RequestTracer,
   SignatureShareRecord,
   SignatureShareType,
   TransactionState,
-} from '@bitgo/sdk-core';
-import { EnclavedExpressClient } from '../../../../src/api/master/clients/enclavedExpressClient';
+  TxRequest,
+  Wallet,
+} from '@bitgo-beta/sdk-core';
+import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
 import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../api/master/handlers/ecdsaMPCv2';
-import { BitGo } from 'bitgo';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { readKey } from 'openpgp';
 
 describe('Ecdsa Signing Handler', () => {
-  let bitgo: BitGoBase;
+  let bitgo: BitGoAPI;
   let wallet: Wallet;
   let enclavedExpressClient: EnclavedExpressClient;
   let reqId: IRequestTracer;
@@ -35,7 +34,7 @@ describe('Ecdsa Signing Handler', () => {
   });
 
   beforeEach(() => {
-    bitgo = new BitGo({ env: 'local' });
+    bitgo = new BitGoAPI({ env: 'local' });
     wallet = {
       id: () => 'test-wallet-id',
       baseCoin: {

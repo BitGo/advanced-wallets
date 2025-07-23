@@ -1,6 +1,7 @@
-import { BitGo } from 'bitgo';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { KmsClient } from '../../../kms/kmsClient';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
+import coinFactory from '../../../shared/coinFactory';
 
 export async function postIndependentKey(
   req: EnclavedApiSpecRouteRequest<'v1.key.independent', 'post'>,
@@ -8,11 +9,11 @@ export async function postIndependentKey(
   const { source, seed }: { source: string; seed?: string } = req.decoded;
 
   // setup clients
-  const bitgo: BitGo = req.bitgo;
+  const bitgo: BitGoAPI = req.bitgo;
   const kms = new KmsClient(req.config);
 
   // create public and private key pairs on BitGo SDK
-  const coin = bitgo.coin(req.params.coin);
+  const coin = await coinFactory.getCoin(req.params.coin, bitgo);
   const { pub, prv } = coin.keychains().create();
 
   if (!pub) {

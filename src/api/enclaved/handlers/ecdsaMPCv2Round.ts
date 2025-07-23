@@ -4,7 +4,7 @@ import {
   MpcV2RoundResponseType,
   MpcV2RoundState,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import { MPCv2PartiesEnum } from '@bitgo/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
+import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 import { KmsClient } from '../../../kms/kmsClient';
 
 export async function ecdsaMPCv2Round(

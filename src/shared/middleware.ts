@@ -1,7 +1,7 @@
 import { Config, isMasterExpressConfig } from '../shared/types';
 import express from 'express';
 import { BitGoRequest } from '../types/request';
-import { BitGo } from 'bitgo';
+import { BitGoAPI as BitGo } from '@bitgo-beta/sdk-api';
 
 export * from './responseHandler';
 

@@ -8,11 +8,12 @@ import {
   SupplementGenerateWalletOptions,
   Wallet,
   WalletWithKeychains,
-} from '@bitgo/sdk-core';
+} from '@bitgo-beta/sdk-core';
 import _ from 'lodash';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { orchestrateEcdsaKeyGen } from './ecdsaMPCv2';
 import { orchestrateEddsaKeyGen } from './eddsa';
+import coinFactory from '../../../shared/coinFactory';
 
 /**
  * Request handler for generating a wallet on-premises.
@@ -36,7 +37,7 @@ async function handleGenerateOnPremOnChainWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.params.coin);
+  const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
 
   // The enclavedExpressClient is now available from the request
   const enclavedExpressClient = req.enclavedExpressClient;
@@ -139,7 +140,7 @@ async function handleGenerateOnPremMpcWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const bitgo = req.bitgo;
-  const baseCoin = bitgo.coin(req.decoded.coin);
+  const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
   const enclavedExpressClient = req.enclavedExpressClient;
 
   if (!baseCoin.supportsTss()) {

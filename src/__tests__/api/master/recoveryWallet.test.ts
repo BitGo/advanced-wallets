@@ -7,13 +7,13 @@ import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
 import * as masterMiddleware from '../../../api/master/middleware/middleware';
 import { BitGoRequest } from '../../../types/request';
-import { BitGo } from 'bitgo';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
-import { CoinFamily } from '@bitgo/statics';
+import { CoinFamily } from '@bitgo-beta/statics';
 
 describe('Recovery Tests', () => {
   let agent: request.SuperAgentTest;
-  let mockBitgo: BitGo;
+  let mockBitgo: BitGoAPI;
   let coinStub: sinon.SinonStub;
   const enclavedExpressUrl = 'http://enclaved.invalid';
   const accessToken = 'test-token';
@@ -66,7 +66,8 @@ describe('Recovery Tests', () => {
       addWallet: sinon.stub(),
       removeWallet: sinon.stub(),
       getAsUser: sinon.stub(),
-    } as unknown as BitGo;
+      register: sinon.stub(),
+    } as unknown as BitGoAPI;
 
     coinStub = mockBitgo.coin as sinon.SinonStub;
 
