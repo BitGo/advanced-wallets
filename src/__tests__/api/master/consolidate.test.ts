@@ -9,13 +9,35 @@ import { Hteth } from '@bitgo-beta/sdk-coin-eth';
 import * as transactionRequests from '../../../api/master/handlers/transactionRequests';
 import * as handlerUtils from '../../../api/master/handlerUtils';
 
-describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
+describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
   let agent: request.SuperAgentTest;
   const coin = 'hteth';
   const walletId = 'test-wallet-id';
   const accessToken = 'test-access-token';
   const bitgoApiUrl = Environments.test.uri;
   const enclavedExpressUrl = 'https://test-enclaved-express.com';
+
+  const mockWalletData = (multisigType: 'onchain' | 'tss') => ({
+    id: walletId,
+    type: 'cold',
+    subType: 'onPrem',
+    keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+    coin: coin,
+    label: 'Test Wallet',
+    multisigType,
+  });
+
+  const mockUserKeychain = {
+    id: 'user-key-id',
+    pub: 'xpub661MyMwAqRbcFkPHucMnrGNzDwb6teAX1RbKQmqtEF8kK3Z7LZ59qafCjB9eCWzSgHCZkdXgp',
+    type: 'independent',
+  };
+
+  const mockBackupKeychain = {
+    id: 'backup-key-id',
+    pub: 'xpub661MyMwAqRbcGaZrYqfYmaTRzQxM9PKEZ7GRb6DKfghkzgjk2dKT4qBXfz6WzpT4N5fXJhFW',
+    type: 'independent',
+  };
 
   before(() => {
     nock.disableNetConnect();
@@ -46,40 +68,107 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     sinon.restore();
   });
 
-  // Helper functions to reduce duplication
-  const mockWalletGet = (multisigType: 'onchain' | 'tss') => {
-    return nock(bitgoApiUrl)
+  it('should succeed in consolidating multisig wallet addresses', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        id: walletId,
-        type: 'cold',
-        subType: 'onPrem',
-        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
-        multisigType,
-      });
-  };
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
 
-  const mockKeychainGet = (commonKeychain?: string) => {
-    return nock(bitgoApiUrl)
+    const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        id: 'user-key-id',
-        pub: 'xpub_user',
-        ...(commonKeychain && { commonKeychain }),
-      });
-  };
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
 
-  const mockTxRequest = (txRequestId: string) => {
-    return nock(bitgoApiUrl)
+    const mockBuilds = [
+      {
+        walletId,
+        txHex: 'unsigned-tx-hex-1',
+        txInfo: { unspents: [] },
+        feeInfo: { fee: 1000 },
+      },
+      {
+        walletId,
+        txHex: 'unsigned-tx-hex-2',
+        txInfo: { unspents: [] },
+        feeInfo: { fee: 1500 },
+      },
+    ];
+
+    const buildConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'buildAccountConsolidations')
+      .resolves(mockBuilds);
+
+    const sendAccountConsolidationStub = sinon
+      .stub(Wallet.prototype, 'sendAccountConsolidation')
+      .resolves({
+        txid: 'consolidation-tx-1',
+        status: 'signed',
+      });
+
+    const makeCustomSigningFunctionStub = sinon
+      .stub(handlerUtils, 'makeCustomSigningFunction')
+      .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
+
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(true);
+
+    const requestPayload = {
+      pubkey: mockUserKeychain.pub,
+      source: 'user' as const,
+      consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
+    };
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(200);
+    response.body.should.have.property('success');
+    response.body.success.should.have.length(2);
+    response.body.should.have.property('failure');
+    response.body.failure.should.have.length(0);
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(buildConsolidationsStub);
+    sinon.assert.calledTwice(sendAccountConsolidationStub);
+    sinon.assert.calledTwice(makeCustomSigningFunctionStub);
+    sinon.assert.calledOnce(allowsConsolidationsStub);
+  });
+
+  it('should succeed in consolidating MPC wallet using signAndSendTxRequests', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('tss'));
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, { ...mockUserKeychain, commonKeychain: 'user-common-key' });
+
+    const mockMpcBuild = {
+      walletId,
+      txHex: 'unsigned-mpc-tx-hex-1',
+      txInfo: { unspents: [] },
+      feeInfo: { fee: 2000 },
+      txRequestId: 'mpc-tx-request-1',
+    };
+
+    const buildConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'buildAccountConsolidations')
+      .resolves([mockMpcBuild]);
+
+    const getTxRequestNock = nock(bitgoApiUrl)
       .get(`/api/v2/wallet/${walletId}/txrequests`)
-      .query({ txRequestIds: txRequestId, latest: 'true' })
-      .matchHeader('any', () => true)
+      .query({ txRequestIds: 'mpc-tx-request-1', latest: 'true' })
+      .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, {
         txRequests: [
           {
-            txRequestId,
+            txRequestId: 'mpc-tx-request-1',
             version: 1,
             latest: true,
             state: 'pendingUserSignature',
@@ -96,334 +185,404 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
           },
         ],
       });
-  };
 
-  const createMultisigBuild = (index: number) => ({
-    walletId,
-    txHex: `unsigned-tx-hex-${index}`,
-    txInfo: { unspents: [] },
-    feeInfo: { fee: 1000 + index * 500 },
-  });
-
-  const createMpcBuild = (index: number) => ({
-    walletId,
-    txHex: `unsigned-mpc-tx-hex-${index}`,
-    txInfo: { unspents: [] },
-    feeInfo: { fee: 2000 + index * 500 },
-    txRequestId: `mpc-tx-request-${index}`,
-  });
-
-  describe('Multisig Wallets (onchain)', () => {
-    it('should consolidate multisig wallet addresses successfully', async () => {
-      // Mock wallet and keychain requests
-      const walletGetNock = mockWalletGet('onchain');
-      const keychainGetNock = mockKeychainGet();
-
-      // Mock buildAccountConsolidations
-      const buildConsolidationsStub = sinon
-        .stub(Wallet.prototype, 'buildAccountConsolidations')
-        .resolves([createMultisigBuild(1), createMultisigBuild(2)]);
-
-      // Mock sendAccountConsolidation for multisig wallets
-      const sendAccountConsolidationStub = sinon
-        .stub(Wallet.prototype, 'sendAccountConsolidation')
-        .resolves({
-          txid: 'consolidation-tx-1',
-          status: 'signed',
-        });
-
-      // Mock makeCustomSigningFunction
-      const makeCustomSigningFunctionStub = sinon
-        .stub(handlerUtils, 'makeCustomSigningFunction')
-        .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
-
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          pubkey: 'xpub_user',
-          consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
-        });
-
-      response.status.should.equal(200);
-      response.body.should.have.property('success');
-      response.body.success.should.have.length(2); // Two successful builds
-      response.body.should.have.property('failure');
-      response.body.failure.should.have.length(0);
-
-      walletGetNock.done();
-      keychainGetNock.done();
-      sinon.assert.calledOnce(buildConsolidationsStub);
-      sinon.assert.calledTwice(sendAccountConsolidationStub); // Called for each build
-      sinon.assert.calledTwice(makeCustomSigningFunctionStub);
-    });
-
-    it('should handle partial multisig consolidation failures', async () => {
-      // Mock wallet and keychain requests
-      const walletGetNock = mockWalletGet('onchain');
-      const keychainGetNock = mockKeychainGet();
-
-      // Mock buildAccountConsolidations with multiple builds
-      const buildConsolidationsStub = sinon
-        .stub(Wallet.prototype, 'buildAccountConsolidations')
-        .resolves([createMultisigBuild(1), createMultisigBuild(2)]);
-
-      // Mock sendAccountConsolidation - first succeeds, second fails
-      const sendAccountConsolidationStub = sinon.stub(Wallet.prototype, 'sendAccountConsolidation');
-      sendAccountConsolidationStub.onFirstCall().resolves({
-        txid: 'consolidation-tx-1',
-        status: 'signed',
-      });
-      sendAccountConsolidationStub.onSecondCall().rejects(new Error('Insufficient funds'));
-
-      // Mock makeCustomSigningFunction
-      const makeCustomSigningFunctionStub = sinon
-        .stub(handlerUtils, 'makeCustomSigningFunction')
-        .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
-
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          pubkey: 'xpub_user',
-          consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
-        });
-
-      response.status.should.equal(500);
-      response.body.should.have.property('error', 'Internal Server Error');
-      response.body.should.have
-        .property('details')
-        .which.match(/Consolidations failed: 1 and succeeded: 1/);
-
-      walletGetNock.done();
-      keychainGetNock.done();
-      sinon.assert.calledOnce(buildConsolidationsStub);
-      sinon.assert.calledTwice(sendAccountConsolidationStub);
-      sinon.assert.calledTwice(makeCustomSigningFunctionStub);
-    });
-
-    it('should throw error when all multisig consolidations fail', async () => {
-      // Mock wallet and keychain requests
-      const walletGetNock = mockWalletGet('onchain');
-      const keychainGetNock = mockKeychainGet();
-
-      // Mock buildAccountConsolidations with multiple builds
-      const buildConsolidationsStub = sinon
-        .stub(Wallet.prototype, 'buildAccountConsolidations')
-        .resolves([createMultisigBuild(1), createMultisigBuild(2)]);
-
-      // Mock sendAccountConsolidation to always fail
-      const sendAccountConsolidationStub = sinon
-        .stub(Wallet.prototype, 'sendAccountConsolidation')
-        .rejects(new Error('All consolidations failed'));
-
-      // Mock makeCustomSigningFunction
-      const makeCustomSigningFunctionStub = sinon
-        .stub(handlerUtils, 'makeCustomSigningFunction')
-        .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
-
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          pubkey: 'xpub_user',
-          consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
-        });
-
-      response.status.should.equal(500);
-      response.body.should.have.property('error');
-      response.body.should.have.property('details').which.match(/All consolidations failed/);
-
-      walletGetNock.done();
-      keychainGetNock.done();
-      sinon.assert.calledOnce(buildConsolidationsStub);
-      sinon.assert.calledTwice(sendAccountConsolidationStub);
-      sinon.assert.calledTwice(makeCustomSigningFunctionStub);
-    });
-  });
-
-  describe('MPC Wallets (tss)', () => {
-    it('should consolidate MPC wallet using signAndSendTxRequests', async () => {
-      // Mock wallet and keychain requests for MPC wallet
-      const walletGetNock = mockWalletGet('tss');
-      const keychainGetNock = mockKeychainGet('user-common-key');
-
-      // Mock buildAccountConsolidations for MPC
-      const buildConsolidationsStub = sinon
-        .stub(Wallet.prototype, 'buildAccountConsolidations')
-        .resolves([createMpcBuild(1)]);
-
-      // Mock the HTTP request for getTxRequest
-      const getTxRequestNock = mockTxRequest('mpc-tx-request-1');
-
-      // Mock signAndSendTxRequests for MPC wallets
-      const signAndSendTxRequestsStub = sinon
-        .stub(transactionRequests, 'signAndSendTxRequests')
-        .resolves({
-          txid: 'mpc-consolidation-tx-1',
-          status: 'signed',
-          state: 'signed',
-        });
-
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          commonKeychain: 'user-common-key',
-          consolidateAddresses: ['0x1234567890abcdef'],
-        });
-
-      response.status.should.equal(200);
-      response.body.should.have.property('success');
-      response.body.success.should.have.length(1);
-      response.body.success[0].should.have.property('txid', 'mpc-consolidation-tx-1');
-      response.body.should.have.property('failure');
-      response.body.failure.should.have.length(0);
-
-      walletGetNock.done();
-      keychainGetNock.done();
-      getTxRequestNock.done();
-      sinon.assert.calledOnce(buildConsolidationsStub);
-      sinon.assert.calledOnce(signAndSendTxRequestsStub);
-
-      // Verify MPC-specific parameters
-      sinon.assert.calledWith(buildConsolidationsStub, sinon.match.hasNested('apiVersion', 'full'));
-    });
-
-    it('should handle partial MPC consolidation failures', async () => {
-      // Mock wallet and keychain requests for MPC wallet
-      const walletGetNock = mockWalletGet('tss');
-      const keychainGetNock = mockKeychainGet('user-common-key');
-
-      // Mock buildAccountConsolidations with multiple builds for MPC
-      const buildConsolidationsStub = sinon
-        .stub(Wallet.prototype, 'buildAccountConsolidations')
-        .resolves([createMpcBuild(1), createMpcBuild(2)]);
-
-      // Mock the HTTP requests for getTxRequest (both tx requests)
-      const getTxRequestNock1 = mockTxRequest('mpc-tx-request-1');
-      const getTxRequestNock2 = mockTxRequest('mpc-tx-request-2');
-
-      // Mock signAndSendTxRequests - first succeeds, second fails
-      const signAndSendTxRequestsStub = sinon.stub(transactionRequests, 'signAndSendTxRequests');
-      signAndSendTxRequestsStub.onFirstCall().resolves({
+    const signAndSendTxRequestsStub = sinon
+      .stub(transactionRequests, 'signAndSendTxRequests')
+      .resolves({
         txid: 'mpc-consolidation-tx-1',
         status: 'signed',
         state: 'signed',
       });
-      signAndSendTxRequestsStub.onSecondCall().rejects(new Error('MPC signing failed'));
 
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          commonKeychain: 'user-common-key',
-          consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
-        });
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(true);
 
-      response.status.should.equal(500);
-      response.body.should.have.property('error', 'Internal Server Error');
-      response.body.should.have
-        .property('details')
-        .which.match(/Consolidations failed: 1 and succeeded: 1/);
+    const requestPayload = {
+      pubkey: mockUserKeychain.pub,
+      source: 'user' as const,
+      commonKeychain: 'user-common-key',
+      consolidateAddresses: ['0x1234567890abcdef'],
+    };
 
-      walletGetNock.done();
-      keychainGetNock.done();
-      getTxRequestNock1.done();
-      getTxRequestNock2.done();
-      sinon.assert.calledOnce(buildConsolidationsStub);
-      sinon.assert.calledTwice(signAndSendTxRequestsStub);
-    });
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
 
-    it('should throw error when all MPC consolidations fail', async () => {
-      // Mock wallet and keychain requests for MPC wallet
-      const walletGetNock = mockWalletGet('tss');
-      const keychainGetNock = mockKeychainGet('user-common-key');
+    response.status.should.equal(200);
+    response.body.should.have.property('success');
+    response.body.success.should.have.length(1);
+    response.body.success[0].should.have.property('txid', 'mpc-consolidation-tx-1');
+    response.body.should.have.property('failure');
+    response.body.failure.should.have.length(0);
 
-      // Mock buildAccountConsolidations with multiple builds for MPC
-      const buildConsolidationsStub = sinon
-        .stub(Wallet.prototype, 'buildAccountConsolidations')
-        .resolves([createMpcBuild(1), createMpcBuild(2)]);
-
-      // Mock the HTTP requests for getTxRequest (both tx requests)
-      const getTxRequestNock1 = mockTxRequest('mpc-tx-request-1');
-      const getTxRequestNock2 = mockTxRequest('mpc-tx-request-2');
-
-      // Mock signAndSendTxRequests to always fail for MPC
-      const signAndSendTxRequestsStub = sinon
-        .stub(transactionRequests, 'signAndSendTxRequests')
-        .rejects(new Error('All MPC consolidations failed'));
-
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          commonKeychain: 'user-common-key',
-          consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
-        });
-
-      response.status.should.equal(500);
-      response.body.should.have.property('error');
-      response.body.should.have.property('details').which.match(/All consolidations failed/);
-
-      walletGetNock.done();
-      keychainGetNock.done();
-      getTxRequestNock1.done();
-      getTxRequestNock2.done();
-      sinon.assert.calledOnce(buildConsolidationsStub);
-      sinon.assert.calledTwice(signAndSendTxRequestsStub);
-    });
+    walletGetNock.done();
+    keychainGetNock.done();
+    getTxRequestNock.done();
+    sinon.assert.calledOnce(buildConsolidationsStub);
+    sinon.assert.calledOnce(signAndSendTxRequestsStub);
+    sinon.assert.calledOnce(allowsConsolidationsStub);
   });
 
-  describe('Common Error Cases', () => {
-    it('should throw error when coin does not support account consolidations', async () => {
-      // Mock wallet and keychain requests
-      const walletGetNock = mockWalletGet('onchain');
-      const keychainGetNock = mockKeychainGet();
+  it('should succeed in consolidating with backup key', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
 
-      // Mock allowsAccountConsolidations to return false
-      const allowsConsolidationsStub = sinon
-        .stub(Hteth.prototype, 'allowsAccountConsolidations')
-        .returns(false);
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
 
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          pubkey: 'xpub_user',
-        });
+    const mockBuild = {
+      walletId,
+      txHex: 'unsigned-tx-hex-backup',
+      txInfo: { unspents: [] },
+      feeInfo: { fee: 1200 },
+    };
 
-      response.status.should.equal(500);
+    const buildConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'buildAccountConsolidations')
+      .resolves([mockBuild]);
 
-      walletGetNock.done();
-      keychainGetNock.done();
-      sinon.assert.calledOnce(allowsConsolidationsStub);
+    const sendAccountConsolidationStub = sinon
+      .stub(Wallet.prototype, 'sendAccountConsolidation')
+      .resolves({
+        txid: 'backup-consolidation-tx',
+        status: 'signed',
+      });
+
+    const makeCustomSigningFunctionStub = sinon
+      .stub(handlerUtils, 'makeCustomSigningFunction')
+      .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
+
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(true);
+
+    const requestPayload = {
+      pubkey: mockBackupKeychain.pub,
+      source: 'backup' as const,
+      consolidateAddresses: ['0x1234567890abcdef'],
+    };
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(200);
+    response.body.should.have.property('success');
+    response.body.success.should.have.length(1);
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(buildConsolidationsStub);
+    sinon.assert.calledOnce(sendAccountConsolidationStub);
+    sinon.assert.calledOnce(makeCustomSigningFunctionStub);
+    sinon.assert.calledOnce(allowsConsolidationsStub);
+  });
+
+  it('should fail when wallet is not found', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(404, { error: 'Wallet not found', name: 'WalletNotFoundError' });
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(404);
+    response.body.should.have.property('error');
+    walletGetNock.done();
+  });
+
+  it('should fail when signing keychain is not found', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(404, { error: 'Keychain not found', name: 'KeychainNotFoundError' });
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(404);
+    walletGetNock.done();
+    keychainGetNock.done();
+  });
+
+  it('should fail when provided pubkey does not match wallet keychain', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: 'xpub661MyMwAqRbcWRONG_PUBKEY_THAT_DOES_NOT_MATCH',
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error');
+    walletGetNock.done();
+    keychainGetNock.done();
+  });
+
+  it('should fail when coin does not support account consolidations', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(false);
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details', 'Invalid coin selected - account consolidations not supported');
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(allowsConsolidationsStub);
+  });
+
+  it('should fail when required pubkey parameter is missing', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details');
+  });
+
+  it('should fail when required source parameter is missing', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+    response.body.error.should.match(/Invalid value undefined supplied/);
+  });
+
+  it('should fail when source parameter has invalid value', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'invalid_source',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+    response.body.error.should.match(/Invalid value "invalid_source"/);
+  });
+
+  it('should fail when authorization header is missing', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details');
+  });
+
+  it('should fail when partial multisig consolidation failures occur', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const mockBuilds = [
+      { walletId, txHex: 'unsigned-tx-hex-1' },
+      { walletId, txHex: 'unsigned-tx-hex-2' },
+    ];
+
+    const buildConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'buildAccountConsolidations')
+      .resolves(mockBuilds);
+
+    const sendAccountConsolidationStub = sinon.stub(Wallet.prototype, 'sendAccountConsolidation');
+    sendAccountConsolidationStub.onFirstCall().resolves({
+      txid: 'consolidation-tx-1',
+      status: 'signed',
     });
+    sendAccountConsolidationStub.onSecondCall().rejects(new Error('Insufficient funds'));
 
-    it('should throw error when provided pubkey does not match wallet keychain', async () => {
-      // Mock wallet and keychain requests
-      const walletGetNock = mockWalletGet('onchain');
-      const keychainGetNock = mockKeychainGet();
+    const makeCustomSigningFunctionStub = sinon
+      .stub(handlerUtils, 'makeCustomSigningFunction')
+      .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
 
-      const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          source: 'user',
-          pubkey: 'wrong_pubkey',
-        });
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(true);
 
-      response.status.should.equal(500);
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
+      });
 
-      walletGetNock.done();
-      keychainGetNock.done();
-    });
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details').which.match(/Consolidations failed: 1 and succeeded: 1/);
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(buildConsolidationsStub);
+    sinon.assert.calledTwice(sendAccountConsolidationStub);
+    sinon.assert.calledTwice(makeCustomSigningFunctionStub);
+    sinon.assert.calledOnce(allowsConsolidationsStub);
+  });
+
+  it('should fail when all consolidations fail', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData('onchain'));
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const mockBuilds = [
+      { walletId, txHex: 'unsigned-tx-hex-1' },
+      { walletId, txHex: 'unsigned-tx-hex-2' },
+    ];
+
+    const buildConsolidationsStub = sinon
+      .stub(Wallet.prototype, 'buildAccountConsolidations')
+      .resolves(mockBuilds);
+
+    const sendAccountConsolidationStub = sinon
+      .stub(Wallet.prototype, 'sendAccountConsolidation')
+      .rejects(new Error('All consolidations failed'));
+
+    const makeCustomSigningFunctionStub = sinon
+      .stub(handlerUtils, 'makeCustomSigningFunction')
+      .returns(() => Promise.resolve({ txHex: 'signed-tx-hex' }));
+
+    const allowsConsolidationsStub = sinon
+      .stub(Hteth.prototype, 'allowsAccountConsolidations')
+      .returns(true);
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef', '0xfedcba0987654321'],
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error');
+    response.body.should.have.property('details').which.match(/All consolidations failed/);
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(buildConsolidationsStub);
+    sinon.assert.calledTwice(sendAccountConsolidationStub);
+    sinon.assert.calledTwice(makeCustomSigningFunctionStub);
+    sinon.assert.calledOnce(allowsConsolidationsStub);
+  });
+
+  it('should fail when consolidateAddresses parameter is not an array', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: 'not-an-array',
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+    response.body.error.should.match(/Invalid value "not-an-array"/);
+  });
+
+  it('should fail when apiVersion parameter has invalid value', async () => {
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        apiVersion: 'invalid_version',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+    response.body.error.should.match(/Invalid value "invalid_version"/);
   });
 });
