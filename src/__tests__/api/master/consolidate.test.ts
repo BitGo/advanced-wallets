@@ -382,7 +382,10 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details', 'Invalid coin selected - account consolidations not supported');
+    response.body.should.have.property(
+      'details',
+      'Invalid coin selected - account consolidations not supported',
+    );
 
     walletGetNock.done();
     keychainGetNock.done();
@@ -433,13 +436,11 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
-      .send({
-        pubkey: mockUserKeychain.pub,
-        source: 'user',
-        consolidateAddresses: ['0x1234567890abcdef'],
-      });
+    const response = await agent.post(`/api/${coin}/wallet/${walletId}/consolidate`).send({
+      pubkey: mockUserKeychain.pub,
+      source: 'user',
+      consolidateAddresses: ['0x1234567890abcdef'],
+    });
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
@@ -492,7 +493,9 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details').which.match(/Consolidations failed: 1 and succeeded: 1/);
+    response.body.should.have
+      .property('details')
+      .which.match(/Consolidations failed: 1 and succeeded: 1/);
 
     walletGetNock.done();
     keychainGetNock.done();

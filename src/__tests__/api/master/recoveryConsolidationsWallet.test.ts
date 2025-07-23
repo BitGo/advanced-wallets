@@ -14,9 +14,12 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   const enclavedExpressUrl = 'https://test-enclaved-express.com';
   const accessToken = 'test-access-token';
 
-  const mockUserPub = 'xpub661MyMwAqRbcFkPHucMnrGNzDwb6teAX1RbKQmqtEF8kK3Z7LZ59qafCjB9eCWzSgHCZkdXgp';
-  const mockBackupPub = 'xpub661MyMwAqRbcGaZrYqfYmaTRzQxM9PKEZ7GRb6DKfghkzgjk2dKT4qBXfz6WzpT4N5fXJhFW';
-  const mockBitgoPub = 'xpub661MyMwAqRbcF1cvdJUvQ8MV6a7R5hF5cBmVxA1zS1k7RH7NKj3X7K8fgR4kS2qY6jW9cF7L';
+  const mockUserPub =
+    'xpub661MyMwAqRbcFkPHucMnrGNzDwb6teAX1RbKQmqtEF8kK3Z7LZ59qafCjB9eCWzSgHCZkdXgp';
+  const mockBackupPub =
+    'xpub661MyMwAqRbcGaZrYqfYmaTRzQxM9PKEZ7GRb6DKfghkzgjk2dKT4qBXfz6WzpT4N5fXJhFW';
+  const mockBitgoPub =
+    'xpub661MyMwAqRbcF1cvdJUvQ8MV6a7R5hF5cBmVxA1zS1k7RH7NKj3X7K8fgR4kS2qY6jW9cF7L';
   const mockCommonKeychain = 'common-keychain-123';
 
   before(() => {
@@ -52,11 +55,9 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       { txHex: 'unsigned-tx-2', serializedTx: 'serialized-unsigned-tx-2' },
     ];
 
-    const recoverConsolidationsStub = sinon
-      .stub(Trx.prototype, 'recoverConsolidations')
-      .resolves({
-        transactions: mockTransactions,
-      });
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
+    });
 
     const recoveryMultisigStub = sinon
       .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
@@ -92,15 +93,11 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should succeed in handling Solana consolidation recovery for onchain wallet', async () => {
-    const mockTransactions = [
-      { txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' },
-    ];
+    const mockTransactions = [{ txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' }];
 
-    const recoverConsolidationsStub = sinon
-      .stub(Sol.prototype, 'recoverConsolidations')
-      .resolves({
-        transactions: mockTransactions,
-      });
+    const recoverConsolidationsStub = sinon.stub(Sol.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
+    });
 
     const recoveryMultisigStub = sinon
       .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
@@ -154,11 +151,9 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       },
     ] as any;
 
-    const recoverConsolidationsStub = sinon
-      .stub(Sui.prototype, 'recoverConsolidations')
-      .resolves({
-        txRequests: mockTxRequests,
-      });
+    const recoverConsolidationsStub = sinon.stub(Sui.prototype, 'recoverConsolidations').resolves({
+      txRequests: mockTxRequests,
+    });
 
     const recoveryMPCStub = sinon
       .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
@@ -196,15 +191,11 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should succeed in handling SOL MPC consolidation recovery', async () => {
-    const mockTransactions = [
-      { txHex: 'unsigned-mpc-tx-1', serializedTx: 'serialized-mpc-tx-1' },
-    ];
+    const mockTransactions = [{ txHex: 'unsigned-mpc-tx-1', serializedTx: 'serialized-mpc-tx-1' }];
 
-    const recoverConsolidationsStub = sinon
-      .stub(Sol.prototype, 'recoverConsolidations')
-      .resolves({
-        transactions: mockTransactions,
-      });
+    const recoverConsolidationsStub = sinon.stub(Sol.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
+    });
 
     const recoveryMPCStub = sinon
       .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
@@ -245,11 +236,9 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       { txHex: 'unsigned-tx-3', serializedTx: 'serialized-unsigned-tx-3' },
     ];
 
-    const recoverConsolidationsStub = sinon
-      .stub(Trx.prototype, 'recoverConsolidations')
-      .resolves({
-        transactions: mockTransactions,
-      });
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
+    });
 
     const recoveryMultisigStub = sinon
       .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
@@ -302,7 +291,10 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details', 'Missing required keys: userPub, backupPub, bitgoPub');
+    response.body.should.have.property(
+      'details',
+      'Missing required keys: userPub, backupPub, bitgoPub',
+    );
   });
 
   it('should fail when required multisigType parameter is missing', async () => {
@@ -335,14 +327,12 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
-      .send({
-        multisigType: 'onchain',
-        userPub: mockUserPub,
-        backupPub: mockBackupPub,
-        bitgoPub: mockBitgoPub,
-      });
+    const response = await agent.post(`/api/trx/wallet/recoveryconsolidations`).send({
+      multisigType: 'onchain',
+      userPub: mockUserPub,
+      backupPub: mockBackupPub,
+      bitgoPub: mockBitgoPub,
+    });
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
@@ -350,11 +340,9 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should succeed in handling empty recovery consolidations result', async () => {
-    const recoverConsolidationsStub = sinon
-      .stub(Trx.prototype, 'recoverConsolidations')
-      .resolves({
-        transactions: [],
-      } as any);
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: [],
+    } as any);
 
     const response = await agent
       .post(`/api/trx/wallet/recoveryconsolidations`)
@@ -374,11 +362,9 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should fail when recoverConsolidations returns unexpected result structure', async () => {
-    const recoverConsolidationsStub = sinon
-      .stub(Trx.prototype, 'recoverConsolidations')
-      .resolves({
-        someOtherProperty: 'value',
-      } as any);
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      someOtherProperty: 'value',
+    } as any);
 
     const response = await agent
       .post(`/api/trx/wallet/recoveryconsolidations`)
@@ -392,7 +378,10 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details', 'recoverConsolidations did not return expected transactions');
+    response.body.should.have.property(
+      'details',
+      'recoverConsolidations did not return expected transactions',
+    );
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
   });
@@ -420,15 +409,11 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should fail when enclavedExpressClient throws an error', async () => {
-    const mockTransactions = [
-      { txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' },
-    ];
+    const mockTransactions = [{ txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' }];
 
-    const recoverConsolidationsStub = sinon
-      .stub(Trx.prototype, 'recoverConsolidations')
-      .resolves({
-        transactions: mockTransactions,
-      });
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
+    });
 
     const recoveryMultisigStub = sinon
       .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')

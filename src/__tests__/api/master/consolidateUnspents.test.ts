@@ -341,13 +341,11 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
-      .send({
-        pubkey: mockUserKeychain.pub,
-        source: 'user',
-        feeRate: 1000,
-      });
+    const response = await agent.post(`/api/${coin}/wallet/${walletId}/consolidateunspents`).send({
+      pubkey: mockUserKeychain.pub,
+      source: 'user',
+      feeRate: 1000,
+    });
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
