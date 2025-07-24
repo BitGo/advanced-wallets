@@ -28,6 +28,6 @@ jobs:
       lint-node-version: '22.x'
       test-node-versions: '["22.x"]'
       release-node-version: '22.x'
-      build-command: 'yarn build'
-      test-command: 'yarn test'
+      build-command: 'npm run build'
+      test-command: 'npm test'
       allow-postinstall-scripts: false

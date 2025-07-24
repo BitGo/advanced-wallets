@@ -101,7 +101,7 @@ TLS_KEY_PATH=./server.key \
 TLS_CERT_PATH=./server.crt \
 MTLS_REQUEST_CERT=true \
 ALLOW_SELF_SIGNED=true \
-yarn start
+npm run start
 ```
 
 ### 3. Start Master Express
@@ -117,7 +117,7 @@ ENCLAVED_EXPRESS_URL=https://localhost:3080 \
 ENCLAVED_EXPRESS_CERT=./server.crt \
 MTLS_REQUEST_CERT=false \
 ALLOW_SELF_SIGNED=true \
-yarn start
+npm run start
 ```
 
 ### 4. Test the Connection
@@ -151,7 +151,7 @@ TLS_CERT_PATH=/secure/path/enclaved.crt \
 MTLS_REQUEST_CERT=true \
 ALLOW_SELF_SIGNED=false \
 MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456... \
-yarn start
+npm run start
 ```
 
 #### Master Express (Production)
@@ -165,7 +165,7 @@ ENCLAVED_EXPRESS_URL=https://enclaved.internal.example.com:3080 \
 ENCLAVED_EXPRESS_CERT=/secure/path/enclaved.crt \
 MTLS_REQUEST_CERT=true \
 ALLOW_SELF_SIGNED=false \
-yarn start
+npm run start
 ```
 
 ## Container Deployment with Podman
@@ -174,10 +174,10 @@ First, build the container image:
 
 ```bash
 # For Master Express (default port 3081)
-yarn container:build
+npm run container:build
 
 # For Enclaved Express (port 3080)
-yarn container:build --build-arg PORT=3080
+npm run container:build --build-arg PORT=3080
 ```
 
 For local development, you'll need to run both the Enclaved Express and Master Express containers:
@@ -290,7 +290,7 @@ env | grep -E "(APP_MODE|KMS_URL|ENCLAVED_EXPRESS|TLS_)"
 Enable debug logging for detailed troubleshooting:
 
 ```bash
-DEBUG_NAMESPACE=enclaved:*,master:* yarn start
+DEBUG_NAMESPACE=enclaved:*,master:* npm run start
 ```
 
 ## License
