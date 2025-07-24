@@ -31,7 +31,6 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       enclavedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
-      debugNamespace: [],
     };
 
     const app = expressApp(config);

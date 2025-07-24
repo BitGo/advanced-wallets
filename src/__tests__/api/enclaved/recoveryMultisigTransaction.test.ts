@@ -22,7 +22,6 @@ describe('UTXO recovery', () => {
     logFile: '',
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
-    debugNamespace: [],
     kmsUrl: 'kms.example.com',
   };
 

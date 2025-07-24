@@ -16,7 +16,6 @@ export interface EnclavedConfig {
   port: number;
   bind: string;
   ipc?: string;
-  debugNamespace: string[];
   logFile: string;
   timeout: number;
   keepAliveTimeout?: number;
@@ -37,7 +36,6 @@ export interface MasterExpressConfig {
   port: number;
   bind: string;
   ipc?: string;
-  debugNamespace: string[];
   logFile: string;
   timeout: number;
   keepAliveTimeout?: number;

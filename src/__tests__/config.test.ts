@@ -24,7 +24,6 @@ describe('Configuration', () => {
     delete process.env.MASTER_EXPRESS_PORT;
     delete process.env.BIND;
     delete process.env.IPC;
-    delete process.env.DEBUG_NAMESPACE;
     delete process.env.LOGFILE;
     delete process.env.KEEP_ALIVE_TIMEOUT;
     delete process.env.HEADERS_TIMEOUT;

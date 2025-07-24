@@ -37,7 +37,6 @@ describe('postIndependentKey', () => {
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
-      debugNamespace: [],
     };
 
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);

@@ -12,7 +12,6 @@ describe('Routes', () => {
     app = express();
     setupRoutes(app, {
       appMode: AppMode.ENCLAVED,
-      debugNamespace: [],
       logFile: '',
       allowSelfSigned: true,
       tlsMode: TlsMode.DISABLED,

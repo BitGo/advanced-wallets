@@ -17,8 +17,6 @@ describe('EdDSA Recovery Signing', () => {
     logFile: '',
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
-    debugNamespace: [],
-    kmsUrl: 'kms.example.com',
   };
 
   const commonKeychain =

@@ -76,7 +76,6 @@ Both modes use the same TLS configuration variables:
 ### Logging and Debug
 
 - `LOGFILE` - Path to log file (optional)
-- `DEBUG_NAMESPACE` - Debug namespaces to enable (e.g., 'enclaved:\*')
 
 ## Quick Start
 
@@ -232,6 +231,7 @@ curl -k -X POST https://localhost:3081/ping/enclavedExpress
 ```
 
 Notes:
+
 - `host.containers.internal` is a special DNS name that resolves to the host machine from inside containers
 - The `:Z` option in volume mounts is specific to SELinux-enabled systems and ensures proper volume labeling
 - The logs directory will be created with appropriate permissions if it doesn't exist

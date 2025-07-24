@@ -33,7 +33,6 @@ describe('POST /api/:coin/wallet/generate', () => {
       enclavedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
-      debugNamespace: [],
     };
 
     const app = expressApp(config);

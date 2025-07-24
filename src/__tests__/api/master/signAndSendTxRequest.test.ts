@@ -52,7 +52,6 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       enclavedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
-      debugNamespace: [],
     };
 
     const app = expressApp(config);
