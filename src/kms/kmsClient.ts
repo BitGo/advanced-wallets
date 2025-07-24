@@ -13,11 +13,13 @@ import {
   GenerateDataKeyParams,
   GenerateDataKeyResponse,
 } from './types/generateDataKey';
+import https from 'https';
 
 const debugLogger = debug('bitgo:express:kmsClient');
 
 export class KmsClient {
   private readonly url: string;
+  private readonly agent?: https.Agent;
 
   constructor(cfg: EnclavedConfig) {
     if (isMasterExpressConfig(cfg)) {
@@ -29,6 +31,9 @@ export class KmsClient {
     }
 
     this.url = cfg.kmsUrl;
+    if (cfg.kmsTlsMode === 'enabled' && cfg.kmsTlsCert) {
+      this.agent = new https.Agent({ ca: cfg.kmsTlsCert });
+    }
     debugLogger('kmsClient initialized with URL: %s', this.url);
   }
 
@@ -38,7 +43,9 @@ export class KmsClient {
     // Call KMS to post the key
     let kmsResponse: any;
     try {
-      kmsResponse = await superagent.post(`${this.url}/key`).set('x-api-key', 'abc').send(params);
+      let req = superagent.post(`${this.url}/key`).set('x-api-key', 'abc').send(params);
+      if (this.agent) req = req.agent(this.agent);
+      kmsResponse = await req;
     } catch (error: any) {
       console.log('Error posting key to KMS', error);
       throw error;
@@ -63,10 +70,12 @@ export class KmsClient {
     // Call KMS to get the key
     let kmsResponse: any;
     try {
-      kmsResponse = await superagent.get(`${this.url}/key/${params.pub}`).query({
+      let req = superagent.get(`${this.url}/key/${params.pub}`).query({
         source: params.source,
         useLocalEncipherment: params.options?.useLocalEncipherment ?? false,
       });
+      if (this.agent) req = req.agent(this.agent);
+      kmsResponse = await req;
     } catch (error: any) {
       console.log('Error getting key from KMS', error);
       throw error;
@@ -90,7 +99,9 @@ export class KmsClient {
     // Call KMS to generate the data key
     let kmsResponse: any;
     try {
-      kmsResponse = await superagent.post(`${this.url}/generateDataKey`).send(params);
+      let req = superagent.post(`${this.url}/generateDataKey`).send(params);
+      if (this.agent) req = req.agent(this.agent);
+      kmsResponse = await req;
     } catch (error: any) {
       debugLogger('Error generating data key from KMS', error);
       throw error;
@@ -117,7 +128,9 @@ export class KmsClient {
     // Call KMS to decrypt the data key
     let kmsResponse: any;
     try {
-      kmsResponse = await superagent.post(`${this.url}/decryptDataKey`).send(params);
+      let req = superagent.post(`${this.url}/decryptDataKey`).send(params);
+      if (this.agent) req = req.agent(this.agent);
+      kmsResponse = await req;
     } catch (error: any) {
       debugLogger('Error decrypting data key from KMS', error);
       throw error;
