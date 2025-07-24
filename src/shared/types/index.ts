@@ -19,7 +19,7 @@ export interface BaseConfig {
   timeout: number;
   keepAliveTimeout?: number;
   headersTimeout?: number;
-  httpLoggerFile?: string;
+  httpLoggerFile: string;
 }
 
 // Enclaved mode specific configuration

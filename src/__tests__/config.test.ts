@@ -192,7 +192,7 @@ describe('Configuration', () => {
       const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
-        cfg.httpLoggerFile?.should.equal('/tmp/test-http-access.log');
+        cfg.httpLoggerFile.should.equal('/tmp/test-http-access.log');
       }
     });
   });
@@ -350,7 +350,7 @@ describe('Configuration', () => {
       const cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
-        cfg.httpLoggerFile?.should.equal('/tmp/test-http-access.log');
+        cfg.httpLoggerFile.should.equal('/tmp/test-http-access.log');
       }
     });
   });
