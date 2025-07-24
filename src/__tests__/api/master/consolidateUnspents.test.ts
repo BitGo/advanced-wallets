@@ -23,14 +23,13 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       port: 0,
       bind: 'localhost',
       timeout: 30000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
       enclavedExpressUrl: enclavedExpressUrl,
       enclavedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
     };
 

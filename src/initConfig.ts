@@ -49,10 +49,9 @@ const defaultEnclavedConfig: EnclavedConfig = {
   port: 3080,
   bind: 'localhost',
   timeout: 305 * 1000,
-  logFile: '',
+  httpLoggerFile: 'logs/http-access.log',
   kmsUrl: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
-  mtlsRequestCert: true,
   allowSelfSigned: false,
 };
 
@@ -88,8 +87,7 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
     bind: readEnvVar('BIND'),
     ipc: readEnvVar('IPC'),
-    debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
-    logFile: readEnvVar('LOGFILE'),
+    httpLoggerFile: readEnvVar('HTTP_LOGFILE'),
     timeout: Number(readEnvVar('TIMEOUT')),
     keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
     headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
@@ -101,7 +99,6 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     tlsKey: readEnvVar('TLS_KEY'),
     tlsCert: readEnvVar('TLS_CERT'),
     tlsMode: determineTlsMode(),
-    mtlsRequestCert: readEnvVar('MTLS_REQUEST_CERT')?.toLowerCase() !== 'false',
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
   };
@@ -121,8 +118,7 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     port: get('port'),
     bind: get('bind'),
     ipc: get('ipc'),
-    debugNamespace: get('debugNamespace'),
-    logFile: get('logFile'),
+    httpLoggerFile: get('httpLoggerFile'),
     timeout: get('timeout'),
     keepAliveTimeout: get('keepAliveTimeout'),
     headersTimeout: get('headersTimeout'),
@@ -132,7 +128,6 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     tlsKey: get('tlsKey'),
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
-    mtlsRequestCert: get('mtlsRequestCert'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     allowSelfSigned: get('allowSelfSigned'),
   };
@@ -185,14 +180,13 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   port: 3081,
   bind: 'localhost',
   timeout: 305 * 1000,
-  logFile: '',
+  httpLoggerFile: 'logs/http-access.log',
   env: 'test',
   disableEnvCheck: true,
   authVersion: 2,
   enclavedExpressUrl: '', // Will be overridden by environment variable
   enclavedExpressCert: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
-  mtlsRequestCert: true,
   allowSelfSigned: false,
 };
 
@@ -219,9 +213,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   }
 
   // Debug mTLS environment variables
-  const mtlsRequestCertRaw = readEnvVar('MTLS_REQUEST_CERT');
   const allowSelfSignedRaw = readEnvVar('ALLOW_SELF_SIGNED');
-  const mtlsRequestCert = mtlsRequestCertRaw?.toLowerCase() !== 'false';
   const allowSelfSigned = allowSelfSignedRaw === 'true';
 
   return {
@@ -229,8 +221,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     port: Number(readEnvVar('MASTER_EXPRESS_PORT')),
     bind: readEnvVar('BIND'),
     ipc: readEnvVar('IPC'),
-    debugNamespace: (readEnvVar('DEBUG_NAMESPACE') || '').split(',').filter(Boolean),
-    logFile: readEnvVar('LOGFILE'),
+    httpLoggerFile: readEnvVar('HTTP_LOGFILE') || 'logs/http-access.log',
     timeout: Number(readEnvVar('TIMEOUT')),
     keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
     headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
@@ -248,7 +239,6 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     tlsKey: readEnvVar('TLS_KEY'),
     tlsCert: readEnvVar('TLS_CERT'),
     tlsMode,
-    mtlsRequestCert,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned,
   };
@@ -270,8 +260,7 @@ function mergeMasterExpressConfigs(
     port: get('port'),
     bind: get('bind'),
     ipc: get('ipc'),
-    debugNamespace: get('debugNamespace'),
-    logFile: get('logFile'),
+    httpLoggerFile: get('httpLoggerFile'),
     timeout: get('timeout'),
     keepAliveTimeout: get('keepAliveTimeout'),
     headersTimeout: get('headersTimeout'),
@@ -287,7 +276,6 @@ function mergeMasterExpressConfigs(
     tlsKey: get('tlsKey'),
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
-    mtlsRequestCert: get('mtlsRequestCert'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     allowSelfSigned: get('allowSelfSigned'),
   };

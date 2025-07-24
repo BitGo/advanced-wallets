@@ -9,7 +9,7 @@ import bodyParser from 'body-parser';
 import pjson from '../../package.json';
 import logger from '../logger';
 
-import { Config, TlsMode } from '../shared/types';
+import { Config, TlsMode, MasterExpressConfig } from '../shared/types';
 
 /**
  * Set up the logging middleware provided by morgan
@@ -20,9 +20,9 @@ export function setupLogging(app: express.Application, config: Config): void {
     return;
   }
   let middleware;
-  if (config.logFile) {
+  if (config.httpLoggerFile) {
     // create a write stream (in append mode)
-    const accessLogPath = path.resolve(config.logFile);
+    const accessLogPath = path.resolve(config.httpLoggerFile);
     const accessLogStream = fs.createWriteStream(accessLogPath, { flags: 'a' });
     logger.info(`Log location: ${accessLogPath}`);
     // setup the logger
@@ -124,7 +124,6 @@ export async function prepareIpc(ipcSocketFilePath: string): Promise<void> {
  */
 export function createMtlsMiddleware(config: {
   tlsMode: TlsMode;
-  mtlsRequestCert: boolean;
   allowSelfSigned?: boolean;
   mtlsAllowedClientFingerprints?: string[];
 }): express.RequestHandler {
@@ -135,8 +134,8 @@ export function createMtlsMiddleware(config: {
     const hasValidClientCert =
       clientCert && Object.keys(clientCert).length > 0 && clientCert.subject;
 
-    // If client cert is required but not provided
-    if (config.mtlsRequestCert && !hasValidClientCert) {
+    // If mTLS is enabled, client certificate is always required
+    if (config.tlsMode === TlsMode.MTLS && !hasValidClientCert) {
       return res.status(403).json({
         error: 'mTLS Authentication Failed',
         message: 'Client certificate is required for this endpoint',
@@ -179,29 +178,53 @@ export function createMtlsMiddleware(config: {
 /**
  * Validate that TLS certificates are properly loaded when TLS is enabled
  */
-export function validateTlsCertificates(config: {
-  tlsMode: TlsMode;
-  tlsKey?: string;
-  tlsCert?: string;
-}): void {
-  if (config.tlsMode !== TlsMode.DISABLED) {
-    if (!config.tlsKey || !config.tlsCert) {
-      throw new Error('TLS is enabled but certificates are not properly loaded');
+export function validateTlsCertificates(config: Config): void {
+  if (config.tlsMode === TlsMode.DISABLED) {
+    return;
+  }
+
+  if (!config.tlsKey || !config.tlsCert) {
+    throw new Error('TLS key and certificate must be provided when TLS is enabled');
+  }
+
+  // Validate certificate format
+  try {
+    // Basic PEM format validation
+    if (
+      !config.tlsKey.includes('-----BEGIN PRIVATE KEY-----') &&
+      !config.tlsKey.includes('-----BEGIN RSA PRIVATE KEY-----')
+    ) {
+      throw new Error('Invalid TLS private key format');
     }
+    if (!config.tlsCert.includes('-----BEGIN CERTIFICATE-----')) {
+      throw new Error('Invalid TLS certificate format');
+    }
+  } catch (error) {
+    throw new Error(
+      `TLS certificate validation failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
   }
 }
 
 /**
  * Validate Master Express configuration
  */
-export function validateMasterExpressConfig(config: {
-  enclavedExpressUrl: string;
-  enclavedExpressCert: string;
-}): void {
-  if (!config.enclavedExpressUrl) {
-    throw new Error('ENCLAVED_EXPRESS_URL is required for Master Express mode');
+export function validateMasterExpressConfig(config: MasterExpressConfig): void {
+  // Validate that we have the required enclaved express certificate for mTLS
+  if (config.tlsMode === TlsMode.MTLS && !config.enclavedExpressCert) {
+    throw new Error('Enclaved Express certificate is required for mTLS mode');
   }
-  if (!config.enclavedExpressCert) {
-    throw new Error('ENCLAVED_EXPRESS_CERT is required for Master Express mode');
+
+  // Validate client certificate if mTLS is enabled
+  if (config.tlsMode === TlsMode.MTLS) {
+    const hasValidClientCert =
+      config.enclavedExpressCert &&
+      config.enclavedExpressCert.includes('-----BEGIN CERTIFICATE-----');
+
+    if (!hasValidClientCert) {
+      throw new Error('Valid client certificate is required for mTLS mode');
+    }
   }
 }

@@ -11,16 +11,15 @@ export enum AppMode {
 export type EnvironmentName = 'prod' | 'test' | 'staging' | 'dev' | 'local';
 
 // Common base configuration shared by both modes
-interface BaseConfig {
+export interface BaseConfig {
   appMode: AppMode;
   port: number;
   bind: string;
   ipc?: string;
-  debugNamespace?: string[];
-  logFile?: string;
   timeout: number;
   keepAliveTimeout?: number;
   headersTimeout?: number;
+  httpLoggerFile: string;
 }
 
 // Enclaved mode specific configuration
@@ -34,7 +33,6 @@ export interface EnclavedConfig extends BaseConfig {
   tlsKey?: string;
   tlsCert?: string;
   tlsMode: TlsMode;
-  mtlsRequestCert: boolean;
   mtlsAllowedClientFingerprints?: string[];
   allowSelfSigned?: boolean;
 }
@@ -56,7 +54,6 @@ export interface MasterExpressConfig extends BaseConfig {
   tlsKey?: string;
   tlsCert?: string;
   tlsMode: TlsMode;
-  mtlsRequestCert: boolean;
   mtlsAllowedClientFingerprints?: string[];
   allowSelfSigned?: boolean;
 }

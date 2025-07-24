@@ -22,14 +22,13 @@ describe('Recovery Tests', () => {
     port: 0,
     bind: 'localhost',
     timeout: 60000,
-    logFile: '',
+    httpLoggerFile: '',
     env: 'test',
     disableEnvCheck: true,
     authVersion: 2,
     enclavedExpressUrl: enclavedExpressUrl,
     enclavedExpressCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
-    mtlsRequestCert: false,
     allowSelfSigned: true,
   };
 

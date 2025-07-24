@@ -21,19 +21,14 @@ import { setupRoutes } from './routes/master';
  * Create a startup function which will be run upon server initialization
  */
 export function startup(config: MasterExpressConfig, baseUri: string): () => void {
-  return function () {
-    logger.info('BitGo Master Express running');
+  return () => {
+    logger.info('Master Express server starting...');
     logger.info(`Base URI: ${baseUri}`);
-    logger.info(`Environment: ${config.env}`);
     logger.info(`TLS Mode: ${config.tlsMode}`);
-    logger.info(`mTLS Enabled: ${config.tlsMode === TlsMode.MTLS}`);
-    logger.info(`Request Client Cert: ${config.mtlsRequestCert}`);
-    logger.info(`Allow Self-Signed: ${config.allowSelfSigned}`);
-    if (config.mtlsAllowedClientFingerprints?.length) {
-      logger.info(
-        `Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.length} configured`,
-      );
-    }
+    logger.info(`Port: ${config.port}`);
+    logger.info(`Bind: ${config.bind}`);
+    logger.info(`Enclaved Express URL: ${config.enclavedExpressUrl}`);
+    logger.info('Master Express server started successfully');
   };
 }
 
@@ -47,7 +42,7 @@ async function createHttpsServer(
   app: express.Application,
   config: MasterExpressConfig,
 ): Promise<https.Server> {
-  const { tlsKey, tlsCert, tlsMode, mtlsRequestCert } = config;
+  const { tlsKey, tlsCert, tlsMode } = config;
 
   if (!tlsKey || !tlsCert) {
     throw new Error('TLS key and certificate must be provided for HTTPS server');
@@ -57,9 +52,8 @@ async function createHttpsServer(
     secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
     key: tlsKey,
     cert: tlsCert,
-    // Only request cert if mTLS is enabled AND we want to request certs
-    // This prevents TLS handshake failures when no cert is provided
-    requestCert: tlsMode === TlsMode.MTLS && mtlsRequestCert,
+    // Always request cert if mTLS is enabled
+    requestCert: tlsMode === TlsMode.MTLS,
     rejectUnauthorized: false, // Handle authorization in middleware
   };
 

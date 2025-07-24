@@ -22,14 +22,13 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       port: 0,
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
       enclavedExpressUrl,
       enclavedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
     };
     const app = expressApp(config);
