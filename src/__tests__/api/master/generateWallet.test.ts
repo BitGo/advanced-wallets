@@ -25,7 +25,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
@@ -727,7 +727,7 @@ describe('POST /api/:coin/wallet/generate', () => {
             to: 0,
             payload: {
               encryptedMessage: 'test-p2p-message-backup-to-user-2',
-              signature: 'test-signature-user-to-backup-2',
+              signature: 'test-signature-backup-to-user-2',
             },
             commitment: 'test-commitment-backup-2',
           },
@@ -873,7 +873,7 @@ describe('POST /api/:coin/wallet/generate', () => {
             to: 0,
             payload: {
               encryptedMessage: 'test-p2p-message-backup-to-user-3',
-              signature: 'test-signature-user-to-backup-3',
+              signature: 'test-signature-backup-to-user-3',
             },
             commitment: 'test-commitment-backup-3',
           },
@@ -1121,7 +1121,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       port: 0,
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,

@@ -23,7 +23,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 30000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,

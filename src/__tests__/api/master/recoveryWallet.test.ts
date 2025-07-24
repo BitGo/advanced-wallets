@@ -22,7 +22,7 @@ describe('Recovery Tests', () => {
     port: 0,
     bind: 'localhost',
     timeout: 60000,
-    logFile: '',
+    httpLoggerFile: '',
     env: 'test',
     disableEnvCheck: true,
     authVersion: 2,

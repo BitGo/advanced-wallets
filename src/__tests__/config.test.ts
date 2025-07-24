@@ -24,7 +24,7 @@ describe('Configuration', () => {
     delete process.env.MASTER_EXPRESS_PORT;
     delete process.env.BIND;
     delete process.env.IPC;
-    delete process.env.LOGFILE;
+    delete process.env.HTTP_LOGFILE;
     delete process.env.KEEP_ALIVE_TIMEOUT;
     delete process.env.HEADERS_TIMEOUT;
     delete process.env.BITGO_ENV;
@@ -183,6 +183,18 @@ describe('Configuration', () => {
       delete process.env.TLS_CERT;
       (() => initConfig()).should.throw();
     });
+
+    it('should read HTTP_LOGFILE into httpLoggerFile in Enclaved mode', () => {
+      process.env.KMS_URL = 'http://localhost:3000';
+      process.env.TLS_KEY = mockTlsKey;
+      process.env.TLS_CERT = mockTlsCert;
+      process.env.HTTP_LOGFILE = '/tmp/test-http-access.log';
+      const cfg = initConfig();
+      isEnclavedConfig(cfg).should.be.true();
+      if (isEnclavedConfig(cfg)) {
+        cfg.httpLoggerFile?.should.equal('/tmp/test-http-access.log');
+      }
+    });
   });
 
   describe('Master Express Mode', () => {
@@ -330,6 +342,15 @@ describe('Configuration', () => {
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
         cfg.customRootUri!.should.equal('https://bitgo.example.com');
+      }
+    });
+
+    it('should read HTTP_LOGFILE into httpLoggerFile in Master Express mode', () => {
+      process.env.HTTP_LOGFILE = '/tmp/test-http-access.log';
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.httpLoggerFile?.should.equal('/tmp/test-http-access.log');
       }
     });
   });

@@ -10,11 +10,12 @@ import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
 describe('EdDSA Recovery Signing', () => {
   let agent: supertest.SuperTest<supertest.Test>;
   const config: EnclavedConfig = {
+    kmsUrl: 'http://localhost:3000',
     appMode: AppMode.ENCLAVED,
     port: 0,
     bind: 'localhost',
     timeout: 60000,
-    logFile: '',
+    httpLoggerFile: '',
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
   };

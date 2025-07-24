@@ -75,7 +75,7 @@ Both modes use the same TLS configuration variables:
 
 ### Logging and Debug
 
-- `LOGFILE` - Path to log file (optional)
+- `HTTP_LOGFILE` - Path to HTTP request log file (optional, used by Morgan for HTTP access logs)
 
 ## Quick Start
 

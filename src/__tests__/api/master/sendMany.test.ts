@@ -26,7 +26,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
@@ -579,7 +579,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       port: 0,
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,

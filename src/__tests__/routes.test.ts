@@ -12,7 +12,7 @@ describe('Routes', () => {
     app = express();
     setupRoutes(app, {
       appMode: AppMode.ENCLAVED,
-      logFile: '',
+      httpLoggerFile: '',
       allowSelfSigned: true,
       tlsMode: TlsMode.DISABLED,
       kmsUrl: 'http://localhost:3000/kms',

@@ -22,7 +22,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       port: 0,
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,

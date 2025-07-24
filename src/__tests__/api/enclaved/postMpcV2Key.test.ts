@@ -35,7 +35,7 @@ describe('postMpcV2Key', () => {
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
-      logFile: '',
+      httpLoggerFile: '',
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,

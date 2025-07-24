@@ -19,7 +19,7 @@ describe('UTXO recovery', () => {
     port: 0,
     bind: 'localhost',
     timeout: 60000,
-    logFile: '',
+    httpLoggerFile: '',
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
     kmsUrl: 'kms.example.com',

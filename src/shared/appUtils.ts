@@ -17,9 +17,9 @@ import { Config, TlsMode, MasterExpressConfig } from '../shared/types';
 export function setupLogging(app: express.Application, config: Config): void {
   // Set up morgan for logging, with optional logging into a file
   let middleware;
-  if (config.logFile) {
+  if (config.httpLoggerFile) {
     // create a write stream (in append mode)
-    const accessLogPath = path.resolve(config.logFile);
+    const accessLogPath = path.resolve(config.httpLoggerFile);
     const accessLogStream = fs.createWriteStream(accessLogPath, { flags: 'a' });
     logger.info(`Log location: ${accessLogPath}`);
     // setup the logger
