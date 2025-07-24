@@ -88,14 +88,14 @@ async function handleEthLikeRecovery(
         maxPriorityFeePerGas,
       },
       replayProtectionOptions: getReplayProtectionOptions(env),
+      apiKey: params.apiKey,
+      isUnsignedSweep: true,
     });
 
-    const fullSignedRecoveryTx = await enclavedExpressClient.recoveryMultisig({
+    return await enclavedExpressClient.recoveryMultisig({
       ...params,
       unsignedSweepPrebuildTx,
     });
-
-    return fullSignedRecoveryTx;
   } catch (err) {
     throw err;
   }
