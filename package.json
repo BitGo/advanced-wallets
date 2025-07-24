@@ -10,7 +10,7 @@
   "scripts": {
     "start": "nodemon",
     "build": "yarn tsc --build --incremental --verbose . && cp package.json dist/",
-    "test": "mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
+    "test": "NODE_ENV=test mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "test:watch": "mocha --require ts-node/register --watch 'src/**/__tests__/**/*.test.ts'",
     "test:coverage": "nyc mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "lint": "eslint --quiet --ignore-pattern scripts/bump-version.ts .",
