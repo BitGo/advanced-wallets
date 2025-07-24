@@ -23,20 +23,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         id: node-modules-cache
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-modules-
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: yarn install
+        run: npm ci
 
       - name: Validate PR commits with commitlint
         run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
@@ -52,23 +52,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         id: node-modules-cache
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-modules-
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: yarn install
+        run: npm ci
 
       - name: Build
-        run: yarn build
+        run: npm run build
 
   lint:
     name: Run lint
@@ -81,23 +81,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         id: node-modules-cache
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-modules-
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: yarn install
+        run: npm ci
 
       - name: Lint
-        run: yarn lint
+        run: npm run lint
 
   test:
     name: Test
@@ -110,26 +110,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         id: node-modules-cache
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-modules-
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: yarn install
+        run: npm ci
 
       - name: Generate test SSL certificates
-        run: yarn generate-test-ssl
+        run: npm run generate-test-ssl
 
       - name: Test
-        run: yarn test
+        run: npm test
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           MASTER_BITGO_EXPRESS_KEYPATH: ./test-ssl-key.pem

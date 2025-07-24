@@ -5,19 +5,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Development
-- `yarn start` - Start the application in development mode using nodemon for auto-reloading
-- `yarn build` - Build the TypeScript code (creates /dist folder)
-- `yarn lint` - Run ESLint to check for code issues
-- `yarn lint:fix` - Run ESLint and automatically fix issues when possible
+- `npm start` - Start the application in development mode using nodemon for auto-reloading
+- `npm run build` - Build the TypeScript code (creates /dist folder)
+- `npm run lint` - Run ESLint to check for code issues
+- `npm run lint:fix` - Run ESLint and automatically fix issues when possible
 
 ### Testing
-- `yarn test` - Run all tests
-- `yarn test:watch` - Run tests in watch mode
-- `yarn test:coverage` - Run tests with coverage report
-- `yarn generate-test-ssl` - Generate self-signed SSL certificates for testing
+- `npm test` - Run all tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run generate-test-ssl` - Generate self-signed SSL certificates for testing
 
 ### Container
-- `yarn container:build` - Build the container image using Podman (optionally use --build-arg PORT=3080)
+- `npm run container:build` - Build the container image using Podman (optionally use --build-arg PORT=3080)
 
 ## Architecture Overview
 

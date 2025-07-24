@@ -36,19 +36,19 @@ RUN --mount=type=cache,target=/var/cache/apk \
     linux-headers
 
 # Copy dependency files
-COPY package.json yarn.lock ./
+COPY package.json package-lock.json ./
 
 # Install dependencies with cache mount
-RUN --mount=type=cache,target=/usr/src/app/.yarn-cache \
-    yarn install --frozen-lockfile --production=false --cache-folder /usr/src/app/.yarn-cache && \
-    yarn cache clean && \
-    rm -rf /usr/src/app/.yarn-cache/*
+RUN --mount=type=cache,target=/usr/src/app/.npm-cache \
+    npm ci --cache /usr/src/app/.npm-cache && \
+    npm cache clean --force && \
+    rm -rf /usr/src/app/.npm-cache/*
 
 # Copy source code
 COPY . .
 
 # Build TypeScript code with deterministic output
-RUN yarn build 
+RUN npm run build 
 
 FROM node:22.1.0-alpine@sha256:487dc5d5122d578e13f2231aa4ac0f63068becd921099c4c677c850df93bede8 AS production
 

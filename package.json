@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "nodemon",
-    "build": "yarn tsc --build --incremental --verbose . && cp package.json dist/",
+    "build": "npm run tsc -- --build --incremental --verbose . && cp package.json dist/",
+    "tsc": "tsc",
     "test": "NODE_ENV=test mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "test:watch": "mocha --require ts-node/register --watch 'src/**/__tests__/**/*.test.ts'",
     "test:coverage": "nyc mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
@@ -114,7 +115,7 @@
     "winston": "^3.11.0",
     "zod": "^3.25.48"
   },
-  "resolutions": {
+  "overrides": {
     "@bitgo-beta/sdk-core": "8.2.1-beta.1030"
   },
   "devDependencies": {
