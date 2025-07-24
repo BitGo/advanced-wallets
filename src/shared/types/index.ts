@@ -28,9 +28,8 @@ export interface EnclavedConfig extends BaseConfig {
   appMode: AppMode.ENCLAVED;
   // KMS settings
   kmsUrl: string;
-  kmsTlsMode?: 'enabled' | 'disabled';
-  kmsTlsCert?: string;
   kmsTlsCertPath?: string;
+  kmsTlsCert?: string;
   // mTLS settings
   keyPath?: string;
   crtPath?: string;

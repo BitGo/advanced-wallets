@@ -59,19 +59,28 @@ Both modes use the same TLS configuration variables:
 
 **Option 1: Certificate Files**
 
-- `TLS_KEY_PATH` - Path to private key file
-- `TLS_CERT_PATH` - Path to certificate file
+- `TLS_KEY_PATH` - Path to private key file (used for both inbound mTLS server and outbound mTLS client to KMS)
+- `TLS_CERT_PATH` - Path to certificate file (used for both inbound mTLS server and outbound mTLS client to KMS)
 
 **Option 2: Environment Variables**
 
-- `TLS_KEY` - Private key content (PEM format)
-- `TLS_CERT` - Certificate content (PEM format)
+- `TLS_KEY` - Private key content (PEM format, used for both inbound and outbound)
+- `TLS_CERT` - Certificate content (PEM format, used for both inbound and outbound)
 
 #### mTLS Settings (when TLS_MODE=mtls)
 
 - `MTLS_REQUEST_CERT` - Request client certificates (default: true)
 - `ALLOW_SELF_SIGNED` - Allow self-signed certificates (default: false)
 - `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed client certificate fingerprints (optional)
+
+#### Outbound mTLS to KMS
+
+- When `TLS_MODE=mtls`, outbound mTLS to KMS is enabled by default.
+- The same `TLS_CERT` and `TLS_KEY` are used as the client certificate and key for outbound mTLS requests to KMS.
+- `KMS_TLS_CERT_PATH` - Path to the CA certificate to verify the KMS server (required when outbound mTLS is enabled).
+- If `TLS_MODE=disabled`, outbound mTLS to KMS is also disabled by default.
+
+> **Note:** If you want to use a different client certificate for KMS, you will need to extend the configuration. By default, the same cert/key is used for both inbound and outbound mTLS.
 
 ### Logging and Debug
 

@@ -1,6 +1,6 @@
 import debug from 'debug';
 import * as superagent from 'superagent';
-import { EnclavedConfig, isMasterExpressConfig } from '../shared/types';
+import { EnclavedConfig, isMasterExpressConfig, TlsMode } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 import {
@@ -25,14 +25,17 @@ export class KmsClient {
     if (isMasterExpressConfig(cfg)) {
       throw new Error('Configuration is not in enclaved express mode');
     }
-
     if (!cfg.kmsUrl) {
       throw new Error('KMS URL not configured. Please set KMS_URL in your environment.');
     }
 
     this.url = cfg.kmsUrl;
-    if (cfg.kmsTlsMode === 'enabled' && cfg.kmsTlsCert) {
-      this.agent = new https.Agent({ ca: cfg.kmsTlsCert });
+    if (cfg.tlsMode === TlsMode.MTLS && cfg.kmsTlsCert) {
+      this.agent = new https.Agent({
+        ca: cfg.kmsTlsCert,
+        cert: cfg.tlsCert,
+        key: cfg.tlsKey,
+      });
     }
     debugLogger('kmsClient initialized with URL: %s', this.url);
   }
