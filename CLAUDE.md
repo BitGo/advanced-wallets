@@ -71,12 +71,51 @@ Configuration is managed through environment variables with defaults defined in 
 - `ENCLAVED_EXPRESS_URL` - Required URL for the Enclaved Express server
 - `ENCLAVED_EXPRESS_CERT` - Required path to Enclaved Express certificate
 
+
+## Abbreviations and Nomenclature
+- (DKG) Distributed Key Generation
+- (DSG) Distributed Signing Generation
+- (HSM) Hardware Security Module
+- (WP) Wallet Platform
+- (SDK) Refers to the BitGoJs SDK https://github.com/BitGo/BitGoJS
+
+## Error Handling
+
+The application uses consistent error handling patterns across both modes:
+
+- `BitgoExpressError` - Base error class for all custom errors
+- `ValidationError` - 422 Unprocessable Entity errors for invalid input parameters
+- `NotFoundError` - 404 Not Found errors for resources that don't exist
+- `BadRequestError` - 400 Bad Request errors for invalid request format
+- `UnauthorizedError` - 401 Unauthorized errors for authentication failures
+- `ForbiddenError` - 403 Forbidden errors for authorization issues
+- `ConflictError` - 409 Conflict errors for state conflicts
+
+API responses follow a standard error format with `error` and `details` fields.
+
 ## API Endpoints
 
 ### Enclaved Express (Port 3080)
+
+#### Health and Information
 - `POST /ping` - Health check
 - `GET /version` - Version information
+
+#### Key Management
 - `POST /:coin/key/independent` - Generate independent keychain
+
+#### Transaction Signing
+- `POST /api/:coin/multisig/sign` - Sign a multisig transaction
+- `POST /api/:coin/multisig/recovery` - Recover a multisig transaction
+- `POST /api/:coin/mpc/recovery` - Sign a recovery transaction with EdDSA user & backup keyshares
+- `POST /api/:coin/mpc/sign/:shareType` - Sign an MPC transaction
+
+#### MPC Key Operations
+- `POST /api/:coin/mpc/key/initialize` - Initialize MPC for EdDSA key generation
+- `POST /api/:coin/mpc/key/finalize` - Finalize key generation
+- `POST /api/:coin/mpcv2/initialize` - Initialize MPC v2 
+- `POST /api/:coin/mpcv2/round` - Perform a round in the MPC protocol
+- `POST /api/:coin/mpcv2/finalize` - Finalize the MPC DKG protocol
 
 ### Master Express (Port 3081)
 
