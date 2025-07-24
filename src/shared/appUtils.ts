@@ -16,6 +16,9 @@ import { Config, TlsMode } from '../shared/types';
  */
 export function setupLogging(app: express.Application, config: Config): void {
   // Set up morgan for logging, with optional logging into a file
+  if (process.env.NODE_ENV === 'test' || process.env.LOG_LEVEL === 'silent') {
+    return;
+  }
   let middleware;
   if (config.logFile) {
     // create a write stream (in append mode)
