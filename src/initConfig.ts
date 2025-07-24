@@ -101,6 +101,7 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     tlsMode: determineTlsMode(),
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
+    recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
   };
 }
 
@@ -130,6 +131,7 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     tlsMode: get('tlsMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     allowSelfSigned: get('allowSelfSigned'),
+    recoveryMode: get('recoveryMode'),
   };
 }
 
@@ -241,6 +243,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     tlsMode,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     allowSelfSigned,
+    recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
   };
 }
 
@@ -278,6 +281,7 @@ function mergeMasterExpressConfigs(
     tlsMode: get('tlsMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     allowSelfSigned: get('allowSelfSigned'),
+    recoveryMode: get('recoveryMode'),
   };
 }
 

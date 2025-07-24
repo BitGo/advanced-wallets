@@ -75,6 +75,12 @@ describe('Configuration', () => {
       }
     });
 
+    it('should read the recovery mode from the env', () => {
+      process.env.RECOVERY_MODE = 'true';
+      const cfg = initConfig();
+      cfg.recoveryMode!.should.be.true();
+    });
+    
     it('should read port from environment variable', () => {
       process.env.ENCLAVED_EXPRESS_PORT = '4000';
       process.env.KMS_URL = 'http://localhost:3000';
