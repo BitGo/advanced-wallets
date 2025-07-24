@@ -33,8 +33,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       enclavedExpressUrl: enclavedExpressUrl,
       enclavedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
+      debugNamespace: [],
     };
 
     const app = expressApp(config);
@@ -585,7 +585,6 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       disableEnvCheck: true,
       authVersion: 2,
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
     };
 

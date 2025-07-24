@@ -30,8 +30,8 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       enclavedExpressUrl: enclavedExpressUrl,
       enclavedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
+      debugNamespace: [],
     };
 
     const app = expressApp(config);

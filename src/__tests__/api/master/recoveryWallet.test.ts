@@ -29,8 +29,8 @@ describe('Recovery Tests', () => {
     enclavedExpressUrl: enclavedExpressUrl,
     enclavedExpressCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
-    mtlsRequestCert: false,
     allowSelfSigned: true,
+    debugNamespace: [],
   };
 
   beforeEach(() => {

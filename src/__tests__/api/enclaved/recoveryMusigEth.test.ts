@@ -39,8 +39,8 @@ describe('recoveryMultisigTransaction', () => {
       logFile: '',
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
+      debugNamespace: [],
     };
 
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);

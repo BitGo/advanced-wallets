@@ -6,8 +6,6 @@ describe('Configuration', () => {
   const originalEnv = process.env;
   const mockTlsKey = '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----';
   const mockTlsCert = '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----';
-  const mockSecuredExpressCert =
-    '-----BEGIN CERTIFICATE-----\nENCLAVED_EXPRESS_CERT\n-----END CERTIFICATE-----';
 
   beforeEach(() => {
     // Reset to original environment and clear all relevant variables
@@ -20,7 +18,6 @@ describe('Configuration', () => {
     delete process.env.TLS_MODE;
     delete process.env.TLS_KEY;
     delete process.env.TLS_CERT;
-    delete process.env.MTLS_REJECT_UNAUTHORIZED;
     delete process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS;
     delete process.env.ALLOW_SELF_SIGNED;
     delete process.env.ENCLAVED_EXPRESS_PORT;
@@ -141,7 +138,6 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
-      process.env.MTLS_REJECT_UNAUTHORIZED = 'true';
       process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
 
       const cfg = initConfig();

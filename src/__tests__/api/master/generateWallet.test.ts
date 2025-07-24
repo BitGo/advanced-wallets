@@ -32,8 +32,8 @@ describe('POST /api/:coin/wallet/generate', () => {
       enclavedExpressUrl: enclavedExpressUrl,
       enclavedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
+      debugNamespace: [],
     };
 
     const app = expressApp(config);
@@ -728,7 +728,7 @@ describe('POST /api/:coin/wallet/generate', () => {
             to: 0,
             payload: {
               encryptedMessage: 'test-p2p-message-backup-to-user-2',
-              signature: 'test-signature-backup-to-user-2',
+              signature: 'test-signature-user-to-backup-2',
             },
             commitment: 'test-commitment-backup-2',
           },
@@ -874,7 +874,7 @@ describe('POST /api/:coin/wallet/generate', () => {
             to: 0,
             payload: {
               encryptedMessage: 'test-p2p-message-backup-to-user-3',
-              signature: 'test-signature-backup-to-user-3',
+              signature: 'test-signature-user-to-backup-3',
             },
             commitment: 'test-commitment-backup-3',
           },
@@ -1127,7 +1127,6 @@ describe('POST /api/:coin/wallet/generate', () => {
       disableEnvCheck: true,
       authVersion: 2,
       tlsMode: TlsMode.DISABLED,
-      mtlsRequestCert: false,
       allowSelfSigned: true,
     };
 

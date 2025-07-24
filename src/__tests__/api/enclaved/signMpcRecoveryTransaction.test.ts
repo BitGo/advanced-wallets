@@ -16,8 +16,8 @@ describe('EdDSA Recovery Signing', () => {
     timeout: 60000,
     logFile: '',
     tlsMode: TlsMode.DISABLED,
-    mtlsRequestCert: false,
     allowSelfSigned: true,
+    debugNamespace: [],
     kmsUrl: 'kms.example.com',
   };
 
