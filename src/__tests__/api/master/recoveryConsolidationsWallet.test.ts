@@ -11,8 +11,16 @@ import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpre
 
 describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
-  const accessToken = 'test-token';
+  const enclavedExpressUrl = 'https://test-enclaved-express.com';
+  const accessToken = 'test-access-token';
+
+  const mockUserPub =
+    'xpub661MyMwAqRbcFkPHucMnrGNzDwb6teAX1RbKQmqtEF8kK3Z7LZ59qafCjB9eCWzSgHCZkdXgp';
+  const mockBackupPub =
+    'xpub661MyMwAqRbcGaZrYqfYmaTRzQxM9PKEZ7GRb6DKfghkzgjk2dKT4qBXfz6WzpT4N5fXJhFW';
+  const mockBitgoPub =
+    'xpub661MyMwAqRbcF1cvdJUvQ8MV6a7R5hF5cBmVxA1zS1k7RH7NKj3X7K8fgR4kS2qY6jW9cF7L';
+  const mockCommonKeychain = 'common-keychain-123';
 
   before(() => {
     nock.disableNetConnect();
@@ -27,7 +35,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       disableEnvCheck: true,
       authVersion: 2,
       enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      enclavedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
     };
@@ -40,271 +48,407 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     sinon.restore();
   });
 
-  describe('Non-MPC Wallets (multisigType: onchain)', () => {
-    it('should handle TRON consolidation recovery for onchain wallet', async () => {
-      const mockTransactions = [
-        { txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' },
-        { txHex: 'unsigned-tx-2', serializedTx: 'serialized-unsigned-tx-2' },
-      ];
+  it('should succeed in handling TRON consolidation recovery for onchain wallet', async () => {
+    const mockTransactions = [
+      { txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' },
+      { txHex: 'unsigned-tx-2', serializedTx: 'serialized-unsigned-tx-2' },
+    ];
 
-      const recoverConsolidationsStub = sinon
-        .stub(Trx.prototype, 'recoverConsolidations')
-        .resolves({
-          transactions: mockTransactions,
-        });
-
-      const recoveryMultisigStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
-        .resolves({ txHex: 'signed-tx' });
-
-      const response = await agent
-        .post(`/api/trx/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'onchain',
-          userPub: 'user-xpub',
-          backupPub: 'backup-xpub',
-          bitgoPub: 'bitgo-xpub',
-          tokenContractAddress: 'tron-token',
-          startingScanIndex: 1,
-          endingScanIndex: 3,
-        });
-
-      response.status.should.equal(200);
-      response.body.should.have.property('signedTxs');
-      response.body.signedTxs.should.have.length(2);
-
-      sinon.assert.calledOnce(recoverConsolidationsStub);
-      sinon.assert.calledTwice(recoveryMultisigStub);
-
-      const callArgs = recoverConsolidationsStub.firstCall.args[0];
-      callArgs.tokenContractAddress!.should.equal('tron-token');
-      callArgs.userKey!.should.equal('user-xpub');
-      callArgs.backupKey!.should.equal('backup-xpub');
-      callArgs.bitgoKey.should.equal('bitgo-xpub');
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
     });
 
-    it('should handle Solana consolidation recovery for onchain wallet', async () => {
-      const mockTransactions = [
-        { txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' },
-      ];
+    const recoveryMultisigStub = sinon
+      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .resolves({ txHex: 'signed-tx' });
 
-      const recoverConsolidationsStub = sinon
-        .stub(Sol.prototype, 'recoverConsolidations')
-        .resolves({
-          transactions: mockTransactions,
-        });
+    const requestPayload = {
+      multisigType: 'onchain' as const,
+      userPub: mockUserPub,
+      backupPub: mockBackupPub,
+      bitgoPub: mockBitgoPub,
+      tokenContractAddress: 'tron-token-address',
+      startingScanIndex: 1,
+      endingScanIndex: 3,
+    };
 
-      const recoveryMultisigStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
-        .resolves({ txHex: 'signed-tx' });
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
 
-      const response = await agent
-        .post(`/api/sol/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'onchain',
-          userPub: 'user-xpub',
-          backupPub: 'backup-xpub',
-          bitgoPub: 'bitgo-xpub',
-          durableNonces: {
-            publicKeys: ['sol-pubkey-1', 'sol-pubkey-2'],
-            secretKey: 'sol-secret',
-          },
-        });
+    response.status.should.equal(200);
+    response.body.should.have.property('signedTxs');
+    response.body.signedTxs.should.have.length(2);
 
-      response.status.should.equal(200);
-      response.body.should.have.property('signedTxs');
-      sinon.assert.calledOnce(recoverConsolidationsStub);
-      sinon.assert.calledOnce(recoveryMultisigStub);
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+    sinon.assert.calledTwice(recoveryMultisigStub);
 
-      const callArgs = recoverConsolidationsStub.firstCall.args[0];
-      callArgs.durableNonces.should.have.property('publicKeys').which.is.an.Array();
-      callArgs.durableNonces.should.have.property('secretKey', 'sol-secret');
-      callArgs.userKey!.should.equal('user-xpub');
-      callArgs.backupKey!.should.equal('backup-xpub');
-      callArgs.bitgoKey.should.equal('bitgo-xpub');
-    });
+    const callArgs = recoverConsolidationsStub.firstCall.args[0];
+    callArgs.should.have.property('tokenContractAddress', 'tron-token-address');
+    callArgs.should.have.property('userKey', mockUserPub);
+    callArgs.should.have.property('backupKey', mockBackupPub);
+    callArgs.should.have.property('bitgoKey', mockBitgoPub);
   });
 
-  describe('MPC Wallets (multisigType: tss)', () => {
-    it('should handle MPC consolidation recovery with commonKeychain', async () => {
-      const mockTxRequests = [
-        {
-          walletCoin: 'tsui',
-          transactions: [
-            {
-              unsignedTx: {
-                txHex: 'unsigned-mpc-tx-1',
-                serializedTx: 'serialized-unsigned-mpc-tx-1',
-              },
-              signatureShares: [],
+  it('should succeed in handling Solana consolidation recovery for onchain wallet', async () => {
+    const mockTransactions = [{ txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' }];
+
+    const recoverConsolidationsStub = sinon.stub(Sol.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
+    });
+
+    const recoveryMultisigStub = sinon
+      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .resolves({ txHex: 'signed-tx' });
+
+    const requestPayload = {
+      multisigType: 'onchain' as const,
+      userPub: mockUserPub,
+      backupPub: mockBackupPub,
+      bitgoPub: mockBitgoPub,
+      durableNonces: {
+        publicKeys: ['sol-pubkey-1', 'sol-pubkey-2'],
+        secretKey: 'sol-secret-key',
+      },
+    };
+
+    const response = await agent
+      .post(`/api/sol/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(200);
+    response.body.should.have.property('signedTxs');
+    response.body.signedTxs.should.have.length(1);
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+    sinon.assert.calledOnce(recoveryMultisigStub);
+
+    const callArgs = recoverConsolidationsStub.firstCall.args[0];
+    callArgs.should.have.property('durableNonces');
+    callArgs.durableNonces.should.have.property('publicKeys').which.is.an.Array();
+    callArgs.durableNonces.should.have.property('secretKey', 'sol-secret-key');
+    callArgs.should.have.property('userKey', mockUserPub);
+    callArgs.should.have.property('backupKey', mockBackupPub);
+    callArgs.should.have.property('bitgoKey', mockBitgoPub);
+  });
+
+  it('should succeed in handling MPC consolidation recovery with commonKeychain', async () => {
+    const mockTxRequests = [
+      {
+        walletCoin: 'tsui',
+        transactions: [
+          {
+            unsignedTx: {
+              txHex: 'unsigned-mpc-tx-1',
+              serializedTx: 'serialized-unsigned-mpc-tx-1',
             },
-          ],
-        },
-      ] as any;
-
-      const recoverConsolidationsStub = sinon
-        .stub(Sui.prototype, 'recoverConsolidations')
-        .resolves({
-          txRequests: mockTxRequests,
-        });
-
-      const recoveryMPCStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
-        .resolves({ txHex: 'signed-mpc-tx' });
-
-      const response = await agent
-        .post(`/api/tsui/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'tss',
-          commonKeychain: 'common-keychain-key',
-          apiKey: 'test-api-key',
-          startingScanIndex: 0,
-          endingScanIndex: 5,
-        });
-
-      response.status.should.equal(200);
-      response.body.should.have.property('signedTxs');
-      response.body.signedTxs.should.have.length(1);
-
-      sinon.assert.calledOnce(recoverConsolidationsStub);
-      sinon.assert.calledOnce(recoveryMPCStub);
-
-      const callArgs = recoverConsolidationsStub.firstCall.args[0];
-      callArgs.userKey!.should.equal('');
-      callArgs.backupKey!.should.equal('');
-      callArgs.bitgoKey.should.equal('common-keychain-key');
-
-      const mpcCallArgs = recoveryMPCStub.firstCall.args[0];
-      mpcCallArgs.userPub.should.equal('common-keychain-key');
-      mpcCallArgs.backupPub.should.equal('common-keychain-key');
-      mpcCallArgs.apiKey.should.equal('test-api-key');
-    });
-
-    it('should handle SOL MPC consolidation recovery', async () => {
-      const mockTransactions = [
-        { txHex: 'unsigned-mpc-tx-1', serializedTx: 'serialized-mpc-tx-1' },
-      ];
-
-      const recoverConsolidationsStub = sinon
-        .stub(Sol.prototype, 'recoverConsolidations')
-        .resolves({
-          transactions: mockTransactions,
-        });
-
-      const recoveryMPCStub = sinon
-        .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
-        .resolves({ txHex: 'signed-mpc-tx' });
-
-      const response = await agent
-        .post(`/api/sol/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'tss',
-          commonKeychain: 'sol-common-key',
-          apiKey: 'sol-api-key',
-          durableNonces: {
-            publicKeys: ['sol-pubkey-1'],
-            secretKey: 'sol-secret',
+            signatureShares: [],
           },
-        });
+        ],
+      },
+    ] as any;
 
-      response.status.should.equal(200);
-      response.body.should.have.property('signedTxs');
-      sinon.assert.calledOnce(recoverConsolidationsStub);
-      sinon.assert.calledOnce(recoveryMPCStub);
-
-      const mpcCallArgs = recoveryMPCStub.firstCall.args[0];
-      mpcCallArgs.userPub.should.equal('sol-common-key');
-      mpcCallArgs.backupPub.should.equal('sol-common-key');
-      mpcCallArgs.apiKey.should.equal('sol-api-key');
+    const recoverConsolidationsStub = sinon.stub(Sui.prototype, 'recoverConsolidations').resolves({
+      txRequests: mockTxRequests,
     });
+
+    const recoveryMPCStub = sinon
+      .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
+      .resolves({ txHex: 'signed-mpc-tx' });
+
+    const requestPayload = {
+      multisigType: 'tss' as const,
+      commonKeychain: mockCommonKeychain,
+      apiKey: 'test-api-key',
+      startingScanIndex: 0,
+      endingScanIndex: 5,
+    };
+
+    const response = await agent
+      .post(`/api/tsui/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(200);
+    response.body.should.have.property('signedTxs');
+    response.body.signedTxs.should.have.length(1);
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+    sinon.assert.calledOnce(recoveryMPCStub);
+
+    const callArgs = recoverConsolidationsStub.firstCall.args[0];
+    callArgs.should.have.property('userKey', '');
+    callArgs.should.have.property('backupKey', '');
+    callArgs.should.have.property('bitgoKey', mockCommonKeychain);
+
+    const mpcCallArgs = recoveryMPCStub.firstCall.args[0];
+    mpcCallArgs.should.have.property('userPub', mockCommonKeychain);
+    mpcCallArgs.should.have.property('backupPub', mockCommonKeychain);
+    mpcCallArgs.should.have.property('apiKey', 'test-api-key');
   });
 
-  describe('Error Cases', () => {
-    it('should throw error when commonKeychain is missing for MPC wallet', async () => {
-      const response = await agent
-        .post(`/api/tsui/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'tss',
-          // Missing commonKeychain
-          apiKey: 'test-api-key',
-        });
+  it('should succeed in handling SOL MPC consolidation recovery', async () => {
+    const mockTransactions = [{ txHex: 'unsigned-mpc-tx-1', serializedTx: 'serialized-mpc-tx-1' }];
 
-      response.status.should.equal(500);
-      response.body.should.have.property('error');
-      response.body.should.have
-        .property('details')
-        .which.match(/Missing required key: commonKeychain/);
+    const recoverConsolidationsStub = sinon.stub(Sol.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
     });
 
-    it('should throw error when required keys are missing for onchain wallet', async () => {
-      const response = await agent
-        .post(`/api/trx/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'onchain',
-          userPub: 'user-xpub',
-          // Missing backupPub and bitgoPub
-        });
+    const recoveryMPCStub = sinon
+      .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
+      .resolves({ txHex: 'signed-mpc-tx' });
 
-      response.status.should.equal(500);
-      response.body.should.have.property('error');
-      response.body.should.have.property('details').which.match(/Missing required keys/);
+    const requestPayload = {
+      multisigType: 'tss' as const,
+      commonKeychain: mockCommonKeychain,
+      apiKey: 'sol-api-key',
+      durableNonces: {
+        publicKeys: ['sol-pubkey-1'],
+        secretKey: 'sol-secret',
+      },
+    };
+
+    const response = await agent
+      .post(`/api/sol/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(200);
+    response.body.should.have.property('signedTxs');
+    response.body.signedTxs.should.have.length(1);
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+    sinon.assert.calledOnce(recoveryMPCStub);
+
+    const mpcCallArgs = recoveryMPCStub.firstCall.args[0];
+    mpcCallArgs.should.have.property('userPub', mockCommonKeychain);
+    mpcCallArgs.should.have.property('backupPub', mockCommonKeychain);
+    mpcCallArgs.should.have.property('apiKey', 'sol-api-key');
+  });
+
+  it('should succeed in handling multiple recovery consolidations', async () => {
+    const mockTransactions = [
+      { txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' },
+      { txHex: 'unsigned-tx-2', serializedTx: 'serialized-unsigned-tx-2' },
+      { txHex: 'unsigned-tx-3', serializedTx: 'serialized-unsigned-tx-3' },
+    ];
+
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
     });
 
-    it('should handle empty recovery consolidations result', async () => {
-      const recoverConsolidationsStub = sinon
-        .stub(Trx.prototype, 'recoverConsolidations')
-        .resolves({
-          transactions: [], // Empty result
-        } as any);
+    const recoveryMultisigStub = sinon
+      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .resolves({ txHex: 'signed-tx' });
 
-      const response = await agent
-        .post(`/api/trx/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'onchain',
-          userPub: 'user-xpub',
-          backupPub: 'backup-xpub',
-          bitgoPub: 'bitgo-xpub',
-        });
+    const requestPayload = {
+      multisigType: 'onchain' as const,
+      userPub: mockUserPub,
+      backupPub: mockBackupPub,
+      bitgoPub: mockBitgoPub,
+      startingScanIndex: 0,
+      endingScanIndex: 10,
+    };
 
-      response.status.should.equal(200);
-      response.body.should.have.property('signedTxs');
-      response.body.signedTxs.should.have.length(0); // Empty array
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
 
-      sinon.assert.calledOnce(recoverConsolidationsStub);
+    response.status.should.equal(200);
+    response.body.should.have.property('signedTxs');
+    response.body.signedTxs.should.have.length(3);
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+    sinon.assert.calledThrice(recoveryMultisigStub);
+  });
+
+  it('should fail when commonKeychain is missing for MPC wallet', async () => {
+    const response = await agent
+      .post(`/api/tsui/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'tss',
+        apiKey: 'test-api-key',
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details', 'Missing required key: commonKeychain');
+  });
+
+  it('should fail when required keys are missing for onchain wallet', async () => {
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'onchain',
+        userPub: mockUserPub,
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property(
+      'details',
+      'Missing required keys: userPub, backupPub, bitgoPub',
+    );
+  });
+
+  it('should fail when required multisigType parameter is missing', async () => {
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+  });
+
+  it('should fail when multisigType parameter has invalid value', async () => {
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'invalid_type',
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+  });
+
+  it('should fail when authorization header is missing', async () => {
+    const response = await agent.post(`/api/trx/wallet/recoveryconsolidations`).send({
+      multisigType: 'onchain',
+      userPub: mockUserPub,
+      backupPub: mockBackupPub,
+      bitgoPub: mockBitgoPub,
     });
 
-    it('should throw error when recoverConsolidations returns unexpected result structure', async () => {
-      const recoverConsolidationsStub = sinon
-        .stub(Trx.prototype, 'recoverConsolidations')
-        .resolves({
-          // Missing both transactions and txRequests properties
-          someOtherProperty: 'value',
-        } as any);
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details');
+  });
 
-      const response = await agent
-        .post(`/api/trx/wallet/recoveryconsolidations`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          multisigType: 'onchain',
-          userPub: 'user-xpub',
-          backupPub: 'backup-xpub',
-          bitgoPub: 'bitgo-xpub',
-        });
+  it('should succeed in handling empty recovery consolidations result', async () => {
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: [],
+    } as any);
 
-      response.status.should.equal(500);
-      response.body.should.have.property('error');
-      response.body.should.have
-        .property('details')
-        .which.match(/recoverConsolidations did not return expected transactions/);
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'onchain',
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+      });
 
-      sinon.assert.calledOnce(recoverConsolidationsStub);
+    response.status.should.equal(200);
+    response.body.should.have.property('signedTxs');
+    response.body.signedTxs.should.have.length(0);
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+  });
+
+  it('should fail when recoverConsolidations returns unexpected result structure', async () => {
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      someOtherProperty: 'value',
+    } as any);
+
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'onchain',
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property(
+      'details',
+      'recoverConsolidations did not return expected transactions',
+    );
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+  });
+
+  it('should fail when recoverConsolidations throws an error', async () => {
+    const recoverConsolidationsStub = sinon
+      .stub(Trx.prototype, 'recoverConsolidations')
+      .rejects(new Error('Failed to recover consolidations'));
+
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'onchain',
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details', 'Failed to recover consolidations');
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+  });
+
+  it('should fail when enclavedExpressClient throws an error', async () => {
+    const mockTransactions = [{ txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' }];
+
+    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+      transactions: mockTransactions,
     });
+
+    const recoveryMultisigStub = sinon
+      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .rejects(new Error('Enclaved Express signing failed'));
+
+    const response = await agent
+      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'onchain',
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+      });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('details', 'Enclaved Express signing failed');
+
+    sinon.assert.calledOnce(recoverConsolidationsStub);
+    sinon.assert.calledOnce(recoveryMultisigStub);
+  });
+
+  it('should fail when durableNonces parameter is not correctly structured', async () => {
+    const response = await agent
+      .post(`/api/sol/wallet/recoveryconsolidations`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        multisigType: 'onchain',
+        userPub: mockUserPub,
+        backupPub: mockBackupPub,
+        bitgoPub: mockBitgoPub,
+        durableNonces: 'invalid-structure',
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
   });
 });
