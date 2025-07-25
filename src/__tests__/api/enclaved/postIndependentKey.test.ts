@@ -6,9 +6,6 @@ import { app as enclavedApp } from '../../../enclavedApp';
 import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
 import express from 'express';
 
-import * as sinon from 'sinon';
-import * as configModule from '../../../initConfig';
-
 describe('postIndependentKey', () => {
   let cfg: EnclavedConfig;
   let app: express.Application;
@@ -20,7 +17,6 @@ describe('postIndependentKey', () => {
   const accessToken = 'test-token';
 
   // sinon stubs
-  let configStub: sinon.SinonStub;
 
   before(() => {
     // nock config
@@ -39,8 +35,6 @@ describe('postIndependentKey', () => {
       allowSelfSigned: true,
     };
 
-    configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
-
     // app setup
     app = enclavedApp(cfg);
     agent = request.agent(app);
@@ -48,10 +42,6 @@ describe('postIndependentKey', () => {
 
   afterEach(() => {
     nock.cleanAll();
-  });
-
-  after(() => {
-    configStub.restore();
   });
 
   // test cases

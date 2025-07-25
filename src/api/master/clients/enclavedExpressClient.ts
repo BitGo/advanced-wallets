@@ -32,6 +32,7 @@ import {
   MpcInitializeResponseType,
   MpcV2FinalizeResponseType,
   MpcV2InitializeResponseType,
+  MpcV2RecoveryResponseType,
   MpcV2RoundResponseType,
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo-beta/abstract-utxo';
@@ -746,6 +747,34 @@ export class EnclavedExpressClient {
     } catch (error) {
       const err = error as Error;
       debugLogger('Failed to sign mpcv2 round 3: %s', err.message);
+      throw err;
+    }
+  }
+
+  async recoverEcdsaMpcV2Wallet(params: {
+    txHex: string;
+    pub: string;
+  }): Promise<MpcV2RecoveryResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to finalize MPCv2 key generation');
+    }
+
+    try {
+      debugLogger('Signing MPCv2 recovery transaction for coin: %s', this.coin);
+      let request = this.apiClient['v1.mpcv2.recovery'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      const err = error as Error;
+      debugLogger('Failed to sign MPCv2 recovery transction: %s', err.message);
       throw err;
     }
   }

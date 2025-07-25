@@ -3,6 +3,7 @@ import {
   BackupKeyRecoveryTransansaction,
   FormattedOfflineVaultTxInfo,
 } from '@bitgo-beta/abstract-utxo';
+import { CosmosCoin } from '@bitgo-beta/abstract-cosmos';
 import { CoinFamily } from '@bitgo-beta/statics';
 import { BaseCoin } from '@bitgo-beta/sdk-core';
 import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
@@ -31,6 +32,29 @@ export function isEthLikeCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
     isFamily(coin, CoinFamily.XDC);
 
   return isEthPure || isEthLike;
+}
+
+// TODO: this typeguard should not work
+export function isCosmosLikeCoin(coin: BaseCoin): coin is CosmosCoin {
+  const isCosmosLike =
+    isFamily(coin, CoinFamily.ASI) ||
+    isFamily(coin, CoinFamily.ATOM) ||
+    isFamily(coin, CoinFamily.BABY) ||
+    isFamily(coin, CoinFamily.BLD) ||
+    isFamily(coin, CoinFamily.COREUM) ||
+    isFamily(coin, CoinFamily.CRONOS) ||
+    isFamily(coin, CoinFamily.HASH) ||
+    isFamily(coin, CoinFamily.INITIA) ||
+    isFamily(coin, CoinFamily.INJECTIVE) ||
+    isFamily(coin, CoinFamily.ISLM) ||
+    isFamily(coin, CoinFamily.MANTRA) ||
+    isFamily(coin, CoinFamily.OSMO) ||
+    // isFamily(coin, CoinFamily.RUNE) ||
+    isFamily(coin, CoinFamily.SEI) ||
+    isFamily(coin, CoinFamily.TIA) ||
+    isFamily(coin, CoinFamily.ZETA);
+
+  return isCosmosLike;
 }
 
 export function isUtxoCoin(coin: BaseCoin): coin is AbstractUtxoCoin {
@@ -69,5 +93,15 @@ export function isFormattedOfflineVaultTxInfo(
 }
 
 export function isEddsaCoin(coin: BaseCoin): boolean {
+  if (typeof coin.getMPCAlgorithm !== 'function') {
+    return false;
+  }
   return coin.getMPCAlgorithm() === 'eddsa';
+}
+
+export function isEcdsaCoin(coin: BaseCoin): boolean {
+  if (typeof coin.getMPCAlgorithm !== 'function') {
+    return false;
+  }
+  return coin.getMPCAlgorithm() === 'ecdsa';
 }
