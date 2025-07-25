@@ -16,7 +16,6 @@ import { AdvancedWalletManagerClient as AdvancedWalletManagerClient } from '../.
 import { handleEddsaSigning } from '../../../api/master/handlers/eddsa';
 import { readKey } from 'openpgp';
 
-// TODO: Re-enable once using EDDSA Custom signing fns
 describe('Eddsa Signing Handler', () => {
   let bitgo: BitGoBase;
   let wallet: Wallet;
