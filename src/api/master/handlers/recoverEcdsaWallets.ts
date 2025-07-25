@@ -1,4 +1,3 @@
-import type { AbstractEthLikeNewCoins } from '@bitgo-beta/sdk-coin-eth';
 import { BaseCoin, BitGoBase, Ecdsa } from '@bitgo-beta/sdk-core';
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import { isCosmosLikeCoin, isEthLikeCoin } from '../../../shared/coinUtils';
@@ -121,20 +120,20 @@ export async function recoverEcdsaMPCv2Wallets(
 
   // post processing of the response
   if (isEthLikeCoin(baseCoin)) {
-    const { AbstractEthLikeNewCoins } = await import('@bitgo-beta/sdk-coin-eth');
+    const { AbstractEthLikeNewCoins } = await import('@bitgo-beta/abstract-eth');
     const { TransactionFactory } = await import('@ethereumjs/tx');
 
-    const ethCoin = baseCoin as AbstractEthLikeNewCoins; // all eth-like coins should implement this interface
     const unsignedTxFull = TransactionFactory.fromSerializedData(
       Buffer.from(unsignedTx.signableHex, 'hex'),
     );
 
-    const ethCommmon = AbstractEthLikeNewCoins['getEthLikeCommon'](
-      params.ethLikeParams?.eip1559,
-      params.ethLikeParams?.replayProtectionOptions,
+    const ethCommon = AbstractEthLikeNewCoins.getCustomChainCommon(
+      params.ethLikeParams?.replayProtectionOptions?.chain as number,
     );
-    const signedTx = await ethCoin['getSignedTxFromSignature'](
-      ethCommmon,
+    ethCommon.setHardfork(params.ethLikeParams?.replayProtectionOptions?.hardfork as string);
+
+    const signedTx = await baseCoin['getSignedTxFromSignature'](
+      ethCommon,
       unsignedTxFull,
       signature,
     );

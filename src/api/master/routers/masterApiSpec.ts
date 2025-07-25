@@ -79,6 +79,7 @@ export const RecoveryParamTypes = {
   ecdsaEthLikeRecoverySpecificParams: t.type({
     walletContractAddress: t.string,
     bitgoDestinationAddress: t.string,
+    apiKey: t.string,
   }),
 
   // ECDSA Cosmos-like recovery specific parameters

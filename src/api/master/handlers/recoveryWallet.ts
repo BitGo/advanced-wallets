@@ -264,13 +264,11 @@ export async function handleRecoveryWalletOnPrem(
           walletContractAddress: coinSpecificParams?.ecdsaEthLikeRecoverySpecificParams
             ?.walletContractAddress as string,
           eip1559: { maxFeePerGas, maxPriorityFeePerGas },
-          replayProtectionOptions: {
-            chain: bitgo.env === 'prod' ? 1 : 17000,
-            hardfork: 'london',
-          },
+          replayProtectionOptions: getReplayProtectionOptions(bitgo.env as EnvironmentName),
           gasLimit,
           bitgoDestinationAddress: coinSpecificParams?.ecdsaEthLikeRecoverySpecificParams
             ?.bitgoDestinationAddress as string,
+          apiKey: coinSpecificParams?.ecdsaEthLikeRecoverySpecificParams?.apiKey,
         };
       } else if (isCosmosLikeCoin(sdkCoin)) {
         params.cosmosLikeParams = {
