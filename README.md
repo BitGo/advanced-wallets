@@ -94,32 +94,32 @@ openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=loca
 ### 2. Start Enclaved Express
 
 ```bash
-APP_MODE=enclaved \
-KMS_URL=https://your-kms-service \
-TLS_KEY_PATH=./server.key \
-TLS_CERT_PATH=./server.crt \
-MTLS_REQUEST_CERT=true \
-ALLOW_SELF_SIGNED=true \
-npm run start
+export APP_MODE=enclaved
+export KMS_URL=https://your-kms-service
+export TLS_KEY_PATH=./server.key
+export TLS_CERT_PATH=./server.crt
+export MTLS_REQUEST_CERT=true
+export ALLOW_SELF_SIGNED=true
+npm start
 ```
 
-### 3. Start Master Express
+### 4. Start Master Express
 
 In a separate terminal:
 
 ```bash
-APP_MODE=master-express \
-BITGO_ENV=test \
-TLS_KEY_PATH=./server.key \
-TLS_CERT_PATH=./server.crt \
-ENCLAVED_EXPRESS_URL=https://localhost:3080 \
-ENCLAVED_EXPRESS_CERT=./server.crt \
-MTLS_REQUEST_CERT=false \
-ALLOW_SELF_SIGNED=true \
-npm run start
+export APP_MODE=master-express
+export BITGO_ENV=test
+export TLS_KEY_PATH=./server.key
+export TLS_CERT_PATH=./server.crt
+export ENCLAVED_EXPRESS_URL=https://localhost:3080
+export ENCLAVED_EXPRESS_CERT=./server.crt
+export MTLS_REQUEST_CERT=false
+export ALLOW_SELF_SIGNED=true
+npm start
 ```
 
-### 4. Test the Connection
+### 5. Test the Connection
 
 Test that Master Express can communicate with Enclaved Express:
 
@@ -143,28 +143,28 @@ curl -k -X POST https://localhost:3081/ping/enclavedExpress
 #### Enclaved Express (Production)
 
 ```bash
-APP_MODE=enclaved \
-KMS_URL=https://production-kms.example.com \
-TLS_KEY_PATH=/secure/path/enclaved.key \
-TLS_CERT_PATH=/secure/path/enclaved.crt \
-MTLS_REQUEST_CERT=true \
-ALLOW_SELF_SIGNED=false \
-MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456... \
-npm run start
+export APP_MODE=enclaved
+export KMS_URL=https://production-kms.example.com
+export TLS_KEY_PATH=/secure/path/enclaved.key
+export TLS_CERT_PATH=/secure/path/enclaved.crt
+export MTLS_REQUEST_CERT=true
+export ALLOW_SELF_SIGNED=false
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456...
+npm start
 ```
 
 #### Master Express (Production)
 
 ```bash
-APP_MODE=master-express \
-BITGO_ENV=prod \
-TLS_KEY_PATH=/secure/path/master.key \
-TLS_CERT_PATH=/secure/path/master.crt \
-ENCLAVED_EXPRESS_URL=https://enclaved.internal.example.com:3080 \
-ENCLAVED_EXPRESS_CERT=/secure/path/enclaved.crt \
-MTLS_REQUEST_CERT=true \
-ALLOW_SELF_SIGNED=false \
-npm run start
+export APP_MODE=master-express
+export BITGO_ENV=prod
+export TLS_KEY_PATH=/secure/path/master.key
+export TLS_CERT_PATH=/secure/path/master.crt
+export ENCLAVED_EXPRESS_URL=https://enclaved.internal.example.com:3080
+export ENCLAVED_EXPRESS_CERT=/secure/path/enclaved.crt
+export MTLS_REQUEST_CERT=true
+export ALLOW_SELF_SIGNED=false
+npm start
 ```
 
 ## Container Deployment with Podman
