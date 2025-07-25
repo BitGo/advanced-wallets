@@ -65,11 +65,6 @@ describe('postIndependentKey', () => {
 
     const kmsNock = nock(kmsUrl).post(`/key`).reply(200, mockKmsResponse);
 
-    console.log(cfg.kmsUrl);
-
-    console.warn(nock.activeMocks());
-    console.warn(nock.isActive());
-
     const response = await agent
       .post(`/api/${coin}/key/independent`)
       .set('Authorization', `Bearer ${accessToken}`)

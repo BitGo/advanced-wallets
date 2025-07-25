@@ -112,7 +112,6 @@ export async function eddsaInitialize(
     };
   } catch (error) {
     debugLogger('Failed to initialize mpc key generation', error);
-    console.error('Encryption error details:', error);
     throw error;
   }
 }
