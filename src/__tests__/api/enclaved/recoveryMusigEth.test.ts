@@ -86,9 +86,6 @@ describe('recoveryMultisigTransaction', () => {
       .query({ source: 'backup', useLocalEncipherment: false })
       .reply(200, mockKmsBackupResponse);
 
-    console.warn(nock.activeMocks());
-    console.warn(nock.isActive());
-
     const response = await agent
       .post(`/api/${coin}/multisig/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)

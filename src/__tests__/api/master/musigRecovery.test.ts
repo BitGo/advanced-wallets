@@ -65,10 +65,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
 
     // the call to our own master api express endpoint
     const response = await agent
-      .post(`/api/${coin}/wallet/recovery`, (body) => {
-        console.log('Nock received body:', body);
-        return true;
-      })
+      .post(`/api/${coin}/wallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {

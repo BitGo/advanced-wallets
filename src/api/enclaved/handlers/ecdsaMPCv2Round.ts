@@ -6,6 +6,7 @@ import {
 } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
 import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 import { KmsClient } from '../../../kms/kmsClient';
+import logger from '../../../logger';
 
 export async function ecdsaMPCv2Round(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>,
@@ -115,7 +116,6 @@ export async function ecdsaMPCv2Round(
     try {
       outgoingMessages = session.handleIncomingMessages(deserializedIncomingMessages);
     } catch (error: any) {
-      console.error('Error handling incoming messages:', error);
       throw new Error(`Failed to handle incoming messages: ${error.message}`);
     }
   }
@@ -147,7 +147,7 @@ export async function ecdsaMPCv2Round(
       password: plaintextKey,
     });
   } catch (error) {
-    console.error('Encryption error details:', error);
+    logger.error('Encryption error details:', error);
     throw error;
   }
 

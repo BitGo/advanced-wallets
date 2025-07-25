@@ -40,7 +40,7 @@ export class KmsClient {
     try {
       kmsResponse = await superagent.post(`${this.url}/key`).set('x-api-key', 'abc').send(params);
     } catch (error: any) {
-      console.log('Error posting key to KMS', error);
+      debugLogger('Error posting key to KMS', error);
       throw error;
     }
 
@@ -68,7 +68,7 @@ export class KmsClient {
         useLocalEncipherment: params.options?.useLocalEncipherment ?? false,
       });
     } catch (error: any) {
-      console.log('Error getting key from KMS', error);
+      debugLogger('Error getting key from KMS', error);
       throw error;
     }
 
