@@ -22,6 +22,7 @@ describe('UTXO recovery', () => {
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
     kmsUrl: 'kms.example.com',
+    recoveryMode: true,
   };
 
   beforeEach(() => {

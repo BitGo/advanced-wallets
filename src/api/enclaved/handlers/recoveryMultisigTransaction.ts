@@ -6,7 +6,7 @@ import {
   TransactionRecipient,
 } from '@bitgo-beta/sdk-core';
 import { EnclavedApiSpecRouteRequest } from '../../../enclavedBitgoExpress/routers/enclavedApiSpec';
-import { EnvironmentName } from '../../../initConfig';
+import { EnclavedConfig, EnvironmentName } from '../../../initConfig';
 import logger from '../../../logger';
 import {
   isEthLikeCoin,
@@ -19,12 +19,14 @@ import {
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
 import { SignedEthLikeRecoveryTx } from '../../../types/transaction';
-import { retrieveKmsPrvKey } from '../utils';
+import { checkRecoveryMode, retrieveKmsPrvKey } from '../utils';
 import coinFactory from '../../../shared/coinFactory';
 
 export async function recoveryMultisigTransaction(
   req: EnclavedApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
 ): Promise<any> {
+  checkRecoveryMode(req.config as EnclavedConfig);
+
   const { userPub, backupPub, bitgoPub, unsignedSweepPrebuildTx, walletContractAddress, coin } =
     req.decoded;
 
