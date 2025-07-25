@@ -10,7 +10,7 @@ import {
 import { Ed25519Bip32HdTree } from '@bitgo-beta/sdk-lib-mpc';
 import { CoinFamily, coins } from '@bitgo-beta/statics';
 import { type KeyPair as SolKeyPair } from '@bitgo-beta/sdk-coin-sol';
-import { retrieveKmsPrvKey } from '../utils';
+import { checkRecoveryMode, retrieveKmsPrvKey } from '../utils';
 import { EnclavedConfig } from '../../../shared/types';
 import logger from '../../../logger';
 
@@ -87,6 +87,8 @@ export async function signEddsaRecoveryTransaction({
 }: SignEddsaRecoveryTransactionParams) {
   let publicKey = '';
   logger.info(`Received request ${JSON.stringify(request)}`);
+
+  checkRecoveryMode(cfg);
 
   const hdTree = await Ed25519Bip32HdTree.initialize();
   const MPC = await Eddsa.initialize(hdTree);

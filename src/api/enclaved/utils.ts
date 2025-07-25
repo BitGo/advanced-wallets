@@ -116,3 +116,11 @@ export async function decryptDataKey({
     };
   }
 }
+
+export function checkRecoveryMode(config: EnclavedConfig) {
+  if (!config.recoveryMode) {
+    throw new Error(
+      'Recovery operations are not enabled. The server must be in recovery mode to perform this action.',
+    );
+  }
+}

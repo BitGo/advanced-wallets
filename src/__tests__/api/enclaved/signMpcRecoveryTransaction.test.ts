@@ -18,6 +18,7 @@ describe('EdDSA Recovery Signing', () => {
     httpLoggerFile: '',
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
+    recoveryMode: true,
   };
 
   const commonKeychain =

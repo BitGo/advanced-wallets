@@ -40,6 +40,7 @@ describe('recoveryMultisigTransaction', () => {
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
+      recoveryMode: true,
     };
 
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
