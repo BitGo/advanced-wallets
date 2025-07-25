@@ -75,12 +75,6 @@ describe('Configuration', () => {
       }
     });
 
-    it('should read the recovery mode from the env', () => {
-      process.env.RECOVERY_MODE = 'true';
-      const cfg = initConfig();
-      cfg.recoveryMode!.should.be.true();
-    });
-    
     it('should read port from environment variable', () => {
       process.env.ENCLAVED_EXPRESS_PORT = '4000';
       process.env.KMS_URL = 'http://localhost:3000';
@@ -94,6 +88,15 @@ describe('Configuration', () => {
         cfg.tlsKey!.should.equal(mockTlsKey);
         cfg.tlsCert!.should.equal(mockTlsCert);
       }
+    });
+
+    it('should read the recovery mode from the env', () => {
+      process.env.KMS_URL = 'http://localhost:3000';
+      process.env.TLS_KEY = mockTlsKey;
+      process.env.TLS_CERT = mockTlsCert;
+      process.env.RECOVERY_MODE = 'true';
+      const cfg = initConfig();
+      cfg.recoveryMode!.should.be.true();
     });
 
     it('should read TLS mode from environment variables', () => {

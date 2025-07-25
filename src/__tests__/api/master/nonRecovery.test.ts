@@ -20,14 +20,13 @@ describe('Non Recovery Tests', () => {
     port: 0,
     bind: 'localhost',
     timeout: 60000,
-    logFile: '',
     env: 'test',
     disableEnvCheck: true,
     authVersion: 2,
     enclavedExpressUrl: enclavedExpressUrl,
     enclavedExpressCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
-    mtlsRequestCert: false,
+    httpLoggerFile: '',
     allowSelfSigned: true,
     recoveryMode: false,
   };
@@ -37,36 +36,7 @@ describe('Non Recovery Tests', () => {
     nock.enableNetConnect('127.0.0.1');
 
     // Create mock BitGo instance with base functionality
-    mockBitgo = {
-      coin: sinon.stub(),
-      _coinFactory: {},
-      _useAms: false,
-      initCoinFactory: sinon.stub(),
-      registerToken: sinon.stub(),
-      getValidate: sinon.stub(),
-      validateAddress: sinon.stub(),
-      verifyAddress: sinon.stub(),
-      verifyPassword: sinon.stub(),
-      encrypt: sinon.stub(),
-      decrypt: sinon.stub(),
-      lock: sinon.stub(),
-      unlock: sinon.stub(),
-      getSharingKey: sinon.stub(),
-      ping: sinon.stub(),
-      authenticate: sinon.stub(),
-      authenticateWithAccessToken: sinon.stub(),
-      logout: sinon.stub(),
-      me: sinon.stub(),
-      session: sinon.stub(),
-      getUser: sinon.stub(),
-      users: sinon.stub(),
-      getWallet: sinon.stub(),
-      getWallets: sinon.stub(),
-      addWallet: sinon.stub(),
-      removeWallet: sinon.stub(),
-      getAsUser: sinon.stub(),
-      register: sinon.stub(),
-    } as unknown as BitGoAPI;
+    mockBitgo = new BitGoAPI({ env: 'test' });
 
     // Setup middleware stubs before creating app
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
@@ -98,7 +68,7 @@ describe('Non Recovery Tests', () => {
       });
     });
 
-    it('should fail to run recovery if not in recovery mode', async () => {
+    it('should fail to run mbe recovery if not in recovery mode', async () => {
       const coin = 'tbtc';
       const userPub = 'xpub_user';
       const backupPub = 'xpub_backup';
@@ -134,7 +104,7 @@ describe('Non Recovery Tests', () => {
   });
 
   describe('Recovery Consolidation', () => {
-    it('should fail to run recovery consolidation if not in recovery mode', async () => {
+    it('should fail to run mbe recovery consolidation if not in recovery mode', async () => {
       const response = await agent
         .post(`/api/trx/wallet/recoveryconsolidations`)
         .set('Authorization', `Bearer ${accessToken}`)
