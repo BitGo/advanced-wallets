@@ -87,12 +87,13 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
     port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
     bind: readEnvVar('BIND'),
     ipc: readEnvVar('IPC'),
-    httpLoggerFile: readEnvVar('HTTP_LOGFILE'),
+    httpLoggerFile: readEnvVar('HTTP_LOGFILE') || 'logs/http-access.log',
     timeout: Number(readEnvVar('TIMEOUT')),
     keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
     headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
     // KMS settings
     kmsUrl,
+    kmsTlsCertPath: readEnvVar('KMS_TLS_CERT_PATH'),
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
     crtPath: readEnvVar('TLS_CERT_PATH'),
@@ -124,6 +125,7 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
     keepAliveTimeout: get('keepAliveTimeout'),
     headersTimeout: get('headersTimeout'),
     kmsUrl: get('kmsUrl'),
+    kmsTlsCertPath: get('kmsTlsCertPath'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
     tlsKey: get('tlsKey'),
@@ -164,6 +166,19 @@ function configureEnclavedMode(): EnclavedConfig {
       }
     } else if (config.tlsCert) {
       logger.info('Using TLS certificate from environment variable');
+    }
+
+    if (!config.kmsTlsCertPath) {
+      throw new Error('KMS_TLS_CERT is required when TLS mode is MTLS');
+    }
+    if (config.kmsTlsCertPath) {
+      try {
+        config.kmsTlsCert = fs.readFileSync(config.kmsTlsCertPath, 'utf-8');
+        logger.info(`Successfully loaded KMS TLS certificate from file: ${config.kmsTlsCertPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read KMS TLS certificate from kmsTlsCert: ${err.message}`);
+      }
     }
 
     // Validate that certificates are properly loaded when TLS is enabled

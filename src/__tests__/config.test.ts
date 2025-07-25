@@ -62,6 +62,7 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
+      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
@@ -80,6 +81,7 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
+      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
@@ -95,6 +97,7 @@ describe('Configuration', () => {
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
       process.env.RECOVERY_MODE = 'true';
+      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
       cfg.recoveryMode!.should.be.true();
     });
@@ -103,6 +106,7 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
+      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
 
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
@@ -147,6 +151,7 @@ describe('Configuration', () => {
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
       process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
+      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
 
       const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
@@ -155,6 +160,7 @@ describe('Configuration', () => {
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
         cfg.tlsCert!.should.equal(mockTlsCert);
+        cfg.kmsTlsCertPath!.should.equal(path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem'));
       }
     });
 
@@ -177,6 +183,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       delete process.env.TLS_KEY;
       delete process.env.TLS_CERT;
+      delete process.env.KMS_TLS_CERT_PATH;
       const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
@@ -198,11 +205,19 @@ describe('Configuration', () => {
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
       process.env.HTTP_LOGFILE = '/tmp/test-http-access.log';
+      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
       isEnclavedConfig(cfg).should.be.true();
       if (isEnclavedConfig(cfg)) {
         cfg.httpLoggerFile.should.equal('/tmp/test-http-access.log');
       }
+    });
+
+    it('should throw error when KMS_TLS_CERT_PATH is not set for MTLS mode', () => {
+      process.env.KMS_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'mtls';
+      delete process.env.KMS_TLS_CERT_PATH;
+      (() => initConfig()).should.throw('KMS_TLS_CERT is required when TLS mode is MTLS');
     });
   });
 
