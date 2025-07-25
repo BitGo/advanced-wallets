@@ -20,6 +20,8 @@ import type { Ada, Tada } from '@bitgo-beta/sdk-coin-ada';
 import type { Dot, Tdot } from '@bitgo-beta/sdk-coin-dot';
 import type { Tao, Ttao } from '@bitgo-beta/sdk-coin-tao';
 import coinFactory from '../../../shared/coinFactory';
+import { checkRecoveryMode } from '../handlerUtils';
+import { MasterExpressConfig } from '../../../shared/types';
 
 type RecoveryConsolidationParams =
   | ConsolidationRecoveryOptions
@@ -77,6 +79,8 @@ export async function recoveryConsolidateWallets(
 export async function handleRecoveryConsolidationsOnPrem(
   req: MasterApiSpecRouteRequest<'v1.wallet.recoveryConsolidations', 'post'>,
 ) {
+  checkRecoveryMode(req.config as MasterExpressConfig);
+
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
   const enclavedExpressClient = req.enclavedExpressClient;

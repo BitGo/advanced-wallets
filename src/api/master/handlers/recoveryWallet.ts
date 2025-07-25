@@ -28,10 +28,11 @@ import {
   UtxoRecoveryOptions,
 } from '../routers/masterApiSpec';
 import { recoverEddsaWallets } from './recoverEddsaWallets';
-import { EnvironmentName } from '../../../shared/types';
+import { EnvironmentName, MasterExpressConfig } from '../../../shared/types';
 import logger from '../../../logger';
 import { CoinFamily } from '@bitgo-beta/statics';
 import { ValidationError } from '../../../shared/errors';
+import { checkRecoveryMode } from '../handlerUtils';
 
 interface RecoveryParams {
   userKey: string;
@@ -186,6 +187,8 @@ async function handleUtxoLikeRecovery(
 export async function handleRecoveryWalletOnPrem(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
 ) {
+  checkRecoveryMode(req.config as MasterExpressConfig);
+
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
   const enclavedExpressClient = req.enclavedExpressClient;

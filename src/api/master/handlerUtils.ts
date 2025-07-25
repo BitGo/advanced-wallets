@@ -2,6 +2,7 @@ import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { CustomSigningFunction, RequestTracer } from '@bitgo-beta/sdk-core';
 import { EnclavedExpressClient } from './clients/enclavedExpressClient';
 import coinFactory from '../../shared/coinFactory';
+import { MasterExpressConfig } from '../../shared/types';
 
 /**
  * Fetch wallet and signing keychain, with validation for source and pubkey.
@@ -72,4 +73,12 @@ export function makeCustomSigningFunction({
       pub,
     });
   };
+}
+
+export function checkRecoveryMode(config: MasterExpressConfig) {
+  if (!config.recoveryMode) {
+    throw new Error(
+      'Recovery operations are not enabled. The server must be in recovery mode to perform this action.',
+    );
+  }
 }

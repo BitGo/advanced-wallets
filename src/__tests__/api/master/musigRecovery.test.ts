@@ -31,6 +31,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
       enclavedExpressCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
+      recoveryMode: true,
     };
 
     const app = expressApp(config);

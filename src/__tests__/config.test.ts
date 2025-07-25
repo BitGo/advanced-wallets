@@ -90,6 +90,15 @@ describe('Configuration', () => {
       }
     });
 
+    it('should read the recovery mode from the env', () => {
+      process.env.KMS_URL = 'http://localhost:3000';
+      process.env.TLS_KEY = mockTlsKey;
+      process.env.TLS_CERT = mockTlsCert;
+      process.env.RECOVERY_MODE = 'true';
+      const cfg = initConfig();
+      cfg.recoveryMode!.should.be.true();
+    });
+
     it('should read TLS mode from environment variables', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;

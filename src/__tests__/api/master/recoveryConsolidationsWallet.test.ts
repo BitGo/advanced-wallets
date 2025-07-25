@@ -38,6 +38,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       enclavedExpressCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
+      recoveryMode: true,
     };
     const app = expressApp(config);
     agent = request.agent(app);
