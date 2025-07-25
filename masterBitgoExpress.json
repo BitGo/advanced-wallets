@@ -125,8 +125,58 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -217,8 +267,48 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -369,8 +459,48 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -569,8 +699,38 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -643,8 +803,58 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -658,6 +868,8 @@
     },
     "/api/{coin}/wallet/generate": {
       "post": {
+        "summary": "Generates a new onPrem self-managed cold wallet.",
+        "description": "The wallet creation process involves several steps that happen automatically:\n1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective KMS.\n2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.\n3. Keychain Upload: Uploads the user/backup public keys to BitGo.\n4. BitGo Key Creation: Creates the BitGo key on the BitGo service.\n5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.",
         "parameters": [
           {
             "name": "coin",
@@ -675,23 +887,41 @@
                 "type": "object",
                 "properties": {
                   "label": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "A human-readable label for the wallet This will be displayed in the BitGo dashboard and API responses",
+                    "example": "My Wallet"
                   },
                   "multisigType": {
                     "type": "string",
                     "enum": [
                       "onchain",
                       "tss"
-                    ]
+                    ],
+                    "description": "The type of multisig wallet to create - onchain: Traditional multisig wallets using on-chain scripts - tss: Threshold Signature Scheme wallets using MPC protocols If absent, BitGo uses the default wallet type for the asset",
+                    "example": "tss"
                   },
                   "enterprise": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Enterprise ID - Required for Ethereum wallets Ethereum wallets can only be created under an enterprise Each enterprise has a fee address which will be used to pay for transaction fees Your enterprise ID can be seen by clicking on the \"Manage Organization\" link on the enterprise dropdown",
+                    "example": "59cd72485007a239fb00282ed480da1f",
+                    "pattern": "^[0-9a-f]{32}$"
                   },
                   "disableTransactionNotifications": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Flag for disabling wallet transaction notifications When true, BitGo will not send email/SMS notifications for wallet transactions",
+                    "example": false
                   },
                   "isDistributedCustody": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True, if the wallet type is a distributed-custodial If passed, you must also pass the 'enterprise' parameter Distributed custody allows multiple parties to share control of the wallet",
+                    "example": false
+                  },
+                  "walletVersion": {
+                    "type": "number",
+                    "description": "Specify the wallet creation contract version used when creating an Ethereum wallet contract - 0: Old wallet creation (legacy) - 1: New wallet creation, only deployed upon receiving funds - 2: Same functionality as v1 but with NFT support - 3: MPC wallets",
+                    "example": 1,
+                    "minimum": 0,
+                    "maximum": 3
                   }
                 },
                 "required": [
@@ -708,7 +938,405 @@
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "wallet": {
+                      "type": "object",
+                      "description": "The generated wallet object containing all wallet + key details",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "The wallet ID",
+                          "example": "59cd72485007a239fb00282ed480da1f",
+                          "pattern": "^[0-9a-f]{32}$"
+                        },
+                        "users": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "user": {
+                                "type": "string"
+                              },
+                              "permissions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "user",
+                              "permissions"
+                            ],
+                            "description": "Array of users with access to the wallet"
+                          }
+                        },
+                        "coin": {
+                          "type": "string",
+                          "description": "Name of the blockchain the wallet is on",
+                          "example": "hteth"
+                        },
+                        "label": {
+                          "type": "string",
+                          "description": "Name the user assigned to the wallet",
+                          "example": "My HTETH Wallet"
+                        },
+                        "m": {
+                          "type": "number",
+                          "description": "Number of signatures required for the wallet to send",
+                          "example": 2
+                        },
+                        "n": {
+                          "type": "number",
+                          "description": "Number of signers on the wallet",
+                          "example": 3
+                        },
+                        "keys": {
+                          "type": "array",
+                          "example": [
+                            "59cd72485007a239fb00282ed480da1f"
+                          ],
+                          "items": {
+                            "type": "string",
+                            "description": "IDs of wallet keys"
+                          }
+                        },
+                        "keySignatures": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "description": "Signatures for the backup and BitGo public keys signed by the user key"
+                        },
+                        "enterprise": {
+                          "type": "string",
+                          "description": "Enterprise ID",
+                          "example": "5cb64a0cdc5cdf8a03710c459a71bbdf"
+                        },
+                        "organization": {
+                          "type": "string",
+                          "description": "Organization ID",
+                          "example": "68261931fe63ee08ea45f9b98c2f261c"
+                        },
+                        "bitgoOrg": {
+                          "type": "string",
+                          "description": "BitGo organization name",
+                          "example": "BitGo Trust"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "example": [
+                            "59cd72485007a239fb00282ed480da1f"
+                          ],
+                          "items": {
+                            "type": "string",
+                            "description": "Tags set on the wallet"
+                          }
+                        },
+                        "disableTransactionNotifications": {
+                          "type": "boolean",
+                          "description": "Flag for disabling wallet transaction notifications",
+                          "example": false
+                        },
+                        "freeze": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "description": "Freeze state (used to stop the wallet from spending)",
+                          "example": {}
+                        },
+                        "deleted": {
+                          "type": "boolean",
+                          "description": "Flag which indicates the wallet has been deleted",
+                          "example": false
+                        },
+                        "approvalsRequired": {
+                          "type": "number",
+                          "description": "Number of admin approvals required for an action to fire",
+                          "example": 1
+                        },
+                        "isCold": {
+                          "type": "boolean",
+                          "description": "Flag for identifying cold wallets",
+                          "example": true
+                        },
+                        "coinSpecific": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "description": "Coin-specific data"
+                        },
+                        "admin": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "description": "Admin data (wallet policies)",
+                          "example": {}
+                        },
+                        "pendingApprovals": {
+                          "type": "array",
+                          "example": [],
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Pending approvals on the wallet"
+                          }
+                        },
+                        "allowBackupKeySigning": {
+                          "type": "boolean",
+                          "description": "Flag for allowing signing with backup key",
+                          "example": false
+                        },
+                        "clientFlags": {
+                          "type": "array",
+                          "example": [],
+                          "items": {
+                            "type": "string",
+                            "description": "Client flags"
+                          }
+                        },
+                        "recoverable": {
+                          "type": "boolean",
+                          "description": "Flag indicating whether this wallet's user key is recoverable with the passphrase held by the user",
+                          "example": false
+                        },
+                        "startDate": {
+                          "type": "string",
+                          "description": "Time when this wallet was created",
+                          "example": "2025-07-25T00:15:10.000Z"
+                        },
+                        "hasLargeNumberOfAddresses": {
+                          "type": "boolean",
+                          "description": "Flag indicating that this wallet is large (more than 100,000 addresses)",
+                          "example": false
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "description": "Custom configuration options for this wallet",
+                          "example": {}
+                        },
+                        "balanceString": {
+                          "type": "string",
+                          "description": "Wallet balance as string",
+                          "example": "0"
+                        },
+                        "confirmedBalanceString": {
+                          "type": "string",
+                          "description": "Confirmed wallet balance as string",
+                          "example": "0"
+                        },
+                        "spendableBalanceString": {
+                          "type": "string",
+                          "description": "Spendable wallet balance as string",
+                          "example": "0"
+                        },
+                        "receiveAddress": {
+                          "type": "object",
+                          "description": "Receive address object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "Address ID",
+                              "example": "6882cc8fa445ccab362fb207129bb1f5"
+                            },
+                            "address": {
+                              "type": "string",
+                              "description": "The wallet address",
+                              "example": "0x260d242181897030903e7a75dcddacc56071a65f"
+                            },
+                            "chain": {
+                              "type": "number",
+                              "description": "Chain index",
+                              "example": 0
+                            },
+                            "index": {
+                              "type": "number",
+                              "description": "Address index",
+                              "example": 0
+                            },
+                            "coin": {
+                              "type": "string",
+                              "description": "Coin name",
+                              "example": "hteth"
+                            },
+                            "wallet": {
+                              "type": "string",
+                              "description": "Wallet ID",
+                              "example": "6882cc8ea445ccab362fb195a1fac0c6"
+                            },
+                            "coinSpecific": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "Coin-specific address data"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "address",
+                            "chain",
+                            "index",
+                            "coin",
+                            "wallet",
+                            "coinSpecific"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "users",
+                        "coin",
+                        "label",
+                        "m",
+                        "n",
+                        "keys",
+                        "keySignatures",
+                        "enterprise",
+                        "organization",
+                        "bitgoOrg",
+                        "tags",
+                        "disableTransactionNotifications",
+                        "freeze",
+                        "deleted",
+                        "approvalsRequired",
+                        "isCold",
+                        "coinSpecific",
+                        "admin",
+                        "pendingApprovals",
+                        "allowBackupKeySigning",
+                        "clientFlags",
+                        "recoverable",
+                        "startDate",
+                        "hasLargeNumberOfAddresses",
+                        "config",
+                        "balanceString",
+                        "confirmedBalanceString",
+                        "spendableBalanceString",
+                        "receiveAddress"
+                      ]
+                    },
+                    "userKeychain": {
+                      "type": "object",
+                      "description": "User keychain object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Keychain ID",
+                          "example": "59cd72485007a239fb00282ed480da1f",
+                          "pattern": "^[0-9a-f]{32}$"
+                        },
+                        "source": {
+                          "type": "string",
+                          "description": "Party that created the key",
+                          "example": "user"
+                        },
+                        "type": {
+                          "type": "string",
+                          "description": "Keychain type",
+                          "example": "tss"
+                        },
+                        "commonKeychain": {
+                          "type": "string",
+                          "description": "Common keychain for TSS wallets",
+                          "example": "030e9b92ea093b2c77cf6a509bd63bf93d9b4e8c01843d8efb1475227e6327d8e3f59d13139d51b71916cfe4552d8a7fb4c595778165fc45971f660f0fc59c758c"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "source",
+                        "type",
+                        "commonKeychain"
+                      ]
+                    },
+                    "backupKeychain": {
+                      "type": "object",
+                      "description": "Backup keychain object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Keychain ID",
+                          "example": "59cd72485007a239fb00282ed480da1f",
+                          "pattern": "^[0-9a-f]{32}$"
+                        },
+                        "source": {
+                          "type": "string",
+                          "description": "Party that created the key",
+                          "example": "backup"
+                        },
+                        "type": {
+                          "type": "string",
+                          "description": "Keychain type",
+                          "example": "tss"
+                        },
+                        "commonKeychain": {
+                          "type": "string",
+                          "description": "Common keychain for TSS wallets",
+                          "example": "030e9b92ea093b2c77cf6a509bd63bf93d9b4e8c01843d8efb1475227e6327d8e3f59d13139d51b71916cfe4552d8a7fb4c595778165fc45971f660f0fc59c758c"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "source",
+                        "type",
+                        "commonKeychain"
+                      ]
+                    },
+                    "bitgoKeychain": {
+                      "type": "object",
+                      "description": "BitGo keychain object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Keychain ID",
+                          "example": "59cd72485007a239fb00282ed480da1f",
+                          "pattern": "^[0-9a-f]{32}$"
+                        },
+                        "source": {
+                          "type": "string",
+                          "description": "Party that created the key",
+                          "example": "bitgo"
+                        },
+                        "type": {
+                          "type": "string",
+                          "description": "Keychain type",
+                          "example": "tss"
+                        },
+                        "commonKeychain": {
+                          "type": "string",
+                          "description": "Common keychain for TSS wallets",
+                          "example": "030e9b92ea093b2c77cf6a509bd63bf93d9b4e8c01843d8efb1475227e6327d8e3f59d13139d51b71916cfe4552d8a7fb4c595778165fc45971f660f0fc59c758c"
+                        },
+                        "isBitGo": {
+                          "type": "boolean",
+                          "description": "Flag for identifying keychain as created by BitGo",
+                          "example": true
+                        },
+                        "isTrust": {
+                          "type": "boolean",
+                          "description": "Flag for identifying keychain as trust keychain",
+                          "example": false
+                        },
+                        "hsmType": {
+                          "type": "string",
+                          "description": "HSM type",
+                          "example": "institutional"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "source",
+                        "type",
+                        "commonKeychain",
+                        "isBitGo",
+                        "isTrust",
+                        "hsmType"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "wallet",
+                    "userKeychain",
+                    "backupKeychain",
+                    "bitgoKeychain"
+                  ]
+                }
               }
             }
           },
@@ -722,8 +1350,48 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1027,6 +1695,36 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable Entity",
             "content": {
@@ -1039,6 +1737,16 @@
           },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1164,8 +1872,58 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1347,9 +2105,6 @@
           "details": {
             "type": "string",
             "description": "Error details"
-          },
-          "stack": {
-            "type": "string"
           }
         },
         "required": [
