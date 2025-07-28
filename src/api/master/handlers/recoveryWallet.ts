@@ -8,6 +8,8 @@ import coinFactory from '../../../shared/coinFactory';
 import assert from 'assert';
 
 import {
+  isCosmosLikeCoin,
+  isEcdsaCoin,
   isEddsaCoin,
   isEthLikeCoin,
   isFormattedOfflineVaultTxInfo,
@@ -21,17 +23,17 @@ import {
 import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
 import {
   CoinSpecificParams,
-  EvmRecoveryOptions,
+  CoinSpecificParamsUnion,
   MasterApiSpecRouteRequest,
   ScriptType2Of3,
   SolanaRecoveryOptions,
-  UtxoRecoveryOptions,
 } from '../routers/masterApiSpec';
 import { recoverEddsaWallets } from './recoverEddsaWallets';
 import { EnvironmentName, MasterExpressConfig } from '../../../shared/types';
+import { recoverEcdsaMpcV2Params, recoverEcdsaMPCv2Wallets } from './recoverEcdsaWallets';
 import logger from '../../../logger';
+import { NotImplementedError, ValidationError } from '../../../shared/errors';
 import { CoinFamily } from '@bitgo-beta/statics';
-import { ValidationError } from '../../../shared/errors';
 import { checkRecoveryMode } from '../handlerUtils';
 
 interface RecoveryParams {
@@ -47,7 +49,7 @@ interface EnclavedRecoveryParams {
   backupPub: string;
   apiKey: string;
   unsignedSweepPrebuildTx: any; // TODO: type this properly once we have the SDK types
-  coinSpecificParams?: EvmRecoveryOptions | UtxoRecoveryOptions | SolanaRecoveryOptions;
+  coinSpecificParams?: CoinSpecificParamsUnion;
   walletContractAddress: string;
 }
 
@@ -56,17 +58,35 @@ function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) 
     return;
   }
 
-  if (isUtxoCoin(sdkCoin)) {
-    if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
-      throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
-    }
-  } else if (isEthLikeCoin(sdkCoin)) {
-    if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
-      throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
-    }
-  } else if (isEddsaCoin(sdkCoin)) {
+  if (isEddsaCoin(sdkCoin)) {
     if (params.evmRecoveryOptions || params.utxoRecoveryOptions) {
       throw new ValidationError('Invalid parameters provided for Solana coin recovery');
+    }
+  } else if (isEcdsaCoin(sdkCoin)) {
+    if (isEthLikeCoin(sdkCoin)) {
+      if (!params.ecdsaEthLikeRecoverySpecificParams) {
+        throw new ValidationError('Invalid parameters provided for ETH-like MPC V2 coin recovery');
+      }
+    } else if (isCosmosLikeCoin(sdkCoin)) {
+      if (!params.ecdsaCosmosLikeRecoverySpecificParams) {
+        throw new ValidationError(
+          'Invalid parameters provided for Cosmos-like MPC V2 coin recovery',
+        );
+      }
+    } else {
+      throw new NotImplementedError(
+        `MPC V2 recovery is not supported for coin family: ${sdkCoin.getFamily()}`,
+      );
+    }
+  } else {
+    if (isUtxoCoin(sdkCoin)) {
+      if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
+        throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
+      }
+    } else if (isEthLikeCoin(sdkCoin)) {
+      if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
+        throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
+      }
     }
   }
 }
@@ -201,6 +221,7 @@ export async function handleRecoveryWalletOnPrem(
   // Handle TSS recovery
   if (req.decoded.isTssRecovery) {
     assert(req.decoded.tssRecoveryParams, 'TSS recovery parameters are required');
+
     const { commonKeychain } = req.decoded.tssRecoveryParams;
     if (!commonKeychain) {
       throw new Error('Common keychain is required for TSS recovery');
@@ -227,9 +248,41 @@ export async function handleRecoveryWalletOnPrem(
           coinSpecificParams: coinSpecificParams?.solanaRecoveryOptions,
         },
       );
+    } else if (isEcdsaCoin(sdkCoin)) {
+      const params: recoverEcdsaMpcV2Params = {
+        commonKeychain,
+      };
+
+      if (isEthLikeCoin(sdkCoin)) {
+        const { maxFeePerGas, maxPriorityFeePerGas, gasLimit } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
+        params.ethLikeParams = {
+          userKey: commonKeychain,
+          backupKey: commonKeychain,
+          recoveryDestination: recoveryDestinationAddress,
+          walletPassphrase: '',
+          isTss: true,
+          walletContractAddress: coinSpecificParams?.ecdsaEthLikeRecoverySpecificParams
+            ?.walletContractAddress as string,
+          eip1559: { maxFeePerGas, maxPriorityFeePerGas },
+          replayProtectionOptions: getReplayProtectionOptions(bitgo.env as EnvironmentName),
+          gasLimit,
+          bitgoDestinationAddress: coinSpecificParams?.ecdsaEthLikeRecoverySpecificParams
+            ?.bitgoDestinationAddress as string,
+          apiKey: coinSpecificParams?.ecdsaEthLikeRecoverySpecificParams?.apiKey,
+        };
+      } else if (isCosmosLikeCoin(sdkCoin)) {
+        params.cosmosLikeParams = {
+          recoveryDestination: recoveryDestinationAddress,
+          rootAddress: coinSpecificParams?.ecdsaCosmosLikeRecoverySpecificParams?.rootAddress,
+        };
+      } else {
+        throw new NotImplementedError(`TSS recovery is not supported for coin: ${coin}.`);
+      }
+
+      return recoverEcdsaMPCv2Wallets(bitgo, sdkCoin, enclavedExpressClient, params);
     } else {
-      throw new MethodNotImplementedError(
-        `TSS recovery is not implemented for coin: ${coin}. Supported coins are Eddsa coins.`,
+      throw new ValidationError(
+        `TSS recovery is not supported for coin ${coin}. ${coin} is neither eddsa nor ecdsa.`,
       );
     }
   }

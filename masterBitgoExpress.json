@@ -462,9 +462,6 @@
                   "ledgerSequenceDelta": {
                     "type": "number"
                   },
-                  "gasPrice": {
-                    "type": "number"
-                  },
                   "noSplitChange": {
                     "type": "boolean"
                   },
@@ -762,6 +759,36 @@
                   "coinSpecificParams": {
                     "type": "object",
                     "properties": {
+                      "ecdsaCosmosLikeRecoverySpecificParams": {
+                        "type": "object",
+                        "properties": {
+                          "rootAddress": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rootAddress"
+                        ]
+                      },
+                      "ecdsaEthLikeRecoverySpecificParams": {
+                        "type": "object",
+                        "properties": {
+                          "apiKey": {
+                            "type": "string"
+                          },
+                          "bitgoDestinationAddress": {
+                            "type": "string"
+                          },
+                          "walletContractAddress": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "apiKey",
+                          "bitgoDestinationAddress",
+                          "walletContractAddress"
+                        ]
+                      },
                       "evmRecoveryOptions": {
                         "type": "object",
                         "properties": {

@@ -3,7 +3,8 @@ import {
   BackupKeyRecoveryTransansaction,
   FormattedOfflineVaultTxInfo,
 } from '@bitgo-beta/abstract-utxo';
-import { CoinFamily } from '@bitgo-beta/statics';
+import { CosmosCoin } from '@bitgo-beta/abstract-cosmos';
+import { CoinFamily, CoinFeature } from '@bitgo-beta/statics';
 import { BaseCoin } from '@bitgo-beta/sdk-core';
 import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
 import { type Xtz, type Txtz } from '@bitgo-beta/sdk-coin-xtz';
@@ -31,6 +32,10 @@ export function isEthLikeCoin(coin: BaseCoin): coin is AbstractEthLikeNewCoins {
     isFamily(coin, CoinFamily.XDC);
 
   return isEthPure || isEthLike;
+}
+
+export function isCosmosLikeCoin(coin: BaseCoin): coin is CosmosCoin {
+  return coin.getConfig().features.includes(CoinFeature.COSMOS_LIKE_COINS);
 }
 
 export function isUtxoCoin(coin: BaseCoin): coin is AbstractUtxoCoin {
@@ -69,5 +74,15 @@ export function isFormattedOfflineVaultTxInfo(
 }
 
 export function isEddsaCoin(coin: BaseCoin): boolean {
+  if (typeof coin.getMPCAlgorithm !== 'function') {
+    return false;
+  }
   return coin.getMPCAlgorithm() === 'eddsa';
+}
+
+export function isEcdsaCoin(coin: BaseCoin): boolean {
+  if (typeof coin.getMPCAlgorithm !== 'function') {
+    return false;
+  }
+  return coin.getMPCAlgorithm() === 'ecdsa';
 }

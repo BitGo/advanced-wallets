@@ -74,6 +74,16 @@ export class ConflictError extends BitgoExpressError {
   }
 }
 
+/**
+ * NotImplementedError represents a feature that is not implemented
+ * Should result in a 501 Not Implemented HTTP status code
+ */
+export class NotImplementedError extends BitgoExpressError {
+  constructor(message: string) {
+    super(message, 'NotImplementedError');
+  }
+}
+
 // Define specific HTTP error responses
 
 // Common error response types
@@ -85,3 +95,4 @@ export const BadRequestResponse = { 400: ErrorResponse };
 export const UnprocessableEntityResponse = { 422: ErrorResponse };
 export const InternalServerErrorResponse = { 500: ErrorResponse };
 export const NotFoundResponse = { 404: ErrorResponse };
+export const NotImplementedResponse = { 501: ErrorResponse };

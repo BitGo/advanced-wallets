@@ -13,8 +13,16 @@ import {
   TypedRequestHandler,
   type WrappedRouter,
 } from '@api-ts/typed-express-router';
+import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import express from 'express';
 import * as t from 'io-ts';
+
+import {
+  BadRequestResponse,
+  InternalServerErrorResponse,
+  NotImplementedResponse,
+} from '../../shared/errors';
+
 import { postIndependentKey } from '../../api/enclaved/handlers/postIndependentKey';
 import { recoveryMultisigTransaction } from '../../api/enclaved/handlers/recoveryMultisigTransaction';
 import { signMultisigTransaction } from '../../api/enclaved/handlers/signMultisigTransaction';
@@ -24,10 +32,10 @@ import { EnclavedConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
 import { eddsaInitialize } from '../../api/enclaved/mpcInitialize';
 import { eddsaFinalize } from '../../api/enclaved/mpcFinalize';
-import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import { ecdsaMPCv2Initialize } from '../../api/enclaved/handlers/ecdsaMPCv2Initialize';
 import { ecdsaMPCv2Round } from '../../api/enclaved/handlers/ecdsaMPCv2Round';
 import { ecdsaMPCv2Finalize } from '../../api/enclaved/handlers/ecdsaMPCv2Finalize';
+import { ecdsaMPCv2Recovery } from '../../api/enclaved/handlers/ecdsaMPCv2Recovery';
 import { signEddsaRecoveryTransaction } from '../../api/enclaved/handlers/signEddsaRecoveryTransaction';
 import { isEddsaCoin } from '../../shared/coinUtils';
 import { MethodNotImplementedError } from '@bitgo-beta/sdk-core';
@@ -43,10 +51,7 @@ const IndependentKeyRequest = {
 const IndependentKeyResponse: HttpResponse = {
   // TODO: Define proper response type
   200: t.any,
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /multisig/sign endpoint
@@ -60,10 +65,7 @@ const SignMultisigRequest = {
 const SignMultisigResponse: HttpResponse = {
   // TODO: Define proper response type for signed multisig transaction
   200: t.any,
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /multisig/recovery endpoint
@@ -80,10 +82,7 @@ const RecoveryMultisigResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 const RecoveryMpcRequest = {
@@ -105,10 +104,7 @@ const RecoveryMpcResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 // Request type for /mpc/sign endpoint
@@ -166,10 +162,7 @@ const SignMpcResponse: HttpResponse = {
       signatureShareRound3: t.any,
     }),
   ]),
-  500: t.type({
-    error: t.string,
-    details: t.string,
-  }),
+  ...InternalServerErrorResponse,
 };
 
 const KeyShare = {
@@ -296,6 +289,20 @@ const MpcV2FinalizeResponse = {
 };
 const MpcV2FinalizeResponseType = t.type(MpcV2FinalizeResponse);
 export type MpcV2FinalizeResponseType = t.TypeOf<typeof MpcV2FinalizeResponseType>;
+
+const MpcV2RecoveryRequest = {
+  pub: t.string,
+  txHex: t.string,
+};
+const MpcV2RecoveryRequestType = t.type(MpcV2RecoveryRequest);
+export type MpcV2RecoveryRequestType = t.TypeOf<typeof MpcV2RecoveryRequestType>;
+
+const MpcV2RecoveryResponse = {
+  txHex: t.string,
+  stringifiedSignature: t.string,
+};
+const MpcV2RecoveryResponseType = t.type(MpcV2RecoveryResponse);
+export type MpcV2RecoveryResponseType = t.TypeOf<typeof MpcV2RecoveryResponseType>;
 
 // API Specification
 export const EnclavedAPiSpec = apiSpec({
@@ -468,6 +475,23 @@ export const EnclavedAPiSpec = apiSpec({
       description: 'Finalize the MPC protocol',
     }),
   },
+  'v1.mpcv2.recovery': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/mpcv2/recovery',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: MpcV2RecoveryRequest,
+      }),
+      response: {
+        200: MpcV2RecoveryResponseType,
+        ...BadRequestResponse,
+        ...InternalServerErrorResponse,
+        ...NotImplementedResponse,
+      },
+      description: 'Recover a MPC transaction',
+    }),
+  },
 });
 
 export type EnclavedApiSpecRouteHandler<
@@ -597,6 +621,14 @@ export function createKeyGenRouter(config: EnclavedConfig): WrappedRouter<typeof
     responseHandler<EnclavedConfig>(async (req) => {
       const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>;
       const result = await ecdsaMPCv2Finalize(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.mpcv2.recovery', [
+    responseHandler<EnclavedConfig>(async (req) => {
+      const typedReq = req as EnclavedApiSpecRouteRequest<'v1.mpcv2.recovery', 'post'>;
+      const result = await ecdsaMPCv2Recovery(typedReq);
       return Response.ok(result);
     }),
   ]);

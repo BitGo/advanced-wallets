@@ -43,6 +43,7 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       return res.sendEncoded(result.type, result.payload);
     } catch (error) {
       // If it's already a Response object (e.g. from Response.error)
+      logger.error('Error caught in responseHandler:', error);
       if (error && typeof error === 'object' && 'type' in error && 'payload' in error) {
         const apiError = error as ApiResponse;
         return res.sendEncoded(apiError.type, apiError.payload);

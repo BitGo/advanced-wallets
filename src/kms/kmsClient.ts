@@ -1,4 +1,3 @@
-import debug from 'debug';
 import * as superagent from 'superagent';
 import { EnclavedConfig, isMasterExpressConfig, TlsMode } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
@@ -15,7 +14,7 @@ import {
 } from './types/generateDataKey';
 import https from 'https';
 
-const debugLogger = debug('bitgo:express:kmsClient');
+import logger from '../logger';
 
 export class KmsClient {
   private readonly url: string;
@@ -23,9 +22,11 @@ export class KmsClient {
 
   constructor(cfg: EnclavedConfig) {
     if (isMasterExpressConfig(cfg)) {
+      logger.error('KMS client cannot be initialized in master express mode');
       throw new Error('Configuration is not in enclaved express mode');
     }
     if (!cfg.kmsUrl) {
+      logger.error('KMS URL not configured. Please set KMS_URL in your environment.');
       throw new Error('KMS URL not configured. Please set KMS_URL in your environment.');
     }
 
@@ -37,11 +38,11 @@ export class KmsClient {
         key: cfg.tlsKey,
       });
     }
-    debugLogger('kmsClient initialized with URL: %s', this.url);
+    logger.debug('kmsClient initialized with URL: %s', this.url);
   }
 
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
-    debugLogger('Posting key to KMS: %O', params);
+    logger.debug('Posting key to KMS: %O', params);
 
     // Call KMS to post the key
     let kmsResponse: any;
@@ -50,16 +51,19 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      debugLogger('Error posting key to KMS', error);
-      throw error;
+      logger.error('Error posting key to KMS', error);
+      throw Error(`Failed to post key to KMS: ${error.message}`);
     }
 
     // validate the response
     try {
       PostKeyKmsSchema.parse(kmsResponse.body);
     } catch (error: any) {
+      logger.error('KMS returned unexpected when posting key: ', error);
       throw new Error(
-        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+        `KMS returned unexpected response when posting key${
+          error.message ? `: ${error.message}` : ''
+        }`,
       );
     }
 
@@ -68,7 +72,7 @@ export class KmsClient {
   }
 
   async getKey(params: GetKeyParams): Promise<GetKeyResponse> {
-    debugLogger('Getting key from KMS: %O', params);
+    logger.debug('Getting key from KMS: %O', params);
 
     // Call KMS to get the key
     let kmsResponse: any;
@@ -80,16 +84,19 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      debugLogger('Error getting key from KMS', error);
-      throw error;
+      logger.error('Error getting key from KMS', error);
+      throw new Error(`Failed to get key from KMS: ${error.message}`);
     }
 
     // validate the response
     try {
       GetKeyKmsSchema.parse(kmsResponse.body);
     } catch (error: any) {
+      logger.error('KMS returned unexpected response when getting key', error);
       throw new Error(
-        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+        `KMS returned unexpected response when getting key${
+          error.message ? `: ${error.message}` : ''
+        }`,
       );
     }
 
@@ -97,7 +104,7 @@ export class KmsClient {
   }
 
   async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
-    debugLogger('Generating data key from KMS: %O', params);
+    logger.debug('Generating data key from KMS: %O', params);
 
     // Call KMS to generate the data key
     let kmsResponse: any;
@@ -106,16 +113,21 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      debugLogger('Error generating data key from KMS', error);
-      throw error;
+      logger.error('Error generating data key from KMS when generating data key', error);
+      throw new Error(
+        `Failed to generate data key from KMS when generating data key: ${error.message}`,
+      );
     }
 
     // validate the response
     try {
       GenerateDataKeyKmsSchema.parse(kmsResponse.body);
     } catch (error: any) {
+      logger.error('KMS returned unexpected response when generating data key', error);
       throw new Error(
-        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+        `KMS returned unexpected response when generating data key${
+          error.message ? `: ${error.message}` : ''
+        }`,
       );
     }
 
@@ -126,7 +138,7 @@ export class KmsClient {
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
-    debugLogger('Decrypting data key from KMS: %O', params);
+    logger.debug('Decrypting data key from KMS: %O', params);
 
     // Call KMS to decrypt the data key
     let kmsResponse: any;
@@ -135,16 +147,19 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      debugLogger('Error decrypting data key from KMS', error);
-      throw error;
+      logger.error('Error decrypting data key from KMS', error);
+      throw new Error(`Failed to decrypt data key from KMS: ${error.message}`);
     }
 
     // validate the response
     try {
       DecryptDataKeyKmsSchema.parse(kmsResponse.body);
     } catch (error: any) {
+      logger.error('KMS returned unexpected response when decrypting data key', error);
       throw new Error(
-        `KMS returned unexpected response${error.message ? `: ${error.message}` : ''}`,
+        `KMS returned unexpected response when decrypting data key${
+          error.message ? `: ${error.message}` : ''
+        }`,
       );
     }
 

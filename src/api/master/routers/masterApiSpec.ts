@@ -46,7 +46,7 @@ export const RecoveryParamTypes = {
     scan: optional(t.number),
   }),
 
-  // ETH-like specific recovery parameters
+  // Multsig ETH-like specific recovery parameters
   ethLikeRecoveryOptions: t.partial({
     gasPrice: t.number,
     gasLimit: t.number,
@@ -74,20 +74,44 @@ export const RecoveryParamTypes = {
     recoveryDestinationAtaAddress: t.string,
     programId: t.string,
   }),
+
+  // ECDSA ETH-like recovery specific parameters
+  ecdsaEthLikeRecoverySpecificParams: t.type({
+    walletContractAddress: t.string,
+    bitgoDestinationAddress: t.string,
+    apiKey: t.string,
+  }),
+
+  // ECDSA Cosmos-like recovery specific parameters
+  ecdsaCosmosLikeRecoverySpecificParams: t.type({
+    rootAddress: t.string,
+  }),
 };
 
 export type EvmRecoveryOptions = typeof RecoveryParamTypes.ethLikeRecoveryOptions._A;
 export type UtxoRecoveryOptions = typeof RecoveryParamTypes.utxoRecoveryOptions._A;
 export type SolanaRecoveryOptions = typeof RecoveryParamTypes.solanaRecoveryOptions._A;
+export type EcdsaEthLikeRecoverySpecificParams =
+  typeof RecoveryParamTypes.ecdsaEthLikeRecoverySpecificParams._A;
+export type EcdsaCosmosLikeRecoverySpecificParams =
+  typeof RecoveryParamTypes.ecdsaCosmosLikeRecoverySpecificParams._A;
 
 // Combined coin specific parameters
 const CoinSpecificParams = t.partial({
   utxoRecoveryOptions: RecoveryParamTypes.utxoRecoveryOptions,
   evmRecoveryOptions: RecoveryParamTypes.ethLikeRecoveryOptions,
   solanaRecoveryOptions: RecoveryParamTypes.solanaRecoveryOptions,
+  ecdsaEthLikeRecoverySpecificParams: RecoveryParamTypes.ecdsaEthLikeRecoverySpecificParams,
+  ecdsaCosmosLikeRecoverySpecificParams: RecoveryParamTypes.ecdsaCosmosLikeRecoverySpecificParams,
 });
 
 export type CoinSpecificParams = t.TypeOf<typeof CoinSpecificParams>;
+export type CoinSpecificParamsUnion =
+  | EvmRecoveryOptions
+  | UtxoRecoveryOptions
+  | SolanaRecoveryOptions
+  | EcdsaEthLikeRecoverySpecificParams
+  | EcdsaCosmosLikeRecoverySpecificParams;
 
 // Middleware functions
 export function parseBody(req: express.Request, res: express.Response, next: express.NextFunction) {

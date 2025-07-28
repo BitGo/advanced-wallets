@@ -101,6 +101,7 @@
     "@bitgo-beta/statics": "15.1.1-beta.1046",
     "@bitgo/wasm-miniscript": "2.0.0-beta.7",
     "@commitlint/config-conventional": "^19.8.1",
+    "@ethereumjs/tx": "^3.3.0",
     "body-parser": "^1.20.3",
     "connect-timeout": "^1.9.0",
     "debug": "^3.1.0",

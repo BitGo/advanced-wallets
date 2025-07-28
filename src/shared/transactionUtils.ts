@@ -28,7 +28,7 @@ export function isMPCTxs(tx: any): tx is MPCTxs {
  * MPCTx format has direct signableHex and derivationPath properties
  */
 export function isMPCTx(tx: any): tx is MPCTx {
-  return tx && 'signableHex' in tx;
+  return tx && 'signableHex' in tx && typeof tx.signableHex === 'string';
 }
 
 /**
