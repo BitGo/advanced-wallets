@@ -2,7 +2,6 @@ import {
   AddKeychainOptions,
   Keychain,
   KeychainsTriplet,
-  NotImplementedError,
   promiseProps,
   RequestTracer,
   SupplementGenerateWalletOptions,
@@ -14,6 +13,7 @@ import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { orchestrateEcdsaKeyGen } from './ecdsaMPCv2';
 import { orchestrateEddsaKeyGen } from './eddsa';
 import coinFactory from '../../../shared/coinFactory';
+import { BadRequestError } from '../../../shared/errors';
 
 /**
  * Request handler for generating a wallet on-premises.
@@ -144,7 +144,7 @@ async function handleGenerateOnPremMpcWallet(
   const enclavedExpressClient = req.enclavedExpressClient;
 
   if (!baseCoin.supportsTss()) {
-    throw new NotImplementedError(
+    throw new BadRequestError(
       `MPC wallet generation is not supported for coin ${req.decoded.coin}`,
     );
   }
@@ -168,7 +168,7 @@ async function handleGenerateOnPremMpcWallet(
 
   if (!_.isUndefined(enterprise)) {
     if (!_.isString(enterprise)) {
-      throw new Error('invalid enterprise argument, expecting string');
+      throw new BadRequestError('invalid enterprise argument, expecting string');
     }
     walletParams.enterprise = enterprise;
   }

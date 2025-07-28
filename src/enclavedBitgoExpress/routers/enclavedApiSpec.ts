@@ -21,6 +21,7 @@ import {
   BadRequestResponse,
   InternalServerErrorResponse,
   NotImplementedResponse,
+  UnprocessableEntityResponse,
 } from '../../shared/errors';
 
 import { postIndependentKey } from '../../api/enclaved/handlers/postIndependentKey';
@@ -449,10 +450,9 @@ export const EnclavedAPiSpec = apiSpec({
       }),
       response: {
         200: MpcV2RoundResponseType,
-        500: t.type({
-          error: t.string,
-          details: t.string,
-        }),
+        ...InternalServerErrorResponse,
+        ...BadRequestResponse,
+        ...UnprocessableEntityResponse,
       },
       description: 'Perform a round in the MPC protocol',
     }),
