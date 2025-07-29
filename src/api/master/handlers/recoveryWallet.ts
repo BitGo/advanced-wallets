@@ -53,8 +53,26 @@ interface EnclavedRecoveryParams {
   walletContractAddress: string;
 }
 
-function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) {
+function validateRecoveryParams(
+  sdkCoin: BaseCoin,
+  params?: CoinSpecificParams,
+  isMpcRecovery = false,
+) {
   if (!params) {
+    return;
+  }
+
+  if (isUtxoCoin(sdkCoin)) {
+    if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
+      throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
+    }
+    return;
+  }
+
+  if (!isMpcRecovery && isEthLikeCoin(sdkCoin)) {
+    if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
+      throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
+    }
     return;
   }
 
@@ -62,33 +80,35 @@ function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) 
     if (params.evmRecoveryOptions || params.utxoRecoveryOptions) {
       throw new ValidationError('Invalid parameters provided for Solana coin recovery');
     }
-  } else if (isEcdsaCoin(sdkCoin)) {
+    return;
+  }
+
+  if (isEcdsaCoin(sdkCoin)) {
     if (isEthLikeCoin(sdkCoin)) {
-      if (!params.ecdsaEthLikeRecoverySpecificParams) {
-        throw new ValidationError('Invalid parameters provided for ETH-like MPC V2 coin recovery');
+      if (isMpcRecovery) {
+        if (!params.ecdsaEthLikeRecoverySpecificParams) {
+          throw new ValidationError(
+            'Invalid parameters provided for ETH-like MPC V2 coin recovery',
+          );
+        }
       }
+      return;
     } else if (isCosmosLikeCoin(sdkCoin)) {
-      if (!params.ecdsaCosmosLikeRecoverySpecificParams) {
-        throw new ValidationError(
-          'Invalid parameters provided for Cosmos-like MPC V2 coin recovery',
-        );
+      if (isMpcRecovery) {
+        if (!params.ecdsaCosmosLikeRecoverySpecificParams) {
+          throw new ValidationError(
+            'Invalid parameters provided for Cosmos-like MPC V2 coin recovery',
+          );
+        }
       }
     } else {
       throw new NotImplementedError(
         `MPC V2 recovery is not supported for coin family: ${sdkCoin.getFamily()}`,
       );
     }
-  } else {
-    if (isUtxoCoin(sdkCoin)) {
-      if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
-        throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
-      }
-    } else if (isEthLikeCoin(sdkCoin)) {
-      if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
-        throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
-      }
-    }
+    return;
   }
+  throw new ValidationError('Recovery parameters are not valid');
 }
 
 async function handleEthLikeRecovery(
@@ -216,7 +236,7 @@ export async function handleRecoveryWalletOnPrem(
 
   const sdkCoin = await coinFactory.getCoin(coin, bitgo);
   // Validate that we have correct parameters for recovery
-  validateRecoveryParams(sdkCoin, coinSpecificParams);
+  validateRecoveryParams(sdkCoin, coinSpecificParams, req.decoded.isTssRecovery);
 
   // Handle TSS recovery
   if (req.decoded.isTssRecovery) {
