@@ -5,7 +5,7 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { ApiResponseError, Environments, Wallet } from '@bitgo-beta/sdk-core';
+import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import assert from 'assert';
 
@@ -747,15 +747,11 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
 
     const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
-    // Mock advanced wallet manager sign request to return an error
-    const signNock = nock(advancedWalletManagerUrl)
-      .post(`/api/${coin}/multisig/sign`)
-      .replyWithError(
-        new ApiResponseError('Custom API error', 500, {
-          error: 'Custom API error',
-          requestId: 'test-request-id',
-        }),
-      );
+    // Mock enclaved express sign request to return an error
+    const signNock = nock(advancedWalletManagerUrl).post(`/api/${coin}/multisig/sign`).reply(500, {
+      error: 'Internal Server Error',
+      details: 'Custom API error details',
+    });
 
     const response = await agent
       .post(`/api/${coin}/wallet/${walletId}/sendMany`)
@@ -775,11 +771,8 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     response.status.should.equal(500);
     response.body.should.have.property('error');
     response.body.should.have.property('details');
-    response.body.error.should.equal('BitGoApiResponseError');
-    response.body.details.should.deepEqual({
-      error: 'Custom API error',
-      requestId: 'test-request-id',
-    });
+    response.body.error.should.equal('Internal Server Error');
+    response.body.details.should.deepEqual('Custom API error details');
 
     walletGetNock.done();
     keychainGetNock.done();

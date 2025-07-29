@@ -1,6 +1,5 @@
 import assert from 'assert';
 import https from 'https';
-import debug from 'debug';
 import superagent from 'superagent';
 
 import {
@@ -19,7 +18,12 @@ import {
   TxRequest,
 } from '@bitgo-beta/sdk-core';
 import { RecoveryTransaction } from '@bitgo-beta/sdk-coin-trx';
-import { ApiClient, buildApiClient, superagentRequestFactory } from '@api-ts/superagent-wrapper';
+import {
+  ApiClient,
+  buildApiClient,
+  DecodeError,
+  superagentRequestFactory,
+} from '@api-ts/superagent-wrapper';
 import { OfflineVaultTxInfo, RecoveryInfo, UnsignedSweepTxMPCv2 } from '@bitgo-beta/sdk-coin-eth';
 
 import { MasterExpressConfig, TlsMode } from '../../../shared/types';
@@ -37,8 +41,7 @@ import {
 } from '../../../advancedWalletManager/routers/advancedWalletManagerApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo-beta/abstract-utxo';
 import { RecoveryTxRequest } from '@bitgo-beta/sdk-core';
-
-const debugLogger = debug('bitgo:express:awmClient');
+import logger from '../../../logger';
 
 export type InitMpcKeyGenerationParams = {
   source: 'user' | 'backup';
@@ -188,7 +191,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Recovering MPC for coin: %s', this.coin);
+      logger.info('Recovering MPC for coin: %s', this.coin);
 
       // Extract the required information from the sweep tx using our utility function
       const tx = params.unsignedSweepPrebuildTx;
@@ -216,7 +219,7 @@ export class AdvancedWalletManagerClient {
       return response.body;
     } catch (error) {
       const err = error as Error;
-      debugLogger('Failed to recover MPC: %s', err.message);
+      logger.error('Failed to recover MPC: %s', err.message);
       throw err;
     }
   }
@@ -255,7 +258,7 @@ export class AdvancedWalletManagerClient {
     // Build the type-safe API client
     this.apiClient = buildApiClient(requestFactory, AdvancedWalletManagerApiSpec);
 
-    debugLogger('awmClient initialized with URL: %s', this.baseUrl);
+    logger.info('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
   }
 
   private createHttpsAgent(): https.Agent {
@@ -282,7 +285,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Creating independent keychain for coin: %s', this.coin);
+      logger.info('Creating independent keychain for coin: %s', this.coin);
       let request = this.apiClient['v1.key.independent'].post({
         coin: this.coin,
         source: params.source,
@@ -296,9 +299,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to create independent keychain: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to create independent keychain: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -326,9 +331,8 @@ export class AdvancedWalletManagerClient {
 
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign multisig: %s', err.message);
-      throw err;
+      logger.error('Failed to sign multisig: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -338,7 +342,7 @@ export class AdvancedWalletManagerClient {
    */
   async ping(): Promise<PingResponseType> {
     try {
-      debugLogger('Pinging advanced wallet manager service at: %s', this.baseUrl);
+      logger.info('Pinging enclaved express service at: %s', this.baseUrl);
       let request = this.apiClient['v1.health.ping'].post({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -347,12 +351,14 @@ export class AdvancedWalletManagerClient {
 
       const response = await request.decodeExpecting(200);
 
-      debugLogger('Advanced Wallet Manager service ping successful');
+      logger.info('Enclaved express service ping successful');
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Advanced Wallet Manager service ping failed: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to ping enclaved express service: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -361,7 +367,7 @@ export class AdvancedWalletManagerClient {
    */
   async getVersion(): Promise<VersionResponseType> {
     try {
-      debugLogger('Getting version information from advanced wallet manager service');
+      logger.info('Getting version information from enclaved express service');
       let request = this.apiClient['v1.health.version'].get({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -370,12 +376,14 @@ export class AdvancedWalletManagerClient {
 
       const response = await request.decodeExpecting(200);
 
-      debugLogger('Successfully retrieved version information');
+      logger.info('Successfully retrieved version information');
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to get version information: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to get version information: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -393,14 +401,13 @@ export class AdvancedWalletManagerClient {
       if (this.tlsMode === TlsMode.MTLS) {
         request = request.agent(this.createHttpsAgent());
       }
-      debugLogger('Recovering multisig for coin: %s', this.coin);
+      logger.info('Recovering multisig for coin: %s', this.coin);
       const res = await request.decodeExpecting(200);
 
       return res.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to recover multisig: %s', err.message);
-      throw err;
+      logger.error('Failed to recover multisig: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -415,7 +422,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Initializing MPC key generation for coin: %s', this.coin);
+      logger.info('Initializing MPC key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpc.key.initialize'].post({
         coin: this.coin,
         source: params.source,
@@ -430,9 +437,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to initialize MPC key generation: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to initialize MPC key generation: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -452,7 +461,7 @@ export class AdvancedWalletManagerClient {
     );
 
     try {
-      debugLogger('Finalizing MPC key generation for coin: %s', this.coin);
+      logger.info('Finalizing MPC key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpc.key.finalize'].post({
         coin: this.coin,
         source: params.source,
@@ -476,9 +485,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to finalize MPC key generation: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to finalize MPC key generation: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -500,9 +511,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign mpc commitment: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to sign mpc commitment: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -524,9 +537,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign mpc r-share: %s', err.message);
-      throw err;
+      logger.error('Failed to sign mpc r-share: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -548,9 +560,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign mpc g-share: %s', err.message);
-      throw err;
+      logger.error('Failed to sign mpc g-share: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -565,7 +576,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Initializing MPCv2 key generation for coin: %s', this.coin);
+      logger.info('Initializing MPCv2 key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpcv2.initialize'].post({
         coin: this.coin,
         source: params.source,
@@ -578,9 +589,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to initialize MPCv2 key generation: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to initialize MPCv2 key generation: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -602,7 +615,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Executing MPCv2 round %d for coin: %s', params.round, this.coin);
+      logger.info('Executing MPCv2 round %s for coin: %s', params.round, this.coin);
       let request = this.apiClient['v1.mpcv2.round'].post({
         coin: this.coin,
         ...params,
@@ -615,9 +628,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to execute MPCv2 round: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to execute MPCv2 round: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -636,7 +651,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Finalizing MPCv2 key generation for coin: %s', this.coin);
+      logger.info('Finalizing MPCv2 key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpcv2.finalize'].post({
         coin: this.coin,
         ...params,
@@ -649,9 +664,11 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to finalize MPCv2 key generation: %s', err.message);
-      throw err;
+      logger.error(
+        'Failed to finalize MPCv2 key generation: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 
@@ -682,9 +699,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign mpcv2 round 1: %s', err.message);
-      throw err;
+      logger.error('Failed to sign MPCv2 round 1: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -715,9 +731,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign mpcv2 round 2: %s', err.message);
-      throw err;
+      logger.error('Failed to sign MPCv2 round 2: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -748,9 +763,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign mpcv2 round 3: %s', err.message);
-      throw err;
+      logger.error('Failed to sign MPCv2 round 3: %s', (error as DecodeError).decodedResponse.body);
+      throw error;
     }
   }
 
@@ -763,7 +777,7 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      debugLogger('Signing MPCv2 recovery transaction for coin: %s', this.coin);
+      logger.info('Recovering MPCv2 wallet for coin: %s', this.coin);
       let request = this.apiClient['v1.mpcv2.recovery'].post({
         coin: this.coin,
         ...params,
@@ -775,10 +789,12 @@ export class AdvancedWalletManagerClient {
 
       const response = await request.decodeExpecting(200);
       return response.body;
-    } catch (error) {
-      const err = error as Error;
-      debugLogger('Failed to sign MPCv2 recovery transction: %s', err.message);
-      throw err;
+    } catch (error: any) {
+      logger.error(
+        'Failed to recover MPCv2 wallet: %s',
+        (error as DecodeError).decodedResponse.body,
+      );
+      throw error;
     }
   }
 }
@@ -794,7 +810,7 @@ export function createawmClient(
     return new AdvancedWalletManagerClient(cfg, coin);
   } catch (error) {
     const err = error as Error;
-    debugLogger('Failed to create advanced wallet manager client: %s', err.message);
+    logger.error('Failed to create enclaved express client: %s', err.message);
     return undefined;
   }
 }

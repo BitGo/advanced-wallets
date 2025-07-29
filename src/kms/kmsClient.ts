@@ -13,6 +13,7 @@ import {
   GenerateDataKeyResponse,
 } from './types/generateDataKey';
 import https from 'https';
+import { BadRequestError, ConflictError, NotFoundError } from '../shared/errors';
 import { URL } from 'url';
 
 import logger from '../logger';
@@ -46,11 +47,32 @@ export class KmsClient {
     }
 
     this.url = kmsUrlObj.toString().replace(/\/$/, '');
-    logger.debug('kmsClient initialized with URL: %s', this.url);
+    logger.info('kmsClient initialized with URL: %s', this.url);
+  }
+
+  // Handles http erros from KMS
+  private errorHandler(error: superagent.ResponseError, errorLog: string) {
+    logger.error(errorLog, error);
+    switch (error.status) {
+      case 400:
+        throw new BadRequestError(error.response?.body.message);
+      case 404:
+        throw new NotFoundError(error.response?.body.message);
+      case 409:
+        throw new ConflictError(error.response?.body.message);
+      case 500:
+        throw new Error(error.response?.body.message);
+      default:
+        throw new Error(
+          `KMS returned unexpected response.${error.status ? ` ${error.status}` : ''}${
+            error.response?.body.message ? `: ${error.response?.body.message}` : ''
+          }`,
+        );
+    }
   }
 
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
-    logger.debug('Posting key to KMS: %O', params);
+    logger.info('Posting key to KMS with pub: %s and source: %s', params.pub, params.source);
 
     // Call KMS to post the key
     let kmsResponse: any;
@@ -59,8 +81,7 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      logger.error('Error posting key to KMS', error);
-      throw Error(`Failed to post key to KMS: ${error.message}`);
+      this.errorHandler(error, 'Error posting key to KMS');
     }
 
     // validate the response
@@ -80,7 +101,7 @@ export class KmsClient {
   }
 
   async getKey(params: GetKeyParams): Promise<GetKeyResponse> {
-    logger.debug('Getting key from KMS: %O', params);
+    logger.info('Getting key from KMS with pub: %s and source: %s', params.pub, params.source);
 
     // Call KMS to get the key
     let kmsResponse: any;
@@ -92,8 +113,8 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      logger.error('Error getting key from KMS', error);
-      throw new Error(`Failed to get key from KMS: ${error.message}`);
+      console.log('Error getting key from KMS:', error);
+      this.errorHandler(error, 'Error getting key from KMS');
     }
 
     // validate the response
@@ -112,7 +133,7 @@ export class KmsClient {
   }
 
   async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
-    logger.debug('Generating data key from KMS: %O', params);
+    logger.info('Generating data key from KMS with type: %s', params.keyType);
 
     // Call KMS to generate the data key
     let kmsResponse: any;
@@ -121,10 +142,7 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      logger.error('Error generating data key from KMS when generating data key', error);
-      throw new Error(
-        `Failed to generate data key from KMS when generating data key: ${error.message}`,
-      );
+      this.errorHandler(error, 'Error generating data key from KMS');
     }
 
     // validate the response
@@ -146,7 +164,7 @@ export class KmsClient {
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
-    logger.debug('Decrypting data key from KMS: %O', params);
+    logger.info('Decrypting data key from KMS');
 
     // Call KMS to decrypt the data key
     let kmsResponse: any;
@@ -155,8 +173,7 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      logger.error('Error decrypting data key from KMS', error);
-      throw new Error(`Failed to decrypt data key from KMS: ${error.message}`);
+      this.errorHandler(error, 'Error decrypting data key from KMS');
     }
 
     // validate the response

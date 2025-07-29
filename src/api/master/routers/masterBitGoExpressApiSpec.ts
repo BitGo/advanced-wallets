@@ -27,12 +27,7 @@ import { handleAccelerate } from '../handlers/handleAccelerate';
 import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 import { handleSignAndSendTxRequest } from '../handlers/handleSignAndSendTxRequest';
 import { handleRecoveryConsolidationsOnPrem } from '../handlers/recoveryConsolidationsWallet';
-import {
-  BadRequestResponse,
-  InternalServerErrorResponse,
-  UnprocessableEntityResponse,
-  NotFoundResponse,
-} from '../../../shared/errors';
+import { ErrorResponses } from '../../../shared/errors';
 
 export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
 
@@ -232,8 +227,7 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
 const GenerateWalletResponse: HttpResponse = {
   // TODO: Get type from public types repo
   200: t.any,
-  ...InternalServerErrorResponse,
-  ...BadRequestResponse,
+  ...ErrorResponses,
 };
 
 // Request type for /generate endpoint
@@ -294,9 +288,7 @@ export const SendManyRequest = {
 export const SendManyResponse: HttpResponse = {
   // TODO: Get type from public types repo / Wallet Platform
   200: t.any,
-  ...BadRequestResponse,
-  ...NotFoundResponse,
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 // Request type for /consolidate endpoint
@@ -311,8 +303,7 @@ export const ConsolidateRequest = {
 // Response type for /consolidate endpoint
 const ConsolidateResponse: HttpResponse = {
   200: t.any,
-  ...BadRequestResponse, // All failed
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 /**
@@ -398,7 +389,7 @@ const AccelerateResponse: HttpResponse = {
      */
     tx: t.string,
   }),
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 /**
@@ -420,8 +411,7 @@ const RecoveryWalletResponse: HttpResponse = {
      */
     txHex: t.string,
   }),
-  ...UnprocessableEntityResponse,
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 /**
@@ -613,7 +603,7 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
    * The exact structure depends on the coin and recovery type.
    */
   200: t.any, // Complex response structure varies by coin and recovery type
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 export const ConsolidateUnspentsRequest = {
@@ -640,8 +630,7 @@ const ConsolidateUnspentsResponse: HttpResponse = {
     tx: t.string,
     txid: t.string,
   }),
-  ...BadRequestResponse,
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 const SignMpcRequest = {
@@ -651,7 +640,7 @@ const SignMpcRequest = {
 
 const SignMpcResponse: HttpResponse = {
   200: t.any,
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 /**
