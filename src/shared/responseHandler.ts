@@ -114,6 +114,7 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
         error: 'Internal Server Error',
         name: error instanceof Error ? error.name : 'Error',
         details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       };
       logger.error(JSON.stringify(errorBody, null, 2));
       return res.sendEncoded(500, errorBody);

@@ -554,33 +554,17 @@ export function createKeyGenRouter(
 
   router.post('v1.mpc.key.initialize', [
     responseHandler<AdvancedWalletManagerConfig>(async (_req) => {
-      try {
-        const typedReq = _req as AwmApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>;
-        const response = await eddsaInitialize(typedReq);
-        return Response.ok(response);
-      } catch (error) {
-        const err = error as Error;
-        return Response.internalError({
-          error: err.message,
-          details: err.stack || 'No stack trace available',
-        });
-      }
+      const typedReq = _req as AwmApiSpecRouteRequest<'v1.mpc.key.initialize', 'post'>;
+      const response = await eddsaInitialize(typedReq);
+      return Response.ok(response);
     }),
   ]);
 
   router.post('v1.mpc.key.finalize', [
     responseHandler<AdvancedWalletManagerConfig>(async (_req) => {
-      try {
-        const typedReq = _req as AwmApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>;
-        const response = await eddsaFinalize(typedReq);
-        return Response.ok(response);
-      } catch (error) {
-        const err = error as Error;
-        return Response.internalError({
-          error: err.message,
-          details: err.stack || 'No stack trace available',
-        });
-      }
+      const typedReq = _req as AwmApiSpecRouteRequest<'v1.mpc.key.finalize', 'post'>;
+      const response = await eddsaFinalize(typedReq);
+      return Response.ok(response);
     }),
   ]);
 
