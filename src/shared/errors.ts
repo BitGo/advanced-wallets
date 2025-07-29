@@ -88,7 +88,13 @@ export class NotImplementedError extends BitgoExpressError {
 
 // Common error response types
 const ErrorResponse = t.type({
+  /**
+   * The error name
+   */
   error: t.string,
+  /**
+   * Error details
+   */
   details: t.string,
 });
 export const BadRequestResponse = { 400: ErrorResponse };

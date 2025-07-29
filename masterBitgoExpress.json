@@ -31,37 +31,56 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "description": "Request type for the transaction acceleration endpoint. Used to accelerate unconfirmed transactions on UTXO-based blockchains using CPFP or RBF.",
                 "properties": {
                   "pubkey": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Public key used for signing the acceleration transaction.",
+                    "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                   },
                   "source": {
                     "type": "string",
                     "enum": [
                       "user",
                       "backup"
-                    ]
+                    ],
+                    "description": "The key to use for signing the transaction.",
+                    "example": "user"
                   },
                   "cpfpTxIds": {
                     "type": "array",
+                    "example": [
+                      "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
+                    ],
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Transaction IDs to accelerate using Child-Pays-For-Parent (CPFP). CPFP creates a new transaction that spends an output from the original transaction."
                     }
                   },
                   "cpfpFeeRate": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Fee rate in satoshis per byte for the CPFP transaction. Higher fee rates result in faster confirmations but higher transaction costs.",
+                    "example": null
                   },
                   "maxFee": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Maximum fee in satoshis for the acceleration transaction. Helps prevent overpaying for transaction acceleration.",
+                    "example": null
                   },
                   "rbfTxIds": {
                     "type": "array",
+                    "example": [
+                      "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
+                    ],
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Transaction IDs to accelerate using Replace-By-Fee (RBF). RBF creates a new transaction that replaces the original transaction. The original transaction must have been created with RBF enabled."
                     }
                   },
                   "feeMultiplier": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Fee multiplier for RBF transactions. The new fee will be the original fee multiplied by this value.",
+                    "example": null
                   }
                 },
                 "required": [
@@ -79,12 +98,21 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "description": "Successful acceleration response.",
+                  "example": {
+                    "txid": "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+                    "tx": "01000000000101edd7a5d948a6c79f273ce686a6a8f2e96ed8c2583b5e77b866aa2a1b3426fbed0100000000ffffffff02102700000000000017a914192f23283c2a9e6c5d11562db0eb5d4eb47f460287b9bc2c000000000017a9145c139b242ab3701f321d2399d3a11b028b3b361e870247304402206ac9477fece38d96688c6c3719cb27396c0563ead0567457e7e884b406b6da8802201992d1cfa1b55a67ce8acb482e9957812487d2555f5f54fb0286ecd3095d78e4012103c92564575197c4d6e3d9792280e7548b3ba52a432101c62de2186c4e2fa7fc580000000000"
+                  },
                   "properties": {
                     "txid": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The transaction ID (hash) of the acceleration transaction. This can be used to track the transaction on a block explorer.",
+                      "example": "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
                     },
                     "tx": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The full signed transaction in hexadecimal format. This transaction can be broadcast to the network.",
+                      "example": "01000000000101edd7a5d948a6c79f273ce686a6a8f2e96ed8c2583b5e77b866aa2a1b3426fbed0100000000ffffffff02102700000000000017a914192f23283c2a9e6c5d11562db0eb5d4eb47f460287b9bc2c000000000017a9145c139b242ab3701f321d2399d3a11b028b3b361e870247304402206ac9477fece38d96688c6c3719cb27396c0563ead0567457e7e884b406b6da8802201992d1cfa1b55a67ce8acb482e9957812487d2555f5f54fb0286ecd3095d78e4012103c92564575197c4d6e3d9792280e7548b3ba52a432101c62de2186c4e2fa7fc580000000000"
                     }
                   },
                   "required": [
@@ -712,15 +740,21 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig wallets and TSS wallets.",
                 "properties": {
                   "isTssRecovery": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Set to true to perform a TSS (Threshold Signature Scheme) recovery.",
+                    "example": true
                   },
                   "tssRecoveryParams": {
                     "type": "object",
+                    "description": "Parameters specific to TSS recovery. Required when isTssRecovery is true.",
                     "properties": {
                       "commonKeychain": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The common keychain string used for TSS wallets. Required for TSS recovery.",
+                        "example": "0280ec751d3b165a48811b2cc90f90dcf323f33e8bcaadc0341e1e010adcdcf7005afde80dd286d65b6be947af0424dd1e9f7611f3d20e02a4fc84ad8c8b74c1a5"
                       }
                     },
                     "required": [
@@ -729,18 +763,27 @@
                   },
                   "multiSigRecoveryParams": {
                     "type": "object",
+                    "description": "Parameters specific to standard multisig recovery. Required when isTssRecovery is false (default).",
                     "properties": {
                       "backupPub": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The backup public key.",
+                        "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                       },
                       "bitgoPub": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The BitGo public key. Required for UTXO coins, optional for others.",
+                        "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                       },
                       "userPub": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The user's public key.",
+                        "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                       },
                       "walletContractAddress": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The wallet contract address. Required for ETH-like recoveries.",
+                        "example": "0x1234567890123456789012345678901234567890"
                       }
                     },
                     "required": [
@@ -751,13 +794,17 @@
                     ]
                   },
                   "recoveryDestinationAddress": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The address where recovered funds will be sent. Must be a valid address for the coin being recovered.",
+                    "example": "\"9zvKDB8o96QvToQierXtwSfqK9NqaHw7uvmxWsmSrxns\" // For SOL"
                   },
                   "apiKey": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "API Key for a block chain explorer. Required for some coins (BTC, ETH) to build a recovery transaction without BitGo."
                   },
                   "coinSpecificParams": {
                     "type": "object",
+                    "description": "Coin-specific recovery options. Different parameters are required based on the coin family: - For UTXO coins (BTC, etc): provide utxoRecoveryOptions. - For EVM chains (ETH, etc): provide evmRecoveryOptions. - For Solana: provide solanaRecoveryOptions.",
                     "properties": {
                       "ecdsaCosmosLikeRecoverySpecificParams": {
                         "type": "object",
@@ -791,15 +838,21 @@
                       },
                       "evmRecoveryOptions": {
                         "type": "object",
+                        "description": "EVM-specific recovery parameters for Ethereum and EVM-compatible chains. Used for recovering funds from standard multisig wallets on Ethereum and EVM-compatible chains. Required when recovering ETH, MATIC, BSC, AVAX C-Chain, etc.",
                         "properties": {
                           "eip1559": {
                             "type": "object",
+                            "description": "EIP-1559 gas parameters for modern Ethereum transactions. Required for EIP-1559 compatible networks (Ethereum post-London fork).",
                             "properties": {
                               "maxFeePerGas": {
-                                "type": "number"
+                                "type": "number",
+                                "description": "Maximum fee per gas in wei (base fee + priority fee).",
+                                "example": null
                               },
                               "maxPriorityFeePerGas": {
-                                "type": "number"
+                                "type": "number",
+                                "description": "Maximum priority fee per gas in wei (tip for miners/validators).",
+                                "example": null
                               }
                             },
                             "required": [
@@ -808,13 +861,18 @@
                             ]
                           },
                           "gasLimit": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Gas limit for the recovery transaction. Must be enough to cover the contract execution costs.",
+                            "example": 500000
                           },
                           "gasPrice": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Gas price in wei for the recovery transaction (for legacy transactions). Higher gas prices result in faster confirmations but higher transaction costs.",
+                            "example": null
                           },
                           "replayProtectionOptions": {
                             "type": "object",
+                            "description": "Replay protection options for the transaction. Required to prevent transaction replay attacks across different chains.",
                             "properties": {
                               "chain": {
                                 "oneOf": [
@@ -824,10 +882,15 @@
                                   {
                                     "type": "number"
                                   }
-                                ]
+                                ],
+                                "description": "Chain ID or name.",
+                                "example": "\"goerli\" // Goerli Testnet"
                               },
                               "hardfork": {
-                                "type": "string"
+                                "type": "string",
+                                "default": "london",
+                                "description": "Hardfork name to determine the transaction format.",
+                                "example": "\"istanbul\" // Pre-London fork"
                               }
                             },
                             "required": [
@@ -836,24 +899,32 @@
                             ]
                           },
                           "scan": {
-                            "type": "number"
+                            "type": "number",
+                            "default": 20,
+                            "description": "Number of addresses to scan for funds. Higher values will scan more addresses but take longer to complete.",
+                            "example": null
                           }
                         }
                       },
                       "solanaRecoveryOptions": {
                         "type": "object",
+                        "description": "Solana-specific recovery parameters.",
                         "properties": {
                           "closeAtaAddress": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The close associated token account address. Required for token recovery."
                           },
                           "durableNonce": {
                             "type": "object",
+                            "description": "Durable nonce configuration for transaction durability. Optional but recommended for recovery operations. Refer to https://github.com/BitGo/wallet-recovery-wizard/blob/master/DURABLE_NONCE.md on durable nonce creation.",
                             "properties": {
                               "publicKey": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "The public key of the durable nonce account."
                               },
                               "secretKey": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "The secret key of the durable nonce account."
                               }
                             },
                             "required": [
@@ -862,33 +933,49 @@
                             ]
                           },
                           "programId": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The program ID for the token. Required for token recovery."
                           },
                           "recoveryDestinationAtaAddress": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The recovery destination's associated token account address. Required for token recovery."
                           },
                           "tokenContractAddress": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The token contract address for token recovery. Required when recovering tokens."
                           }
                         }
                       },
                       "utxoRecoveryOptions": {
                         "type": "object",
+                        "description": "UTXO-specific recovery parameters for Bitcoin & Bitcoin-like cryptocurrencies. Used for recovering funds from standard multisig wallets on UTXO chains. Required when recovering BTC, BCH, LTC, DASH, ZEC, etc.",
                         "properties": {
                           "feeRate": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Fee rate for the recovery transaction in satoshis per byte. Higher fee rates result in faster confirmations but higher transaction costs.",
+                            "example": null
                           },
                           "ignoreAddressTypes": {
                             "type": "array",
+                            "example": [
+                              "p2sh-p2wsh",
+                              "p2wsh"
+                            ],
                             "items": {
-                              "type": "string"
+                              "type": "string",
+                              "description": "Array of address types to ignore during recovery. Useful when you want to exclude specific address types from the recovery process."
                             }
                           },
                           "scan": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Number of addresses to scan for funds. Higher values will scan more addresses but take longer to complete.",
+                            "example": null
                           },
                           "userKeyPath": {
-                            "type": "string"
+                            "type": "string",
+                            "default": "m/0",
+                            "description": "Derivation path for the user key. Specifies the HD path to derive the correct user key for signing.",
+                            "example": "m/0/0/0/0"
                           }
                         }
                       }
@@ -909,9 +996,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "description": "Successful recovery response.",
+                  "example": {
+                    "txHex": "01000000000101edd7a5d948a6c79f273ce686a6a8f2e96ed8c2583b5e77b866aa2a1b3426fbed0100000000ffffffff02102700000000000017a914192f23283c2a9e6c5d11562db0eb5d4eb47f460287b9bc2c000000000017a9145c139b242ab3701f321d2399d3a11b028b3b361e870247304402206ac9477fece38d96688c6c3719cb27396c0563ead0567457e7e884b406b6da8802201992d1cfa1b55a67ce8acb482e9957812487d2555f5f54fb0286ecd3095d78e4012103c92564575197c4d6e3d9792280e7548b3ba52a432101c62de2186c4e2fa7fc580000000000"
+                  },
                   "properties": {
                     "txHex": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The full signed transaction in hexadecimal format. This transaction can be broadcast to the network to complete the recovery."
                     }
                   },
                   "required": [
@@ -961,49 +1053,77 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "description": "Request type for wallet recovery consolidations endpoint. Used to consolidate and recover funds from multiple addresses in a wallet, via signing with user and backup keys.",
                 "properties": {
                   "userPub": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The user's public key for standard multisig wallets. Required for onchain multisig recovery consolidations.",
+                    "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                   },
                   "backupPub": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The backup public key for standard multisig wallets. Required for onchain multisig recovery consolidations.",
+                    "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                   },
                   "bitgoPub": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The BitGo public key for standard multisig wallets. Required for onchain UTXO multisig recovery consolidations.",
+                    "example": "xpub661MyMwAqRbcGCNnmzqt3u5KhxmXBHiC78cwAyUMaKJXpFDfHpJwNap6qpG1Kz2SPexKXy3akhPQz7GDYWpHNWkLxRLj6bDxQSf74aTAP9y"
                   },
                   "multisigType": {
                     "type": "string",
                     "enum": [
                       "onchain",
                       "tss"
-                    ]
+                    ],
+                    "description": "The type of wallet to recover - onchain: Traditional multisig wallets. - tss: Threshold Signature Scheme wallets.",
+                    "example": "onchain"
                   },
                   "commonKeychain": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The common keychain for TSS wallets. Required when multisigType is 'tss'.",
+                    "example": "0280ec751d3b165a48811b2cc90f90dcf323f33e8bcaadc0341e1e010adcdcf7005afde80dd286d65b6be947af0424dd1e9f7611f3d20e02a4fc84ad8c8b74c1a5"
                   },
                   "tokenContractAddress": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The token contract address for token recovery (e.g., ERC20 tokens on Ethereum or SPL tokens on Solana). Required when recovering specific tokens instead of the native coin.",
+                    "example": "\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\" // USDC on Solana"
                   },
                   "startingScanIndex": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "The starting index to scan for addresses to consolidate. Useful for limiting the scan range for better performance.",
+                    "example": 0
                   },
                   "endingScanIndex": {
-                    "type": "number"
+                    "type": "number",
+                    "default": 20,
+                    "description": "The ending index to scan for addresses to consolidate. Useful for limiting the scan range for better performance.",
+                    "example": 100
                   },
                   "apiKey": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "API key for blockchain explorer services. Required for some coins to build recovery transactions.",
+                    "example": "v2x8d5e46cf15a7b9b7xc60685d4f56xd8bd5f5cdcef3c1e9d4399c955d587179b"
                   },
                   "durableNonces": {
                     "type": "object",
+                    "description": "Durable nonces configuration for Solana transactions. Provides transaction durability for Solana recovery operations. Refer to https://github.com/BitGo/wallet-recovery-wizard/blob/master/DURABLE_NONCE.md on durable nonce creation.",
                     "properties": {
                       "publicKeys": {
                         "type": "array",
+                        "example": [
+                          "BurablNonc1234567890123456789012345678901",
+                          "BurablNonc1234567890123456789012345678902"
+                        ],
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Array of public keys associated with the durable nonce."
                         }
                       },
                       "secretKey": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "The secret key of the durable nonce account.",
+                        "example": "3XNrU5JSPs2VnZCLnWK8GDzB6Pqoy3tYNMJJVesKBXnGqRxwdXDg2QKgv7E9a6QbAiKnLHSxysKWgXDKNdfXZCQM"
                       }
                     },
                     "required": [
@@ -1033,19 +1153,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1217,10 +1325,12 @@
         "type": "object",
         "properties": {
           "error": {
-            "type": "string"
+            "type": "string",
+            "description": "The error name"
           },
           "details": {
-            "type": "string"
+            "type": "string",
+            "description": "Error details"
           }
         },
         "required": [
