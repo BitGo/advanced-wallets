@@ -70,7 +70,7 @@ function validateRecoveryParams(
     return;
   }
 
-  if (isEddsaCoin(sdkCoin)) {
+  if (isEddsaCoin(sdkCoin) && sdkCoin.getFamily() === CoinFamily.SOL) {
     // EdDSA coins (like Solana) need solanaRecoveryOptions for standard recovery
     if (!params.solanaRecoveryOptions) {
       throw new ValidationError('Solana recovery options are required for EdDSA coin recovery');
