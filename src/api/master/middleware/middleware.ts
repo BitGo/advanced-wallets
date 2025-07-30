@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { isMasterExpressConfig } from '../../../shared/types';
-import { createEnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { createAdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
 import { BitGoRequest } from '../../../types/request';
 
 /**
- * Middleware to validate master express configuration and enclaved express client
+ * Middleware to validate master express configuration and advanced wallet manager client
  */
 export function validateMasterExpressConfig(req: Request, res: Response, next: NextFunction) {
   const bitgoReq = req as BitGoRequest;
@@ -17,16 +17,19 @@ export function validateMasterExpressConfig(req: Request, res: Response, next: N
     });
   }
 
-  // Validate enclaved express client
-  const enclavedExpressClient = createEnclavedExpressClient(bitgoReq.config, bitgoReq.params?.coin);
-  if (!enclavedExpressClient) {
+  // Validate advanced wallet manager client
+  const advancedWalletManagerClient = createAdvancedWalletManagerClient(
+    bitgoReq.config,
+    bitgoReq.params?.coin,
+  );
+  if (!advancedWalletManagerClient) {
     return res.status(500).json({
-      error: 'Please configure enclaved express configs.',
-      details: 'Enclaved express features will be disabled',
+      error: 'Please configure advanced wallet manager configs.',
+      details: 'Advanced wallet manager features will be disabled',
     });
   }
 
   // Attach the client to the request for use in route handlers
-  bitgoReq.enclavedExpressClient = enclavedExpressClient;
+  bitgoReq.advancedWalletManagerClient = advancedWalletManagerClient;
   next();
 }

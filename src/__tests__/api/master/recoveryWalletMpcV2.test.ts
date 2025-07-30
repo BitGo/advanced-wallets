@@ -1,7 +1,7 @@
 import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as advancedWalletManagerApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
@@ -10,7 +10,7 @@ import { BitGoAPI } from '@bitgo-beta/sdk-api';
 
 describe('MBE mpcv2 recovery', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const advancedWalletManagerUrl = 'http://advanced-wallet-manager.invalid';
   const ethLikeCoin = 'hteth';
   const cosmosLikeCoin = 'tsei';
   const accessToken = 'test-token';
@@ -33,8 +33,8 @@ describe('MBE mpcv2 recovery', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      advancedWalletManagerUrl: advancedWalletManagerUrl,
+      advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
       recoveryMode: true,
@@ -47,7 +47,7 @@ describe('MBE mpcv2 recovery', () => {
       next();
     });
 
-    const app = expressApp(config);
+    const app = advancedWalletManagerApp(config);
     agent = request.agent(app);
   });
 
@@ -55,7 +55,7 @@ describe('MBE mpcv2 recovery', () => {
     nock.cleanAll();
   });
 
-  it('should recover a HETH (an eth-like) wallet by calling the enclaved express service', async () => {
+  it('should recover a HETH (an eth-like) wallet by calling the advanced wallet manager service', async () => {
     const etherscanTxlistNock = nock('https://api.etherscan.io')
       .get(
         `/v2/api?chainid=17000&module=account&action=txlist&address=0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8&apikey=etherscan-api-key`,
@@ -78,7 +78,7 @@ describe('MBE mpcv2 recovery', () => {
         result: '100000000000000000', // 1 ETH in wei
       });
 
-    const enclavedExpressNock = nock(enclavedExpressUrl)
+    const advancedWalletManagerNock = nock(advancedWalletManagerUrl)
       .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
       .reply(200, {
         txHex:
@@ -115,10 +115,10 @@ describe('MBE mpcv2 recovery', () => {
 
     etherscanTxlistNock.isDone().should.be.true();
     etherscanBalanceNock.isDone().should.be.true();
-    enclavedExpressNock.isDone().should.be.true();
+    advancedWalletManagerNock.isDone().should.be.true();
   });
 
-  it('should recover a SEI (a cosmos-like) wallet by calling the enclaved express service', async () => {
+  it('should recover a SEI (a cosmos-like) wallet by calling the advanced wallet manager service', async () => {
     const seiChainIdNock = nock('https://rest.atlantic-2.seinetwork.io')
       .get(`/cosmos/base/tendermint/v1beta1/blocks/latest`)
       .matchHeader('any', () => true)
@@ -147,7 +147,7 @@ describe('MBE mpcv2 recovery', () => {
         balances: [{ denom: 'usei', amount: '4980000' }],
       });
 
-    const enclavedExpressNock = nock(enclavedExpressUrl)
+    const advancedWalletManagerNock = nock(advancedWalletManagerUrl)
       .post(`/api/${cosmosLikeCoin}/mpcv2/recovery`)
       .reply(200, {
         txHex:
@@ -183,7 +183,7 @@ describe('MBE mpcv2 recovery', () => {
     seiChainIdNock.isDone().should.be.true();
     seiAccountDetailsNock.isDone().should.be.true();
     seiBalanceNock.isDone().should.be.true();
-    enclavedExpressNock.isDone().should.be.true();
+    advancedWalletManagerNock.isDone().should.be.true();
   });
 
   it('should throw 422 Unprocessable Entity for missing coin specific params', async () => {

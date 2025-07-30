@@ -9,16 +9,16 @@ import {
   TxRequest,
 } from '@bitgo-beta/sdk-core';
 import {
-  EnclavedExpressClient,
+  AdvancedWalletManagerClient,
   SignMpcV2Round1Response,
   SignMpcV2Round2Response,
-} from '../clients/enclavedExpressClient';
+} from '../clients/advancedWalletManagerClient';
 
 /**
- * Creates custom ECDSA MPCv2 signing functions for use with enclaved express client
+ * Creates custom ECDSA MPCv2 signing functions for use with advanced wallet manager client
  */
 export function createEcdsaMPCv2CustomSigners(
-  enclavedExpressClient: EnclavedExpressClient,
+  advancedWalletManagerClient: AdvancedWalletManagerClient,
   source: 'user' | 'backup',
   commonKeychain: string,
 ) {
@@ -28,7 +28,11 @@ export function createEcdsaMPCv2CustomSigners(
 
   // Create custom signing methods that maintain state
   const customMPCv2Round1Generator = async (params: { txRequest: TxRequest }) => {
-    const response = await enclavedExpressClient.signMPCv2Round1(source, commonKeychain, params);
+    const response = await advancedWalletManagerClient.signMPCv2Round1(
+      source,
+      commonKeychain,
+      params,
+    );
     round1Response = response;
     return response;
   };
@@ -42,7 +46,7 @@ export function createEcdsaMPCv2CustomSigners(
     if (!round1Response) {
       throw new Error('Round 1 must be completed before Round 2');
     }
-    const response = await enclavedExpressClient.signMPCv2Round2(source, commonKeychain, {
+    const response = await advancedWalletManagerClient.signMPCv2Round2(source, commonKeychain, {
       ...params,
       encryptedDataKey: round1Response.encryptedDataKey,
       encryptedRound1Session: round1Response.encryptedRound1Session,
@@ -62,7 +66,7 @@ export function createEcdsaMPCv2CustomSigners(
     if (!round2Response) {
       throw new Error('Round 2 must be completed before Round 3');
     }
-    return await enclavedExpressClient.signMPCv2Round3(source, commonKeychain, {
+    return await advancedWalletManagerClient.signMPCv2Round3(source, commonKeychain, {
       ...params,
       encryptedDataKey: round1Response.encryptedDataKey,
       encryptedRound2Session: round2Response.encryptedRound2Session,
@@ -82,7 +86,7 @@ export async function signAndSendEcdsaMPCv2FromTxRequest(
   bitgo: BitGoBase,
   wallet: Wallet,
   txRequest: TxRequest,
-  enclavedExpressClient: EnclavedExpressClient,
+  advancedWalletManagerClient: AdvancedWalletManagerClient,
   source: 'user' | 'backup',
   commonKeychain: string,
   reqId: IRequestTracer,
@@ -91,7 +95,7 @@ export async function signAndSendEcdsaMPCv2FromTxRequest(
 
   // Use the shared custom signing functions
   const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
-    createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
+    createEcdsaMPCv2CustomSigners(advancedWalletManagerClient, source, commonKeychain);
 
   // This also sends the TxRequest for broadcast
   return await ecdsaMPCv2Utils.signEcdsaMPCv2TssUsingExternalSigner(
@@ -106,7 +110,7 @@ export async function signAndSendEcdsaMPCv2FromTxRequest(
 interface OrchestrateEcdsaKeyGenParams {
   bitgo: BitGoBase;
   baseCoin: BaseCoin;
-  enclavedExpressClient: EnclavedExpressClient;
+  advancedWalletManagerClient: AdvancedWalletManagerClient;
   enterprise: string;
   walletParams: SupplementGenerateWalletOptions;
 }
@@ -114,7 +118,7 @@ interface OrchestrateEcdsaKeyGenParams {
 export async function orchestrateEcdsaKeyGen({
   bitgo,
   baseCoin,
-  enclavedExpressClient,
+  advancedWalletManagerClient,
   enterprise,
   walletParams,
 }: OrchestrateEcdsaKeyGenParams) {
@@ -125,7 +129,7 @@ export async function orchestrateEcdsaKeyGen({
   const ecdsaUtils = new EcdsaMPCv2Utils(bitgo, baseCoin);
 
   // INITIALIZE ROUND: GENERATE ALL GPG KEYS AND RETRIEVE GPG PUBS FROM ALL PARTIES
-  const userInitResponse = await enclavedExpressClient.initEcdsaMpcV2KeyGenMpcV2({
+  const userInitResponse = await advancedWalletManagerClient.initEcdsaMpcV2KeyGenMpcV2({
     source: 'user',
   });
   if (
@@ -135,7 +139,7 @@ export async function orchestrateEcdsaKeyGen({
   ) {
     throw new Error('Missing required fields in user init response');
   }
-  const backupInitResponse = await enclavedExpressClient.initEcdsaMpcV2KeyGenMpcV2({
+  const backupInitResponse = await advancedWalletManagerClient.initEcdsaMpcV2KeyGenMpcV2({
     source: 'backup',
   });
   if (
@@ -147,7 +151,7 @@ export async function orchestrateEcdsaKeyGen({
   }
 
   // ROUND 1
-  const userRound1Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const userRound1Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'user',
     encryptedData: userInitResponse.encryptedData,
     encryptedDataKey: userInitResponse.encryptedDataKey,
@@ -155,7 +159,7 @@ export async function orchestrateEcdsaKeyGen({
     bitgoGpgPub: constants.mpc.bitgoMPCv2PublicKey,
     counterPartyGpgPub: backupInitResponse.gpgPub,
   });
-  const backupRound1Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const backupRound1Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupInitResponse.encryptedData,
     encryptedDataKey: backupInitResponse.encryptedDataKey,
@@ -190,7 +194,7 @@ export async function orchestrateEcdsaKeyGen({
   const { sessionId, bitgoMsg1, bitgoToUserMsg2, bitgoToBackupMsg2 } = round1And2BitGoResponse;
 
   // ROUND 2
-  const userRound2Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const userRound2Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'user',
     encryptedData: userRound1Response.encryptedData,
     encryptedDataKey: userRound1Response.encryptedDataKey,
@@ -200,7 +204,7 @@ export async function orchestrateEcdsaKeyGen({
       counterParty: backupRound1Response.broadcastMessage,
     },
   });
-  const backupRound2Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const backupRound2Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound1Response.encryptedData,
     encryptedDataKey: backupRound1Response.encryptedDataKey,
@@ -222,7 +226,7 @@ export async function orchestrateEcdsaKeyGen({
   }
 
   // ROUND 3
-  const userRound3Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const userRound3Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'user',
     encryptedData: userRound2Response.encryptedData,
     encryptedDataKey: userRound2Response.encryptedDataKey,
@@ -232,7 +236,7 @@ export async function orchestrateEcdsaKeyGen({
       counterParty: backupRound2Response.p2pMessages?.counterParty,
     },
   });
-  const backupRound3Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const backupRound3Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound2Response.encryptedData,
     encryptedDataKey: backupRound2Response.encryptedDataKey,
@@ -271,7 +275,7 @@ export async function orchestrateEcdsaKeyGen({
   }
 
   // ROUND 4
-  const userRound4Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const userRound4Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'user',
     encryptedData: userRound3Response.encryptedData,
     encryptedDataKey: userRound3Response.encryptedDataKey,
@@ -281,7 +285,7 @@ export async function orchestrateEcdsaKeyGen({
       counterParty: backupRound3Response.p2pMessages?.counterParty,
     },
   });
-  const backupRound4Promise = enclavedExpressClient.roundEcdsaMPCv2KeyGen({
+  const backupRound4Promise = advancedWalletManagerClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound3Response.encryptedData,
     encryptedDataKey: backupRound3Response.encryptedDataKey,
@@ -318,7 +322,7 @@ export async function orchestrateEcdsaKeyGen({
     bitgoMsg4,
     commonKeychain: bitgoCommonKeychain,
   } = round4BitGoResponse;
-  const userFinalizePromise = enclavedExpressClient.finalizeEcdsaMPCv2KeyGen({
+  const userFinalizePromise = advancedWalletManagerClient.finalizeEcdsaMPCv2KeyGen({
     source: 'user',
     encryptedData: userRound4Response.encryptedData,
     encryptedDataKey: userRound4Response.encryptedDataKey,
@@ -328,7 +332,7 @@ export async function orchestrateEcdsaKeyGen({
     },
     bitgoCommonKeychain,
   });
-  const backupFinalizePromise = enclavedExpressClient.finalizeEcdsaMPCv2KeyGen({
+  const backupFinalizePromise = advancedWalletManagerClient.finalizeEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound4Response.encryptedData,
     encryptedDataKey: backupRound4Response.encryptedDataKey,

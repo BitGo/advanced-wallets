@@ -1,13 +1,12 @@
 import { apiSpec } from '@api-ts/io-ts-http';
-import { HealthCheckApiSpec } from './healthCheck';
 import { MasterApiSpec } from './masterApiSpec';
-import { EnclavedExpressApiSpec } from './enclavedExpressHealth';
+import { AwmApiSpec } from './advancedWalletManagerHealth';
+import { HealthCheckApiSpec } from './healthCheck';
 
-// Combine all API specifications
-const combinedSpec = apiSpec({
-  ...HealthCheckApiSpec,
+export const FullApiSpec = apiSpec({
   ...MasterApiSpec,
-  ...EnclavedExpressApiSpec,
+  ...AwmApiSpec,
+  ...HealthCheckApiSpec,
 });
 
-export const FullApiSpec = combinedSpec;
+export type FullApiSpec = typeof FullApiSpec;

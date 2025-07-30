@@ -7,7 +7,7 @@ import coinFactory from '../../../shared/coinFactory';
 export async function handleSignAndSendTxRequest(
   req: MasterApiSpecRouteRequest<'v1.wallet.txrequest.signAndSend', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const advancedWalletManagerClient = req.advancedWalletManagerClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
@@ -51,7 +51,7 @@ export async function handleSignAndSendTxRequest(
     bitgo,
     wallet,
     txRequest,
-    enclavedExpressClient,
+    advancedWalletManagerClient,
     signingKeychain,
     reqId,
   );

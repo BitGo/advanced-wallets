@@ -4,13 +4,13 @@ import sinon from 'sinon';
 import { AbstractEthLikeNewCoins } from '@bitgo-beta/abstract-eth';
 import nock from 'nock';
 import * as request from 'supertest';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as advancedWalletManagerApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { data as ethRecoveryData } from '../../mocks/ethRecoveryMusigMockData';
 
 describe('POST /api/:coin/wallet/recovery', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const advancedWalletManagerUrl = 'http://advanced-wallet-manager.invalid';
   const coin = 'hteth';
   const accessToken = 'test-token';
 
@@ -27,14 +27,14 @@ describe('POST /api/:coin/wallet/recovery', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      advancedWalletManagerUrl: advancedWalletManagerUrl,
+      advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
       recoveryMode: true,
     };
 
-    const app = expressApp(config);
+    const app = advancedWalletManagerApp(config);
     agent = request.agent(app);
   });
 
@@ -51,7 +51,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
 
     // the call to eve.recoverWallet(...)
     // that contains the calls to sdk.signTransaction
-    const eveRecoverWalletNock = nock(enclavedExpressUrl)
+    const eveRecoverWalletNock = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/multisig/recovery`, {
         userPub: ethRecoveryData.userKey,
         backupPub: ethRecoveryData.backupKey,

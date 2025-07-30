@@ -27,7 +27,7 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
     logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
-    logger.info(`Enclaved Express URL: ${config.enclavedExpressUrl}`);
+    logger.info(`Advanced Wallet Manager URL: ${config.advancedWalletManagerUrl}`);
     logger.info('Master Express server started successfully');
   };
 }
@@ -113,8 +113,8 @@ export async function init(): Promise<void> {
     );
   }
 
-  const expressApp = app(cfg);
-  const server = await createServer(cfg, expressApp);
+  const advancedWalletManagerApp = app(cfg);
+  const server = await createServer(cfg, advancedWalletManagerApp);
   const { port, bind, ipc } = cfg;
   const baseUri = createBaseUri(cfg);
 

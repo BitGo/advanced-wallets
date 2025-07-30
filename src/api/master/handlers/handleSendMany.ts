@@ -11,7 +11,7 @@ import {
 import logger from '../../../logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
 import { createEcdsaMPCv2CustomSigners } from './ecdsaMPCv2';
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
 import { createEddsaCustomSigningFunctions } from './eddsa';
 import { BadRequestError, NotFoundError } from '../../../shared/errors';
 import coinFactory from '../../../shared/coinFactory';
@@ -34,7 +34,7 @@ interface Recipient {
  */
 async function createMPCSendParamsWithCustomSigningFns(
   req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>,
-  enclavedExpressClient: EnclavedExpressClient,
+  advancedWalletManagerClient: AdvancedWalletManagerClient,
   signingKeychain: Keychain,
 ): Promise<SendManyOptions> {
   const coin = await coinFactory.getCoin(req.params.coin, req.bitgo);
@@ -48,7 +48,7 @@ async function createMPCSendParamsWithCustomSigningFns(
 
   if (mpcAlgorithm === 'ecdsa') {
     const { customMPCv2Round1Generator, customMPCv2Round2Generator, customMPCv2Round3Generator } =
-      createEcdsaMPCv2CustomSigners(enclavedExpressClient, source, commonKeychain);
+      createEcdsaMPCv2CustomSigners(advancedWalletManagerClient, source, commonKeychain);
 
     return {
       ...(req.decoded as SendManyOptions),
@@ -58,7 +58,7 @@ async function createMPCSendParamsWithCustomSigningFns(
     };
   } else if (mpcAlgorithm === 'eddsa') {
     const { customCommitmentGenerator, customRShareGenerator, customGShareGenerator } =
-      createEddsaCustomSigningFunctions(enclavedExpressClient, source, commonKeychain);
+      createEddsaCustomSigningFunctions(advancedWalletManagerClient, source, commonKeychain);
 
     return {
       ...(req.decoded as SendManyOptions),
@@ -72,7 +72,7 @@ async function createMPCSendParamsWithCustomSigningFns(
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const advancedWalletManagerClient = req.advancedWalletManagerClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
@@ -119,7 +119,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       }
       const mpcSendParams = await createMPCSendParamsWithCustomSigningFns(
         req,
-        enclavedExpressClient,
+        advancedWalletManagerClient,
         signingKeychain,
       );
       return wallet.sendMany(mpcSendParams);
@@ -165,7 +165,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       req.decoded.source,
       txPrebuilt,
       prebuildParams,
-      enclavedExpressClient,
+      advancedWalletManagerClient,
       signingKeychain,
       reqId,
     );
@@ -181,7 +181,7 @@ export async function signAndSendMultisig(
   source: 'user' | 'backup',
   txPrebuilt: PrebuildTransactionResult,
   params: SendManyOptions,
-  enclavedExpressClient: EnclavedExpressClient,
+  advancedWalletManagerClient: AdvancedWalletManagerClient,
   signingKeychain: Keychain,
   reqId: RequestTracer,
 ) {
@@ -191,8 +191,8 @@ export async function signAndSendMultisig(
   logger.info(`Signing with ${source} keychain, pub: ${signingKeychain.pub}`);
   logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
 
-  // Then sign it using the enclaved express client
-  const signedTx = await enclavedExpressClient.signMultisig({
+  // Then sign it using the advanced wallet manager client
+  const signedTx = await advancedWalletManagerClient.signMultisig({
     txPrebuild: txPrebuilt,
     source: source,
     pub: signingKeychain.pub,

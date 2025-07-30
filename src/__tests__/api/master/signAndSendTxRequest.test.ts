@@ -2,7 +2,7 @@ import 'should';
 import sinon from 'sinon';
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as advancedWalletManagerApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import {
   BitGoBase,
@@ -25,7 +25,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
   let bitgo: BitGoBase;
   let baseCoin: IBaseCoin;
   let wallet: Wallet;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const advancedWalletManagerUrl = 'http://advanced-wallet-manager.invalid';
   const bitgoApiUrl = Environments.test.uri;
   const accessToken = 'test-token';
   const walletId = 'test-wallet-id';
@@ -53,13 +53,13 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      advancedWalletManagerUrl: advancedWalletManagerUrl,
+      advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
     };
 
-    const app = expressApp(config);
+    const app = advancedWalletManagerApp(config);
     agent = request.agent(app);
   });
 

@@ -14,13 +14,16 @@ import {
   CustomRShareGeneratingFunction,
   CustomGShareGeneratingFunction,
 } from '@bitgo-beta/sdk-core';
-import { EnclavedExpressClient, SignMpcCommitmentResponse } from '../clients/enclavedExpressClient';
+import {
+  AdvancedWalletManagerClient,
+  SignMpcCommitmentResponse,
+} from '../clients/advancedWalletManagerClient';
 
 /**
- * Creates custom EdDSA signing functions for use with enclaved express client
+ * Creates custom EdDSA signing functions for use with advanced wallet manager client
  */
 export function createEddsaCustomSigningFunctions(
-  enclavedExpressClient: EnclavedExpressClient,
+  advancedWalletManagerClient: AdvancedWalletManagerClient,
   source: 'user' | 'backup',
   commonKeychain: string,
 ): {
@@ -39,7 +42,7 @@ export function createEddsaCustomSigningFunctions(
     if (!params.bitgoGpgPubKey) {
       throw new Error('bitgoGpgPubKey is required for commitment share generation');
     }
-    const response = await enclavedExpressClient.signMpcCommitment({
+    const response = await advancedWalletManagerClient.signMpcCommitment({
       txRequest: params.txRequest,
       bitgoPublicGpgKey: params.bitgoGpgPubKey,
       source,
@@ -56,7 +59,7 @@ export function createEddsaCustomSigningFunctions(
     if (!commitmentResponse) {
       throw new Error('Commitment must be completed before R-share generation');
     }
-    const response = await enclavedExpressClient.signMpcRShare({
+    const response = await advancedWalletManagerClient.signMpcRShare({
       txRequest: params.txRequest,
       encryptedUserToBitgoRShare: params.encryptedUserToBitgoRShare,
       encryptedDataKey: commitmentResponse.encryptedDataKey,
@@ -75,7 +78,7 @@ export function createEddsaCustomSigningFunctions(
     if (!commitmentResponse) {
       throw new Error('Commitment must be completed before G-share generation');
     }
-    const response = await enclavedExpressClient.signMpcGShare({
+    const response = await advancedWalletManagerClient.signMpcGShare({
       txRequest: params.txRequest,
       bitgoToUserRShare: params.bitgoToUserRShare,
       userToBitgoRShare: params.userToBitgoRShare,
@@ -97,13 +100,13 @@ export async function handleEddsaSigning(
   bitgo: BitGoBase,
   wallet: Wallet,
   txRequest: TxRequest,
-  enclavedExpressClient: EnclavedExpressClient,
+  advancedWalletManagerClient: AdvancedWalletManagerClient,
   commonKeychain: string,
   reqId?: IRequestTracer,
 ) {
   const eddsaUtils = new EddsaUtils(bitgo, wallet.baseCoin, wallet);
   const { customCommitmentGenerator, customRShareGenerator, customGShareGenerator } =
-    createEddsaCustomSigningFunctions(enclavedExpressClient, 'user', commonKeychain);
+    createEddsaCustomSigningFunctions(advancedWalletManagerClient, 'user', commonKeychain);
   return await eddsaUtils.signEddsaTssUsingExternalSigner(
     txRequest,
     customCommitmentGenerator,
@@ -116,7 +119,7 @@ export async function handleEddsaSigning(
 interface OrchestrateEddsaKeyGenParams {
   bitgo: BitGoBase;
   baseCoin: BaseCoin;
-  enclavedExpressClient: EnclavedExpressClient;
+  advancedWalletManagerClient: AdvancedWalletManagerClient;
   enterprise: string;
   walletParams: any;
 }
@@ -124,7 +127,7 @@ interface OrchestrateEddsaKeyGenParams {
 export async function orchestrateEddsaKeyGen({
   bitgo,
   baseCoin,
-  enclavedExpressClient,
+  advancedWalletManagerClient,
   enterprise,
   walletParams,
 }: OrchestrateEddsaKeyGenParams) {
@@ -133,11 +136,11 @@ export async function orchestrateEddsaKeyGen({
     throw new Error('Unable to create MPC keys - bitgoPublicKey is missing in constants');
   }
   // Initialize key generation for user and backup
-  const userInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
+  const userInitResponse = await advancedWalletManagerClient.initMpcKeyGeneration({
     source: 'user',
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
   });
-  const backupInitResponse = await enclavedExpressClient.initMpcKeyGeneration({
+  const backupInitResponse = await advancedWalletManagerClient.initMpcKeyGeneration({
     source: 'backup',
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
     userGpgKey: userInitResponse.bitgoPayload.gpgKey,
@@ -167,7 +170,7 @@ export async function orchestrateEddsaKeyGen({
     backupGPGPublicKey: backupGPGKey,
   });
   // Finalize user and backup keychains
-  const userKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
+  const userKeychainPromise = await advancedWalletManagerClient.finalizeMpcKeyGeneration({
     source: 'user',
     coin: baseCoin.getFamily(),
     encryptedDataKey: userInitResponse.encryptedDataKey,
@@ -194,7 +197,7 @@ export async function orchestrateEddsaKeyGen({
     source: 'user',
     type: 'tss',
   });
-  const backupKeychainPromise = await enclavedExpressClient.finalizeMpcKeyGeneration({
+  const backupKeychainPromise = await advancedWalletManagerClient.finalizeMpcKeyGeneration({
     source: 'backup',
     coin: baseCoin.getFamily(),
     encryptedDataKey: backupInitResponse.encryptedDataKey,

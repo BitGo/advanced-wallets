@@ -12,7 +12,7 @@ import { signAndSendTxRequests } from './transactionRequests';
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const advancedWalletManagerClient = req.advancedWalletManagerClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;
@@ -75,7 +75,7 @@ export async function handleConsolidate(
                   })(),
                   reqId,
                 ),
-                enclavedExpressClient,
+                advancedWalletManagerClient,
                 signingKeychain,
                 reqId,
               )
@@ -83,7 +83,7 @@ export async function handleConsolidate(
                 ...consolidationParams,
                 prebuildTx: unsignedBuild,
                 customSigningFunction: makeCustomSigningFunction({
-                  enclavedExpressClient,
+                  advancedWalletManagerClient,
                   source: params.source,
                   pub: signingKeychain.pub!,
                 }),

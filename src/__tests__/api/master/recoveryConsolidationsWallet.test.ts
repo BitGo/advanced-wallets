@@ -2,16 +2,16 @@ import 'should';
 import sinon from 'sinon';
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as advancedWalletManagerApp } from '../../../masterExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Trx } from '@bitgo-beta/sdk-coin-trx';
 import { Sol } from '@bitgo-beta/sdk-coin-sol';
 import { Sui } from '@bitgo-beta/sdk-coin-sui';
-import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
 
 describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'https://test-enclaved-express.com';
+  const advancedWalletManagerUrl = 'https://test-advanced-wallet-manager.com';
   const accessToken = 'test-access-token';
 
   const mockUserPub =
@@ -34,13 +34,13 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl,
-      enclavedExpressCert: 'test-cert',
+      advancedWalletManagerUrl,
+      advancedWalletManagerCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
       recoveryMode: true,
     };
-    const app = expressApp(config);
+    const app = advancedWalletManagerApp(config);
     agent = request.agent(app);
   });
 
@@ -60,7 +60,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     });
 
     const recoveryMultisigStub = sinon
-      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
       .resolves({ txHex: 'signed-tx' });
 
     const requestPayload = {
@@ -100,7 +100,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     });
 
     const recoveryMultisigStub = sinon
-      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
       .resolves({ txHex: 'signed-tx' });
 
     const requestPayload = {
@@ -156,7 +156,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     });
 
     const recoveryMPCStub = sinon
-      .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
+      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMPC')
       .resolves({ txHex: 'signed-mpc-tx' });
 
     const requestPayload = {
@@ -198,7 +198,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     });
 
     const recoveryMPCStub = sinon
-      .stub(EnclavedExpressClient.prototype, 'recoveryMPC')
+      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMPC')
       .resolves({ txHex: 'signed-mpc-tx' });
 
     const requestPayload = {
@@ -241,7 +241,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     });
 
     const recoveryMultisigStub = sinon
-      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
+      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
       .resolves({ txHex: 'signed-tx' });
 
     const requestPayload = {
@@ -408,7 +408,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     sinon.assert.calledOnce(recoverConsolidationsStub);
   });
 
-  it('should fail when enclavedExpressClient throws an error', async () => {
+  it('should fail when advancedWalletManagerClient throws an error', async () => {
     const mockTransactions = [{ txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' }];
 
     const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
@@ -416,8 +416,8 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     });
 
     const recoveryMultisigStub = sinon
-      .stub(EnclavedExpressClient.prototype, 'recoveryMultisig')
-      .rejects(new Error('Enclaved Express signing failed'));
+      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
+      .rejects(new Error('Advanced Wallet Manager signing failed'));
 
     const response = await agent
       .post(`/api/trx/wallet/recoveryconsolidations`)
@@ -431,7 +431,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details', 'Enclaved Express signing failed');
+    response.body.should.have.property('details', 'Advanced Wallet Manager signing failed');
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
     sinon.assert.calledOnce(recoveryMultisigStub);

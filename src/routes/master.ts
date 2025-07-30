@@ -1,7 +1,7 @@
 import express from 'express';
 import { MasterExpressConfig } from '../shared/types';
 import { createHealthCheckRouter } from '../api/master/routers/healthCheck';
-import { createEnclavedExpressRouter } from '../api/master/routers/enclavedExpressHealth';
+import { createAwmRouter } from '../api/master/routers/advancedWalletManagerHealth';
 import { createMasterApiRouter } from '../api/master/routers/masterApiSpec';
 
 /**
@@ -11,9 +11,10 @@ export function setupRoutes(app: express.Application, cfg: MasterExpressConfig):
   // Setup health check routes using the new router
   app.use(createHealthCheckRouter('master express'));
 
-  // Add enclaved express routes for pinging the enclaved express server
-  // TODO: Add version endpoint to enclaved express
-  app.use(createEnclavedExpressRouter(cfg));
+  // Add advanced wallet manager routes for pinging the advanced wallet manager server
+  // TODO: Add version endpoint to advanced wallet manager
+  app.use(createAwmRouter(cfg));
 
+  // Set up the routes for the master API
   app.use(createMasterApiRouter(cfg));
 }

@@ -1,7 +1,7 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
 import { Config } from '../shared/types';
 import { BitGoRequest } from '../types/request';
-import { ApiResponseError, EnclavedError } from '../errors';
+import { ApiResponseError, AWMError } from '../errors';
 import {
   BitgoExpressError,
   ValidationError,
@@ -92,7 +92,7 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       }
 
       // If it's an EnclavedError, use its status code
-      if (error instanceof EnclavedError) {
+      if (error instanceof AWMError) {
         return res.sendEncoded(error.status, {
           error: error.message,
           name: error.name,

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import {
   Config,
-  EnclavedConfig,
+  AdvancedWalletManagerConfig,
   MasterExpressConfig,
   TlsMode,
   AppMode,
@@ -9,8 +9,6 @@ import {
 } from './shared/types';
 import logger from './logger';
 import { validateTlsCertificates, validateMasterExpressConfig } from './shared/appUtils';
-
-export { Config, EnclavedConfig, MasterExpressConfig, TlsMode, AppMode, EnvironmentName };
 
 function isNilOrNaN(val: unknown): val is null | undefined | number {
   return val == null || (typeof val === 'number' && isNaN(val));
@@ -26,26 +24,28 @@ function determineAppMode(): AppMode {
   const mode = readEnvVar('APP_MODE') || readEnvVar('BITGO_APP_MODE');
   if (!mode) {
     throw new Error(
-      'APP_MODE environment variable is required. Set APP_MODE to either "enclaved" or "master-express"',
+      'APP_MODE environment variable is required. Set APP_MODE to either "advanced-wallet-manager" or "master-express"',
     );
   }
   if (mode === 'master-express') {
     return AppMode.MASTER_EXPRESS;
   }
-  if (mode === 'enclaved') {
-    return AppMode.ENCLAVED;
+  if (mode === 'advanced-wallet-manager') {
+    return AppMode.ADVANCED_WALLET_MANAGER;
   }
-  throw new Error(`Invalid APP_MODE: ${mode}. Must be either "enclaved" or "master-express"`);
+  throw new Error(
+    `Invalid APP_MODE: ${mode}. Must be either "advanced-wallet-manager" or "master-express"`,
+  );
 }
 
 export { determineAppMode };
 
 // ============================================================================
-// ENCLAVED MODE CONFIGURATION
+// ADVANCED_WALLET_MANAGER MODE CONFIGURATION
 // ============================================================================
 
-const defaultEnclavedConfig: EnclavedConfig = {
-  appMode: AppMode.ENCLAVED,
+const defaultAdvancedWalletManagerConfig: AdvancedWalletManagerConfig = {
+  appMode: AppMode.ADVANCED_WALLET_MANAGER,
   port: 3080,
   bind: 'localhost',
   timeout: 305 * 1000,
@@ -74,7 +74,7 @@ function determineTlsMode(): TlsMode {
   throw new Error(`Invalid TLS_MODE: ${tlsMode}. Must be either "disabled" or "mtls"`);
 }
 
-function enclavedEnvConfig(): Partial<EnclavedConfig> {
+function awmEnvConfig(): Partial<AdvancedWalletManagerConfig> {
   const kmsUrl = readEnvVar('KMS_URL');
 
   if (!kmsUrl) {
@@ -83,8 +83,8 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
   }
 
   return {
-    appMode: AppMode.ENCLAVED,
-    port: Number(readEnvVar('ENCLAVED_EXPRESS_PORT')),
+    appMode: AppMode.ADVANCED_WALLET_MANAGER,
+    port: Number(readEnvVar('ADVANCED_WALLET_MANAGER_PORT')),
     bind: readEnvVar('BIND'),
     ipc: readEnvVar('IPC'),
     httpLoggerFile: readEnvVar('HTTP_LOGFILE') || 'logs/http-access.log',
@@ -106,17 +106,19 @@ function enclavedEnvConfig(): Partial<EnclavedConfig> {
   };
 }
 
-function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedConfig {
-  function get<T extends keyof EnclavedConfig>(k: T): EnclavedConfig[T] {
+function mergeAdvancedWalletManagerConfigs(
+  ...configs: Partial<AdvancedWalletManagerConfig>[]
+): AdvancedWalletManagerConfig {
+  function get<T extends keyof AdvancedWalletManagerConfig>(k: T): AdvancedWalletManagerConfig[T] {
     return configs.reduce(
-      (entry: EnclavedConfig[T], config) =>
-        !isNilOrNaN(config[k]) ? (config[k] as EnclavedConfig[T]) : entry,
-      defaultEnclavedConfig[k],
+      (entry: AdvancedWalletManagerConfig[T], config) =>
+        !isNilOrNaN(config[k]) ? (config[k] as AdvancedWalletManagerConfig[T]) : entry,
+      defaultAdvancedWalletManagerConfig[k],
     );
   }
 
   return {
-    appMode: AppMode.ENCLAVED,
+    appMode: AppMode.ADVANCED_WALLET_MANAGER,
     port: get('port'),
     bind: get('bind'),
     ipc: get('ipc'),
@@ -137,9 +139,9 @@ function mergeEnclavedConfigs(...configs: Partial<EnclavedConfig>[]): EnclavedCo
   };
 }
 
-function configureEnclavedMode(): EnclavedConfig {
-  const env = enclavedEnvConfig();
-  let config = mergeEnclavedConfigs(env);
+function configureAwmMode(): AdvancedWalletManagerConfig {
+  const env = awmEnvConfig();
+  let config = mergeAdvancedWalletManagerConfigs(env);
 
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
@@ -201,8 +203,8 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   env: 'test',
   disableEnvCheck: true,
   authVersion: 2,
-  enclavedExpressUrl: '', // Will be overridden by environment variable
-  enclavedExpressCert: '', // Will be overridden by environment variable
+  advancedWalletManagerUrl: '', // Will be overridden by environment variable
+  advancedWalletManagerCert: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
   allowSelfSigned: false,
 };
@@ -217,16 +219,18 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
 }
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
-  const enclavedExpressUrl = readEnvVar('ENCLAVED_EXPRESS_URL');
-  const enclavedExpressCert = readEnvVar('ENCLAVED_EXPRESS_CERT');
+  const advancedWalletManagerUrl = readEnvVar('ADVANCED_WALLET_MANAGER_URL');
+  const advancedWalletManagerCert = readEnvVar('ADVANCED_WALLET_MANAGER_CERT');
   const tlsMode = determineTlsMode();
 
-  if (!enclavedExpressUrl) {
-    throw new Error('ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty');
+  if (!advancedWalletManagerUrl) {
+    throw new Error(
+      'ADVANCED_WALLET_MANAGER_URL environment variable is required and cannot be empty',
+    );
   }
 
-  if (tlsMode === TlsMode.MTLS && !enclavedExpressCert) {
-    throw new Error('ENCLAVED_EXPRESS_CERT environment variable is required for MTLS mode.');
+  if (tlsMode === TlsMode.MTLS && !advancedWalletManagerCert) {
+    throw new Error('ADVANCED_WALLET_MANAGER_CERT environment variable is required for MTLS mode.');
   }
 
   // Debug mTLS environment variables
@@ -247,8 +251,8 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     customRootUri: readEnvVar('BITGO_CUSTOM_ROOT_URI'),
     disableEnvCheck: readEnvVar('BITGO_DISABLE_ENV_CHECK') === 'true',
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
-    enclavedExpressUrl,
-    enclavedExpressCert,
+    advancedWalletManagerUrl,
+    advancedWalletManagerCert,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
@@ -286,8 +290,8 @@ function mergeMasterExpressConfigs(
     customRootUri: get('customRootUri'),
     disableEnvCheck: get('disableEnvCheck'),
     authVersion: get('authVersion'),
-    enclavedExpressUrl: get('enclavedExpressUrl'),
-    enclavedExpressCert: get('enclavedExpressCert'),
+    advancedWalletManagerUrl: get('advancedWalletManagerUrl'),
+    advancedWalletManagerCert: get('advancedWalletManagerCert'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
@@ -309,9 +313,9 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   if (config.customRootUri) {
     updates.customRootUri = determineProtocol(config.customRootUri, config.tlsMode, true);
   }
-  if (config.enclavedExpressUrl) {
-    updates.enclavedExpressUrl = determineProtocol(
-      config.enclavedExpressUrl,
+  if (config.advancedWalletManagerUrl) {
+    updates.advancedWalletManagerUrl = determineProtocol(
+      config.advancedWalletManagerUrl,
       config.tlsMode,
       false,
     );
@@ -349,26 +353,26 @@ export function configureMasterExpressMode(): MasterExpressConfig {
     validateTlsCertificates(config);
   }
 
-  // Handle cert loading for Enclaved Express (always required for Master Express)
-  if (config.enclavedExpressCert) {
+  // Handle cert loading for Advanced Wallet Manager (always required for Master Express)
+  if (config.advancedWalletManagerCert) {
     try {
-      if (fs.existsSync(config.enclavedExpressCert)) {
+      if (fs.existsSync(config.advancedWalletManagerCert)) {
         config = {
           ...config,
-          enclavedExpressCert: fs.readFileSync(config.enclavedExpressCert, 'utf-8'),
+          advancedWalletManagerCert: fs.readFileSync(config.advancedWalletManagerCert, 'utf-8'),
         };
         logger.info(
-          `Successfully loaded Enclaved Express certificate from file: ${config.enclavedExpressCert.substring(
+          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.advancedWalletManagerCert.substring(
             0,
             50,
           )}...`,
         );
       } else {
-        throw new Error(`Certificate file not found: ${config.enclavedExpressCert}`);
+        throw new Error(`Certificate file not found: ${config.advancedWalletManagerCert}`);
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read enclaved express cert: ${err.message}`);
+      throw new Error(`Failed to read advanced wallet manager cert: ${err.message}`);
     }
   }
 
@@ -385,8 +389,8 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 export function initConfig(): Config {
   const appMode = determineAppMode();
 
-  if (appMode === AppMode.ENCLAVED) {
-    return configureEnclavedMode();
+  if (appMode === AppMode.ADVANCED_WALLET_MANAGER) {
+    return configureAwmMode();
   } else if (appMode === AppMode.MASTER_EXPRESS) {
     return configureMasterExpressMode();
   } else {
@@ -395,8 +399,10 @@ export function initConfig(): Config {
 }
 
 // Type guards for working with the union type
-export function isEnclavedConfig(config: Config): config is EnclavedConfig {
-  return config.appMode === AppMode.ENCLAVED;
+export function isAdvancedWalletManagerConfig(
+  config: Config,
+): config is AdvancedWalletManagerConfig {
+  return config.appMode === AppMode.ADVANCED_WALLET_MANAGER;
 }
 
 export function isMasterExpressConfig(config: Config): config is MasterExpressConfig {

@@ -1,7 +1,7 @@
 import express from 'express';
 import debug from 'debug';
 
-const debugLogger = debug('enclaved:routes');
+const debugLogger = debug('advanced-wallet-manager:routes');
 
 // promiseWrapper implementation
 export function promiseWrapper(promiseRequestHandler: any) {

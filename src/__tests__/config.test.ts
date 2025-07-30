@@ -1,5 +1,10 @@
 import 'should';
-import { initConfig, isEnclavedConfig, isMasterExpressConfig, TlsMode } from '../initConfig';
+import {
+  initConfig,
+  isAdvancedWalletManagerConfig,
+  isMasterExpressConfig,
+  TlsMode,
+} from '../initConfig';
 import path from 'path';
 
 describe('Configuration', () => {
@@ -13,14 +18,14 @@ describe('Configuration', () => {
     delete process.env.APP_MODE;
     delete process.env.BITGO_APP_MODE;
     delete process.env.KMS_URL;
-    delete process.env.ENCLAVED_EXPRESS_URL;
-    delete process.env.ENCLAVED_EXPRESS_CERT;
+    delete process.env.ADVANCED_WALLET_MANAGER_URL;
+    delete process.env.ADVANCED_WALLET_MANAGER_CERT;
     delete process.env.TLS_MODE;
     delete process.env.TLS_KEY;
     delete process.env.TLS_CERT;
     delete process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS;
     delete process.env.ALLOW_SELF_SIGNED;
-    delete process.env.ENCLAVED_EXPRESS_PORT;
+    delete process.env.ADVANCED_WALLET_MANAGER_PORT;
     delete process.env.MASTER_EXPRESS_PORT;
     delete process.env.BIND;
     delete process.env.IPC;
@@ -42,20 +47,20 @@ describe('Configuration', () => {
 
   it('should throw error when APP_MODE is not set', () => {
     (() => initConfig()).should.throw(
-      'APP_MODE environment variable is required. Set APP_MODE to either "enclaved" or "master-express"',
+      'APP_MODE environment variable is required. Set APP_MODE to either "advanced-wallet-manager" or "master-express"',
     );
   });
 
   it('should throw error when APP_MODE is invalid', () => {
     process.env.APP_MODE = 'invalid';
     (() => initConfig()).should.throw(
-      'Invalid APP_MODE: invalid. Must be either "enclaved" or "master-express"',
+      'Invalid APP_MODE: invalid. Must be either "advanced-wallet-manager" or "master-express"',
     );
   });
 
-  describe('Enclaved Mode', () => {
+  describe('Advanced Wallet Manager Mode', () => {
     beforeEach(() => {
-      process.env.APP_MODE = 'enclaved';
+      process.env.APP_MODE = 'advanced-wallet-manager';
     });
 
     it('should use default configuration when minimal environment variables are set', () => {
@@ -64,8 +69,8 @@ describe('Configuration', () => {
       process.env.TLS_CERT = mockTlsCert;
       process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.port.should.equal(3080);
         cfg.bind.should.equal('localhost');
         cfg.tlsMode.should.equal(TlsMode.MTLS);
@@ -77,14 +82,14 @@ describe('Configuration', () => {
     });
 
     it('should read port from environment variable', () => {
-      process.env.ENCLAVED_EXPRESS_PORT = '4000';
+      process.env.ADVANCED_WALLET_MANAGER_PORT = '4000';
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
       process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.port.should.equal(4000);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -111,8 +116,8 @@ describe('Configuration', () => {
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
       let cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
         cfg.kmsUrl.should.equal('http://localhost:3000');
       }
@@ -120,8 +125,8 @@ describe('Configuration', () => {
       // Test with mTLS explicitly enabled
       process.env.TLS_MODE = 'mtls';
       cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -137,8 +142,8 @@ describe('Configuration', () => {
       // Test with no TLS mode (should default to MTLS)
       delete process.env.TLS_MODE;
       cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -154,8 +159,8 @@ describe('Configuration', () => {
       process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
 
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.mtlsAllowedClientFingerprints!.should.deepEqual(['ABC123', 'DEF456']);
         cfg.kmsUrl.should.equal('http://localhost:3000');
         cfg.tlsKey!.should.equal(mockTlsKey);
@@ -185,8 +190,8 @@ describe('Configuration', () => {
       delete process.env.TLS_CERT;
       delete process.env.KMS_TLS_CERT_PATH;
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
         cfg.kmsUrl.should.equal('http://localhost:3000');
       }
@@ -200,15 +205,15 @@ describe('Configuration', () => {
       (() => initConfig()).should.throw();
     });
 
-    it('should read HTTP_LOGFILE into httpLoggerFile in Enclaved mode', () => {
+    it('should read HTTP_LOGFILE into httpLoggerFile in Advanced Wallet Manager mode', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_KEY = mockTlsKey;
       process.env.TLS_CERT = mockTlsCert;
       process.env.HTTP_LOGFILE = '/tmp/test-http-access.log';
       process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       const cfg = initConfig();
-      isEnclavedConfig(cfg).should.be.true();
-      if (isEnclavedConfig(cfg)) {
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.httpLoggerFile.should.equal('/tmp/test-http-access.log');
       }
     });
@@ -224,10 +229,10 @@ describe('Configuration', () => {
   describe('Master Express Mode', () => {
     beforeEach(() => {
       process.env.APP_MODE = 'master-express';
-      process.env.ENCLAVED_EXPRESS_URL = 'http://localhost:3080';
-      process.env.ENCLAVED_EXPRESS_CERT = path.resolve(
+      process.env.ADVANCED_WALLET_MANAGER_URL = 'http://localhost:3080';
+      process.env.ADVANCED_WALLET_MANAGER_CERT = path.resolve(
         __dirname,
-        'mocks/certs/enclaved-express-cert.pem',
+        'mocks/certs/awm-cert.pem',
       );
       process.env.TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       process.env.TLS_KEY_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-key.pem');
@@ -241,7 +246,7 @@ describe('Configuration', () => {
         cfg.bind.should.equal('localhost');
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.timeout.should.equal(305 * 1000);
-        cfg.enclavedExpressUrl.should.equal('https://localhost:3080');
+        cfg.advancedWalletManagerUrl.should.equal('https://localhost:3080');
         cfg.env.should.equal('test');
       }
     });
@@ -252,7 +257,7 @@ describe('Configuration', () => {
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
         cfg.port.should.equal(4001);
-        cfg.enclavedExpressUrl.should.equal('https://localhost:3080');
+        cfg.advancedWalletManagerUrl.should.equal('https://localhost:3080');
       }
     });
 
@@ -277,7 +282,7 @@ describe('Configuration', () => {
     it('should handle TLS mode disabled configuration', () => {
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
-      delete process.env.ENCLAVED_EXPRESS_CERT;
+      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
       delete process.env.TLS_KEY_PATH;
       delete process.env.TLS_CERT_PATH;
       delete process.env.TLS_KEY;
@@ -287,76 +292,82 @@ describe('Configuration', () => {
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
-        cfg.enclavedExpressUrl.should.equal('http://localhost:3080');
+        cfg.advancedWalletManagerUrl.should.equal('http://localhost:3080');
       }
     });
 
-    it('should throw error when ENCLAVED_EXPRESS_URL is not set', () => {
-      delete process.env.ENCLAVED_EXPRESS_URL;
+    it('should throw error when ADVANCED_WALLET_MANAGER_URL is not set', () => {
+      delete process.env.ADVANCED_WALLET_MANAGER_URL;
       (() => initConfig()).should.throw(
-        'ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty',
+        'ADVANCED_WALLET_MANAGER_URL environment variable is required and cannot be empty',
       );
     });
 
-    it('should throw error when ENCLAVED_EXPRESS_URL is empty', () => {
-      process.env.ENCLAVED_EXPRESS_URL = '';
+    it('should throw error when ADVANCED_WALLET_MANAGER_URL is empty', () => {
+      process.env.ADVANCED_WALLET_MANAGER_URL = '';
       (() => initConfig()).should.throw(
-        'ENCLAVED_EXPRESS_URL environment variable is required and cannot be empty',
+        'ADVANCED_WALLET_MANAGER_URL environment variable is required and cannot be empty',
       );
     });
 
-    it('should throw error when ENCLAVED_EXPRESS_CERT is not set for MTLS mode', () => {
+    it('should throw error when ADVANCED_WALLET_MANAGER_CERT is not set for MTLS mode', () => {
       process.env.TLS_MODE = 'mtls';
-      delete process.env.ENCLAVED_EXPRESS_CERT;
+      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
       (() => initConfig()).should.throw(
-        'ENCLAVED_EXPRESS_CERT environment variable is required for MTLS mode.',
+        'ADVANCED_WALLET_MANAGER_CERT environment variable is required for MTLS mode.',
       );
     });
 
-    it('should succeed when ENCLAVED_EXPRESS_CERT is not set for disabled TLS mode', () => {
-      process.env.ENCLAVED_EXPRESS_URL = 'http://localhost:3080';
+    it('should succeed when ADVANCED_WALLET_MANAGER_CERT is not set for disabled TLS mode', () => {
+      process.env.ADVANCED_WALLET_MANAGER_URL = 'http://localhost:3080';
       process.env.TLS_MODE = 'disabled';
-      delete process.env.ENCLAVED_EXPRESS_CERT;
+      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
       const cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
-        cfg.enclavedExpressUrl.should.equal('http://localhost:3080');
-        cfg.enclavedExpressCert!.should.equal('');
+        cfg.advancedWalletManagerUrl.should.equal('http://localhost:3080');
+        cfg.advancedWalletManagerCert!.should.equal('');
       }
     });
 
-    it('should throw error when ENCLAVED_EXPRESS_CERT is not set for default MTLS mode', () => {
-      delete process.env.ENCLAVED_EXPRESS_CERT;
+    it('should throw error when ADVANCED_WALLET_MANAGER_CERT is not set for default MTLS mode', () => {
+      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
       (() => initConfig()).should.throw(
-        'ENCLAVED_EXPRESS_CERT environment variable is required for MTLS mode.',
+        'ADVANCED_WALLET_MANAGER_CERT environment variable is required for MTLS mode.',
       );
     });
 
     it('should handle URL protocol conversion correctly', () => {
       // Test with URL that already has protocol
-      process.env.ENCLAVED_EXPRESS_URL = 'https://enclaved.example.com:3080';
+      process.env.ADVANCED_WALLET_MANAGER_URL = 'https://advanced-wallet-manager.example.com:3080';
       let cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
-        cfg.enclavedExpressUrl.should.equal('https://enclaved.example.com:3080');
+        cfg.advancedWalletManagerUrl.should.equal(
+          'https://advanced-wallet-manager.example.com:3080',
+        );
       }
 
       // Test with URL without protocol (should add https for MTLS)
-      process.env.ENCLAVED_EXPRESS_URL = 'enclaved.example.com:3080';
+      process.env.ADVANCED_WALLET_MANAGER_URL = 'advanced-wallet-manager.example.com:3080';
       cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
-        cfg.enclavedExpressUrl.should.equal('https://enclaved.example.com:3080');
+        cfg.advancedWalletManagerUrl.should.equal(
+          'https://advanced-wallet-manager.example.com:3080',
+        );
       }
 
       // Test with URL without protocol and disabled TLS (should add http)
-      process.env.ENCLAVED_EXPRESS_URL = 'enclaved.example.com:3080';
+      process.env.ADVANCED_WALLET_MANAGER_URL = 'advanced-wallet-manager.example.com:3080';
       process.env.TLS_MODE = 'disabled';
       cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
-        cfg.enclavedExpressUrl.should.equal('http://enclaved.example.com:3080');
+        cfg.advancedWalletManagerUrl.should.equal(
+          'http://advanced-wallet-manager.example.com:3080',
+        );
       }
     });
 

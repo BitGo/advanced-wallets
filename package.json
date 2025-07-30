@@ -1,15 +1,15 @@
 {
-  "name": "@bitgo/enclaved-bitgo-express",
+  "name": "@bitgo/advanced-wallet-manager",
   "version": "0.0.0-semantically-released",
-  "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS",
+  "description": "BitGo Advanced Wallet Manager - Secure environment for BitGo signing operations with mTLS",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "bin": {
-    "enclaved-bitgo-express": "./bin/enclaved-bitgo-express"
+    "advanced-wallet-manager": "./bin/advanced-wallet-manager"
   },
   "scripts": {
     "start": "nodemon",
-    "build": "npm run tsc -- --build --incremental --verbose . && cp package.json dist/",
+    "build": "npm run tsc -- --project tsconfig.build.json",
     "tsc": "tsc",
     "test": "NODE_ENV=test mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "test:watch": "mocha --require ts-node/register --watch 'src/**/__tests__/**/*.test.ts'",

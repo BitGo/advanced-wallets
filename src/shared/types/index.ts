@@ -4,7 +4,7 @@ export enum TlsMode {
 }
 
 export enum AppMode {
-  ENCLAVED = 'enclaved',
+  ADVANCED_WALLET_MANAGER = 'advanced-wallet-manager',
   MASTER_EXPRESS = 'master-express',
 }
 
@@ -23,9 +23,9 @@ export interface BaseConfig {
   recoveryMode?: boolean;
 }
 
-// Enclaved mode specific configuration
-export interface EnclavedConfig extends BaseConfig {
-  appMode: AppMode.ENCLAVED;
+// Advanced Wallet Manager mode specific configuration
+export interface AdvancedWalletManagerConfig extends BaseConfig {
+  appMode: AppMode.ADVANCED_WALLET_MANAGER;
   // KMS settings
   kmsUrl: string;
   kmsTlsCertPath?: string;
@@ -48,8 +48,8 @@ export interface MasterExpressConfig extends BaseConfig {
   customRootUri?: string;
   disableEnvCheck?: boolean;
   authVersion?: number;
-  enclavedExpressUrl: string;
-  enclavedExpressCert: string;
+  advancedWalletManagerUrl: string;
+  advancedWalletManagerCert: string;
   customBitcoinNetwork?: string;
   // mTLS settings
   keyPath?: string;
@@ -62,14 +62,15 @@ export interface MasterExpressConfig extends BaseConfig {
 }
 
 // Union type for the configuration
-export type Config = EnclavedConfig | MasterExpressConfig;
+export type Config = AdvancedWalletManagerConfig | MasterExpressConfig;
 
 // Type guard for MasterExpressConfig
 export function isMasterExpressConfig(config: Config): config is MasterExpressConfig {
   return config.appMode === AppMode.MASTER_EXPRESS;
 }
 
-// Type guard for EnclavedConfig
-export function isEnclavedConfig(config: Config): config is EnclavedConfig {
-  return config.appMode === AppMode.ENCLAVED;
+// Type guard for AdvancedWalletManagerConfig
+export function isAdvancedWalletManagerConfig(config: Config): config is AdvancedWalletManagerConfig {
+  return config.appMode === AppMode.ADVANCED_WALLET_MANAGER;
 }
+
