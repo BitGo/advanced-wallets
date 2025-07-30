@@ -232,7 +232,9 @@ describe('Recovery Tests', () => {
       response.status.should.equal(422);
       response.body.should.have.property('error');
       response.body.should.have.property('details');
-      response.body.details.should.containEql('Invalid parameters provided for UTXO coin recovery');
+      response.body.details.should.containEql(
+        'UTXO recovery options are required for UTXO coin recovery',
+      );
     });
 
     it('should reject incorrect Solana parameters for a UTXO coin', async () => {
@@ -267,7 +269,9 @@ describe('Recovery Tests', () => {
       response.status.should.equal(422);
       response.body.should.have.property('error');
       response.body.should.have.property('details');
-      response.body.details.should.containEql('Invalid parameters provided for UTXO coin recovery');
+      response.body.details.should.containEql(
+        'UTXO recovery options are required for UTXO coin recovery',
+      );
     });
 
     it('should reject using legacy coinSpecificParams format', async () => {
@@ -294,9 +298,12 @@ describe('Recovery Tests', () => {
           },
         });
 
-      response.status.should.equal(500);
-      // Since we test that the incorrect format doesn't work anymore
+      response.status.should.equal(422);
       response.body.should.have.property('error');
+      response.body.should.have.property('details');
+      response.body.details.should.containEql(
+        'UTXO recovery options are required for UTXO coin recovery',
+      );
     });
   });
 
@@ -355,7 +362,7 @@ describe('Recovery Tests', () => {
       response.body.should.have.property('error');
       response.body.should.have.property('details');
       response.body.details.should.containEql(
-        'Invalid parameters provided for ETH-like coin recovery',
+        'EVM recovery options are required for ETH-like coin recovery',
       );
     });
 
@@ -393,7 +400,7 @@ describe('Recovery Tests', () => {
       response.body.should.have.property('error');
       response.body.should.have.property('details');
       response.body.details.should.containEql(
-        'Invalid parameters provided for ETH-like coin recovery',
+        'EVM recovery options are required for ETH-like coin recovery',
       );
     });
   });
@@ -448,7 +455,7 @@ describe('Recovery Tests', () => {
       response.body.should.have.property('error');
       response.body.should.have.property('details');
       response.body.details.should.containEql(
-        'Invalid parameters provided for Solana coin recovery',
+        'Solana recovery options are required for EdDSA coin recovery',
       );
     });
 
@@ -479,7 +486,7 @@ describe('Recovery Tests', () => {
       response.body.should.have.property('error');
       response.body.should.have.property('details');
       response.body.details.should.containEql(
-        'Invalid parameters provided for Solana coin recovery',
+        'Solana recovery options are required for EdDSA coin recovery',
       );
     });
   });

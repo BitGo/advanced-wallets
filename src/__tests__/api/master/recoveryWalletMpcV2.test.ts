@@ -203,7 +203,7 @@ describe('MBE mpcv2 recovery', () => {
     response.status.should.equal(422);
     response.body.should.have.property('error');
     response.body.error.should.equal(
-      'Invalid parameters provided for ETH-like MPC V2 coin recovery',
+      'ECDSA ETH-like recovery specific parameters are required for MPC recovery',
     );
   });
 });
