@@ -53,24 +53,43 @@ interface EnclavedRecoveryParams {
   walletContractAddress: string;
 }
 
-function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) {
+function validateRecoveryParams(
+  sdkCoin: BaseCoin,
+  params?: CoinSpecificParams,
+  isMpcRecovery = false,
+) {
   if (!params) {
     return;
   }
 
-  if (isEddsaCoin(sdkCoin)) {
-    if (params.evmRecoveryOptions || params.utxoRecoveryOptions) {
-      throw new ValidationError('Invalid parameters provided for Solana coin recovery');
+  if (isUtxoCoin(sdkCoin)) {
+    // UTXO coins need utxoRecoveryOptions for standard recovery
+    if (!isMpcRecovery && !params.utxoRecoveryOptions) {
+      throw new ValidationError('UTXO recovery options are required for UTXO coin recovery');
     }
-  } else if (isEcdsaCoin(sdkCoin)) {
+    return;
+  }
+
+  if (isEddsaCoin(sdkCoin)) {
+    // EdDSA coins (like Solana) need solanaRecoveryOptions for standard recovery
+    if (!params.solanaRecoveryOptions) {
+      throw new ValidationError('Solana recovery options are required for EdDSA coin recovery');
+    }
+    return;
+  }
+
+  if (isEcdsaCoin(sdkCoin) && isMpcRecovery) {
     if (isEthLikeCoin(sdkCoin)) {
       if (!params.ecdsaEthLikeRecoverySpecificParams) {
-        throw new ValidationError('Invalid parameters provided for ETH-like MPC V2 coin recovery');
+        throw new ValidationError(
+          'ECDSA ETH-like recovery specific parameters are required for MPC recovery',
+        );
       }
     } else if (isCosmosLikeCoin(sdkCoin)) {
+      // ECDSA Cosmos-like MPC recovery needs ecdsaCosmosLikeRecoverySpecificParams
       if (!params.ecdsaCosmosLikeRecoverySpecificParams) {
         throw new ValidationError(
-          'Invalid parameters provided for Cosmos-like MPC V2 coin recovery',
+          'ECDSA Cosmos-like recovery specific parameters are required for MPC recovery',
         );
       }
     } else {
@@ -78,16 +97,13 @@ function validateRecoveryParams(sdkCoin: BaseCoin, params?: CoinSpecificParams) 
         `MPC V2 recovery is not supported for coin family: ${sdkCoin.getFamily()}`,
       );
     }
-  } else {
-    if (isUtxoCoin(sdkCoin)) {
-      if (params.solanaRecoveryOptions || params.evmRecoveryOptions) {
-        throw new ValidationError('Invalid parameters provided for UTXO coin recovery');
-      }
-    } else if (isEthLikeCoin(sdkCoin)) {
-      if (params.solanaRecoveryOptions || params.utxoRecoveryOptions) {
-        throw new ValidationError('Invalid parameters provided for ETH-like coin recovery');
-      }
+  }
+  if (!isMpcRecovery && isEthLikeCoin(sdkCoin)) {
+    // Non-ECDSA ETH-like coins need evmRecoveryOptions for standard recovery
+    if (!params.evmRecoveryOptions) {
+      throw new ValidationError('EVM recovery options are required for ETH-like coin recovery');
     }
+    return;
   }
 }
 
@@ -216,7 +232,7 @@ export async function handleRecoveryWalletOnPrem(
 
   const sdkCoin = await coinFactory.getCoin(coin, bitgo);
   // Validate that we have correct parameters for recovery
-  validateRecoveryParams(sdkCoin, coinSpecificParams);
+  validateRecoveryParams(sdkCoin, coinSpecificParams, req.decoded.isTssRecovery);
 
   // Handle TSS recovery
   if (req.decoded.isTssRecovery) {
