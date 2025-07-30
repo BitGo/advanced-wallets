@@ -1,21 +1,21 @@
 import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
 import * as masterMiddleware from '../../../api/master/middleware/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
 import { CoinFamily } from '@bitgo-beta/statics';
 
 describe('Recovery Tests', () => {
   let agent: request.SuperAgentTest;
   let mockBitgo: BitGoAPI;
   let coinStub: sinon.SinonStub;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const accessToken = 'test-token';
   const config: MasterExpressConfig = {
     appMode: AppMode.MASTER_EXPRESS,
@@ -26,8 +26,8 @@ describe('Recovery Tests', () => {
     env: 'test',
     disableEnvCheck: true,
     authVersion: 2,
-    enclavedExpressUrl: enclavedExpressUrl,
-    enclavedExpressCert: 'dummy-cert',
+    advancedWalletManagerUrl: advancedWalletManagerUrl,
+    advancedWalletManagerCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
     allowSelfSigned: true,
     recoveryMode: true,
@@ -128,21 +128,23 @@ describe('Recovery Tests', () => {
       // Setup coin middleware
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, coin);
+        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+          config,
+          coin,
+        );
         next();
         return undefined;
       });
     });
 
-    it('should recover a UTXO wallet by calling the enclaved express service', async () => {
+    it('should recover a UTXO wallet by calling the advanced wallet manager service', async () => {
       const userPub = 'xpub_user';
       const backupPub = 'xpub_backup';
       const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
-      // Mock the enclaved express recovery call
-      const recoveryNock = nock(enclavedExpressUrl)
+      // Mock the advanced wallet manager recovery call
+      const recoveryNock = nock(advancedWalletManagerUrl)
         .post(`/api/${coin}/multisig/recovery`, {
           userPub,
           backupPub,
@@ -198,7 +200,7 @@ describe('Recovery Tests', () => {
         })
         .should.be.true();
 
-      // Verify enclaved express call
+      // Verify advanced wallet manager call
       recoveryNock.done();
     });
 
@@ -323,8 +325,10 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for ETH coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: ethCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, ethCoinId);
+        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+          config,
+          ethCoinId,
+        );
         next();
         return undefined;
       });
@@ -421,8 +425,10 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for Solana coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: solCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, solCoinId);
+        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+          config,
+          solCoinId,
+        );
         next();
         return undefined;
       });

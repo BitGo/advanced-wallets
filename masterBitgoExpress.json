@@ -3,7 +3,7 @@
   "info": {
     "title": "@bitgo/master-bitgo-express",
     "version": "0.0.0-semantically-released",
-    "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS"
+    "description": "Advanced Wallets - On-Premises Key Management with BitGo Express"
   },
   "paths": {
     "/api/{coin}/wallet/{walletId}/accelerate": {
@@ -1178,7 +1178,7 @@
         }
       }
     },
-    "/ping/enclavedExpress": {
+    "/ping/advancedWalletManager": {
       "post": {
         "parameters": [],
         "responses": {
@@ -1192,13 +1192,13 @@
                     "status": {
                       "type": "string"
                     },
-                    "enclavedResponse": {
+                    "advancedWalletManagerResponse": {
                       "$ref": "#/components/schemas/PingResponseType"
                     }
                   },
                   "required": [
                     "status",
-                    "enclavedResponse"
+                    "advancedWalletManagerResponse"
                   ]
                 }
               }
@@ -1246,7 +1246,7 @@
         }
       }
     },
-    "/version/enclavedExpress": {
+    "/version/advancedWalletManager": {
       "get": {
         "parameters": [],
         "responses": {

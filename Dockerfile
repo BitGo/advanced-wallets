@@ -48,7 +48,7 @@ RUN --mount=type=cache,target=/usr/src/app/.npm-cache \
 COPY . .
 
 # Build TypeScript code with deterministic output
-RUN npm run build 
+RUN npm run build
 
 FROM node:22.1.0-alpine@sha256:487dc5d5122d578e13f2231aa4ac0f63068becd921099c4c677c850df93bede8 AS production
 
@@ -91,4 +91,4 @@ USER bitgo
 EXPOSE ${PORT}
 
 # Start the application using the binary
-CMD ["./bin/enclaved-bitgo-express"]
+CMD ["./bin/advanced-wallet-manager"]

@@ -2,5 +2,5 @@
   "watch": ["src/**/*.ts"],
   "ignore": ["src/**/*.test.ts", "src/**/__tests__/*"],
   "ext": "ts",
-  "exec": "yarn build && node ./bin/enclaved-bitgo-express"
+  "exec": "yarn build && node ./bin/advanced-wallet-manager"
 }

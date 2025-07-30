@@ -1,19 +1,19 @@
 import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
 import * as masterMiddleware from '../../../api/master/middleware/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { EnclavedExpressClient } from '../../../api/master/clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
 
 describe('Non Recovery Tests', () => {
   let agent: request.SuperAgentTest;
   let mockBitgo: BitGoAPI;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const accessToken = 'test-token';
   const config: MasterExpressConfig = {
     appMode: AppMode.MASTER_EXPRESS,
@@ -23,8 +23,8 @@ describe('Non Recovery Tests', () => {
     env: 'test',
     disableEnvCheck: true,
     authVersion: 2,
-    enclavedExpressUrl: enclavedExpressUrl,
-    enclavedExpressCert: 'dummy-cert',
+    advancedWalletManagerUrl: advancedWalletManagerUrl,
+    advancedWalletManagerCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
     httpLoggerFile: '',
     allowSelfSigned: true,
@@ -61,8 +61,10 @@ describe('Non Recovery Tests', () => {
     beforeEach(() => {
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).enclavedExpressClient =
-          new EnclavedExpressClient(config, coin);
+        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+          config,
+          coin,
+        );
         next();
         return undefined;
       });

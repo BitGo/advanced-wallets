@@ -1,7 +1,7 @@
 /**
- * Common base error class for the Enclaved Express application
+ * Common base error class for the Advanced Wallet Manager application
  */
-export class EnclavedError extends Error {
+export class AdvancedWalletManagerError extends Error {
   public status: number;
 
   constructor(message: string, status = 500) {
@@ -15,7 +15,7 @@ export class EnclavedError extends Error {
 /**
  * Error for API responses
  */
-export class ApiResponseError extends EnclavedError {
+export class ApiResponseError extends AdvancedWalletManagerError {
   public result: any;
 
   constructor(message: string, status = 500, result?: any) {
@@ -27,7 +27,7 @@ export class ApiResponseError extends EnclavedError {
 /**
  * Error for configuration issues
  */
-export class ConfigurationError extends EnclavedError {
+export class ConfigurationError extends AdvancedWalletManagerError {
   constructor(message: string) {
     super(message, 500);
   }
@@ -36,7 +36,7 @@ export class ConfigurationError extends EnclavedError {
 /**
  * Error for service connection issues
  */
-export class ServiceConnectionError extends EnclavedError {
+export class ServiceConnectionError extends AdvancedWalletManagerError {
   constructor(message: string) {
     super(message, 502);
   }
@@ -45,7 +45,7 @@ export class ServiceConnectionError extends EnclavedError {
 /**
  * Error for unsupported operations
  */
-export class UnsupportedOperationError extends EnclavedError {
+export class UnsupportedOperationError extends AdvancedWalletManagerError {
   constructor(message: string) {
     super(message, 400);
   }

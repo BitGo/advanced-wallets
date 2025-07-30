@@ -1,5 +1,5 @@
 import { BaseCoin, BitGoBase, Ecdsa } from '@bitgo-beta/sdk-core';
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
 import { isCosmosLikeCoin, isEthLikeCoin } from '../../../shared/coinUtils';
 import { ValidationError } from '../../../shared/errors';
 
@@ -20,7 +20,7 @@ export type recoverEcdsaMpcV2Params = {
 export async function recoverEcdsaMPCv2Wallets(
   bitgo: BitGoBase,
   baseCoin: BaseCoin,
-  enclavedExpressClient: EnclavedExpressClient,
+  awmClient: AdvancedWalletManagerClient,
   params: recoverEcdsaMpcV2Params,
 ): Promise<{ txHex: string }> {
   // get unsigned recovery transaction using the base coin's recover method
@@ -107,7 +107,7 @@ export async function recoverEcdsaMPCv2Wallets(
   }
 
   // sent to EBE for signing
-  const enclvaedResponse = await enclavedExpressClient.recoverEcdsaMpcV2Wallet({
+  const enclvaedResponse = await awmClient.recoverEcdsaMpcV2Wallet({
     txHex: unsignedTx.signableHex,
     pub: userKey,
   });
@@ -115,7 +115,7 @@ export async function recoverEcdsaMPCv2Wallets(
 
   // Sanity check: returned signature should be in the form of ECDSAMethodTypes.Signature
   if (!signature || signature.recid === undefined || !signature.r || !signature.s || !signature.y) {
-    throw new Error('Invalid signature returned from enclaved express for Ecdsa recovery');
+    throw new Error('Invalid signature returned from advanced wallet manager for Ecdsa recovery');
   }
 
   // post processing of the response

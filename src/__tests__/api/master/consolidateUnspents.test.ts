@@ -2,7 +2,7 @@ import 'should';
 import sinon from 'sinon';
 import * as request from 'supertest';
 import nock from 'nock';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 
@@ -12,7 +12,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
   const walletId = 'test-wallet-id';
   const accessToken = 'test-access-token';
   const bitgoApiUrl = Environments.test.uri;
-  const enclavedExpressUrl = 'https://test-enclaved-express.com';
+  const advancedWalletManagerUrl = 'https://test-advanced-wallet-manager.com';
 
   const mockWalletData = {
     id: walletId,
@@ -48,8 +48,8 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'test-cert',
+      advancedWalletManagerUrl: advancedWalletManagerUrl,
+      advancedWalletManagerCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
     };
