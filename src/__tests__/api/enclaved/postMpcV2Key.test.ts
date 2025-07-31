@@ -18,7 +18,7 @@ describe('postMpcV2Key', () => {
 
   // test config
   const kmsUrl = 'http://kms.invalid';
-  const coin = 'tsol';
+  const coin = 'hteth';
   const accessToken = 'test-token';
 
   // sinon stubs
@@ -48,15 +48,7 @@ describe('postMpcV2Key', () => {
     agent = request.agent(app);
   });
 
-  afterEach(() => {
-    nock.cleanAll();
-  });
-
-  after(() => {
-    configStub.restore();
-  });
-
-  it('should be able to create a new MPC V2 wallet', async () => {
+  beforeEach(() => {
     // nocks for KMS responses
     nock(kmsUrl)
       .post(`/generateDataKey`)
@@ -93,7 +85,17 @@ describe('postMpcV2Key', () => {
       .persist();
 
     nock(kmsUrl).post(`/postKey`).reply(200, {}).persist();
+  });
 
+  afterEach(() => {
+    nock.cleanAll();
+  });
+
+  after(() => {
+    configStub.restore();
+  });
+
+  it('should be able to create a new MPC V2 wallet', async () => {
     // mocking bitgo's GPG key generation session
     const bitgoGpgKey = await bitgoSdk.generateGPGKeyPair('secp256k1');
     const bitgoGpgPub = {
@@ -469,5 +471,256 @@ describe('postMpcV2Key', () => {
       backupFinalizeResponse.body.commonKeychain,
     );
     userFinalizeResponse.body.commonKeychain.should.equal(bitgoCommonKeychain);
+  });
+
+  it('should throw an error if round number is invalid', async () => {
+    const response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: '',
+        encryptedDataKey: '',
+        round: 5,
+        p2pMessages: {
+          bitgo: {},
+          counterParty: {},
+        },
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('details', 'Round must be between 1 and 4');
+  });
+
+  it('should throw error if round number is not sequential', async () => {
+    const userInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    const backupInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'backup' });
+
+    // round 1
+    const userRound1Response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userInitResponse.body.encryptedData,
+        encryptedDataKey: userInitResponse.body.encryptedDataKey,
+        round: 1,
+        bitgoGpgPub: userInitResponse.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+      });
+
+    // round 3 without round 2
+    const skipRoundResponse = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userRound1Response.body.encryptedData,
+        encryptedDataKey: userRound1Response.body.encryptedDataKey,
+        round: 3,
+        bitgoGpgPub: userRound1Response.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+        p2pMessages: {
+          bitgo: {},
+          counterParty: {},
+        },
+      });
+
+    skipRoundResponse.status.should.equal(422);
+    skipRoundResponse.body.should.have.property('details', 'Round mismatch: expected 2, got 3');
+
+    // repeating round 1
+    const repeatRoundResponse = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userRound1Response.body.encryptedData,
+        encryptedDataKey: userRound1Response.body.encryptedDataKey,
+        round: 1,
+        bitgoGpgPub: userRound1Response.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+      });
+
+    repeatRoundResponse.status.should.equal(422);
+    repeatRoundResponse.body.should.have.property('details', 'Round mismatch: expected 2, got 1');
+  });
+
+  it('should throw error if broadcastMessages or p2pMessages does not contain all required messages', async () => {
+    const userInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    const backupInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'backup' });
+
+    // round 1
+    const userRound1Response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userInitResponse.body.encryptedData,
+        encryptedDataKey: userInitResponse.body.encryptedDataKey,
+        round: 1,
+        bitgoGpgPub: userInitResponse.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+      });
+
+    // round 2 with missing broadcastMessages
+    const response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userInitResponse.body.encryptedData,
+        encryptedDataKey: userInitResponse.body.encryptedDataKey,
+        round: 2,
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property(
+      'details',
+      'At least one of broadcastMessages or p2pMessages must be provided',
+    );
+
+    // round 2 with missing p2pMessages
+    const response2 = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userRound1Response.body.encryptedData,
+        encryptedDataKey: userRound1Response.body.encryptedDataKey,
+        round: 2,
+        p2pMessages: {},
+      });
+
+    response2.status.should.equal(400);
+    response2.body.should.have.property(
+      'details',
+      'p2pMessages did not contain all required messages',
+    );
+
+    // round 2 with missing broadcastMessages
+    const response3 = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userRound1Response.body.encryptedData,
+        encryptedDataKey: userRound1Response.body.encryptedDataKey,
+        round: 2,
+        broadcastMessages: {},
+      });
+
+    response3.status.should.equal(400);
+    response3.body.should.have.property(
+      'details',
+      'broadcastMessages did not contain all required messages',
+    );
+  });
+
+  it('should throw error if counterPartyGpgPub does not match expected value', async () => {
+    const userInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    const backupInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'backup' });
+
+    // round 1
+    const userRound1Response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userInitResponse.body.encryptedData,
+        encryptedDataKey: userInitResponse.body.encryptedDataKey,
+        round: 1,
+        bitgoGpgPub: userInitResponse.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+      });
+
+    // round 2 with incorrect counterPartyGpgPub
+    const response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userRound1Response.body.encryptedData,
+        encryptedDataKey: userRound1Response.body.encryptedDataKey,
+        round: 2,
+        bitgoGpgPub: userRound1Response.body.gpgPub,
+        counterPartyGpgPub: 'incorrect-gpg-pub',
+        broadcastMessages: {
+          bitgo: {},
+          counterParty: {},
+        },
+      });
+
+    response.status.should.equal(422);
+    response.body.should.have.property(
+      'details',
+      `Counterparty GPG public key mismatch: expected ${backupInitResponse.body.gpgPub}, got incorrect-gpg-pub`,
+    );
+  });
+
+  it('should throw error if encrypted state misses the required messages', async () => {
+    const userInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    const backupInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'backup' });
+
+    // round 1
+    const userRound1Response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: userInitResponse.body.encryptedData,
+        encryptedDataKey: userInitResponse.body.encryptedDataKey,
+        round: 1,
+        bitgoGpgPub: userInitResponse.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+      });
+
+    // round 2 with missing p2pMessages
+    const response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'user',
+        encryptedData: '',
+        encryptedDataKey: userRound1Response.body.encryptedDataKey,
+        round: 2,
+        bitgoGpgPub: userRound1Response.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+        p2pMessages: {},
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property(
+      'details',
+      'p2pMessages did not contain all required messages',
+    );
   });
 });

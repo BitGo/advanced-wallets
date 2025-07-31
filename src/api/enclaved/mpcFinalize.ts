@@ -78,7 +78,6 @@ export async function eddsaFinalize(
     chaincode: bitgoToSourcePrivateShare.slice(64),
   };
 
-  // TOOD: clean up, probably doign unnecessary transformations
   const counterPartyToSourcePrivateShare = await gpgDecrypt(
     counterPartyToSourceKeyShare.privateShare,
     sourceGpgPrv,

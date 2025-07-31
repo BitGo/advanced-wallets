@@ -32,7 +32,7 @@ export async function eddsaInitialize(
   const sourceIndex = source === 'user' ? 1 : 2;
   const counterPartyIndex = source === 'user' ? 2 : 1;
   const bitgoIndex = 3;
-  const keyShare: bitgoSdk.KeyShare = MPC.keyShare(sourceIndex, m, n); // encrypt this and send it in payload?
+  const keyShare: bitgoSdk.KeyShare = MPC.keyShare(sourceIndex, m, n);
   const sourceGpgKey = await bitgoSdk.generateGPGKeyPair('secp256k1');
 
   // source to source private share

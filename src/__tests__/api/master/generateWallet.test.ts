@@ -1174,4 +1174,18 @@ describe('POST /api/:coin/wallet/generate', () => {
 
     response2.status.should.equal(400);
   });
+
+  it('should fail when coin does not support TSS', async () => {
+    const response = await agent
+      .post(`/api/tbtc/wallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'tss',
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.equal('MPC wallet generation is not supported for coin tbtc');
+  });
 });

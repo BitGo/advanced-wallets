@@ -6,6 +6,10 @@ import { app as enclavedApp } from '../../../enclavedApp';
 import { AppMode, EnclavedConfig, TlsMode } from '../../../shared/types';
 import express from 'express';
 
+import * as sinon from 'sinon';
+import coinFactory from '../../../shared/coinFactory';
+import { BaseCoin } from '@bitgo-beta/sdk-core';
+
 describe('postIndependentKey', () => {
   let cfg: EnclavedConfig;
   let app: express.Application;
@@ -75,5 +79,25 @@ describe('postIndependentKey', () => {
       .send({});
 
     response.status.should.equal(400);
+  });
+
+  it('should fail if there is an error in creating the public and private key pairs', async () => {
+    const coinStub = sinon.stub(coinFactory, 'getCoin').returns(
+      Promise.resolve({
+        keychains: () => ({
+          create: () => ({}),
+        }),
+      } as unknown as BaseCoin),
+    );
+
+    const response = await agent
+      .post(`/api/${coin}/key/independent`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    response.status.should.equal(500);
+    response.body.should.have.property('details', 'BitGo SDK failed to create public key');
+
+    coinStub.restore();
   });
 });

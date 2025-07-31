@@ -233,6 +233,7 @@ const GenerateWalletResponse: HttpResponse = {
   // TODO: Get type from public types repo
   200: t.any,
   ...InternalServerErrorResponse,
+  ...BadRequestResponse,
 };
 
 // Request type for /generate endpoint

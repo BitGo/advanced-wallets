@@ -7,6 +7,7 @@ import {
 import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
 import { KmsClient } from '../../../kms/kmsClient';
 import logger from '../../../logger';
+import { BadRequestError, ValidationError } from '../../../shared/errors';
 
 export async function ecdsaMPCv2Round(
   req: EnclavedApiSpecRouteRequest<'v1.mpcv2.round', 'post'>,
@@ -21,19 +22,19 @@ export async function ecdsaMPCv2Round(
 
   // sanity checks
   if (round < 1 || round > 4) {
-    throw new Error('Round must be between 1 and 4');
+    throw new BadRequestError('Round must be between 1 and 4');
   }
 
   if (!broadcastMessages && !p2pMessages && round > 1) {
-    throw new Error('At least one of broadcastMessages or p2pMessages must be provided');
+    throw new BadRequestError('At least one of broadcastMessages or p2pMessages must be provided');
   }
 
-  if (broadcastMessages && Object.keys(broadcastMessages).length === 0) {
-    throw new Error('broadcastMessages did not contain all required messages');
+  if (broadcastMessages && (!broadcastMessages.bitgo || !broadcastMessages.counterParty)) {
+    throw new BadRequestError('broadcastMessages did not contain all required messages');
   }
 
-  if (p2pMessages && Object.keys(p2pMessages).length === 0) {
-    throw new Error('p2pMessages did not contain all required messages');
+  if (p2pMessages && (!p2pMessages.bitgo || !p2pMessages.counterParty)) {
+    throw new BadRequestError('p2pMessages did not contain all required messages');
   }
 
   // fetch previous state of execution
@@ -52,8 +53,8 @@ export async function ecdsaMPCv2Round(
       partyId: MPCv2PartiesEnum.BITGO,
     };
   } else if (bitgoGpgPubInput && state.bitgoGpgPub.gpgKey !== bitgoGpgPubInput) {
-    throw new Error(
-      `BitGo GPG public key mismatch: expected ${state.bitgoGpgPub}, got ${bitgoGpgPubInput}`,
+    throw new ValidationError(
+      `BitGo GPG public key mismatch: expected ${state.bitgoGpgPub.gpgKey}, got ${bitgoGpgPubInput}`,
     );
   }
 
@@ -66,19 +67,19 @@ export async function ecdsaMPCv2Round(
     counterPartyGpgPubInput &&
     state.counterPartyGpgPub.gpgKey !== counterPartyGpgPubInput
   ) {
-    throw new Error(
-      `Counterparty GPG public key mismatch: expected ${state.counterPartyGpgPub}, got ${counterPartyGpgPubInput}`,
+    throw new ValidationError(
+      `Counterparty GPG public key mismatch: expected ${state.counterPartyGpgPub.gpgKey}, got ${counterPartyGpgPubInput}`,
     );
   }
 
   if (state.round !== round) {
-    throw new Error(`Round mismatch: expected ${state.round}, got ${round}`);
+    throw new ValidationError(`Round mismatch: expected ${state.round}, got ${round}`);
   }
   const { sourceGpgPrv, bitgoGpgPub, counterPartyGpgPub, sessionData } = state;
 
   // restore session data and cast necessary fields into Uint8Array
   if (!sessionData && round > 1) {
-    throw new Error('Session data is missing for round greater than 1');
+    throw new ValidationError('Session data is missing for round greater than 1');
   } else if (sessionData) {
     sessionData.dkgSessionBytes = new Uint8Array(Object.values(sessionData.dkgSessionBytes));
     sessionData.chainCodeCommitment = new Uint8Array(
