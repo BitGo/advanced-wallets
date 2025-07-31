@@ -9,7 +9,7 @@ import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/t
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
 
-import { ebeData } from '../../mocks/ethRecoveryMusigMockData';
+import { awmData } from '../../mocks/ethRecoveryMusigMockData';
 import unsignedSweepRecJSON from '../../mocks/unsigned-sweep-prebuild-hteth-musig-recovery.json';
 
 describe('recoveryMultisigTransaction', () => {
@@ -59,7 +59,7 @@ describe('recoveryMultisigTransaction', () => {
   });
 
   it('should generate a successful txHex from unsigned sweep prebuild data', async () => {
-    const { userPub, backupPub, walletContractAddress, userPrv, backupPrv, txHexResult } = ebeData;
+    const { userPub, backupPub, walletContractAddress, userPrv, backupPrv, txHexResult } = awmData;
     const unsignedSweepPrebuildTx = unsignedSweepRecJSON as unknown as any;
 
     const mockKmsUserResponse = {
@@ -106,7 +106,7 @@ describe('recoveryMultisigTransaction', () => {
   });
 
   it('should fail when prv keys non related to pub keys', async () => {
-    const { userPub, backupPub, walletContractAddress } = ebeData;
+    const { userPub, backupPub, walletContractAddress } = awmData;
     const unsignedSweepPrebuildTx = unsignedSweepRecJSON as unknown as any;
 
     // Use invalid private keys

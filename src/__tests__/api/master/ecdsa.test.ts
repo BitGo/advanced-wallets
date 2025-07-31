@@ -202,7 +202,7 @@ describe('Ecdsa Signing Handler', () => {
       });
 
     // Mock MPCv2 Round 1 signing
-    const signMpcV2Round1NockEbe = nock(advancedWalletManagerUrl)
+    const signMpcV2Round1NockAwm = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/mpc/sign/mpcv2round1`)
       .reply(200, {
         signatureShareRound1: round1SignatureShare,
@@ -213,7 +213,7 @@ describe('Ecdsa Signing Handler', () => {
       });
 
     // Mock MPCv2 Round 2 signing
-    const signMpcV2Round2NockEbe = nock(advancedWalletManagerUrl)
+    const signMpcV2Round2NockAwm = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/mpc/sign/mpcv2round2`)
       .reply(200, {
         signatureShareRound2: round2SignatureShare,
@@ -221,7 +221,7 @@ describe('Ecdsa Signing Handler', () => {
       });
 
     // Mock MPCv2 Round 3 signing
-    const signMpcV2Round3NockEbe = nock(advancedWalletManagerUrl)
+    const signMpcV2Round3NockAwm = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/mpc/sign/mpcv2round3`)
       .reply(200, {
         signatureShareRound3: round3SignatureShare,
@@ -246,8 +246,8 @@ describe('Ecdsa Signing Handler', () => {
     sendSignatureShareV2Round2Nock.done();
     sendSignatureShareV2Round3Nock.done();
     sendTxRequestNock.done();
-    signMpcV2Round1NockEbe.done();
-    signMpcV2Round2NockEbe.done();
-    signMpcV2Round3NockEbe.done();
+    signMpcV2Round1NockAwm.done();
+    signMpcV2Round2NockAwm.done();
+    signMpcV2Round3NockAwm.done();
   });
 });

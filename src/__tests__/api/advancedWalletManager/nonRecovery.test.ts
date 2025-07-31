@@ -49,7 +49,7 @@ describe('Non Recovery', () => {
     sinon.restore();
   });
 
-  it('should fail to run ebe recovery if not in recovery mode', async () => {
+  it('should fail to run awm recovery if not in recovery mode', async () => {
     const userPub = 'xpub_user';
     const backupPub = 'xpub_backup';
     const bitgoPub = 'xpub_bitgo';

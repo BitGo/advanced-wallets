@@ -5,7 +5,7 @@
     "header-max-length": [2, "always", 72],
     "references-empty": [1, "never"],
     "subject-case": [0],
-    "scope-enum": [2, "always", ["mbe", "ebe", "docker"]],
+    "scope-enum": [2, "always", ["mbe", "awm", "docker"]],
     "scope-empty": [0, "never"]
   },
   "parserPreset": {

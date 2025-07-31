@@ -190,7 +190,7 @@ describe('Eddsa Signing Handler', () => {
       });
 
     // Mock MPC commitment signing
-    const signMpcCommitmentNockEbe = nock(advancedWalletManagerUrl)
+    const signMpcCommitmentNockAwm = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/mpc/sign/commitment`)
       .reply(200, {
         userToBitgoCommitment: { share: 'user-commitment-share' },
@@ -200,7 +200,7 @@ describe('Eddsa Signing Handler', () => {
       });
 
     // Mock MPC R-share signing
-    const signMpcRShareNockEbe = nock(advancedWalletManagerUrl)
+    const signMpcRShareNockAwm = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/mpc/sign/r`)
       .reply(200, {
         rShare: {
@@ -214,7 +214,7 @@ describe('Eddsa Signing Handler', () => {
       });
 
     // Mock MPC G-share signing
-    const signMpcGShareNockEbe = nock(advancedWalletManagerUrl)
+    const signMpcGShareNockAwm = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/mpc/sign/g`)
       .reply(200, {
         gShare: {
@@ -240,8 +240,8 @@ describe('Eddsa Signing Handler', () => {
     getBitgoRShareNock.done();
     sendGShareNock.done();
     finalGetTxRequestNock.done();
-    signMpcCommitmentNockEbe.done();
-    signMpcRShareNockEbe.done();
-    signMpcGShareNockEbe.done();
+    signMpcCommitmentNockAwm.done();
+    signMpcRShareNockAwm.done();
+    signMpcGShareNockAwm.done();
   });
 });
