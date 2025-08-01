@@ -654,6 +654,58 @@ const SignMpcResponse: HttpResponse = {
   ...InternalServerErrorResponse,
 };
 
+/**
+ * Accelerate unconfirmed transactions on UTXO-based blockchains.
+ * Supports Child-Pays-For-Parent (CPFP) and Replace-By-Fee (RBF) acceleration methods.
+ */
+const AccelerateRoute = httpRoute({
+  method: 'POST',
+  path: '/api/{coin}/wallet/{walletId}/accelerate',
+  request: httpRequest({
+    params: {
+      walletId: t.string,
+      coin: t.string,
+    },
+    body: AccelerateRequest,
+  }),
+  response: AccelerateResponse,
+  description: 'Accelerate transaction',
+});
+
+/**
+ * Consolidate funds from multiple addresses in a wallet and sign with user & backup keys in a recovery situation.
+ * Used for both standard multisig wallets and TSS wallets to consolidate funds from various addresses.
+ */
+const RecoveryConsolidationsRoute = httpRoute({
+  method: 'POST',
+  path: '/api/{coin}/wallet/recoveryconsolidations',
+  request: httpRequest({
+    params: {
+      coin: t.string,
+    },
+    body: RecoveryConsolidationsWalletRequest,
+  }),
+  response: RecoveryConsolidationsWalletResponse,
+  description: 'Consolidate and recover an existing wallet',
+});
+
+/**
+ * Recover funds from an existing wallet using user and backup keys.
+ * This endpoint allows for both standard multisig and TSS wallet recovery.
+ */
+const RecoveryRoute = httpRoute({
+  method: 'POST',
+  path: '/api/{coin}/wallet/recovery',
+  request: httpRequest({
+    params: {
+      coin: t.string,
+    },
+    body: RecoveryWalletRequest,
+  }),
+  response: RecoveryWalletResponse,
+  description: 'Recover an existing wallet',
+});
+
 // API Specification
 export const MasterBitGoExpressApiSpec = apiSpec({
   'v1.wallet.generate': {
@@ -702,32 +754,10 @@ export const MasterBitGoExpressApiSpec = apiSpec({
     }),
   },
   'v1.wallet.recovery': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/recovery',
-      request: httpRequest({
-        params: {
-          coin: t.string,
-        },
-        body: RecoveryWalletRequest,
-      }),
-      response: RecoveryWalletResponse,
-      description: 'Recover an existing wallet',
-    }),
+    post: RecoveryRoute,
   },
   'v1.wallet.recoveryConsolidations': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/recoveryconsolidations',
-      request: httpRequest({
-        params: {
-          coin: t.string,
-        },
-        body: RecoveryConsolidationsWalletRequest,
-      }),
-      response: RecoveryConsolidationsWalletResponse,
-      description: 'Consolidate and recover an existing wallet',
-    }),
+    post: RecoveryConsolidationsRoute,
   },
   'v1.wallet.consolidate': {
     post: httpRoute({
@@ -745,19 +775,7 @@ export const MasterBitGoExpressApiSpec = apiSpec({
     }),
   },
   'v1.wallet.accelerate': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/{walletId}/accelerate',
-      request: httpRequest({
-        params: {
-          walletId: t.string,
-          coin: t.string,
-        },
-        body: AccelerateRequest,
-      }),
-      response: AccelerateResponse,
-      description: 'Accelerate transaction',
-    }),
+    post: AccelerateRoute,
   },
   'v1.wallet.consolidateunspents': {
     post: httpRoute({

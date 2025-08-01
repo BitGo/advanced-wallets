@@ -8,6 +8,8 @@
   "paths": {
     "/api/{coin}/wallet/{walletId}/accelerate": {
       "post": {
+        "summary": "Accelerate unconfirmed transactions on UTXO-based blockchains.",
+        "description": "Supports Child-Pays-For-Parent (CPFP) and Replace-By-Fee (RBF) acceleration methods.",
         "parameters": [
           {
             "name": "walletId",
@@ -710,6 +712,16 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
             "content": {
@@ -725,6 +737,8 @@
     },
     "/api/{coin}/wallet/recovery": {
       "post": {
+        "summary": "Recover funds from an existing wallet using user and backup keys.",
+        "description": "This endpoint allows for both standard multisig and TSS wallet recovery.",
         "parameters": [
           {
             "name": "coin",
@@ -1038,6 +1052,8 @@
     },
     "/api/{coin}/wallet/recoveryconsolidations": {
       "post": {
+        "summary": "Consolidate funds from multiple addresses in a wallet and sign with user & backup keys in a recovery situation.",
+        "description": "Used for both standard multisig wallets and TSS wallets to consolidate funds from various addresses.",
         "parameters": [
           {
             "name": "coin",
