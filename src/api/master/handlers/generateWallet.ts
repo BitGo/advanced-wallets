@@ -9,7 +9,7 @@ import {
   WalletWithKeychains,
 } from '@bitgo-beta/sdk-core';
 import _ from 'lodash';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
 import { orchestrateEcdsaKeyGen } from './ecdsaMPCv2';
 import { orchestrateEddsaKeyGen } from './eddsa';
 import coinFactory from '../../../shared/coinFactory';
@@ -31,7 +31,7 @@ export async function handleGenerateWalletOnPrem(
 }
 
 /**
- * This route is used to generate a multisig wallet when enclaved express is enabled
+ * This route is used to generate a multisig wallet when advanced wallet manager is enabled
  */
 async function handleGenerateOnPremOnChainWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
@@ -39,8 +39,8 @@ async function handleGenerateOnPremOnChainWallet(
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
 
-  // The enclavedExpressClient is now available from the request
-  const enclavedExpressClient = req.enclavedExpressClient;
+  // The awmClient is now available from the request
+  const awmClient = req.awmClient;
 
   const reqId = new RequestTracer();
 
@@ -65,7 +65,7 @@ async function handleGenerateOnPremOnChainWallet(
   }
 
   const userKeychainPromise = async (): Promise<Keychain> => {
-    const userKeychain = await enclavedExpressClient.createIndependentKeychain({
+    const userKeychain = await awmClient.createIndependentKeychain({
       source: 'user',
       coin: req.params.coin,
       type: 'independent',
@@ -82,7 +82,7 @@ async function handleGenerateOnPremOnChainWallet(
   };
 
   const backupKeychainPromise = async (): Promise<Keychain> => {
-    const backupKeychain = await enclavedExpressClient.createIndependentKeychain({
+    const backupKeychain = await awmClient.createIndependentKeychain({
       source: 'backup',
       coin: req.params.coin,
       type: 'independent',
@@ -141,7 +141,7 @@ async function handleGenerateOnPremMpcWallet(
 ) {
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const awmClient = req.awmClient;
 
   if (!baseCoin.supportsTss()) {
     throw new BadRequestError(
@@ -149,8 +149,8 @@ async function handleGenerateOnPremMpcWallet(
     );
   }
 
-  if (!enclavedExpressClient) {
-    throw new Error('Enclaved express client is required for MPC wallet generation');
+  if (!awmClient) {
+    throw new Error('Advanced Wallet Manager client is required for MPC wallet generation');
   }
 
   const reqId = new RequestTracer();
@@ -180,7 +180,7 @@ async function handleGenerateOnPremMpcWallet(
       orchestrateResult = await orchestrateEcdsaKeyGen({
         bitgo,
         baseCoin,
-        enclavedExpressClient,
+        awmClient,
         enterprise,
         walletParams,
       });
@@ -189,7 +189,7 @@ async function handleGenerateOnPremMpcWallet(
       orchestrateResult = await orchestrateEddsaKeyGen({
         bitgo,
         baseCoin,
-        enclavedExpressClient,
+        awmClient,
         walletParams,
         enterprise,
       });

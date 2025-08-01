@@ -5,14 +5,14 @@ import {
   getTxRequest,
 } from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
 import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
 import { signAndSendTxRequests } from './transactionRequests';
 
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const awmClient = req.awmClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;
@@ -75,7 +75,7 @@ export async function handleConsolidate(
                   })(),
                   reqId,
                 ),
-                enclavedExpressClient,
+                awmClient,
                 signingKeychain,
                 reqId,
               )
@@ -83,7 +83,7 @@ export async function handleConsolidate(
                 ...consolidationParams,
                 prebuildTx: unsignedBuild,
                 customSigningFunction: makeCustomSigningFunction({
-                  enclavedExpressClient,
+                  awmClient,
                   source: params.source,
                   pub: signingKeychain.pub!,
                 }),

@@ -1,6 +1,6 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { CustomSigningFunction, RequestTracer } from '@bitgo-beta/sdk-core';
-import { EnclavedExpressClient } from './clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from './clients/advancedWalletManagerClient';
 import coinFactory from '../../shared/coinFactory';
 import { MasterExpressConfig } from '../../shared/types';
 
@@ -54,20 +54,20 @@ export async function getWalletAndSigningKeychain({
   return { baseCoin, wallet, signingKeychain };
 }
 /**
- * Create a custom signing function that delegates to enclavedExpressClient.signMultisig.
+ * Create a custom signing function that delegates to awmClient.signMultisig.
  */
 
 export function makeCustomSigningFunction({
-  enclavedExpressClient,
+  awmClient,
   source,
   pub,
 }: {
-  enclavedExpressClient: EnclavedExpressClient;
+  awmClient: AdvancedWalletManagerClient;
   source: 'user' | 'backup';
   pub: string;
 }): CustomSigningFunction {
   return async function customSigningFunction(signParams: any) {
-    return enclavedExpressClient.signMultisig({
+    return awmClient.signMultisig({
       txPrebuild: signParams.txPrebuild,
       source,
       pub,

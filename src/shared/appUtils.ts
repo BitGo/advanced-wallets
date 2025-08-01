@@ -212,16 +212,16 @@ export function validateTlsCertificates(config: Config): void {
  * Validate Master Express configuration
  */
 export function validateMasterExpressConfig(config: MasterExpressConfig): void {
-  // Validate that we have the required enclaved express certificate for mTLS
-  if (config.tlsMode === TlsMode.MTLS && !config.enclavedExpressCert) {
-    throw new Error('Enclaved Express certificate is required for mTLS mode');
+  // Validate that we have the required advanced wallet manager certificate for mTLS
+  if (config.tlsMode === TlsMode.MTLS && !config.advancedWalletManagerCert) {
+    throw new Error('Advanced Wallet Manager certificate is required for mTLS mode');
   }
 
   // Validate client certificate if mTLS is enabled
   if (config.tlsMode === TlsMode.MTLS) {
     const hasValidClientCert =
-      config.enclavedExpressCert &&
-      config.enclavedExpressCert.includes('-----BEGIN CERTIFICATE-----');
+      config.advancedWalletManagerCert &&
+      config.advancedWalletManagerCert.includes('-----BEGIN CERTIFICATE-----');
 
     if (!hasValidClientCert) {
       throw new Error('Valid client certificate is required for mTLS mode');

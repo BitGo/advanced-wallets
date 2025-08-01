@@ -1,20 +1,20 @@
-# Enclaved BitGo Express
+# Advanced Wallet Manager
 
-A secure, mTLS-enabled cryptocurrency signing server with two operational modes: Enclaved Express (dedicated signer) and Master Express (API gateway with integrated signing capabilities).
+A secure, mTLS-enabled cryptocurrency signing server with two operational modes: Advanced Wallet Manager (dedicated signer) and Master Express (API gateway with integrated signing capabilities).
 
 ## Overview
 
 This application provides secure cryptocurrency operations with mutual TLS (mTLS) authentication:
 
-- **Enclaved Mode**: Lightweight signing server for secure key operations
+- **Advanced Wallet Manager Mode**: Lightweight signing server for secure key operations
 - **Master Express Mode**: Full BitGo Express functionality with integrated signing
 - **mTLS Security**: Client certificate validation for secure communications
 - **Flexible Configuration**: Environment-based setup with file or variable-based certificates
 
 ## Architecture
 
-- **Enclaved Express** (Port 3080): Focused signing operations with KMS integration
-- **Master Express** (Port 3081): Full BitGo API functionality with secure communication to Enclaved Express
+- **Advanced Wallet Manager** (Port 3080): Focused signing operations with KMS integration
+- **Master Express** (Port 3081): Full BitGo API functionality with secure communication to Advanced Wallet Manager
 
 ## Configuration
 
@@ -22,7 +22,7 @@ Configuration is managed through environment variables:
 
 ### Required Settings
 
-- `APP_MODE` - Application mode (required: "enclaved" or "master-express")
+- `APP_MODE` - Application mode (required: "advanced-wallet-manager" or "master-express")
 
 ### Network Settings
 
@@ -31,9 +31,9 @@ Configuration is managed through environment variables:
 - `KEEP_ALIVE_TIMEOUT` - Keep-alive timeout (optional)
 - `HEADERS_TIMEOUT` - Headers timeout (optional)
 
-#### Enclaved Mode Specific
+#### Advanced Wallet Manager Mode Specific
 
-- `ENCLAVED_EXPRESS_PORT` - Port to listen on (default: 3080)
+- `ADVANCED_WALLET_MANAGER_PORT` - Port to listen on (default: 3080)
 - `KMS_URL` - KMS service URL (required)
 
 #### Master Express Mode Specific
@@ -44,8 +44,8 @@ Configuration is managed through environment variables:
 - `BITGO_AUTH_VERSION` - Authentication version (default: 2)
 - `BITGO_CUSTOM_ROOT_URI` - Custom BitGo API root URI (optional)
 - `BITGO_CUSTOM_BITCOIN_NETWORK` - Custom Bitcoin network (optional)
-- `ENCLAVED_EXPRESS_URL` - Enclaved Express server URL (required)
-- `ENCLAVED_EXPRESS_CERT` - Path to Enclaved Express server certificate (required)
+- `ADVANCED_WALLET_MANAGER_URL` - Advanced Wallet Manager URL (required)
+- `ADVANCED_WALLET_MANAGER_CERT` - Path to Advanced Wallet Manager certificate (required)
 
 ### TLS/mTLS Configuration
 
@@ -100,10 +100,10 @@ openssl genrsa -out server.key 2048
 openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=localhost"
 ```
 
-### 2. Start Enclaved Express
+### 2. Start Advanced Wallet Manager
 
 ```bash
-export APP_MODE=enclaved
+export APP_MODE=advanced-wallet-manager
 export KMS_URL=https://your-kms-service
 export TLS_KEY_PATH=./server.key
 export TLS_CERT_PATH=./server.crt
@@ -121,8 +121,8 @@ export APP_MODE=master-express
 export BITGO_ENV=test
 export TLS_KEY_PATH=./server.key
 export TLS_CERT_PATH=./server.crt
-export ENCLAVED_EXPRESS_URL=https://localhost:3080
-export ENCLAVED_EXPRESS_CERT=./server.crt
+export ADVANCED_WALLET_MANAGER_URL=https://localhost:3080
+export ADVANCED_WALLET_MANAGER_CERT=./server.crt
 export MTLS_REQUEST_CERT=false
 export ALLOW_SELF_SIGNED=true
 npm start
@@ -130,10 +130,10 @@ npm start
 
 ### 5. Test the Connection
 
-Test that Master Express can communicate with Enclaved Express:
+Test that Master Express can communicate with Advanced Wallet Manager:
 
 ```bash
-curl -k -X POST https://localhost:3081/ping/enclavedExpress
+curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 ```
 
 ## Production Configuration
@@ -149,13 +149,13 @@ curl -k -X POST https://localhost:3081/ping/enclavedExpress
 
 ### Production Setup Example
 
-#### Enclaved Express (Production)
+#### Advanced Wallet Manager (Production)
 
 ```bash
-export APP_MODE=enclaved
+export APP_MODE=advanced-wallet-manager
 export KMS_URL=https://production-kms.example.com
-export TLS_KEY_PATH=/secure/path/enclaved.key
-export TLS_CERT_PATH=/secure/path/enclaved.crt
+export TLS_KEY_PATH=/secure/path/advanced-wallet-manager.key
+export TLS_CERT_PATH=/secure/path/advanced-wallet-manager.crt
 export MTLS_REQUEST_CERT=true
 export ALLOW_SELF_SIGNED=false
 export MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456...
@@ -169,8 +169,8 @@ export APP_MODE=master-express
 export BITGO_ENV=prod
 export TLS_KEY_PATH=/secure/path/master.key
 export TLS_CERT_PATH=/secure/path/master.crt
-export ENCLAVED_EXPRESS_URL=https://enclaved.internal.example.com:3080
-export ENCLAVED_EXPRESS_CERT=/secure/path/enclaved.crt
+export ADVANCED_WALLET_MANAGER_URL=https://advanced-wallet-manager.internal.example.com:3080
+export ADVANCED_WALLET_MANAGER_CERT=/secure/path/advanced-wallet-manager.crt
 export MTLS_REQUEST_CERT=true
 export ALLOW_SELF_SIGNED=false
 npm start
@@ -184,22 +184,22 @@ First, build the container image:
 # For Master Express (default port 3081)
 npm run container:build
 
-# For Enclaved Express (port 3080)
+# For Advanced Wallet Manager (port 3080)
 npm run container:build --build-arg PORT=3080
 ```
 
-For local development, you'll need to run both the Enclaved Express and Master Express containers:
+For local development, you'll need to run both the Advanced Wallet Manager and Master Express containers:
 
 ```bash
-# Start Enclaved Express container
+# Start Advanced Wallet Manager container
 podman run -d \
   -p 3080:3080 \
   -v $(pwd)/certs:/app/certs:Z \
-  -e APP_MODE=enclaved \
+  -e APP_MODE=advanced-wallet-manager \
   -e BIND=0.0.0.0 \
   -e TLS_MODE=mtls \
-  -e TLS_KEY_PATH=/app/certs/enclaved-express-key.pem \
-  -e TLS_CERT_PATH=/app/certs/enclaved-express-cert.pem \
+  -e TLS_KEY_PATH=/app/certs/advanced-wallet-manager-key.pem \
+  -e TLS_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
   -e KMS_URL=host.containers.internal:3000 \
   -e NODE_ENV=development \
   -e ALLOW_SELF_SIGNED=true \
@@ -220,8 +220,8 @@ podman run -d \
   -e TLS_MODE=mtls \
   -e TLS_KEY_PATH=/app/certs/test-ssl-key.pem \
   -e TLS_CERT_PATH=/app/certs/test-ssl-cert.pem \
-  -e ENCLAVED_EXPRESS_URL=https://host.containers.internal:3080 \
-  -e ENCLAVED_EXPRESS_CERT=/app/certs/enclaved-express-cert.pem \
+  -e ADVANCED_WALLET_MANAGER_URL=https://host.containers.internal:3080 \
+  -e ADVANCED_WALLET_MANAGER_CERT=/app/certs/advanced-wallet-manager-cert.pem \
   -e ALLOW_SELF_SIGNED=true \
   bitgo-onprem-express
 
@@ -229,14 +229,14 @@ podman run -d \
 podman logs -f <container_id>
 
 # Test the endpoints (note: using https and mTLS)
-# For Enclaved Express
-curl -k --cert certs/test-ssl-cert.pem --key certs/enclaved-express-key.pem -X POST https://localhost:3080/ping
+# For Advanced Wallet Manager
+curl -k --cert certs/test-ssl-cert.pem --key certs/advanced-wallet-manager-key.pem -X POST https://localhost:3080/ping
 
 # For Master Express
 curl -k --cert certs/test-ssl-cert.pem --key certs/test-ssl-key.pem -X POST https://localhost:3081/ping
 
 # Test the connection
-curl -k -X POST https://localhost:3081/ping/enclavedExpress
+curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 ```
 
 Notes:
@@ -247,7 +247,7 @@ Notes:
 
 ## API Endpoints
 
-### Enclaved Express (Port 3080)
+### Advanced Wallet Manager (Port 3080)
 
 - `POST /ping` - Health check
 - `GET /version` - Version information
@@ -257,8 +257,8 @@ Notes:
 
 - `POST /ping` - Health check
 - `GET /version` - Version information
-- `POST /ping/enclavedExpress` - Test connection to Enclaved Express
-- `POST /api/:coin/wallet/generate` - Generate wallet (with Enclaved Express integration)
+- `POST /ping/advancedWalletManager` - Test connection to Advanced Wallet Manager
+- `POST /api/:coin/wallet/generate` - Generate wallet (with Advanced Wallet Manager integration)
 
 ## Troubleshooting
 
@@ -291,17 +291,10 @@ openssl x509 -in certificate.crt -text -noout
 
 ```bash
 # Check that required variables are set
-env | grep -E "(APP_MODE|KMS_URL|ENCLAVED_EXPRESS|TLS_)"
-```
-
-### Debug Mode
-
-Enable debug logging for detailed troubleshooting:
-
-```bash
-DEBUG_NAMESPACE=enclaved:*,master:* npm run start
-```
+env | grep -E "(APP_MODE|KMS_URL|ADVANCED_WALLET_MANAGER|TLS_)"
+``
 
 ## License
 
 MIT
+```

@@ -1,11 +1,11 @@
 {
-  "name": "@bitgo/enclaved-bitgo-express",
+  "name": "@bitgo/advanced-wallets",
   "version": "0.0.0-semantically-released",
-  "description": "BitGo Enclaved Express - Secure enclave for BitGo signing operations with mTLS",
+  "description": "Advanced Wallets - On-Premises Key Management with BitGo Express",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "bin": {
-    "enclaved-bitgo-express": "./bin/enclaved-bitgo-express"
+    "advanced-wallet-manager": "bin/advanced-wallet-manager"
   },
   "scripts": {
     "start": "nodemon",

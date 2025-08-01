@@ -3,7 +3,7 @@ import 'should';
 import request from 'supertest';
 import express from 'express';
 import { AppMode, TlsMode } from '../shared/types';
-import { setupRoutes } from '../routes/enclaved';
+import { setupRoutes } from '../routes/advancedWalletManager';
 
 describe('Routes', () => {
   let app: express.Application;
@@ -11,7 +11,7 @@ describe('Routes', () => {
   beforeEach(() => {
     app = express();
     setupRoutes(app, {
-      appMode: AppMode.ENCLAVED,
+      appMode: AppMode.ADVANCED_WALLET_MANAGER,
       httpLoggerFile: '',
       allowSelfSigned: true,
       tlsMode: TlsMode.DISABLED,
@@ -26,7 +26,7 @@ describe('Routes', () => {
     it('should return 200 and status message for /ping', async () => {
       const response = await request(app).post('/ping');
       response.status.should.equal(200);
-      response.body.should.have.property('status', 'enclaved express server is ok!');
+      response.body.should.have.property('status', 'advanced wallet manager server is ok!');
       response.body.should.have.property('timestamp');
     });
 
@@ -34,7 +34,7 @@ describe('Routes', () => {
       const response = await request(app).get('/version');
       response.status.should.equal(200);
       response.body.should.have.property('version');
-      response.body.should.have.property('name', '@bitgo/enclaved-bitgo-express');
+      response.body.should.have.property('name', '@bitgo/advanced-wallets');
     });
   });
 
@@ -44,7 +44,7 @@ describe('Routes', () => {
       response.status.should.equal(404);
       response.body.should.have.property(
         'error',
-        'Route not found or not supported in enclaved mode',
+        'Route not found or not supported in advanced wallet manager mode',
       );
     });
   });

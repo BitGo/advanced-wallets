@@ -4,7 +4,7 @@ import assert from 'assert';
 import * as request from 'supertest';
 import nock from 'nock';
 import sinon from 'sinon';
-import { app as expressApp } from '../../../masterExpressApp';
+import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
@@ -22,7 +22,7 @@ import { BitGoRequest } from '../../../types/request';
 
 describe('POST /api/:coin/wallet/generate', () => {
   let agent: request.SuperAgentTest;
-  const enclavedExpressUrl = 'http://enclaved.invalid';
+  const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const bitgoApiUrl = Environments.test.uri;
   const coin = 'tbtc';
   const eddsaCoin = 'tsol';
@@ -47,8 +47,8 @@ describe('POST /api/:coin/wallet/generate', () => {
       env: 'test',
       disableEnvCheck: true,
       authVersion: 2,
-      enclavedExpressUrl: enclavedExpressUrl,
-      enclavedExpressCert: 'dummy-cert',
+      advancedWalletManagerUrl: advancedWalletManagerUrl,
+      advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       allowSelfSigned: true,
     };
@@ -69,8 +69,8 @@ describe('POST /api/:coin/wallet/generate', () => {
     sinon.restore();
   });
 
-  it('should generate a wallet by calling the enclaved express service', async () => {
-    const userKeychainNock = nock(enclavedExpressUrl)
+  it('should generate a wallet by calling the advanced wallet manager service', async () => {
+    const userKeychainNock = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/key/independent`, {
         source: 'user',
       })
@@ -80,7 +80,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'independent',
       });
 
-    const backupKeychainNock = nock(enclavedExpressUrl)
+    const backupKeychainNock = nock(advancedWalletManagerUrl)
       .post(`/api/${coin}/key/independent`, {
         source: 'backup',
       })
@@ -164,7 +164,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     bitgoAddWalletNock.done();
   });
 
-  it('should generate a TSS MPC v1 wallet by calling the enclaved express service', async () => {
+  it('should generate a TSS MPC v1 wallet by calling the advanced wallet manager service', async () => {
     // Mock fetchConstants instead of using nock for URL mocking
     sinon.stub(bitgo, 'fetchConstants').resolves({
       mpc: {
@@ -172,7 +172,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       },
     });
 
-    const userInitNock = nock(enclavedExpressUrl)
+    const userInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
         source: 'user',
         bitgoGpgPub: 'test-bitgo-public-key',
@@ -191,7 +191,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const backupInitNock = nock(enclavedExpressUrl)
+    const backupInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
         source: 'backup',
         bitgoGpgPub: 'test-bitgo-public-key',
@@ -278,7 +278,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         walletHSMGPGPublicKeySigs: 'hsm-sig',
       });
 
-    const userFinalizeNock = nock(enclavedExpressUrl)
+    const userFinalizeNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/finalize`, {
         source: 'user',
         encryptedDataKey: 'key',
@@ -349,7 +349,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'tss',
         commonKeychain: 'commonKeychain',
       });
-    const backupFinalizeNock = nock(enclavedExpressUrl)
+    const backupFinalizeNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/finalize`, {
         source: 'backup',
         encryptedDataKey: 'key',
@@ -508,7 +508,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     response.status.should.equal(200);
   });
 
-  it('should generate a TSS MPC v2 wallet by calling the enclaved express service', async () => {
+  it('should generate a TSS MPC v2 wallet by calling the advanced wallet manager service', async () => {
     // Mock fetchConstants instead of using nock for URL mocking
     sinon.stub(bitgo, 'fetchConstants').resolves({
       mpc: {
@@ -516,7 +516,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       },
     });
     // init round
-    const userInitNock = nock(enclavedExpressUrl)
+    const userInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/initialize`, {
         source: 'user',
       })
@@ -526,7 +526,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         gpgPub: 'test-user-public-key',
       });
 
-    const backupInitNock = nock(enclavedExpressUrl)
+    const backupInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/initialize`, {
         source: 'backup',
       })
@@ -536,7 +536,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         gpgPub: 'test-backup-public-key',
       });
 
-    const userRound1Nock = nock(enclavedExpressUrl)
+    const userRound1Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'user',
         encryptedDataKey: 'key',
@@ -558,7 +558,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const backupRound1Nock = nock(enclavedExpressUrl)
+    const backupRound1Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'backup',
         encryptedDataKey: 'key',
@@ -623,7 +623,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const userRound2Nock = nock(enclavedExpressUrl)
+    const userRound2Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'user',
         encryptedDataKey: 'key',
@@ -672,7 +672,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const backupRound2Nock = nock(enclavedExpressUrl)
+    const backupRound2Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'backup',
         encryptedDataKey: 'key',
@@ -721,7 +721,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const userRound3Nock = nock(enclavedExpressUrl)
+    const userRound3Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'user',
         encryptedDataKey: 'key',
@@ -774,7 +774,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const backupRound3Nock = nock(enclavedExpressUrl)
+    const backupRound3Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'backup',
         encryptedDataKey: 'key',
@@ -867,7 +867,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const userRound4Nock = nock(enclavedExpressUrl)
+    const userRound4Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'user',
         encryptedDataKey: 'key',
@@ -907,7 +907,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const backupRound4Nock = nock(enclavedExpressUrl)
+    const backupRound4Nock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/round`, {
         source: 'backup',
         encryptedDataKey: 'key',
@@ -988,7 +988,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
       });
 
-    const userFinalizeNock = nock(enclavedExpressUrl)
+    const userFinalizeNock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/finalize`, {
         source: 'user',
         encryptedDataKey: 'key',
@@ -1016,7 +1016,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         commonKeychain: 'commonKeychain',
       });
 
-    const backupFinalizeNock = nock(enclavedExpressUrl)
+    const backupFinalizeNock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/finalize`, {
         source: 'backup',
         encryptedDataKey: 'key',
@@ -1129,8 +1129,8 @@ describe('POST /api/:coin/wallet/generate', () => {
     bitgoAddWalletNock.done();
   });
 
-  it('should fail when enclaved express client is not configured', async () => {
-    // Create a config without enclaved express settings
+  it('should fail when advanced wallet manager client is not configured', async () => {
+    // Create a config without advanced wallet manager settings
     const invalidConfig: Partial<MasterExpressConfig> = {
       appMode: AppMode.MASTER_EXPRESS,
       port: 0,
@@ -1146,9 +1146,14 @@ describe('POST /api/:coin/wallet/generate', () => {
 
     try {
       expressApp(invalidConfig as MasterExpressConfig);
-      assert(false, 'Expected error to be thrown when enclaved express client is not configured');
+      assert(
+        false,
+        'Expected error to be thrown when advanced wallet manager client is not configured',
+      );
     } catch (e) {
-      (e as Error).message.should.equal('enclavedExpressUrl and enclavedExpressCert are required');
+      (e as Error).message.should.equal(
+        'advancedWalletManagerUrl and advancedWalletManagerCert are required',
+      );
     }
   });
 

@@ -1,12 +1,12 @@
 import { RequestTracer, KeyIndices } from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
 import { getWalletAndSigningKeychain, makeCustomSigningFunction } from '../handlerUtils';
 
 export async function handleAccelerate(
   req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const awmClient = req.awmClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;
@@ -25,7 +25,7 @@ export async function handleAccelerate(
   try {
     // Create custom signing function that delegates to EBE
     const customSigningFunction = makeCustomSigningFunction({
-      enclavedExpressClient,
+      awmClient,
       source: params.source,
       pub: signingKeychain.pub!,
     });

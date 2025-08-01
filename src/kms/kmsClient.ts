@@ -1,5 +1,5 @@
 import * as superagent from 'superagent';
-import { EnclavedConfig, isMasterExpressConfig, TlsMode } from '../shared/types';
+import { AdvancedWalletManagerConfig, isMasterExpressConfig, TlsMode } from '../shared/types';
 import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 import {
@@ -13,6 +13,7 @@ import {
   GenerateDataKeyResponse,
 } from './types/generateDataKey';
 import https from 'https';
+import { URL } from 'url';
 
 import logger from '../logger';
 
@@ -20,24 +21,31 @@ export class KmsClient {
   private readonly url: string;
   private readonly agent?: https.Agent;
 
-  constructor(cfg: EnclavedConfig) {
+  constructor(cfg: AdvancedWalletManagerConfig) {
     if (isMasterExpressConfig(cfg)) {
       logger.error('KMS client cannot be initialized in master express mode');
-      throw new Error('Configuration is not in enclaved express mode');
+      throw new Error('Configuration is not in advanced wallet manager mode');
     }
     if (!cfg.kmsUrl) {
       logger.error('KMS URL not configured. Please set KMS_URL in your environment.');
       throw new Error('KMS URL not configured. Please set KMS_URL in your environment.');
     }
 
-    this.url = cfg.kmsUrl;
-    if (cfg.tlsMode === TlsMode.MTLS && cfg.kmsTlsCert) {
-      this.agent = new https.Agent({
-        ca: cfg.kmsTlsCert,
-        cert: cfg.tlsCert,
-        key: cfg.tlsKey,
-      });
+    const kmsUrlObj = new URL(cfg.kmsUrl);
+    if (cfg.tlsMode === TlsMode.MTLS) {
+      kmsUrlObj.protocol = 'https:';
+      if (cfg.kmsTlsCert) {
+        this.agent = new https.Agent({
+          ca: cfg.kmsTlsCert,
+          cert: cfg.tlsCert,
+          key: cfg.tlsKey,
+        });
+      }
+    } else {
+      kmsUrlObj.protocol = 'http:';
     }
+
+    this.url = kmsUrlObj.toString().replace(/\/$/, '');
     logger.debug('kmsClient initialized with URL: %s', this.url);
   }
 
@@ -47,7 +55,7 @@ export class KmsClient {
     // Call KMS to post the key
     let kmsResponse: any;
     try {
-      let req = superagent.post(`${this.url}/key`).set('x-api-key', 'abc').send(params);
+      let req = superagent.post(`${this.url}/key`).send(params);
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {

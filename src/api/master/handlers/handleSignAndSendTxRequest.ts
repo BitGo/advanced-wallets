@@ -1,13 +1,13 @@
 import { getTxRequest, KeyIndices, RequestTracer } from '@bitgo-beta/sdk-core';
 import logger from '../../../logger';
 import { signAndSendTxRequests } from './transactionRequests';
-import { MasterApiSpecRouteRequest } from '../routers/masterApiSpec';
+import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
 import coinFactory from '../../../shared/coinFactory';
 
 export async function handleSignAndSendTxRequest(
   req: MasterApiSpecRouteRequest<'v1.wallet.txrequest.signAndSend', 'post'>,
 ) {
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const awmClient = req.awmClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
@@ -47,12 +47,5 @@ export async function handleSignAndSendTxRequest(
     throw new Error(`TxRequest ${req.params.txRequestId} not found`);
   }
 
-  return signAndSendTxRequests(
-    bitgo,
-    wallet,
-    txRequest,
-    enclavedExpressClient,
-    signingKeychain,
-    reqId,
-  );
+  return signAndSendTxRequests(bitgo, wallet, txRequest, awmClient, signingKeychain, reqId);
 }

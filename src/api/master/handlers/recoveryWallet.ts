@@ -20,14 +20,14 @@ import {
   getReplayProtectionOptions,
 } from '../../../shared/recoveryUtils';
 
-import { EnclavedExpressClient } from '../clients/enclavedExpressClient';
+import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
 import {
   CoinSpecificParams,
   CoinSpecificParamsUnion,
   MasterApiSpecRouteRequest,
   ScriptType2Of3,
   SolanaRecoveryOptions,
-} from '../routers/masterApiSpec';
+} from '../routers/masterBitGoExpressApiSpec';
 import { recoverEddsaWallets } from './recoverEddsaWallets';
 import { EnvironmentName, MasterExpressConfig } from '../../../shared/types';
 import { recoverEcdsaMpcV2Params, recoverEcdsaMPCv2Wallets } from './recoverEcdsaWallets';
@@ -44,7 +44,7 @@ interface RecoveryParams {
   apiKey: string;
 }
 
-interface EnclavedRecoveryParams {
+interface AdvancedWalletManagerRecoveryParams {
   userPub: string;
   backupPub: string;
   apiKey: string;
@@ -110,8 +110,8 @@ function validateRecoveryParams(
 async function handleEthLikeRecovery(
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  enclavedExpressClient: any,
-  params: EnclavedRecoveryParams,
+  awmClient: any,
+  params: AdvancedWalletManagerRecoveryParams,
   env: EnvironmentName,
 ) {
   try {
@@ -129,7 +129,7 @@ async function handleEthLikeRecovery(
       isUnsignedSweep: true,
     });
 
-    return await enclavedExpressClient.recoveryMultisig({
+    return await awmClient.recoveryMultisig({
       ...params,
       unsignedSweepPrebuildTx,
     });
@@ -142,8 +142,8 @@ async function handleEddsaRecovery(
   bitgo: BitGoAPI,
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  enclavedExpressClient: EnclavedExpressClient,
-  params: EnclavedRecoveryParams,
+  awmClient: AdvancedWalletManagerClient,
+  params: AdvancedWalletManagerRecoveryParams,
 ) {
   const { recoveryDestination, userKey } = commonRecoveryParams;
   try {
@@ -173,7 +173,7 @@ async function handleEddsaRecovery(
     }
     logger.info('Unsigned sweep tx: ', JSON.stringify(unsignedSweepPrebuildTx, null, 2));
 
-    return await enclavedExpressClient.recoveryMPC({
+    return await awmClient.recoveryMPC({
       userPub: params.userPub,
       backupPub: params.backupPub,
       apiKey: params.apiKey,
@@ -200,7 +200,7 @@ export type UtxoCoinSpecificRecoveryParams = Pick<
 
 async function handleUtxoLikeRecovery(
   sdkCoin: BaseCoin,
-  enclavedClient: EnclavedExpressClient,
+  awmClient: AdvancedWalletManagerClient,
   recoveryParams: UtxoCoinSpecificRecoveryParams,
 ): Promise<{ txHex: string }> {
   const abstractUtxoCoin = sdkCoin as unknown as AbstractUtxoCoin;
@@ -211,7 +211,7 @@ async function handleUtxoLikeRecovery(
     throw new MethodNotImplementedError(`Unknown transaction ${JSON.stringify(recoverTx)} created`);
   }
 
-  return (await enclavedClient.recoveryMultisig({
+  return (await awmClient.recoveryMultisig({
     userPub: recoveryParams.userKey,
     backupPub: recoveryParams.backupKey,
     bitgoPub: recoveryParams.bitgoKey,
@@ -227,7 +227,7 @@ export async function handleRecoveryWalletOnPrem(
 
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const enclavedExpressClient = req.enclavedExpressClient;
+  const awmClient = req.awmClient;
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
 
   const sdkCoin = await coinFactory.getCoin(coin, bitgo);
@@ -254,7 +254,7 @@ export async function handleRecoveryWalletOnPrem(
           recoveryDestination: recoveryDestinationAddress,
           apiKey: req.decoded.apiKey || '',
         },
-        enclavedExpressClient,
+        awmClient,
         {
           userPub: commonKeychain,
           backupPub: commonKeychain,
@@ -295,7 +295,7 @@ export async function handleRecoveryWalletOnPrem(
         throw new NotImplementedError(`TSS recovery is not supported for coin: ${coin}.`);
       }
 
-      return recoverEcdsaMPCv2Wallets(bitgo, sdkCoin, enclavedExpressClient, params);
+      return recoverEcdsaMPCv2Wallets(bitgo, sdkCoin, awmClient, params);
     } else {
       throw new ValidationError(
         `TSS recovery is not supported for coin ${coin}. ${coin} is neither eddsa nor ecdsa.`,
@@ -338,7 +338,7 @@ export async function handleRecoveryWalletOnPrem(
     return handleEthLikeRecovery(
       sdkCoin,
       commonRecoveryParams,
-      enclavedExpressClient,
+      awmClient,
       {
         userPub,
         backupPub,
@@ -355,7 +355,7 @@ export async function handleRecoveryWalletOnPrem(
   }
 
   if (isUtxoCoin(sdkCoin)) {
-    return handleUtxoLikeRecovery(sdkCoin, req.enclavedExpressClient, {
+    return handleUtxoLikeRecovery(sdkCoin, req.awmClient, {
       userKey: userPub,
       backupKey: backupPub,
       bitgoKey: bitgoPub,
