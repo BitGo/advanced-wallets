@@ -224,9 +224,9 @@ export class AdvancedWalletManagerClient {
     }
   }
   private readonly baseUrl: string;
-  private readonly advancedWalletManagerCert: string;
-  private readonly tlsKey?: string;
-  private readonly tlsCert?: string;
+  private readonly awmServerCaCert: string;
+  private readonly awmClientTlsKey?: string;
+  private readonly awmClientTlsCert?: string;
   private readonly awmServerCertAllowSelfSigned: boolean;
   private readonly coin?: string;
   private readonly tlsMode: TlsMode;
@@ -235,21 +235,21 @@ export class AdvancedWalletManagerClient {
 
   constructor(cfg: MasterExpressConfig, coin?: string) {
     if (!cfg.advancedWalletManagerUrl) {
-      throw new Error('advancedWalletManagerUrl and advancedWalletManagerCert are required');
+      throw new Error('advancedWalletManagerUrl and awmServerCaCert are required');
     }
     if (
       cfg.tlsMode === TlsMode.MTLS &&
-      (!cfg.tlsKey || !cfg.tlsCert || !cfg.advancedWalletManagerCert)
+      (!cfg.awmClientTlsKey || !cfg.awmClientTlsCert || !cfg.awmServerCaCert)
     ) {
       throw new Error(
-        'tlsKey, tlsCert and advancedWalletManagerCert are required for mTLS communication',
+        'awmClientTlsKey, awmClientTlsCert and awmServerCaCert are required for mTLS communication',
       );
     }
 
     this.baseUrl = cfg.advancedWalletManagerUrl;
-    this.advancedWalletManagerCert = cfg.advancedWalletManagerCert as string;
-    this.tlsKey = cfg.tlsKey;
-    this.tlsCert = cfg.tlsCert;
+    this.awmServerCaCert = cfg.awmServerCaCert as string;
+    this.awmClientTlsKey = cfg.awmClientTlsKey;
+    this.awmClientTlsCert = cfg.awmClientTlsCert;
     this.awmServerCertAllowSelfSigned = cfg.awmServerCertAllowSelfSigned ?? false;
     this.coin = coin;
     this.tlsMode = cfg.tlsMode;
@@ -264,15 +264,15 @@ export class AdvancedWalletManagerClient {
   }
 
   private createHttpsAgent(): https.Agent {
-    if (!this.tlsKey || !this.tlsCert) {
+    if (!this.awmClientTlsKey || !this.awmClientTlsCert) {
       throw new Error('TLS key and certificate are required for HTTPS agent');
     }
     return new https.Agent({
       rejectUnauthorized: !this.awmServerCertAllowSelfSigned,
-      ca: this.advancedWalletManagerCert,
+      ca: this.awmServerCaCert,
       // Use Master Express's own certificate as client cert when connecting to Advanced Wallet Manager
-      key: this.tlsKey,
-      cert: this.tlsCert,
+      key: this.awmClientTlsKey,
+      cert: this.awmClientTlsCert,
     });
   }
 
@@ -424,7 +424,6 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      logger.info('Initializing MPC key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpc.key.initialize'].post({
         coin: this.coin,
         source: params.source,
@@ -463,7 +462,6 @@ export class AdvancedWalletManagerClient {
     );
 
     try {
-      logger.info('Finalizing MPC key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpc.key.finalize'].post({
         coin: this.coin,
         source: params.source,
@@ -578,7 +576,6 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      logger.info('Initializing MPCv2 key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpcv2.initialize'].post({
         coin: this.coin,
         source: params.source,
@@ -617,7 +614,6 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      logger.info('Executing MPCv2 round %s for coin: %s', params.round, this.coin);
       let request = this.apiClient['v1.mpcv2.round'].post({
         coin: this.coin,
         ...params,
@@ -653,7 +649,6 @@ export class AdvancedWalletManagerClient {
     }
 
     try {
-      logger.info('Finalizing MPCv2 key generation for coin: %s', this.coin);
       let request = this.apiClient['v1.mpcv2.finalize'].post({
         coin: this.coin,
         ...params,

@@ -35,11 +35,11 @@ export class KmsClient {
     const kmsUrlObj = new URL(cfg.kmsUrl);
     if (cfg.tlsMode === TlsMode.MTLS) {
       kmsUrlObj.protocol = 'https:';
-      if (cfg.kmsTlsCert || cfg.kmsServerCertAllowSelfSigned) {
+      if (cfg.kmsServerCaCert || cfg.kmsServerCertAllowSelfSigned) {
         this.agent = new https.Agent({
-          ca: cfg.kmsTlsCert,
-          cert: cfg.tlsCert,
-          key: cfg.tlsKey,
+          ca: cfg.kmsServerCaCert,
+          cert: cfg.kmsClientTlsCert,
+          key: cfg.kmsClientTlsKey,
           rejectUnauthorized: !cfg.kmsServerCertAllowSelfSigned,
         });
       }
@@ -48,7 +48,6 @@ export class KmsClient {
     }
 
     this.url = kmsUrlObj.toString().replace(/\/$/, '');
-    logger.info('kmsClient initialized with URL: %s', this.url);
   }
 
   // Handles http erros from KMS
@@ -164,8 +163,6 @@ export class KmsClient {
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
-    logger.info('Decrypting data key from KMS');
-
     // Call KMS to decrypt the data key
     let kmsResponse: any;
     try {

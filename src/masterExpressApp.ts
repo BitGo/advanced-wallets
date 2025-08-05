@@ -33,25 +33,25 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
 }
 
 function isTLS(config: MasterExpressConfig): boolean {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
+  const { serverTlsKeyPath, serverTlsCertPath, serverTlsKey, serverTlsCert, tlsMode } = config;
   if (tlsMode === TlsMode.DISABLED) return false;
-  return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
+  return Boolean((serverTlsKeyPath && serverTlsCertPath) || (serverTlsKey && serverTlsCert));
 }
 
 async function createHttpsServer(
   app: express.Application,
   config: MasterExpressConfig,
 ): Promise<https.Server> {
-  const { tlsKey, tlsCert, tlsMode } = config;
+  const { serverTlsKey, serverTlsCert, tlsMode } = config;
 
-  if (!tlsKey || !tlsCert) {
+  if (!serverTlsKey || !serverTlsCert) {
     throw new Error('TLS key and certificate must be provided for HTTPS server');
   }
 
   const httpsOptions: https.ServerOptions = {
     secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
-    key: tlsKey,
-    cert: tlsCert,
+    key: serverTlsKey,
+    cert: serverTlsCert,
     // Always request cert if mTLS is enabled
     requestCert: tlsMode === TlsMode.MTLS,
     rejectUnauthorized: false, // Handle authorization in middleware

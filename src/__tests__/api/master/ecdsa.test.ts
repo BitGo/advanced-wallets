@@ -45,7 +45,7 @@ describe('Ecdsa Signing Handler', () => {
     awmClient = new AdvancedWalletManagerClient(
       {
         advancedWalletManagerUrl,
-        advancedWalletManagerCert: 'dummy-cert',
+        awmServerCaCert: 'dummy-cert',
         tlsMode: 'disabled',
         clientCertAllowSelfSigned: true,
       } as any,

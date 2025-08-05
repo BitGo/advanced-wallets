@@ -49,7 +49,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       disableEnvCheck: true,
       authVersion: 2,
       advancedWalletManagerUrl: advancedWalletManagerUrl,
-      advancedWalletManagerCert: 'test-cert',
+      awmServerCaCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };

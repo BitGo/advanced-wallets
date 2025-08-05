@@ -27,6 +27,7 @@ Configuration is managed through environment variables:
 ### Network Settings
 
 - `BIND` - Address to bind to (default: localhost)
+- `IPC` - IPC socket file path (optional)
 - `TIMEOUT` - Request timeout in milliseconds (default: 305000)
 - `KEEP_ALIVE_TIMEOUT` - Keep-alive timeout (optional)
 - `HEADERS_TIMEOUT` - Headers timeout (optional)
@@ -45,8 +46,6 @@ Configuration is managed through environment variables:
 - `BITGO_CUSTOM_ROOT_URI` - Custom BitGo API root URI (optional)
 - `BITGO_CUSTOM_BITCOIN_NETWORK` - Custom Bitcoin network (optional)
 - `ADVANCED_WALLET_MANAGER_URL` - Advanced Wallet Manager URL (required)
-- `ADVANCED_WALLET_MANAGER_CERT` - Path to Advanced Wallet Manager certificate (required)
-- `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from Advanced Wallet Manager (default: false)
 
 ### TLS/mTLS Configuration
 
@@ -56,37 +55,46 @@ Both modes use the same TLS configuration variables:
 
 - `TLS_MODE` - Set to either "mtls" or "disabled" (defaults to "mtls" if not set)
 
-#### Certificate Configuration (required when TLS_MODE=mtls)
+#### mTLS Server Configuration (for incoming connections)
 
-**Option 1: Certificate Files**
+- `SERVER_TLS_KEY_PATH` - Path to the private key for the mTLS server
+- `SERVER_TLS_CERT_PATH` - Path to the certificate for the mTLS server
+- `SERVER_TLS_KEY` - The private key as a string (alternative to `_PATH`)
+- `SERVER_TLS_CERT` - The certificate as a string (alternative to `_PATH`)
 
-- `TLS_KEY_PATH` - Path to private key file (used for both inbound mTLS server and outbound mTLS client to KMS)
-- `TLS_CERT_PATH` - Path to certificate file (used for both inbound mTLS server and outbound mTLS client to KMS)
+#### mTLS Client Authentication Settings (for incoming connections)
 
-**Option 2: Environment Variables**
+- `ALLOW_SELF_SIGNED` - Allow self-signed certificates (default: false)
+- `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed client certificate fingerprints (optional)
 
-- `TLS_KEY` - Private key content (PEM format, used for both inbound and outbound)
-- `TLS_CERT` - Certificate content (PEM format, used for both inbound and outbound)
+#### Outbound mTLS to AWM (Master Express Mode only)
 
-#### mTLS Settings (when TLS_MODE=mtls)
+- `AWM_CLIENT_TLS_KEY_PATH` - Path to the client key that Master Express presents to the AWM
+- `AWM_CLIENT_TLS_CERT_PATH` - Path to the client cert that Master Express presents to the AWM
+- `AWM_CLIENT_TLS_KEY` - The client key as a string (alternative to `_PATH`)
+- `AWM_CLIENT_TLS_CERT` - The client cert as a string (alternative to `_PATH`)
+- `AWM_SERVER_CA_CERT_PATH` - Path to the CA certificate to verify the AWM server (required when TLS_MODE=mtls)
+- `AWM_SERVER_CA_CERT` - The CA certificate as a string (alternative to `_PATH`)
+- `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from the AWM (default: false)
+- **Fallback:** If client certs are not provided, `SERVER_TLS_KEY_PATH` and `SERVER_TLS_CERT_PATH` are used
 
-- `MTLS_REQUEST_CERT` - Request client certificates (default: true)
-- `CLIENT_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates for incoming client connections (default: false)
-- `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed fingerprints for incoming client connections (optional)
+#### Outbound mTLS to KMS (AWM Mode only)
 
-#### Outbound mTLS to KMS
-
-- When `TLS_MODE=mtls`, outbound mTLS to KMS is enabled by default.
-- The same `TLS_CERT` and `TLS_KEY` are used as the client certificate and key for outbound mTLS requests to KMS.
-- `KMS_TLS_CERT_PATH` - Path to the CA certificate to verify the KMS server (required when outbound mTLS is enabled).
-- If `TLS_MODE=disabled`, outbound mTLS to KMS is also disabled by default.
+- `KMS_CLIENT_TLS_KEY_PATH` - Path to the client key that AWM presents to the KMS
+- `KMS_CLIENT_TLS_CERT_PATH` - Path to the client cert that AWM presents to the KMS
+- `KMS_CLIENT_TLS_KEY` - The client key as a string (alternative to `_PATH`)
+- `KMS_CLIENT_TLS_CERT` - The client cert as a string (alternative to `_PATH`)
+- `KMS_SERVER_CA_CERT_PATH` - Path to the CA certificate to verify the KMS server (required when TLS_MODE=mtls)
+- `KMS_SERVER_CA_CERT` - The CA certificate as a string (alternative to `_PATH`)
 - `KMS_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from the KMS (default: false)
-
-> **Note:** If you want to use a different client certificate for KMS, you will need to extend the configuration. By default, the same cert/key is used for both inbound and outbound mTLS.
+- **Fallback:** If client certs are not provided, `SERVER_TLS_KEY_PATH` and `SERVER_TLS_CERT_PATH` are used
 
 ### Logging and Debug
 
 - `HTTP_LOGFILE` - Path to HTTP request log file (optional, used by Morgan for HTTP access logs)
+- `NODE_ENV` - Node environment (development, production, test)
+- `LOG_LEVEL` - Log level (silent, error, warn, info, http, debug)
+- `RECOVERY_MODE` - Enable recovery mode (default: false)
 
 ## Quick Start
 
@@ -107,31 +115,31 @@ openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=loca
 ```bash
 export APP_MODE=advanced-wallet-manager
 export KMS_URL=https://your-kms-service
-export KMS_TLS_CERT_PATH=./server.crt
+export KMS_SERVER_CA_CERT_PATH=./server.crt
 export KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true
-export TLS_KEY_PATH=./server.key
-export TLS_CERT_PATH=./server.crt
+export SERVER_TLS_KEY_PATH=./server.key
+export SERVER_TLS_CERT_PATH=./server.crt
 export CLIENT_CERT_ALLOW_SELF_SIGNED=true
 npm start
 ```
 
-### 4. Start Master Express
+### 3. Start Master Express
 
 In a separate terminal:
 
 ```bash
 export APP_MODE=master-express
 export BITGO_ENV=test
-export TLS_KEY_PATH=./server.key
-export TLS_CERT_PATH=./server.crt
+export SERVER_TLS_KEY_PATH=./server.key
+export SERVER_TLS_CERT_PATH=./server.crt
 export ADVANCED_WALLET_MANAGER_URL=https://localhost:3080
-export ADVANCED_WALLET_MANAGER_CERT=./server.crt
+export AWM_SERVER_CA_CERT_PATH=./server.crt
 export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true
 export CLIENT_CERT_ALLOW_SELF_SIGNED=true
 npm start
 ```
 
-### 5. Test the Connection
+### 4. Test the Connection
 
 Test that Master Express can communicate with Advanced Wallet Manager:
 
@@ -157,9 +165,11 @@ curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 ```bash
 export APP_MODE=advanced-wallet-manager
 export KMS_URL=https://production-kms.example.com
-export TLS_KEY_PATH=/secure/path/advanced-wallet-manager.key
-export TLS_CERT_PATH=/secure/path/advanced-wallet-manager.crt
-export MTLS_REQUEST_CERT=true
+export SERVER_TLS_KEY_PATH=/secure/path/awm-server.key
+export SERVER_TLS_CERT_PATH=/secure/path/awm-server.crt
+export KMS_CLIENT_TLS_KEY_PATH=/secure/path/awm-kms-client.key
+export KMS_CLIENT_TLS_CERT_PATH=/secure/path/awm-kms-client.crt
+export KMS_SERVER_CA_CERT_PATH=/secure/path/kms-ca.crt
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456...
 npm start
@@ -170,11 +180,12 @@ npm start
 ```bash
 export APP_MODE=master-express
 export BITGO_ENV=prod
-export TLS_KEY_PATH=/secure/path/master.key
-export TLS_CERT_PATH=/secure/path/master.crt
+export SERVER_TLS_KEY_PATH=/secure/path/master-server.key
+export SERVER_TLS_CERT_PATH=/secure/path/master-server.crt
+export AWM_CLIENT_TLS_KEY_PATH=/secure/path/master-awm-client.key
+export AWM_CLIENT_TLS_CERT_PATH=/secure/path/master-awm-client.crt
 export ADVANCED_WALLET_MANAGER_URL=https://advanced-wallet-manager.internal.example.com:3080
-export ADVANCED_WALLET_MANAGER_CERT=/secure/path/advanced-wallet-manager.crt
-export MTLS_REQUEST_CERT=true
+export AWM_SERVER_CA_CERT_PATH=/secure/path/awm-ca.crt
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 npm start
 ```
@@ -201,8 +212,8 @@ podman run -d \
   -e APP_MODE=advanced-wallet-manager \
   -e BIND=0.0.0.0 \
   -e TLS_MODE=mtls \
-  -e TLS_KEY_PATH=/app/certs/advanced-wallet-manager-key.pem \
-  -e TLS_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
+  -e SERVER_TLS_KEY_PATH=/app/certs/advanced-wallet-manager-key.pem \
+  -e SERVER_TLS_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
   -e KMS_URL=host.containers.internal:3000 \
   -e NODE_ENV=development \
   -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
@@ -221,10 +232,10 @@ podman run -d \
   -e APP_MODE=master-express \
   -e BIND=0.0.0.0 \
   -e TLS_MODE=mtls \
-  -e TLS_KEY_PATH=/app/certs/test-ssl-key.pem \
-  -e TLS_CERT_PATH=/app/certs/test-ssl-cert.pem \
+  -e SERVER_TLS_KEY_PATH=/app/certs/test-ssl-key.pem \
+  -e SERVER_TLS_CERT_PATH=/app/certs/test-ssl-cert.pem \
   -e ADVANCED_WALLET_MANAGER_URL=https://host.containers.internal:3080 \
-  -e ADVANCED_WALLET_MANAGER_CERT=/app/certs/advanced-wallet-manager-cert.pem \
+  -e AWM_SERVER_CA_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
   -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
   bitgo-onprem-express
 
@@ -295,9 +306,8 @@ openssl x509 -in certificate.crt -text -noout
 ```bash
 # Check that required variables are set
 env | grep -E "(APP_MODE|KMS_URL|ADVANCED_WALLET_MANAGER|TLS_)"
-``
+```
 
 ## License
 
 MIT
-```

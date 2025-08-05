@@ -10,6 +10,7 @@ import pjson from '../../package.json';
 import logger from '../logger';
 
 import { Config, TlsMode, MasterExpressConfig } from '../shared/types';
+import { isAdvancedWalletManagerConfig, isMasterExpressConfig } from '../initConfig';
 
 /**
  * Set up the logging middleware provided by morgan
@@ -175,56 +176,25 @@ export function createMtlsMiddleware(config: {
   };
 }
 
-/**
- * Validate that TLS certificates are properly loaded when TLS is enabled
- */
-export function validateTlsCertificates(config: Config): void {
-  if (config.tlsMode === TlsMode.DISABLED) {
-    return;
-  }
-
-  if (!config.tlsKey || !config.tlsCert) {
-    throw new Error('TLS key and certificate must be provided when TLS is enabled');
-  }
-
-  // Validate certificate format
-  try {
-    // Basic PEM format validation
-    if (
-      !config.tlsKey.includes('-----BEGIN PRIVATE KEY-----') &&
-      !config.tlsKey.includes('-----BEGIN RSA PRIVATE KEY-----')
-    ) {
-      throw new Error('Invalid TLS private key format');
+export function validateTlsCertificates(config: Config) {
+  if (isAdvancedWalletManagerConfig(config)) {
+    if (!config.serverTlsKey || !config.serverTlsCert) {
+      throw new Error('SERVER_TLS_KEY and SERVER_TLS_CERT are required when TLS mode is MTLS');
     }
-    if (!config.tlsCert.includes('-----BEGIN CERTIFICATE-----')) {
-      throw new Error('Invalid TLS certificate format');
+  } else if (isMasterExpressConfig(config)) {
+    if (!config.serverTlsKey || !config.serverTlsCert) {
+      throw new Error('SERVER_TLS_KEY and SERVER_TLS_CERT are required when TLS mode is MTLS');
     }
-  } catch (error) {
-    throw new Error(
-      `TLS certificate validation failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    );
   }
 }
 
 /**
  * Validate Master Express configuration
  */
-export function validateMasterExpressConfig(config: MasterExpressConfig): void {
-  // Validate that we have the required advanced wallet manager certificate for mTLS
-  if (config.tlsMode === TlsMode.MTLS && !config.advancedWalletManagerCert) {
-    throw new Error('Advanced Wallet Manager certificate is required for mTLS mode');
-  }
-
-  // Validate client certificate if mTLS is enabled
+export function validateMasterExpressConfig(config: MasterExpressConfig) {
   if (config.tlsMode === TlsMode.MTLS) {
-    const hasValidClientCert =
-      config.advancedWalletManagerCert &&
-      config.advancedWalletManagerCert.includes('-----BEGIN CERTIFICATE-----');
-
-    if (!hasValidClientCert) {
-      throw new Error('Valid client certificate is required for mTLS mode');
+    if (!config.awmServerCaCertPath) {
+      throw new Error('AWM_SERVER_CA_CERT_PATH is required when TLS mode is MTLS');
     }
   }
 }

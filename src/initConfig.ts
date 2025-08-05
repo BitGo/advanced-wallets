@@ -102,13 +102,15 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
     // KMS settings
     kmsUrl,
-    kmsTlsCertPath: readEnvVar('KMS_TLS_CERT_PATH'),
+    kmsServerCaCertPath: readEnvVar('KMS_SERVER_CA_CERT_PATH'),
+    kmsClientTlsKeyPath: readEnvVar('KMS_CLIENT_TLS_KEY_PATH'),
+    kmsClientTlsCertPath: readEnvVar('KMS_CLIENT_TLS_CERT_PATH'),
     kmsServerCertAllowSelfSigned: readEnvVar('KMS_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
-    // mTLS settings
-    keyPath: readEnvVar('TLS_KEY_PATH'),
-    crtPath: readEnvVar('TLS_CERT_PATH'),
-    tlsKey: readEnvVar('TLS_KEY'),
-    tlsCert: readEnvVar('TLS_CERT'),
+    // mTLS server settings
+    serverTlsKeyPath: readEnvVar('SERVER_TLS_KEY_PATH'),
+    serverTlsCertPath: readEnvVar('SERVER_TLS_CERT_PATH'),
+    serverTlsKey: readEnvVar('SERVER_TLS_KEY'),
+    serverTlsCert: readEnvVar('SERVER_TLS_CERT'),
     tlsMode: determineTlsMode(),
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
@@ -137,13 +139,17 @@ function mergeAkmConfigs(
     keepAliveTimeout: get('keepAliveTimeout'),
     headersTimeout: get('headersTimeout'),
     kmsUrl: get('kmsUrl'),
-    kmsTlsCertPath: get('kmsTlsCertPath'),
-    kmsTlsCert: get('kmsTlsCert'),
+    kmsServerCaCertPath: get('kmsServerCaCertPath'),
+    kmsServerCaCert: get('kmsServerCaCert'),
+    kmsClientTlsKeyPath: get('kmsClientTlsKeyPath'),
+    kmsClientTlsCertPath: get('kmsClientTlsCertPath'),
+    kmsClientTlsKey: get('kmsClientTlsKey'),
+    kmsClientTlsCert: get('kmsClientTlsCert'),
     kmsServerCertAllowSelfSigned: get('kmsServerCertAllowSelfSigned'),
-    keyPath: get('keyPath'),
-    crtPath: get('crtPath'),
-    tlsKey: get('tlsKey'),
-    tlsCert: get('tlsCert'),
+    serverTlsKeyPath: get('serverTlsKeyPath'),
+    serverTlsCertPath: get('serverTlsCertPath'),
+    serverTlsKey: get('serverTlsKey'),
+    serverTlsCert: get('serverTlsCert'),
     tlsMode: get('tlsMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
@@ -158,41 +164,76 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
     // Handle file loading for TLS certificates
-    if (!config.tlsKey && config.keyPath) {
+    if (!config.serverTlsKey && config.serverTlsKeyPath) {
       try {
-        config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
-        logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
+        config = { ...config, serverTlsKey: fs.readFileSync(config.serverTlsKeyPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS private key from file: ${config.serverTlsKeyPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+        throw new Error(`Failed to read TLS key from serverTlsKeyPath: ${err.message}`);
       }
-    } else if (config.tlsKey) {
+    } else if (config.serverTlsKey) {
       logger.info('Using TLS private key from environment variable');
     }
 
-    if (!config.tlsCert && config.crtPath) {
+    if (!config.serverTlsCert && config.serverTlsCertPath) {
       try {
-        config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
-        logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
+        config = {
+          ...config,
+          serverTlsCert: fs.readFileSync(config.serverTlsCertPath, 'utf-8'),
+        };
+        logger.info(`Successfully loaded TLS certificate from file: ${config.serverTlsCertPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+        throw new Error(`Failed to read TLS certificate from serverTlsCertPath: ${err.message}`);
       }
-    } else if (config.tlsCert) {
+    } else if (config.serverTlsCert) {
       logger.info('Using TLS certificate from environment variable');
     }
 
-    if (!config.kmsTlsCertPath) {
-      throw new Error('KMS_TLS_CERT is required when TLS mode is MTLS');
+    if (!config.kmsServerCaCertPath) {
+      throw new Error('KMS_SERVER_CA_CERT_PATH is required when TLS mode is MTLS');
     }
-    if (config.kmsTlsCertPath) {
+    if (config.kmsServerCaCertPath) {
       try {
-        config.kmsTlsCert = fs.readFileSync(config.kmsTlsCertPath, 'utf-8');
-        logger.info(`Successfully loaded KMS TLS certificate from file: ${config.kmsTlsCertPath}`);
+        config.kmsServerCaCert = fs.readFileSync(config.kmsServerCaCertPath, 'utf-8');
+        logger.info(
+          `Successfully loaded KMS TLS certificate from file: ${config.kmsServerCaCertPath}`,
+        );
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read KMS TLS certificate from kmsTlsCert: ${err.message}`);
       }
+    }
+
+    if (config.kmsClientTlsKeyPath) {
+      try {
+        config.kmsClientTlsKey = fs.readFileSync(config.kmsClientTlsKeyPath, 'utf-8');
+        logger.info(`Successfully loaded KMS client key from file: ${config.kmsClientTlsKeyPath}`);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read KMS client key from kmsClientTlsKeyPath: ${err.message}`);
+      }
+    }
+
+    if (config.kmsClientTlsCertPath) {
+      try {
+        config.kmsClientTlsCert = fs.readFileSync(config.kmsClientTlsCertPath, 'utf-8');
+        logger.info(
+          `Successfully loaded KMS client cert from file: ${config.kmsClientTlsCertPath}`,
+        );
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(`Failed to read KMS client cert from kmsClientTlsCertPath: ${err.message}`);
+      }
+    }
+
+    // Fallback to server certs if client certs are not provided
+    if (!config.kmsClientTlsKey) {
+      config.kmsClientTlsKey = config.serverTlsKey;
+    }
+    if (!config.kmsClientTlsCert) {
+      config.kmsClientTlsCert = config.serverTlsCert;
     }
 
     // Validate that certificates are properly loaded when TLS is enabled
@@ -216,7 +257,7 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   disableEnvCheck: true,
   authVersion: 2,
   advancedWalletManagerUrl: '', // Will be overridden by environment variable
-  advancedWalletManagerCert: '', // Will be overridden by environment variable
+  awmServerCaCertPath: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
   clientCertAllowSelfSigned: false,
 };
@@ -232,7 +273,7 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const advancedWalletManagerUrl = readEnvVar('ADVANCED_WALLET_MANAGER_URL');
-  const advancedWalletManagerCert = readEnvVar('ADVANCED_WALLET_MANAGER_CERT');
+  const awmServerCaCertPath = readEnvVar('AWM_SERVER_CA_CERT_PATH');
   const awmServerCertAllowSelfSigned = readEnvVar('AWM_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true';
   const tlsMode = determineTlsMode();
 
@@ -242,8 +283,8 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     );
   }
 
-  if (tlsMode === TlsMode.MTLS && !advancedWalletManagerCert) {
-    throw new Error('ADVANCED_WALLET_MANAGER_CERT environment variable is required for MTLS mode.');
+  if (tlsMode === TlsMode.MTLS && !awmServerCaCertPath) {
+    throw new Error('AWM_SERVER_CA_CERT_PATH environment variable is required for MTLS mode.');
   }
 
   // Debug mTLS environment variables
@@ -265,14 +306,16 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     disableEnvCheck: readEnvVar('BITGO_DISABLE_ENV_CHECK') === 'true',
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
     advancedWalletManagerUrl: advancedWalletManagerUrl,
-    advancedWalletManagerCert: advancedWalletManagerCert,
+    awmServerCaCertPath: awmServerCaCertPath,
+    awmClientTlsKeyPath: readEnvVar('AWM_CLIENT_TLS_KEY_PATH'),
+    awmClientTlsCertPath: readEnvVar('AWM_CLIENT_TLS_CERT_PATH'),
     awmServerCertAllowSelfSigned,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
-    // mTLS settings
-    keyPath: readEnvVar('TLS_KEY_PATH'),
-    crtPath: readEnvVar('TLS_CERT_PATH'),
-    tlsKey: readEnvVar('TLS_KEY'),
-    tlsCert: readEnvVar('TLS_CERT'),
+    // mTLS server settings
+    serverTlsKeyPath: readEnvVar('SERVER_TLS_KEY_PATH'),
+    serverTlsCertPath: readEnvVar('SERVER_TLS_CERT_PATH'),
+    serverTlsKey: readEnvVar('SERVER_TLS_KEY'),
+    serverTlsCert: readEnvVar('SERVER_TLS_CERT'),
     tlsMode,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     clientCertAllowSelfSigned,
@@ -305,13 +348,18 @@ function mergeMasterExpressConfigs(
     disableEnvCheck: get('disableEnvCheck'),
     authVersion: get('authVersion'),
     advancedWalletManagerUrl: get('advancedWalletManagerUrl'),
-    advancedWalletManagerCert: get('advancedWalletManagerCert'),
+    awmServerCaCertPath: get('awmServerCaCertPath'),
+    awmServerCaCert: get('awmServerCaCert'),
+    awmClientTlsKeyPath: get('awmClientTlsKeyPath'),
+    awmClientTlsCertPath: get('awmClientTlsCertPath'),
+    awmClientTlsKey: get('awmClientTlsKey'),
+    awmClientTlsCert: get('awmClientTlsCert'),
     awmServerCertAllowSelfSigned: get('awmServerCertAllowSelfSigned'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
-    keyPath: get('keyPath'),
-    crtPath: get('crtPath'),
-    tlsKey: get('tlsKey'),
-    tlsCert: get('tlsCert'),
+    serverTlsKeyPath: get('serverTlsKeyPath'),
+    serverTlsCertPath: get('serverTlsCertPath'),
+    serverTlsKey: get('serverTlsKey'),
+    serverTlsCert: get('serverTlsCert'),
     tlsMode: get('tlsMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
@@ -340,27 +388,30 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
     // Handle file loading for TLS certificates
-    if (!config.tlsKey && config.keyPath) {
+    if (!config.serverTlsKey && config.serverTlsKeyPath) {
       try {
-        config = { ...config, tlsKey: fs.readFileSync(config.keyPath, 'utf-8') };
-        logger.info(`Successfully loaded TLS private key from file: ${config.keyPath}`);
+        config = { ...config, serverTlsKey: fs.readFileSync(config.serverTlsKeyPath, 'utf-8') };
+        logger.info(`Successfully loaded TLS private key from file: ${config.serverTlsKeyPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS key from keyPath: ${err.message}`);
+        throw new Error(`Failed to read TLS key from serverTlsKeyPath: ${err.message}`);
       }
-    } else if (config.tlsKey) {
+    } else if (config.serverTlsKey) {
       logger.info('Using TLS private key from environment variable');
     }
 
-    if (!config.tlsCert && config.crtPath) {
+    if (!config.serverTlsCert && config.serverTlsCertPath) {
       try {
-        config = { ...config, tlsCert: fs.readFileSync(config.crtPath, 'utf-8') };
-        logger.info(`Successfully loaded TLS certificate from file: ${config.crtPath}`);
+        config = {
+          ...config,
+          serverTlsCert: fs.readFileSync(config.serverTlsCertPath, 'utf-8'),
+        };
+        logger.info(`Successfully loaded TLS certificate from file: ${config.serverTlsCertPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS certificate from crtPath: ${err.message}`);
+        throw new Error(`Failed to read TLS certificate from serverTlsCertPath: ${err.message}`);
       }
-    } else if (config.tlsCert) {
+    } else if (config.serverTlsCert) {
       logger.info('Using TLS certificate from environment variable');
     }
 
@@ -369,26 +420,54 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   }
 
   // Handle cert loading for Advanced Wallet Manager (always required for Master Express)
-  if (config.advancedWalletManagerCert) {
+  if (config.awmServerCaCertPath) {
     try {
-      if (fs.existsSync(config.advancedWalletManagerCert)) {
+      if (fs.existsSync(config.awmServerCaCertPath)) {
         config = {
           ...config,
-          advancedWalletManagerCert: fs.readFileSync(config.advancedWalletManagerCert, 'utf-8'),
+          awmServerCaCert: fs.readFileSync(config.awmServerCaCertPath, 'utf-8'),
         };
         logger.info(
-          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.advancedWalletManagerCert?.substring(
+          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.awmServerCaCertPath?.substring(
             0,
             50,
           )}...`,
         );
       } else {
-        throw new Error(`Certificate file not found: ${config.advancedWalletManagerCert}`);
+        throw new Error(`Certificate file not found: ${config.awmServerCaCertPath}`);
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
       throw new Error(`Failed to read advanced wallet manager cert: ${err.message}`);
     }
+  }
+
+  if (config.awmClientTlsKeyPath) {
+    try {
+      config.awmClientTlsKey = fs.readFileSync(config.awmClientTlsKeyPath, 'utf-8');
+      logger.info(`Successfully loaded AWM client key from file: ${config.awmClientTlsKeyPath}`);
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      throw new Error(`Failed to read AWM client key from awmClientTlsKeyPath: ${err.message}`);
+    }
+  }
+
+  if (config.awmClientTlsCertPath) {
+    try {
+      config.awmClientTlsCert = fs.readFileSync(config.awmClientTlsCertPath, 'utf-8');
+      logger.info(`Successfully loaded AWM client cert from file: ${config.awmClientTlsCertPath}`);
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      throw new Error(`Failed to read AWM client cert from awmClientTlsCertPath: ${err.message}`);
+    }
+  }
+
+  // Fallback to server certs if client certs are not provided
+  if (!config.awmClientTlsKey) {
+    config.awmClientTlsKey = config.serverTlsKey;
+  }
+  if (!config.awmClientTlsCert) {
+    config.awmClientTlsCert = config.serverTlsCert;
   }
 
   // Validate Master Express configuration
