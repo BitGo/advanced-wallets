@@ -132,7 +132,7 @@ describe('signMpcTransaction', () => {
       // Mock KMS responses
       const kmsNock = nock(kmsUrl)
         .get(`/key/${input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: false })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const dataKeyNock = nock(kmsUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
@@ -170,7 +170,7 @@ describe('signMpcTransaction', () => {
       // Mock KMS responses for R share
       const rKmsNock = nock(kmsUrl)
         .get(`/key/${rInput.pub}`)
-        .query({ source: 'user', useLocalEncipherment: false })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const decryptDataKeyNock = nock(kmsUrl)
@@ -232,7 +232,7 @@ describe('signMpcTransaction', () => {
       // Mock KMS response for G share
       const gKmsNock = nock(kmsUrl)
         .get(`/key/${gInput.pub}`)
-        .query({ source: 'user', useLocalEncipherment: false })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const gResponse = await agent
@@ -260,7 +260,7 @@ describe('signMpcTransaction', () => {
 
       const kmsNock = nock(kmsUrl)
         .get(`/key/${input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: false })
+        .query({ source: 'user' })
         .reply(404, { error: 'Key not found' });
 
       const response = await agent
@@ -372,7 +372,7 @@ describe('signMpcTransaction', () => {
       // Mock KMS responses for Round 1
       const kmsNock = nock(kmsUrl)
         .get(`/key/${round1Input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: true })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const dataKeyNock = nock(kmsUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
@@ -434,7 +434,7 @@ describe('signMpcTransaction', () => {
       // Mock KMS responses for Round 2
       const r2KmsNock = nock(kmsUrl)
         .get(`/key/${round2Input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: true })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const decryptDataKeyNock = nock(kmsUrl)
@@ -482,7 +482,7 @@ describe('signMpcTransaction', () => {
       // Mock KMS responses for Round 3
       const r3KmsNock = nock(kmsUrl)
         .get(`/key/${round3Input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: true })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const r3DecryptDataKeyNock = nock(kmsUrl)
@@ -564,7 +564,7 @@ describe('signMpcTransaction', () => {
 
       const kmsNock = nock(kmsUrl)
         .get(`/key/${input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: true })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const response = await agent
@@ -599,7 +599,7 @@ describe('signMpcTransaction', () => {
 
       const kmsNock = nock(kmsUrl)
         .get(`/key/${input.pub}`)
-        .query({ source: 'user', useLocalEncipherment: true })
+        .query({ source: 'user' })
         .reply(200, mockKmsResponse);
 
       const response = await agent

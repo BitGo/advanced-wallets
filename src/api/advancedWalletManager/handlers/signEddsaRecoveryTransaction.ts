@@ -111,14 +111,12 @@ export async function signEddsaRecoveryTransaction({
     pub: request.commonKeychain.toString(),
     source: 'user',
     cfg,
-    options: { useLocalEncipherment: false },
   });
 
   const backupPrv = await retrieveKmsPrvKey({
     pub: request.commonKeychain.toString(),
     source: 'backup',
     cfg,
-    options: { useLocalEncipherment: false },
   });
 
   if (!userPrv || !backupPrv) {

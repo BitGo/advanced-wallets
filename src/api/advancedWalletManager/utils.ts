@@ -8,20 +8,16 @@ export async function retrieveKmsPrvKey({
   pub,
   source,
   cfg,
-  options,
 }: {
   pub: string;
   source: string;
   cfg: AdvancedWalletManagerConfig;
-  options?: {
-    useLocalEncipherment?: boolean;
-  };
 }): Promise<string> {
   const kms = new KmsClient(cfg);
   // Retrieve the private key from KMS
   let prv: string;
   try {
-    const res = await kms.getKey({ pub, source, options });
+    const res = await kms.getKey({ pub, source });
     prv = res.prv;
     return prv;
   } catch (error: any) {

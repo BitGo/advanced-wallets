@@ -100,7 +100,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'user',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .resolves(JSON.stringify(userPrvShare));
 
@@ -109,7 +108,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'backup',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .resolves(JSON.stringify(backupPrvShare));
 
@@ -136,7 +134,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'user',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .should.be.true();
 
@@ -145,7 +142,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'backup',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .should.be.true();
   });
@@ -157,7 +153,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'user',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .resolves(undefined);
 
@@ -185,7 +180,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'user',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .resolves(JSON.stringify(userPrvShare));
 
@@ -194,7 +188,6 @@ describe('EdDSA Recovery Signing', () => {
         pub: commonKeychain,
         source: 'backup',
         cfg: config,
-        options: { useLocalEncipherment: false },
       })
       .resolves(undefined);
 
