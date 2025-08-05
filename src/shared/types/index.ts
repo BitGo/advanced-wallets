@@ -30,6 +30,7 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   kmsUrl: string;
   kmsTlsCertPath?: string;
   kmsTlsCert?: string;
+  kmsAllowSelfSigned?: boolean;
   // mTLS settings
   keyPath?: string;
   crtPath?: string;
@@ -49,7 +50,8 @@ export interface MasterExpressConfig extends BaseConfig {
   disableEnvCheck?: boolean;
   authVersion?: number;
   advancedWalletManagerUrl: string;
-  advancedWalletManagerCert: string;
+  advancedWalletManagerCert?: string;
+  advancedWalletManagerAllowSelfSigned?: boolean;
   customBitcoinNetwork?: string;
   // mTLS settings
   keyPath?: string;

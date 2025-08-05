@@ -103,6 +103,7 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     // KMS settings
     kmsUrl,
     kmsTlsCertPath: readEnvVar('KMS_TLS_CERT_PATH'),
+    kmsAllowSelfSigned: readEnvVar('KMS_ALLOW_SELF_SIGNED') === 'true',
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
     crtPath: readEnvVar('TLS_CERT_PATH'),
@@ -137,6 +138,8 @@ function mergeAkmConfigs(
     headersTimeout: get('headersTimeout'),
     kmsUrl: get('kmsUrl'),
     kmsTlsCertPath: get('kmsTlsCertPath'),
+    kmsTlsCert: get('kmsTlsCert'),
+    kmsAllowSelfSigned: get('kmsAllowSelfSigned'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
     tlsKey: get('tlsKey'),
@@ -230,6 +233,8 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const advancedWalletManagerUrl = readEnvVar('ADVANCED_WALLET_MANAGER_URL');
   const advancedWalletManagerCert = readEnvVar('ADVANCED_WALLET_MANAGER_CERT');
+  const advancedWalletManagerAllowSelfSigned =
+    readEnvVar('ADVANCED_WALLET_MANAGER_ALLOW_SELF_SIGNED') === 'true';
   const tlsMode = determineTlsMode();
 
   if (!advancedWalletManagerUrl) {
@@ -262,6 +267,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
     advancedWalletManagerUrl: advancedWalletManagerUrl,
     advancedWalletManagerCert: advancedWalletManagerCert,
+    advancedWalletManagerAllowSelfSigned,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
@@ -301,6 +307,7 @@ function mergeMasterExpressConfigs(
     authVersion: get('authVersion'),
     advancedWalletManagerUrl: get('advancedWalletManagerUrl'),
     advancedWalletManagerCert: get('advancedWalletManagerCert'),
+    advancedWalletManagerAllowSelfSigned: get('advancedWalletManagerAllowSelfSigned'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
@@ -371,7 +378,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
           advancedWalletManagerCert: fs.readFileSync(config.advancedWalletManagerCert, 'utf-8'),
         };
         logger.info(
-          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.advancedWalletManagerCert.substring(
+          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.advancedWalletManagerCert?.substring(
             0,
             50,
           )}...`,

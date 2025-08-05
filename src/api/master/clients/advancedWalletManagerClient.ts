@@ -239,16 +239,18 @@ export class AdvancedWalletManagerClient {
     }
     if (
       cfg.tlsMode === TlsMode.MTLS &&
-      (!cfg.tlsKey || !cfg.tlsCert || !cfg.advancedWalletManagerUrl)
+      (!cfg.tlsKey || !cfg.tlsCert || !cfg.advancedWalletManagerCert)
     ) {
-      throw new Error('tlsKey and tlsCert are required for mTLS communication');
+      throw new Error(
+        'tlsKey, tlsCert and advancedWalletManagerCert are required for mTLS communication',
+      );
     }
 
     this.baseUrl = cfg.advancedWalletManagerUrl;
-    this.advancedWalletManagerCert = cfg.advancedWalletManagerCert;
+    this.advancedWalletManagerCert = cfg.advancedWalletManagerCert as string;
     this.tlsKey = cfg.tlsKey;
     this.tlsCert = cfg.tlsCert;
-    this.allowSelfSigned = cfg.allowSelfSigned ?? false;
+    this.allowSelfSigned = cfg.advancedWalletManagerAllowSelfSigned ?? false;
     this.coin = coin;
     this.tlsMode = cfg.tlsMode;
 
