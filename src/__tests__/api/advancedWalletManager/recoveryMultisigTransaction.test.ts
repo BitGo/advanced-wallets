@@ -20,7 +20,7 @@ describe('UTXO recovery', () => {
     timeout: 60000,
     httpLoggerFile: '',
     tlsMode: TlsMode.DISABLED,
-    allowSelfSigned: true,
+    clientCertAllowSelfSigned: true,
     kmsUrl: 'kms.example.com',
     recoveryMode: true,
   };

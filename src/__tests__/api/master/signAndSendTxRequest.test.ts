@@ -56,7 +56,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     const app = expressApp(config);

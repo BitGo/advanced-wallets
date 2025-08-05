@@ -36,7 +36,7 @@ describe('signMultisigTransaction', () => {
       httpLoggerFile: '',
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     configStub = sinon.stub(configModule, 'initConfig').returns(cfg);

@@ -33,7 +33,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     const app = expressApp(config);
@@ -584,7 +584,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       disableEnvCheck: true,
       authVersion: 2,
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     try {

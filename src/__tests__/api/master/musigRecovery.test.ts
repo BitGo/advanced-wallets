@@ -30,7 +30,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
       recoveryMode: true,
     };
 

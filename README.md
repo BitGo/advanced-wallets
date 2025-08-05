@@ -46,6 +46,7 @@ Configuration is managed through environment variables:
 - `BITGO_CUSTOM_BITCOIN_NETWORK` - Custom Bitcoin network (optional)
 - `ADVANCED_WALLET_MANAGER_URL` - Advanced Wallet Manager URL (required)
 - `ADVANCED_WALLET_MANAGER_CERT` - Path to Advanced Wallet Manager certificate (required)
+- `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from Advanced Wallet Manager (default: false)
 
 ### TLS/mTLS Configuration
 
@@ -70,8 +71,8 @@ Both modes use the same TLS configuration variables:
 #### mTLS Settings (when TLS_MODE=mtls)
 
 - `MTLS_REQUEST_CERT` - Request client certificates (default: true)
-- `ALLOW_SELF_SIGNED` - Allow self-signed certificates (default: false)
-- `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed client certificate fingerprints (optional)
+- `CLIENT_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates for incoming client connections (default: false)
+- `MTLS_ALLOWED_CLIENT_FINGERPRINTS` - Comma-separated list of allowed fingerprints for incoming client connections (optional)
 
 #### Outbound mTLS to KMS
 
@@ -79,6 +80,7 @@ Both modes use the same TLS configuration variables:
 - The same `TLS_CERT` and `TLS_KEY` are used as the client certificate and key for outbound mTLS requests to KMS.
 - `KMS_TLS_CERT_PATH` - Path to the CA certificate to verify the KMS server (required when outbound mTLS is enabled).
 - If `TLS_MODE=disabled`, outbound mTLS to KMS is also disabled by default.
+- `KMS_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from the KMS (default: false)
 
 > **Note:** If you want to use a different client certificate for KMS, you will need to extend the configuration. By default, the same cert/key is used for both inbound and outbound mTLS.
 
@@ -105,10 +107,11 @@ openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=loca
 ```bash
 export APP_MODE=advanced-wallet-manager
 export KMS_URL=https://your-kms-service
+export KMS_TLS_CERT_PATH=./server.crt
+export KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true
 export TLS_KEY_PATH=./server.key
 export TLS_CERT_PATH=./server.crt
-export MTLS_REQUEST_CERT=true
-export ALLOW_SELF_SIGNED=true
+export CLIENT_CERT_ALLOW_SELF_SIGNED=true
 npm start
 ```
 
@@ -123,8 +126,8 @@ export TLS_KEY_PATH=./server.key
 export TLS_CERT_PATH=./server.crt
 export ADVANCED_WALLET_MANAGER_URL=https://localhost:3080
 export ADVANCED_WALLET_MANAGER_CERT=./server.crt
-export MTLS_REQUEST_CERT=false
-export ALLOW_SELF_SIGNED=true
+export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true
+export CLIENT_CERT_ALLOW_SELF_SIGNED=true
 npm start
 ```
 
@@ -141,7 +144,7 @@ curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 ### Security Best Practices
 
 1. **Use CA-signed certificates** instead of self-signed
-2. **Set `ALLOW_SELF_SIGNED=false`** in production
+2. **Set `CLIENT_CERT_ALLOW_SELF_SIGNED=false`** in production
 3. **Configure client certificate allowlisting** with `MTLS_ALLOWED_CLIENT_FINGERPRINTS`
 4. **Use separate certificates** for each service
 5. **Regularly rotate certificates**
@@ -157,7 +160,7 @@ export KMS_URL=https://production-kms.example.com
 export TLS_KEY_PATH=/secure/path/advanced-wallet-manager.key
 export TLS_CERT_PATH=/secure/path/advanced-wallet-manager.crt
 export MTLS_REQUEST_CERT=true
-export ALLOW_SELF_SIGNED=false
+export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456...
 npm start
 ```
@@ -172,7 +175,7 @@ export TLS_CERT_PATH=/secure/path/master.crt
 export ADVANCED_WALLET_MANAGER_URL=https://advanced-wallet-manager.internal.example.com:3080
 export ADVANCED_WALLET_MANAGER_CERT=/secure/path/advanced-wallet-manager.crt
 export MTLS_REQUEST_CERT=true
-export ALLOW_SELF_SIGNED=false
+export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 npm start
 ```
 
@@ -202,7 +205,7 @@ podman run -d \
   -e TLS_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
   -e KMS_URL=host.containers.internal:3000 \
   -e NODE_ENV=development \
-  -e ALLOW_SELF_SIGNED=true \
+  -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
   bitgo-onprem-express
 
 # View logs
@@ -222,7 +225,7 @@ podman run -d \
   -e TLS_CERT_PATH=/app/certs/test-ssl-cert.pem \
   -e ADVANCED_WALLET_MANAGER_URL=https://host.containers.internal:3080 \
   -e ADVANCED_WALLET_MANAGER_CERT=/app/certs/advanced-wallet-manager-cert.pem \
-  -e ALLOW_SELF_SIGNED=true \
+  -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
   bitgo-onprem-express
 
 # View logs
@@ -276,7 +279,7 @@ openssl x509 -in certificate.crt -text -noout
 #### 2. mTLS Authentication Failures
 
 - Verify client certificates are provided
-- Check `ALLOW_SELF_SIGNED` setting matches certificate type
+- Check `CLIENT_CERT_ALLOW_SELF_SIGNED` setting matches certificate type
 - Confirm client certificate fingerprints are in allowlist
 - Ensure both services use compatible TLS settings
 

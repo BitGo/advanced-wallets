@@ -17,7 +17,7 @@ describe('EdDSA Recovery Signing', () => {
     timeout: 60000,
     httpLoggerFile: '',
     tlsMode: TlsMode.DISABLED,
-    allowSelfSigned: true,
+    clientCertAllowSelfSigned: true,
     recoveryMode: true,
   };
 

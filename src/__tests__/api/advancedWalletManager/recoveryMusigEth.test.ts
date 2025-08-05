@@ -39,7 +39,7 @@ describe('recoveryMultisigTransaction', () => {
       httpLoggerFile: '',
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
       recoveryMode: true,
     };
 

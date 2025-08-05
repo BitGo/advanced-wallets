@@ -27,7 +27,7 @@ describe('Non Recovery Tests', () => {
     advancedWalletManagerCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
     httpLoggerFile: '',
-    allowSelfSigned: true,
+    clientCertAllowSelfSigned: true,
     recoveryMode: false,
   };
 

@@ -227,7 +227,7 @@ export class AdvancedWalletManagerClient {
   private readonly advancedWalletManagerCert: string;
   private readonly tlsKey?: string;
   private readonly tlsCert?: string;
-  private readonly allowSelfSigned: boolean;
+  private readonly awmServerCertAllowSelfSigned: boolean;
   private readonly coin?: string;
   private readonly tlsMode: TlsMode;
 
@@ -250,7 +250,7 @@ export class AdvancedWalletManagerClient {
     this.advancedWalletManagerCert = cfg.advancedWalletManagerCert as string;
     this.tlsKey = cfg.tlsKey;
     this.tlsCert = cfg.tlsCert;
-    this.allowSelfSigned = cfg.advancedWalletManagerAllowSelfSigned ?? false;
+    this.awmServerCertAllowSelfSigned = cfg.awmServerCertAllowSelfSigned ?? false;
     this.coin = coin;
     this.tlsMode = cfg.tlsMode;
 
@@ -268,7 +268,7 @@ export class AdvancedWalletManagerClient {
       throw new Error('TLS key and certificate are required for HTTPS agent');
     }
     return new https.Agent({
-      rejectUnauthorized: !this.allowSelfSigned,
+      rejectUnauthorized: !this.awmServerCertAllowSelfSigned,
       ca: this.advancedWalletManagerCert,
       // Use Master Express's own certificate as client cert when connecting to Advanced Wallet Manager
       key: this.tlsKey,

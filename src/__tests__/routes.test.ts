@@ -13,7 +13,7 @@ describe('Routes', () => {
     setupRoutes(app, {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
       httpLoggerFile: '',
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
       tlsMode: TlsMode.DISABLED,
       kmsUrl: 'http://localhost:3000/kms',
       timeout: 5000,

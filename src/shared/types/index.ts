@@ -30,7 +30,7 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   kmsUrl: string;
   kmsTlsCertPath?: string;
   kmsTlsCert?: string;
-  kmsAllowSelfSigned?: boolean;
+  kmsServerCertAllowSelfSigned?: boolean;
   // mTLS settings
   keyPath?: string;
   crtPath?: string;
@@ -38,7 +38,7 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   tlsCert?: string;
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
-  allowSelfSigned?: boolean;
+  clientCertAllowSelfSigned?: boolean;
 }
 
 // Master Express mode specific configuration
@@ -49,9 +49,10 @@ export interface MasterExpressConfig extends BaseConfig {
   customRootUri?: string;
   disableEnvCheck?: boolean;
   authVersion?: number;
+  // AWM client settings
   advancedWalletManagerUrl: string;
   advancedWalletManagerCert?: string;
-  advancedWalletManagerAllowSelfSigned?: boolean;
+  awmServerCertAllowSelfSigned?: boolean;
   customBitcoinNetwork?: string;
   // mTLS settings
   keyPath?: string;
@@ -60,7 +61,8 @@ export interface MasterExpressConfig extends BaseConfig {
   tlsCert?: string;
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
-  allowSelfSigned?: boolean;
+  clientCertAllowSelfSigned?: boolean;
+  recoveryMode?: boolean;
 }
 
 // Union type for the configuration

@@ -36,7 +36,7 @@ describe('postIndependentKey', () => {
       httpLoggerFile: '',
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     // app setup

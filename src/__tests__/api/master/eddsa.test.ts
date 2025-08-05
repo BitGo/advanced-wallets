@@ -42,7 +42,7 @@ describe('Eddsa Signing Handler', () => {
         advancedWalletManagerUrl,
         advancedWalletManagerCert: 'dummy-cert',
         tlsMode: 'disabled',
-        allowSelfSigned: true,
+        clientCertAllowSelfSigned: true,
       } as any,
       coin,
     );

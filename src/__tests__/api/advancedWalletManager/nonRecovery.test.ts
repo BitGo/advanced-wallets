@@ -18,7 +18,7 @@ describe('Non Recovery', () => {
     timeout: 60000,
     tlsMode: TlsMode.DISABLED,
     httpLoggerFile: '',
-    allowSelfSigned: true,
+    clientCertAllowSelfSigned: true,
     kmsUrl: 'kms.example.com',
   };
 
