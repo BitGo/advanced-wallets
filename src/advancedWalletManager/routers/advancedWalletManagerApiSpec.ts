@@ -17,12 +17,8 @@ import { DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import express from 'express';
 import * as t from 'io-ts';
 
-import {
-  BadRequestResponse,
-  InternalServerErrorResponse,
-  NotImplementedResponse,
-  UnprocessableEntityResponse,
-} from '../../shared/errors';
+import coinFactory from '../../shared/coinFactory';
+import { ErrorResponses, NotImplementedError } from '../../shared/errors';
 
 import { postIndependentKey } from '../../api/advancedWalletManager/handlers/postIndependentKey';
 import { recoveryMultisigTransaction } from '../../api/advancedWalletManager/handlers/recoveryMultisigTransaction';
@@ -39,8 +35,6 @@ import { ecdsaMPCv2Finalize } from '../../api/advancedWalletManager/handlers/ecd
 import { ecdsaMPCv2Recovery } from '../../api/advancedWalletManager/handlers/ecdsaMPCv2Recovery';
 import { signEddsaRecoveryTransaction } from '../../api/advancedWalletManager/handlers/signEddsaRecoveryTransaction';
 import { isEddsaCoin } from '../../shared/coinUtils';
-import { MethodNotImplementedError } from '@bitgo-beta/sdk-core';
-import coinFactory from '../../shared/coinFactory';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -52,7 +46,7 @@ const IndependentKeyRequest = {
 const IndependentKeyResponse: HttpResponse = {
   // TODO: Define proper response type
   200: t.any,
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 // Request type for /multisig/sign endpoint
@@ -66,7 +60,7 @@ const SignMultisigRequest = {
 const SignMultisigResponse: HttpResponse = {
   // TODO: Define proper response type for signed multisig transaction
   200: t.any,
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 // Request type for /multisig/recovery endpoint
@@ -83,7 +77,7 @@ const RecoveryMultisigResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 const RecoveryMpcRequest = {
@@ -105,7 +99,7 @@ const RecoveryMpcResponse: HttpResponse = {
   200: t.type({
     txHex: t.string,
   }), // the full signed tx
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 // Request type for /mpc/sign endpoint
@@ -163,7 +157,7 @@ const SignMpcResponse: HttpResponse = {
       signatureShareRound3: t.any,
     }),
   ]),
-  ...InternalServerErrorResponse,
+  ...ErrorResponses,
 };
 
 const KeyShare = {
@@ -373,10 +367,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       }),
       response: {
         200: t.type(MpcInitializeResponse),
-        500: t.type({
-          error: t.string,
-          details: t.string,
-        }),
+        ...ErrorResponses,
       },
       description: 'Initialize MPC for EdDSA key generation',
     }),
@@ -414,10 +405,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       }),
       response: {
         200: MpcFinalizeResponseType,
-        500: t.type({
-          error: t.string,
-          details: t.string,
-        }),
+        ...ErrorResponses,
       },
       description: 'Finalize key generation and confirm commonKeychain',
     }),
@@ -432,10 +420,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       }),
       response: {
         200: MpcV2InitializeResponseType,
-        500: t.type({
-          error: t.string,
-          details: t.string,
-        }),
+        ...ErrorResponses,
       },
       description: 'Initialize MPC for EdDSA key generation',
     }),
@@ -450,9 +435,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       }),
       response: {
         200: MpcV2RoundResponseType,
-        ...InternalServerErrorResponse,
-        ...BadRequestResponse,
-        ...UnprocessableEntityResponse,
+        ...ErrorResponses,
       },
       description: 'Perform a round in the MPC protocol',
     }),
@@ -467,10 +450,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       }),
       response: {
         200: MpcV2FinalizeResponseType,
-        500: t.type({
-          error: t.string,
-          details: t.string,
-        }),
+        ...ErrorResponses,
       },
       description: 'Finalize the MPC protocol',
     }),
@@ -485,9 +465,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       }),
       response: {
         200: MpcV2RecoveryResponseType,
-        ...BadRequestResponse,
-        ...InternalServerErrorResponse,
-        ...NotImplementedResponse,
+        ...ErrorResponses,
       },
       description: 'Recover a MPC transaction',
     }),
@@ -567,7 +545,9 @@ export function createKeyGenRouter(
         });
         return Response.ok(result);
       } else {
-        throw new MethodNotImplementedError();
+        throw new NotImplementedError(
+          `MPC recovery is not implemented for ${coin.getFamily()} coins`,
+        );
       }
     }),
   ]);

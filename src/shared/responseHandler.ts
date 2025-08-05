@@ -12,6 +12,7 @@ import {
   ConflictError,
 } from './errors';
 import logger from '../logger';
+import { DecodeError } from '@api-ts/superagent-wrapper';
 
 // Extend Express Response to include sendEncoded
 interface EncodedResponse extends ExpressResponse {
@@ -43,7 +44,6 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       return res.sendEncoded(result.type, result.payload);
     } catch (error) {
       // If it's already a Response object (e.g. from Response.error)
-      logger.error('Error caught in responseHandler:', error);
       if (error && typeof error === 'object' && 'type' in error && 'payload' in error) {
         const apiError = error as ApiResponse;
         return res.sendEncoded(apiError.type, apiError.payload);
@@ -84,9 +84,9 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
         };
         // Log the error details for debugging
         logger.error(JSON.stringify(errorBody, null, 2));
+        logger.error(statusCode);
         return res.sendEncoded(statusCode, {
-          error: error.message,
-          name: error.name,
+          error: error.name,
           details: error.message,
         });
       }
@@ -97,6 +97,15 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
           error: error.message,
           name: error.name,
           details: error.message,
+        });
+      }
+
+      // If it's an http error from EBE, throw the error upstream
+      if (error instanceof DecodeError) {
+        const statusCode =
+          typeof error.decodedResponse.status === 'number' ? error.decodedResponse.status : 500;
+        return res.sendEncoded(statusCode, {
+          ...error.decodedResponse.body,
         });
       }
 

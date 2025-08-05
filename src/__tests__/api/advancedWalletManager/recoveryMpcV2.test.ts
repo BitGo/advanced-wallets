@@ -155,7 +155,9 @@ describe('recoveryMpcV2', async () => {
 
     signatureResponse.status.should.equal(400);
     signatureResponse.body.should.have.property('error');
-    signatureResponse.body.error.should.startWith(
+    signatureResponse.body.error.should.equal('BadRequestError');
+    signatureResponse.body.should.have.property('details');
+    signatureResponse.body.details.should.startWith(
       'Failed to construct eth transaction from message hex',
     );
   });

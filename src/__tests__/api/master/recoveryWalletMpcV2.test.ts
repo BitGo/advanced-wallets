@@ -202,7 +202,9 @@ describe('MBE mpcv2 recovery', () => {
 
     response.status.should.equal(422);
     response.body.should.have.property('error');
-    response.body.error.should.equal(
+    response.body.error.should.equal('ValidationError');
+    response.body.should.have.property('details');
+    response.body.details.should.equal(
       'ECDSA ETH-like recovery specific parameters are required for MPC recovery',
     );
   });

@@ -98,7 +98,17 @@ const ErrorResponse = t.type({
   details: t.string,
 });
 export const BadRequestResponse = { 400: ErrorResponse };
+export const NotFoundResponse = { 404: ErrorResponse };
+export const ConflictErrorResponse = { 409: ErrorResponse };
 export const UnprocessableEntityResponse = { 422: ErrorResponse };
 export const InternalServerErrorResponse = { 500: ErrorResponse };
-export const NotFoundResponse = { 404: ErrorResponse };
 export const NotImplementedResponse = { 501: ErrorResponse };
+
+export const ErrorResponses = {
+  ...BadRequestResponse,
+  ...NotFoundResponse,
+  ...ConflictErrorResponse,
+  ...UnprocessableEntityResponse,
+  ...InternalServerErrorResponse,
+  ...NotImplementedResponse,
+};
