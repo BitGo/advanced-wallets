@@ -72,6 +72,25 @@ export class KmsClient {
     }
   }
 
+  private checkServerRunning(error: any): void {
+    // Check for specific connection errors
+    if (
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ENOTFOUND' ||
+      error.code === 'ECONNRESET'
+    ) {
+      throw new Error(
+        'KMS API is not running or unreachable. Please check if the KMS service is available.',
+      );
+    }
+    if (error.code === 'ETIMEDOUT' || error.timeout) {
+      throw new Error('KMS API request timed out. The service may be overloaded or unreachable.');
+    }
+    if (error.status === 404) {
+      throw new Error('KMS API endpoint not found. Please verify the KMS URL configuration.');
+    }
+  }
+
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
     logger.info('Posting key to KMS with pub: %s and source: %s', params.pub, params.source);
 
@@ -82,7 +101,11 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error posting key to KMS');
+      logger.error('Error posting key to KMS', error);
+
+      this.checkServerRunning(error);
+
+      throw new Error(`Failed to post key to KMS: ${error.message}`);
     }
 
     // validate the response
@@ -113,8 +136,11 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      console.log('Error getting key from KMS:', error);
-      this.errorHandler(error, 'Error getting key from KMS');
+      logger.error('Error getting key from KMS', error);
+
+      this.checkServerRunning(error);
+
+      throw new Error(`Failed to get key from KMS: ${error.message}`);
     }
 
     // validate the response
@@ -142,7 +168,11 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error generating data key from KMS');
+      logger.error('Error generating data key from KMS when generating data key', error);
+
+      this.checkServerRunning(error);
+
+      throw new Error(`Failed to generate data key from KMS: ${error.message}`);
     }
 
     // validate the response
@@ -173,7 +203,11 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error decrypting data key from KMS');
+      logger.error('Error decrypting data key from KMS', error);
+
+      this.checkServerRunning(error);
+
+      throw new Error(`Failed to decrypt data key from KMS: ${error.message}`);
     }
 
     // validate the response

@@ -178,51 +178,6 @@ export interface SignMpcV2Round3Response {
 }
 
 export class AdvancedWalletManagerClient {
-  async recoveryMPC(params: {
-    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs | RecoveryTxRequest;
-    userPub: string;
-    backupPub: string;
-    apiKey: string;
-    coinSpecificParams?: Record<string, unknown>;
-    walletContractAddress: string;
-  }): Promise<SignedTransaction> {
-    if (!this.coin) {
-      throw new Error('Coin must be specified to recover MPC');
-    }
-
-    try {
-      logger.info('Recovering MPC for coin: %s', this.coin);
-
-      // Extract the required information from the sweep tx using our utility function
-      const tx = params.unsignedSweepPrebuildTx;
-      const { signableHex, derivationPath } = extractTransactionRequestInfo(tx);
-
-      const txRequest = {
-        unsignedTx: '',
-        signableHex,
-        derivationPath,
-      };
-
-      let request = this.apiClient['v1.mpc.recovery'].post({
-        coin: this.coin,
-        commonKeychain: params.userPub,
-        unsignedSweepPrebuildTx: {
-          txRequests: [txRequest],
-        },
-      });
-
-      if (this.tlsMode === TlsMode.MTLS) {
-        request = request.agent(this.createHttpsAgent());
-      }
-
-      const response = await request.decodeExpecting(200);
-      return response.body;
-    } catch (error) {
-      const err = error as Error;
-      logger.error('Failed to recover MPC: %s', err.message);
-      throw err;
-    }
-  }
   private readonly baseUrl: string;
   private readonly advancedWalletManagerCert: string;
   private readonly tlsKey?: string;
@@ -276,6 +231,77 @@ export class AdvancedWalletManagerClient {
     });
   }
 
+  private checkServerRunning(error: any): void {
+    // Check for specific connection errors
+    if (
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ENOTFOUND' ||
+      error.code === 'ECONNRESET'
+    ) {
+      throw new Error(
+        'Advanced Wallet Manager API is not running or unreachable. Please check if the service is available.',
+      );
+    }
+    if (error.code === 'ETIMEDOUT' || error.timeout) {
+      throw new Error(
+        'Advanced Wallet Manager API request timed out. The service may be overloaded or unreachable.',
+      );
+    }
+    if (error.status === 404) {
+      throw new Error(
+        'Advanced Wallet Manager API endpoint not found. Please verify the URL configuration.',
+      );
+    }
+  }
+
+  async recoveryMPC(params: {
+    unsignedSweepPrebuildTx: MPCTx | MPCSweepTxs | MPCTxs | RecoveryTxRequest;
+    userPub: string;
+    backupPub: string;
+    apiKey: string;
+    coinSpecificParams?: Record<string, unknown>;
+    walletContractAddress: string;
+  }): Promise<SignedTransaction> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to recover MPC');
+    }
+
+    try {
+      logger.info('Recovering MPC for coin: %s', this.coin);
+
+      // Extract the required information from the sweep tx using our utility function
+      const tx = params.unsignedSweepPrebuildTx;
+      const { signableHex, derivationPath } = extractTransactionRequestInfo(tx);
+
+      const txRequest = {
+        unsignedTx: '',
+        signableHex,
+        derivationPath,
+      };
+
+      let request = this.apiClient['v1.mpc.recovery'].post({
+        coin: this.coin,
+        commonKeychain: params.userPub,
+        unsignedSweepPrebuildTx: {
+          txRequests: [txRequest],
+        },
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      this.checkServerRunning(error);
+
+      const err = error as Error;
+      logger.error('Failed to recover MPC: %s', err.message);
+      throw err;
+    }
+  }
+
   /**
    * Create an independent multisig key for a given source and coin
    */
@@ -301,6 +327,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to create independent keychain: %s',
         (error as DecodeError).decodedResponse.body,
@@ -333,6 +361,8 @@ export class AdvancedWalletManagerClient {
 
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to sign multisig: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -356,6 +386,8 @@ export class AdvancedWalletManagerClient {
       logger.info('Advanced Wallet Manager ping successful');
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to ping Advanced Wallet Manager: %s',
         (error as DecodeError).decodedResponse.body,
@@ -381,6 +413,8 @@ export class AdvancedWalletManagerClient {
       logger.info('Successfully retrieved version information');
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to get version information: %s',
         (error as DecodeError).decodedResponse.body,
@@ -408,6 +442,8 @@ export class AdvancedWalletManagerClient {
 
       return res.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to recover multisig: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -439,6 +475,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to initialize MPC key generation: %s',
         (error as DecodeError).decodedResponse.body,
@@ -487,6 +525,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to finalize MPC key generation: %s',
         (error as DecodeError).decodedResponse.body,
@@ -513,6 +553,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to sign mpc commitment: %s',
         (error as DecodeError).decodedResponse.body,
@@ -539,6 +581,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to sign mpc r-share: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -562,6 +606,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to sign mpc g-share: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -591,6 +637,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to initialize MPCv2 key generation: %s',
         (error as DecodeError).decodedResponse.body,
@@ -630,6 +678,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to execute MPCv2 round: %s',
         (error as DecodeError).decodedResponse.body,
@@ -666,6 +716,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to finalize MPCv2 key generation: %s',
         (error as DecodeError).decodedResponse.body,
@@ -701,6 +753,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to sign MPCv2 round 1: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -733,6 +787,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to sign MPCv2 round 2: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -765,6 +821,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
+      this.checkServerRunning(error);
+
       logger.error('Failed to sign MPCv2 round 3: %s', (error as DecodeError).decodedResponse.body);
       throw error;
     }
@@ -792,6 +850,8 @@ export class AdvancedWalletManagerClient {
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error: any) {
+      this.checkServerRunning(error);
+
       logger.error(
         'Failed to recover MPCv2 wallet: %s',
         (error as DecodeError).decodedResponse.body,
