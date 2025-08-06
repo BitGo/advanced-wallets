@@ -260,7 +260,7 @@ export class AdvancedWalletManagerClient {
     // Build the type-safe API client
     this.apiClient = buildApiClient(requestFactory, AdvancedWalletManagerApiSpec);
 
-    logger.info('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
+    logger.info('Advanced Wallet Manager initialized with URL: %s', this.baseUrl);
   }
 
   private createHttpsAgent(): https.Agent {
@@ -344,7 +344,7 @@ export class AdvancedWalletManagerClient {
    */
   async ping(): Promise<PingResponseType> {
     try {
-      logger.info('Pinging enclaved express service at: %s', this.baseUrl);
+      logger.info('Pinging Advanced Wallet Manager at: %s', this.baseUrl);
       let request = this.apiClient['v1.health.ping'].post({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -353,11 +353,11 @@ export class AdvancedWalletManagerClient {
 
       const response = await request.decodeExpecting(200);
 
-      logger.info('Enclaved express service ping successful');
+      logger.info('Advanced Wallet Manager ping successful');
       return response.body;
     } catch (error) {
       logger.error(
-        'Failed to ping enclaved express service: %s',
+        'Failed to ping Advanced Wallet Manager: %s',
         (error as DecodeError).decodedResponse.body,
       );
       throw error;
@@ -369,7 +369,7 @@ export class AdvancedWalletManagerClient {
    */
   async getVersion(): Promise<VersionResponseType> {
     try {
-      logger.info('Getting version information from enclaved express service');
+      logger.info('Getting version information from Advanced Wallet Manager');
       let request = this.apiClient['v1.health.version'].get({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -812,7 +812,7 @@ export function createawmClient(
     return new AdvancedWalletManagerClient(cfg, coin);
   } catch (error) {
     const err = error as Error;
-    logger.error('Failed to create enclaved express client: %s', err.message);
+    logger.error('Failed to create advanced wallet manager client: %s', err.message);
     return undefined;
   }
 }

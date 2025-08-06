@@ -29,7 +29,7 @@ describe('MPC Finalize', () => {
       httpLoggerFile: '',
       kmsUrl: kmsUrl,
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     app = enclavedApp(cfg);
