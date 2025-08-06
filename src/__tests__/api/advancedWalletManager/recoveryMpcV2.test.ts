@@ -86,12 +86,12 @@ describe('recoveryMpcV2', async () => {
     // nocks for KMS responses
     const userKmsNock = nock(kmsUrl)
       .get(`/key/${input.pub}`)
-      .query({ source: 'user', useLocalEncipherment: false })
+      .query({ source: 'user' })
       .reply(200, mockKmsUserResponse)
       .persist();
     const backupKmsNock = nock(kmsUrl)
       .get(`/key/${input.pub}`)
-      .query({ source: 'backup', useLocalEncipherment: false })
+      .query({ source: 'backup' })
       .reply(200, mockKmsBackupResponse)
       .persist();
 
@@ -139,13 +139,10 @@ describe('recoveryMpcV2', async () => {
     };
 
     // nocks for KMS responses
+    nock(kmsUrl).get(`/key/${input.pub}`).query({ source: 'user' }).reply(200, mockKmsUserResponse);
     nock(kmsUrl)
       .get(`/key/${input.pub}`)
-      .query({ source: 'user', useLocalEncipherment: false })
-      .reply(200, mockKmsUserResponse);
-    nock(kmsUrl)
-      .get(`/key/${input.pub}`)
-      .query({ source: 'backup', useLocalEncipherment: false })
+      .query({ source: 'backup' })
       .reply(200, mockKmsBackupResponse);
 
     const signatureResponse = await agent

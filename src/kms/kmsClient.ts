@@ -108,7 +108,6 @@ export class KmsClient {
     try {
       let req = superagent.get(`${this.url}/key/${params.pub}`).query({
         source: params.source,
-        useLocalEncipherment: params.options?.useLocalEncipherment ?? false,
       });
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;

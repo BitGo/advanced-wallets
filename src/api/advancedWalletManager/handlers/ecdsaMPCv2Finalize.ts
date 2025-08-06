@@ -65,9 +65,6 @@ export async function ecdsaMPCv2Finalize(
     pub: commonKeychain,
     prv: privateMaterial.toString('base64'),
     type: 'tss',
-    options: {
-      useLocalEncipherment: true,
-    },
   });
 
   return {
