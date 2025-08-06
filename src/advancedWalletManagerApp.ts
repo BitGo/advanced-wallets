@@ -34,6 +34,7 @@ export function startup(config: AdvancedWalletManagerConfig, baseUri: string): (
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
     logger.info(`KMS URL: ${config.kmsUrl}`);
+    logger.info(`Recovery Mode: ${config.recoveryMode}`);
     logger.info('Advanced Wallet Manager started successfully');
   };
 }

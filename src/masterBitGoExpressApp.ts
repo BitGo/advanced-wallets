@@ -27,6 +27,7 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
     logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
+    logger.info(`Recovery Mode: ${config.recoveryMode}`);
     logger.info(`Advanced Wallet Manager URL: ${config.advancedWalletManagerUrl}`);
     logger.info('Master Express server started successfully');
   };
