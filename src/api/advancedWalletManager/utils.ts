@@ -1,4 +1,7 @@
 import { createMessage, decrypt, encrypt, readKey, readMessage, readPrivateKey } from 'openpgp';
+import { BaseCoin, type EddsaUtils, Eddsa, EDDSA } from '@bitgo-beta/sdk-core';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import * as bitgoSdk from '@bitgo-beta/sdk-core';
 
 import { KmsClient } from '../../kms/kmsClient';
 import { GenerateDataKeyResponse } from '../../kms/types/dataKey';
@@ -119,4 +122,24 @@ export function checkRecoveryMode(config: AdvancedWalletManagerConfig) {
       'Recovery operations are not enabled. The server must be in recovery mode to perform this action.',
     );
   }
+}
+
+export async function verifyWalletSignatures({
+  bitgo,
+  coin,
+  verifySignatures,
+}: {
+  bitgo: BitGoAPI;
+  coin: BaseCoin;
+  verifySignatures: Parameters<EddsaUtils['verifyWalletSignatures']>;
+}) {
+  const eddsaUtils = new bitgoSdk.EddsaUtils(bitgo, coin);
+  return eddsaUtils.verifyWalletSignatures(...verifySignatures);
+}
+
+export async function eddsaKeyCombine(
+  params: Parameters<Eddsa['keyCombine']>,
+): Promise<EDDSA.KeyCombine> {
+  const eddsa = await bitgoSdk.Eddsa.initialize();
+  return eddsa.keyCombine(...params);
 }

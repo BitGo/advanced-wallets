@@ -8,6 +8,7 @@ import {
   MpcInitializeRequestType,
 } from '../../advancedWalletManager/routers/advancedWalletManagerApiSpec';
 import { gpgEncrypt } from './utils';
+import { BadRequestError } from '../../shared/errors';
 
 const debugLogger = debug('bitgo:awm:mpcInitialize');
 
@@ -17,7 +18,7 @@ export async function eddsaInitialize(
   // request parsing. counterPartyGpgPub can be undefined
   const { source, bitgoGpgPub, counterPartyGpgPub }: MpcInitializeRequestType = req.decoded;
   if (source === 'backup' && !counterPartyGpgPub) {
-    throw new Error('gpgKey is required on backup key share generation');
+    throw new BadRequestError('gpgKey is required on backup key share generation');
   }
 
   // setup clients

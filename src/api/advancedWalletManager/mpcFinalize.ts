@@ -6,7 +6,7 @@ import {
   MpcFinalizeRequestType,
 } from '../../advancedWalletManager/routers/advancedWalletManagerApiSpec';
 import { KmsClient } from '../../kms/kmsClient';
-import { gpgDecrypt, gpgEncrypt } from './utils';
+import { eddsaKeyCombine, gpgDecrypt, gpgEncrypt, verifyWalletSignatures } from './utils';
 import coinFactory from '../../shared/coinFactory';
 
 const debugLogger = debug('bitgo:advancedWalletManager:mpcFinalize');
@@ -25,9 +25,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
 
   // setup clients
   const kms = new KmsClient(req.config);
-  const MPC = await bitgoSdk.Eddsa.initialize();
   const coinInstance = await coinFactory.getCoin(coin, req.bitgo);
-  const eddsaUtils = new bitgoSdk.EddsaUtils(req.bitgo, coinInstance);
 
   // indexes
   const sourceIndex = source === 'user' ? 1 : 2;
@@ -42,7 +40,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
       password: decryptedDataKey.plaintextKey,
     }),
   );
-  debugLogger('Decrypted previous state:', previousState);
+
   const { sourceGpgPub, sourceGpgPrv, sourcePrivateShare } = previousState;
   let sourceToCounterPartyKeyShare = previousState.counterPartyKeyShare;
 
@@ -58,13 +56,21 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
     sourceGpgPrv,
   );
 
-  await eddsaUtils.verifyWalletSignatures(
-    source === 'user' ? sourceGpgPub : counterPartyGpgPub,
-    source === 'user' ? counterPartyGpgPub : sourceGpgPub,
-    bitgoKeyChain,
-    bitgoToSourcePrivateShare,
-    sourceIndex,
-  );
+  await verifyWalletSignatures({
+    bitgo: req.bitgo,
+    coin: coinInstance,
+    verifySignatures: [
+      source === 'user' ? sourceGpgPub : counterPartyGpgPub,
+      source === 'user' ? counterPartyGpgPub : sourceGpgPub,
+      bitgoKeyChain,
+      bitgoToSourcePrivateShare,
+      sourceIndex,
+      {
+        env: req.bitgo.env,
+        pubKeyType: 'onprem',
+      },
+    ],
+  });
 
   // construct yShare and key
   const bitgoToSourceYShare = {
@@ -80,6 +86,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
     counterPartyToSourceKeyShare.privateShare,
     sourceGpgPrv,
   );
+
   const counterPartyToSourceYShare = {
     i: sourceIndex, // to whom
     j: counterPartyIndex, // from whom
@@ -89,17 +96,10 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
     chaincode: counterPartyToSourcePrivateShare.slice(64),
   };
 
-  // Log the constructed keychain for verification
-  debugLogger('Constructed keychain:', {
-    sourcePrivateShare,
-    bitgoToSourceKeyShare,
-    counterPartyToSourceKeyShare,
-    commonKeychain: bitgoKeyChain.commonKeychain,
-  });
   try {
-    const combinedKey = MPC.keyCombine(sourcePrivateShare, [
-      bitgoToSourceYShare,
-      counterPartyToSourceYShare,
+    const combinedKey = await eddsaKeyCombine([
+      sourcePrivateShare,
+      [bitgoToSourceYShare, counterPartyToSourceYShare],
     ]);
 
     // check common keyChain

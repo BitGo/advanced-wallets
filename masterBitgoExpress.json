@@ -1347,6 +1347,9 @@
           "details": {
             "type": "string",
             "description": "Error details"
+          },
+          "stack": {
+            "type": "string"
           }
         },
         "required": [
