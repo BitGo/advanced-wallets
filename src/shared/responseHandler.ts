@@ -1,5 +1,5 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
-import { Config } from '../shared/types';
+import { AppMode, Config } from '../shared/types';
 import { BitGoRequest } from '../types/request';
 import { ApiResponseError, AdvancedWalletManagerError } from '../errors';
 import {
@@ -33,6 +33,30 @@ export type ServiceFunction<T extends Config = Config> = (
 ) => Promise<ApiResponse> | ApiResponse;
 
 /**
+ * Check for specific API connection errors and throw appropriate messages
+ */
+function checkApiServerRunning(req: BitGoRequest, error: any): void {
+  const config = req.config;
+  const isMbe = config.appMode === AppMode.MASTER_EXPRESS;
+
+  if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ECONNRESET') {
+    throw new Error(
+      `${
+        isMbe ? 'Advanced Wallet Manager' : 'KMS'
+      } API service is not running or unreachable. Please check if the service is available.`,
+    );
+  }
+
+  if (error.code === 'ETIMEDOUT' || error.timeout) {
+    throw new Error(
+      `${
+        isMbe ? 'Advanced Wallet Manager' : 'KMS'
+      } API request timed out. The service may be overloaded or unreachable.`,
+    );
+  }
+}
+
+/**
  * Wraps a service function to handle Response objects and errors consistently
  * @param fn Service function that returns a Response object
  * @returns Express middleware function that handles the response encoding
@@ -43,6 +67,21 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       const result = await fn(req as BitGoRequest<T>, res, next);
       return res.sendEncoded(result.type, result.payload);
     } catch (error) {
+      // Check for API connection errors first, but don't throw if it's not a connection issue
+      try {
+        checkApiServerRunning(req as BitGoRequest, error);
+      } catch (connectionError) {
+        // If checkApiServerRunning throws, use that error message
+        const errorBody = {
+          error: 'Internal Server Error',
+          name: 'ConnectionError',
+          details:
+            connectionError instanceof Error ? connectionError.message : String(connectionError),
+        };
+        logger.error('API Connection Error: %s', errorBody.details);
+        return res.sendEncoded(500, errorBody);
+      }
+
       // If it's already a Response object (e.g. from Response.error)
       if (error && typeof error === 'object' && 'type' in error && 'payload' in error) {
         const apiError = error as ApiResponse;

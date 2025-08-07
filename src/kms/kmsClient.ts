@@ -55,7 +55,9 @@ export class KmsClient {
   private errorHandler(error: superagent.ResponseError, errorLog: string) {
     logger.error(errorLog, error);
 
-    this.checkServerRunning(error);
+    if (['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'ETIMEDOUT'].includes((error as any).code)) {
+      throw error;
+    }
 
     switch (error.status) {
       case 400:
@@ -72,22 +74,6 @@ export class KmsClient {
             error.response?.body.message ? `: ${error.response?.body.message}` : ''
           }`,
         );
-    }
-  }
-
-  private checkServerRunning(error: any): void {
-    // Check for specific connection errors
-    if (
-      error.code === 'ECONNREFUSED' ||
-      error.code === 'ENOTFOUND' ||
-      error.code === 'ECONNRESET'
-    ) {
-      throw new Error(
-        'KMS API is not running or unreachable. Please check if the KMS service is available.',
-      );
-    }
-    if (error.code === 'ETIMEDOUT' || error.timeout) {
-      throw new Error('KMS API request timed out. The service may be overloaded or unreachable.');
     }
   }
 
@@ -135,8 +121,6 @@ export class KmsClient {
       kmsResponse = await req;
     } catch (error: any) {
       this.errorHandler(error, 'Error getting key from KMS');
-
-      throw new Error(`Failed to get key from KMS: ${error.message}`);
     }
 
     // validate the response
@@ -165,8 +149,6 @@ export class KmsClient {
       kmsResponse = await req;
     } catch (error: any) {
       this.errorHandler(error, 'Error generating data key from KMS');
-
-      throw new Error(`Failed to generate data key from KMS: ${error.message}`);
     }
 
     // validate the response
@@ -198,8 +180,6 @@ export class KmsClient {
       kmsResponse = await req;
     } catch (error: any) {
       this.errorHandler(error, 'Error decrypting data key from KMS');
-
-      throw new Error(`Failed to decrypt data key from KMS: ${error.message}`);
     }
 
     // validate the response
