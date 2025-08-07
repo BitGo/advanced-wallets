@@ -105,6 +105,8 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     kmsServerCaCertPath: readEnvVar('KMS_SERVER_CA_CERT_PATH'),
     kmsClientTlsKeyPath: readEnvVar('KMS_CLIENT_TLS_KEY_PATH'),
     kmsClientTlsCertPath: readEnvVar('KMS_CLIENT_TLS_CERT_PATH'),
+    kmsClientTlsKey: readEnvVar('KMS_CLIENT_TLS_KEY'),
+    kmsClientTlsCert: readEnvVar('KMS_CLIENT_TLS_CERT'),
     kmsServerCertAllowSelfSigned: readEnvVar('KMS_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
     // mTLS server settings
     serverTlsKeyPath: readEnvVar('SERVER_TLS_KEY_PATH'),
@@ -227,12 +229,13 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
       }
     }
 
-    // Fallback to server certs if client certs are not provided
-    if (!config.kmsClientTlsKey) {
-      config.kmsClientTlsKey = config.serverTlsKey;
-    }
-    if (!config.kmsClientTlsCert) {
-      config.kmsClientTlsCert = config.serverTlsCert;
+    // Validate that client certificates are provided for outbound mTLS connections
+    if (config.tlsMode === TlsMode.MTLS) {
+      if (!config.kmsClientTlsKey || !config.kmsClientTlsCert) {
+        throw new Error(
+          'KMS_CLIENT_TLS_KEY_PATH and KMS_CLIENT_TLS_CERT_PATH (or KMS_CLIENT_TLS_KEY and KMS_CLIENT_TLS_CERT) are required for outbound mTLS connections to KMS. Client certificates cannot reuse server certificates for security reasons.',
+        );
+      }
     }
 
     // Validate that certificates are properly loaded when TLS is enabled
@@ -310,6 +313,8 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     awmServerCaCertPath: awmServerCaCertPath,
     awmClientTlsKeyPath: readEnvVar('AWM_CLIENT_TLS_KEY_PATH'),
     awmClientTlsCertPath: readEnvVar('AWM_CLIENT_TLS_CERT_PATH'),
+    awmClientTlsKey: readEnvVar('AWM_CLIENT_TLS_KEY'),
+    awmClientTlsCert: readEnvVar('AWM_CLIENT_TLS_CERT'),
     awmServerCertAllowSelfSigned,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS server settings
@@ -468,12 +473,13 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 
   logger.info('==========================');
 
-  // Fallback to server certs if client certs are not provided
-  if (!config.awmClientTlsKey) {
-    config.awmClientTlsKey = config.serverTlsKey;
-  }
-  if (!config.awmClientTlsCert) {
-    config.awmClientTlsCert = config.serverTlsCert;
+  // Validate that client certificates are provided for outbound mTLS connections
+  if (config.tlsMode === TlsMode.MTLS) {
+    if (!config.awmClientTlsKey || !config.awmClientTlsCert) {
+      throw new Error(
+        'AWM_CLIENT_TLS_KEY_PATH and AWM_CLIENT_TLS_CERT_PATH (or AWM_CLIENT_TLS_KEY and AWM_CLIENT_TLS_CERT) are required for outbound mTLS connections to Advanced Wallet Manager. Client certificates cannot reuse server certificates for security reasons.',
+      );
+    }
   }
 
   // Validate Master Express configuration

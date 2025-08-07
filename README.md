@@ -76,7 +76,7 @@ Both modes use the same TLS configuration variables:
 - `AWM_SERVER_CA_CERT_PATH` - Path to the CA certificate to verify the AWM server (required when TLS_MODE=mtls)
 - `AWM_SERVER_CA_CERT` - The CA certificate as a string (alternative to `_PATH`)
 - `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from the AWM (default: false)
-- **Fallback:** If client certs are not provided, `SERVER_TLS_KEY_PATH` and `SERVER_TLS_CERT_PATH` are used
+- **Required:** Client certificates must be explicitly provided for outbound mTLS connections
 
 #### Outbound mTLS to KMS (AWM Mode only)
 
@@ -87,7 +87,7 @@ Both modes use the same TLS configuration variables:
 - `KMS_SERVER_CA_CERT_PATH` - Path to the CA certificate to verify the KMS server (required when TLS_MODE=mtls)
 - `KMS_SERVER_CA_CERT` - The CA certificate as a string (alternative to `_PATH`)
 - `KMS_SERVER_CERT_ALLOW_SELF_SIGNED` - Allow self-signed certificates from the KMS (default: false)
-- **Fallback:** If client certs are not provided, `SERVER_TLS_KEY_PATH` and `SERVER_TLS_CERT_PATH` are used
+- **Required:** Client certificates must be explicitly provided for outbound mTLS connections
 
 ### Logging and Debug
 
@@ -175,6 +175,8 @@ export MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456...
 npm start
 ```
 
+**Note:** Client certificates for outbound connections must be separate from server certificates for security reasons.
+
 #### Master Express (Production)
 
 ```bash
@@ -189,6 +191,8 @@ export AWM_SERVER_CA_CERT_PATH=/secure/path/awm-ca.crt
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 npm start
 ```
+
+**Note:** Client certificates for outbound connections must be separate from server certificates for security reasons.
 
 ## Container Deployment with Podman
 

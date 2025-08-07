@@ -11,6 +11,10 @@ describe('Configuration', () => {
   const originalEnv = process.env;
   const mockTlsKey = '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----';
   const mockTlsCert = '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----';
+  const mockClientTlsKey =
+    '-----BEGIN PRIVATE KEY-----\nMOCK_CLIENT_KEY\n-----END PRIVATE KEY-----';
+  const mockClientTlsCert =
+    '-----BEGIN CERTIFICATE-----\nMOCK_CLIENT_CERT\n-----END CERTIFICATE-----';
 
   beforeEach(() => {
     // Reset to original environment and clear all relevant variables
@@ -39,6 +43,16 @@ describe('Configuration', () => {
     delete process.env.BITGO_CUSTOM_BITCOIN_NETWORK;
     delete process.env.SERVER_TLS_KEY_PATH;
     delete process.env.SERVER_TLS_CERT_PATH;
+    delete process.env.KMS_CLIENT_TLS_KEY;
+    delete process.env.KMS_CLIENT_TLS_CERT;
+    delete process.env.KMS_CLIENT_TLS_KEY_PATH;
+    delete process.env.KMS_CLIENT_TLS_CERT_PATH;
+    delete process.env.AWM_CLIENT_TLS_KEY;
+    delete process.env.AWM_CLIENT_TLS_CERT;
+    delete process.env.AWM_CLIENT_TLS_KEY_PATH;
+    delete process.env.AWM_CLIENT_TLS_CERT_PATH;
+    delete process.env.KMS_SERVER_CA_CERT_PATH;
+    delete process.env.RECOVERY_MODE;
   });
 
   after(() => {
@@ -67,6 +81,8 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
         'mocks/certs/test-ssl-cert.pem',
@@ -89,6 +105,8 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
         'mocks/certs/test-ssl-cert.pem',
@@ -107,6 +125,8 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.RECOVERY_MODE = 'true';
       process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
@@ -120,6 +140,8 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
         'mocks/certs/test-ssl-cert.pem',
@@ -167,6 +189,8 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
       process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
@@ -226,6 +250,8 @@ describe('Configuration', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.HTTP_LOGFILE = '/tmp/test-http-access.log';
       process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
@@ -258,6 +284,8 @@ describe('Configuration', () => {
       );
       process.env.SERVER_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
       process.env.SERVER_TLS_KEY_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-key.pem');
+      process.env.AWM_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.AWM_CLIENT_TLS_CERT = mockClientTlsCert;
     });
 
     it('should use default configuration when minimal environment variables are set', () => {
