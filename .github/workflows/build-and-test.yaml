@@ -132,8 +132,8 @@ jobs:
         run: npm test
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
-          MASTER_BITGO_EXPRESS_KEYPATH: ./test-ssl-key.pem
-          MASTER_BITGO_EXPRESS_CRTPATH: ./test-ssl-cert.pem
+          MASTER_BITGO_EXPRESS_KEYPATH: ./demo.key
+          MASTER_BITGO_EXPRESS_CRTPATH: ./demo.crt
           MTLS_ENABLED: true
           MTLS_REQUEST_CERT: true
           MTLS_REJECT_UNAUTHORIZED: false
