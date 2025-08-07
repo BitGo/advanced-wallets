@@ -24,11 +24,29 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
   return () => {
     logger.info('Master Express server starting...');
     logger.info(`Base URI: ${baseUri}`);
-    logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
     logger.info(`Recovery Mode: ${config.recoveryMode}`);
     logger.info(`Advanced Wallet Manager URL: ${config.advancedWalletManagerUrl}`);
+
+    // mTLS Configuration Section
+    logger.info('=== mTLS Configuration ===');
+    logger.info(`TLS Mode: ${config.tlsMode}`);
+    if (config.tlsMode === 'mtls') {
+      logger.info('Server Settings (incoming connections):');
+      logger.info(`  • Allow Self-Signed Client Certificates: ${config.clientCertAllowSelfSigned}`);
+      if (config.mtlsAllowedClientFingerprints && config.mtlsAllowedClientFingerprints.length > 0) {
+        logger.info(
+          `  • Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.join(', ')}`,
+        );
+      }
+      logger.info('Client Settings (outbound to AWM):');
+      logger.info(
+        `  • Allow Self-Signed AWM Server Certiicates: ${config.awmServerCertAllowSelfSigned}`,
+      );
+    }
+    logger.info('========================');
+
     logger.info('Master Express server started successfully');
   };
 }

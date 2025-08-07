@@ -260,7 +260,7 @@ export class AdvancedWalletManagerClient {
     // Build the type-safe API client
     this.apiClient = buildApiClient(requestFactory, AdvancedWalletManagerApiSpec);
 
-    logger.info('Advanced Wallet Manager initialized with URL: %s', this.baseUrl);
+    logger.info('✓ AWM Client initialized with URL: %s', this.baseUrl);
   }
 
   private createHttpsAgent(): https.Agent {

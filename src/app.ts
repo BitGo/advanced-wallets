@@ -1,7 +1,7 @@
 import { determineAppMode } from './initConfig';
 import { AppMode } from './shared/types';
 import * as advancedWalletManagerApp from './advancedWalletManagerApp';
-import * as masterExpressApp from './masterBitGoExpressApp';
+import * as masterBitGoExpressApp from './masterBitGoExpressApp';
 import logger from './logger';
 
 /**
@@ -15,11 +15,11 @@ export async function init(): Promise<void> {
     await advancedWalletManagerApp.init();
   } else if (appMode === AppMode.MASTER_EXPRESS) {
     logger.info('Starting in Master Express mode...');
-    await masterExpressApp.init();
+    await masterBitGoExpressApp.init();
   } else {
     throw new Error(`Unknown app mode: ${appMode}`);
   }
 }
 
 // Export the individual app modules for direct access if needed
-export { advancedWalletManagerApp, masterExpressApp };
+export { advancedWalletManagerApp, masterBitGoExpressApp };

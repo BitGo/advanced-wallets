@@ -161,19 +161,22 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
   const env = advancedWalletManagerEnvConfig();
   let config = mergeAkmConfigs(env);
 
+  // Certificate Loading Section
+  logger.info('=== Certificate Loading ===');
+
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
     // Handle file loading for TLS certificates
     if (!config.serverTlsKey && config.serverTlsKeyPath) {
       try {
         config = { ...config, serverTlsKey: fs.readFileSync(config.serverTlsKeyPath, 'utf-8') };
-        logger.info(`Successfully loaded TLS private key from file: ${config.serverTlsKeyPath}`);
+        logger.info(`✓ TLS private key loaded from file: ${config.serverTlsKeyPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read TLS key from serverTlsKeyPath: ${err.message}`);
       }
     } else if (config.serverTlsKey) {
-      logger.info('Using TLS private key from environment variable');
+      logger.info('✓ TLS private key loaded from environment variable');
     }
 
     if (!config.serverTlsCert && config.serverTlsCertPath) {
@@ -182,13 +185,13 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
           ...config,
           serverTlsCert: fs.readFileSync(config.serverTlsCertPath, 'utf-8'),
         };
-        logger.info(`Successfully loaded TLS certificate from file: ${config.serverTlsCertPath}`);
+        logger.info(`✓ TLS certificate loaded from file: ${config.serverTlsCertPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read TLS certificate from serverTlsCertPath: ${err.message}`);
       }
     } else if (config.serverTlsCert) {
-      logger.info('Using TLS certificate from environment variable');
+      logger.info('✓ TLS certificate loaded from environment variable');
     }
 
     if (!config.kmsServerCaCertPath) {
@@ -197,9 +200,7 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
     if (config.kmsServerCaCertPath) {
       try {
         config.kmsServerCaCert = fs.readFileSync(config.kmsServerCaCertPath, 'utf-8');
-        logger.info(
-          `Successfully loaded KMS TLS certificate from file: ${config.kmsServerCaCertPath}`,
-        );
+        logger.info(`✓ KMS server CA certificate loaded from file: ${config.kmsServerCaCertPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read KMS TLS certificate from kmsTlsCert: ${err.message}`);
@@ -209,7 +210,7 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
     if (config.kmsClientTlsKeyPath) {
       try {
         config.kmsClientTlsKey = fs.readFileSync(config.kmsClientTlsKeyPath, 'utf-8');
-        logger.info(`Successfully loaded KMS client key from file: ${config.kmsClientTlsKeyPath}`);
+        logger.info(`✓ KMS client key loaded from file: ${config.kmsClientTlsKeyPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read KMS client key from kmsClientTlsKeyPath: ${err.message}`);
@@ -219,9 +220,7 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
     if (config.kmsClientTlsCertPath) {
       try {
         config.kmsClientTlsCert = fs.readFileSync(config.kmsClientTlsCertPath, 'utf-8');
-        logger.info(
-          `Successfully loaded KMS client cert from file: ${config.kmsClientTlsCertPath}`,
-        );
+        logger.info(`✓ KMS client certificate loaded from file: ${config.kmsClientTlsCertPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read KMS client cert from kmsClientTlsCertPath: ${err.message}`);
@@ -239,6 +238,8 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
     // Validate that certificates are properly loaded when TLS is enabled
     validateTlsCertificates(config);
   }
+
+  logger.info('==========================');
 
   return config;
 }
@@ -385,19 +386,22 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   }
   config = { ...config, ...updates };
 
+  // Certificate Loading Section
+  logger.info('=== Certificate Loading ===');
+
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
     // Handle file loading for TLS certificates
     if (!config.serverTlsKey && config.serverTlsKeyPath) {
       try {
         config = { ...config, serverTlsKey: fs.readFileSync(config.serverTlsKeyPath, 'utf-8') };
-        logger.info(`Successfully loaded TLS private key from file: ${config.serverTlsKeyPath}`);
+        logger.info(`✓ TLS private key loaded from file: ${config.serverTlsKeyPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read TLS key from serverTlsKeyPath: ${err.message}`);
       }
     } else if (config.serverTlsKey) {
-      logger.info('Using TLS private key from environment variable');
+      logger.info('✓ TLS private key loaded from environment variable');
     }
 
     if (!config.serverTlsCert && config.serverTlsCertPath) {
@@ -406,13 +410,13 @@ export function configureMasterExpressMode(): MasterExpressConfig {
           ...config,
           serverTlsCert: fs.readFileSync(config.serverTlsCertPath, 'utf-8'),
         };
-        logger.info(`Successfully loaded TLS certificate from file: ${config.serverTlsCertPath}`);
+        logger.info(`✓ TLS certificate loaded from file: ${config.serverTlsCertPath}`);
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
         throw new Error(`Failed to read TLS certificate from serverTlsCertPath: ${err.message}`);
       }
     } else if (config.serverTlsCert) {
-      logger.info('Using TLS certificate from environment variable');
+      logger.info('✓ TLS certificate loaded from environment variable');
     }
 
     // Validate that certificates are properly loaded when TLS is enabled
@@ -428,7 +432,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
           awmServerCaCert: fs.readFileSync(config.awmServerCaCertPath, 'utf-8'),
         };
         logger.info(
-          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.awmServerCaCertPath?.substring(
+          `✓ AWM server CA certificate loaded from file: ${config.awmServerCaCertPath?.substring(
             0,
             50,
           )}...`,
@@ -445,7 +449,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   if (config.awmClientTlsKeyPath) {
     try {
       config.awmClientTlsKey = fs.readFileSync(config.awmClientTlsKeyPath, 'utf-8');
-      logger.info(`Successfully loaded AWM client key from file: ${config.awmClientTlsKeyPath}`);
+      logger.info(`✓ AWM client key loaded from file: ${config.awmClientTlsKeyPath}`);
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
       throw new Error(`Failed to read AWM client key from awmClientTlsKeyPath: ${err.message}`);
@@ -455,12 +459,14 @@ export function configureMasterExpressMode(): MasterExpressConfig {
   if (config.awmClientTlsCertPath) {
     try {
       config.awmClientTlsCert = fs.readFileSync(config.awmClientTlsCertPath, 'utf-8');
-      logger.info(`Successfully loaded AWM client cert from file: ${config.awmClientTlsCertPath}`);
+      logger.info(`✓ AWM client certificate loaded from file: ${config.awmClientTlsCertPath}`);
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
       throw new Error(`Failed to read AWM client cert from awmClientTlsCertPath: ${err.message}`);
     }
   }
+
+  logger.info('==========================');
 
   // Fallback to server certs if client certs are not provided
   if (!config.awmClientTlsKey) {
