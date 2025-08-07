@@ -55,8 +55,7 @@ describe('MBE mpcv2 recovery', () => {
     nock.cleanAll();
   });
 
-  // TODO(WP-5494): Re-enable this once eth recoveries are fixed for Hoodi
-  xit('should recover a HETH (an eth-like) wallet by calling the advanced wallet manager service', async () => {
+  it('should recover a HETH (an eth-like) wallet by calling the advanced wallet manager service', async () => {
     const etherscanTxlistNock = nock('https://api.etherscan.io')
       .get(
         `/v2/api?chainid=560048&module=account&action=txlist&address=0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8&apikey=etherscan-api-key`,

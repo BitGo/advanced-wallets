@@ -68,7 +68,7 @@ export function getReplayProtectionOptions(
 ): ReplayProtectionOptions {
   return (
     replayProtectionOptions ?? {
-      chain: env === 'prod' ? 1 : 17000,
+      chain: env === 'prod' ? 1 : 560048,
       hardfork: 'london',
     }
   );
