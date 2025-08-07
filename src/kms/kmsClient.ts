@@ -88,8 +88,6 @@ export class KmsClient {
       kmsResponse = await req;
     } catch (error: any) {
       this.errorHandler(error, 'Error posting key to KMS');
-
-      throw new Error(`Failed to post key to KMS: ${error.message}`);
     }
 
     // validate the response
