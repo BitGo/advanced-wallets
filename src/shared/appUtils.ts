@@ -124,7 +124,7 @@ export async function prepareIpc(ipcSocketFilePath: string): Promise<void> {
  */
 export function createMtlsMiddleware(config: {
   tlsMode: TlsMode;
-  allowSelfSigned?: boolean;
+  clientCertAllowSelfSigned?: boolean;
   mtlsAllowedClientFingerprints?: string[];
 }): express.RequestHandler {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -146,7 +146,7 @@ export function createMtlsMiddleware(config: {
     // If client cert is provided, validate it
     if (hasValidClientCert) {
       // Check if self-signed certificates are allowed
-      if (!config.allowSelfSigned && clientCert.issuer.CN === clientCert.subject.CN) {
+      if (!config.clientCertAllowSelfSigned && clientCert.issuer.CN === clientCert.subject.CN) {
         return res.status(403).json({
           error: 'mTLS Authentication Failed',
           message: 'Self-signed certificates are not allowed',

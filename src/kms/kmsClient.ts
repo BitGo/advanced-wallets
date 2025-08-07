@@ -35,11 +35,12 @@ export class KmsClient {
     const kmsUrlObj = new URL(cfg.kmsUrl);
     if (cfg.tlsMode === TlsMode.MTLS) {
       kmsUrlObj.protocol = 'https:';
-      if (cfg.kmsTlsCert) {
+      if (cfg.kmsTlsCert || cfg.kmsServerCertAllowSelfSigned) {
         this.agent = new https.Agent({
           ca: cfg.kmsTlsCert,
           cert: cfg.tlsCert,
           key: cfg.tlsKey,
+          rejectUnauthorized: !cfg.kmsServerCertAllowSelfSigned,
         });
       }
     } else {

@@ -37,7 +37,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
       recoveryMode: true,
     };
     const app = expressApp(config);

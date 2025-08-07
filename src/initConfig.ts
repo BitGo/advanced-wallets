@@ -61,7 +61,7 @@ const advancedWalletManagerConfig: AdvancedWalletManagerConfig = {
   httpLoggerFile: 'logs/http-access.log',
   kmsUrl: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
-  allowSelfSigned: false,
+  clientCertAllowSelfSigned: false,
 };
 
 function determineTlsMode(): TlsMode {
@@ -103,6 +103,7 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     // KMS settings
     kmsUrl,
     kmsTlsCertPath: readEnvVar('KMS_TLS_CERT_PATH'),
+    kmsServerCertAllowSelfSigned: readEnvVar('KMS_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
     crtPath: readEnvVar('TLS_CERT_PATH'),
@@ -110,7 +111,7 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     tlsCert: readEnvVar('TLS_CERT'),
     tlsMode: determineTlsMode(),
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
-    allowSelfSigned: readEnvVar('ALLOW_SELF_SIGNED') === 'true',
+    clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
   };
 }
@@ -137,13 +138,15 @@ function mergeAkmConfigs(
     headersTimeout: get('headersTimeout'),
     kmsUrl: get('kmsUrl'),
     kmsTlsCertPath: get('kmsTlsCertPath'),
+    kmsTlsCert: get('kmsTlsCert'),
+    kmsServerCertAllowSelfSigned: get('kmsServerCertAllowSelfSigned'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
     tlsKey: get('tlsKey'),
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
-    allowSelfSigned: get('allowSelfSigned'),
+    clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
   };
 }
@@ -215,7 +218,7 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   advancedWalletManagerUrl: '', // Will be overridden by environment variable
   advancedWalletManagerCert: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
-  allowSelfSigned: false,
+  clientCertAllowSelfSigned: false,
 };
 
 function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): string {
@@ -230,6 +233,7 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const advancedWalletManagerUrl = readEnvVar('ADVANCED_WALLET_MANAGER_URL');
   const advancedWalletManagerCert = readEnvVar('ADVANCED_WALLET_MANAGER_CERT');
+  const awmServerCertAllowSelfSigned = readEnvVar('AWM_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true';
   const tlsMode = determineTlsMode();
 
   if (!advancedWalletManagerUrl) {
@@ -243,8 +247,8 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   }
 
   // Debug mTLS environment variables
-  const allowSelfSignedRaw = readEnvVar('ALLOW_SELF_SIGNED');
-  const allowSelfSigned = allowSelfSignedRaw === 'true';
+  const clientCertAllowSelfSignedRaw = readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED');
+  const clientCertAllowSelfSigned = clientCertAllowSelfSignedRaw === 'true';
 
   return {
     appMode: AppMode.MASTER_EXPRESS,
@@ -262,6 +266,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
     advancedWalletManagerUrl: advancedWalletManagerUrl,
     advancedWalletManagerCert: advancedWalletManagerCert,
+    awmServerCertAllowSelfSigned,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS settings
     keyPath: readEnvVar('TLS_KEY_PATH'),
@@ -270,7 +275,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     tlsCert: readEnvVar('TLS_CERT'),
     tlsMode,
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
-    allowSelfSigned,
+    clientCertAllowSelfSigned,
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
   };
 }
@@ -301,6 +306,7 @@ function mergeMasterExpressConfigs(
     authVersion: get('authVersion'),
     advancedWalletManagerUrl: get('advancedWalletManagerUrl'),
     advancedWalletManagerCert: get('advancedWalletManagerCert'),
+    awmServerCertAllowSelfSigned: get('awmServerCertAllowSelfSigned'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     keyPath: get('keyPath'),
     crtPath: get('crtPath'),
@@ -308,7 +314,7 @@ function mergeMasterExpressConfigs(
     tlsCert: get('tlsCert'),
     tlsMode: get('tlsMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
-    allowSelfSigned: get('allowSelfSigned'),
+    clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
   };
 }
@@ -371,7 +377,7 @@ export function configureMasterExpressMode(): MasterExpressConfig {
           advancedWalletManagerCert: fs.readFileSync(config.advancedWalletManagerCert, 'utf-8'),
         };
         logger.info(
-          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.advancedWalletManagerCert.substring(
+          `Successfully loaded Advanced Wallet Manager certificate from file: ${config.advancedWalletManagerCert?.substring(
             0,
             50,
           )}...`,

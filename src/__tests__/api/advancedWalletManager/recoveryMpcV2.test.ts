@@ -62,7 +62,7 @@ describe('recoveryMpcV2', async () => {
       kmsUrl: kmsUrl,
       httpLoggerFile: '',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
       recoveryMode: true,
     };
 

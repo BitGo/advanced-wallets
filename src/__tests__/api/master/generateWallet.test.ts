@@ -50,7 +50,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     // Setup middleware stubs before creating app
@@ -1141,7 +1141,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       disableEnvCheck: true,
       authVersion: 2,
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     try {

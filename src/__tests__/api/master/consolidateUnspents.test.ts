@@ -51,7 +51,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
     };
 
     const app = expressApp(config);

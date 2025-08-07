@@ -36,7 +36,7 @@ describe('MBE mpcv2 recovery', () => {
       advancedWalletManagerUrl: advancedWalletManagerUrl,
       advancedWalletManagerCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
-      allowSelfSigned: true,
+      clientCertAllowSelfSigned: true,
       recoveryMode: true,
     };
 

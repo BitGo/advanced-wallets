@@ -227,7 +227,7 @@ export class AdvancedWalletManagerClient {
   private readonly advancedWalletManagerCert: string;
   private readonly tlsKey?: string;
   private readonly tlsCert?: string;
-  private readonly allowSelfSigned: boolean;
+  private readonly awmServerCertAllowSelfSigned: boolean;
   private readonly coin?: string;
   private readonly tlsMode: TlsMode;
 
@@ -239,16 +239,18 @@ export class AdvancedWalletManagerClient {
     }
     if (
       cfg.tlsMode === TlsMode.MTLS &&
-      (!cfg.tlsKey || !cfg.tlsCert || !cfg.advancedWalletManagerUrl)
+      (!cfg.tlsKey || !cfg.tlsCert || !cfg.advancedWalletManagerCert)
     ) {
-      throw new Error('tlsKey and tlsCert are required for mTLS communication');
+      throw new Error(
+        'tlsKey, tlsCert and advancedWalletManagerCert are required for mTLS communication',
+      );
     }
 
     this.baseUrl = cfg.advancedWalletManagerUrl;
-    this.advancedWalletManagerCert = cfg.advancedWalletManagerCert;
+    this.advancedWalletManagerCert = cfg.advancedWalletManagerCert as string;
     this.tlsKey = cfg.tlsKey;
     this.tlsCert = cfg.tlsCert;
-    this.allowSelfSigned = cfg.allowSelfSigned ?? false;
+    this.awmServerCertAllowSelfSigned = cfg.awmServerCertAllowSelfSigned ?? false;
     this.coin = coin;
     this.tlsMode = cfg.tlsMode;
 
@@ -258,7 +260,7 @@ export class AdvancedWalletManagerClient {
     // Build the type-safe API client
     this.apiClient = buildApiClient(requestFactory, AdvancedWalletManagerApiSpec);
 
-    logger.info('EnclavedExpressClient initialized with URL: %s', this.baseUrl);
+    logger.info('Advanced Wallet Manager initialized with URL: %s', this.baseUrl);
   }
 
   private createHttpsAgent(): https.Agent {
@@ -266,7 +268,7 @@ export class AdvancedWalletManagerClient {
       throw new Error('TLS key and certificate are required for HTTPS agent');
     }
     return new https.Agent({
-      rejectUnauthorized: !this.allowSelfSigned,
+      rejectUnauthorized: !this.awmServerCertAllowSelfSigned,
       ca: this.advancedWalletManagerCert,
       // Use Master Express's own certificate as client cert when connecting to Advanced Wallet Manager
       key: this.tlsKey,
@@ -342,7 +344,7 @@ export class AdvancedWalletManagerClient {
    */
   async ping(): Promise<PingResponseType> {
     try {
-      logger.info('Pinging enclaved express service at: %s', this.baseUrl);
+      logger.info('Pinging Advanced Wallet Manager at: %s', this.baseUrl);
       let request = this.apiClient['v1.health.ping'].post({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -351,11 +353,11 @@ export class AdvancedWalletManagerClient {
 
       const response = await request.decodeExpecting(200);
 
-      logger.info('Enclaved express service ping successful');
+      logger.info('Advanced Wallet Manager ping successful');
       return response.body;
     } catch (error) {
       logger.error(
-        'Failed to ping enclaved express service: %s',
+        'Failed to ping Advanced Wallet Manager: %s',
         (error as DecodeError).decodedResponse.body,
       );
       throw error;
@@ -367,7 +369,7 @@ export class AdvancedWalletManagerClient {
    */
   async getVersion(): Promise<VersionResponseType> {
     try {
-      logger.info('Getting version information from enclaved express service');
+      logger.info('Getting version information from Advanced Wallet Manager');
       let request = this.apiClient['v1.health.version'].get({});
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -810,7 +812,7 @@ export function createawmClient(
     return new AdvancedWalletManagerClient(cfg, coin);
   } catch (error) {
     const err = error as Error;
-    logger.error('Failed to create enclaved express client: %s', err.message);
+    logger.error('Failed to create advanced wallet manager client: %s', err.message);
     return undefined;
   }
 }

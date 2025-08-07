@@ -30,7 +30,7 @@ export function startup(config: AdvancedWalletManagerConfig, baseUri: string): (
     logger.info('Advanced Wallet Manager starting...');
     logger.info(`Base URI: ${baseUri}`);
     logger.info(`mTLS Mode: ${config.tlsMode}`);
-    logger.info(`Allow Self-Signed Certificates: ${config.allowSelfSigned}`);
+    logger.info(`Allow Self-Signed Certificates: ${config.clientCertAllowSelfSigned}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
     logger.info(`KMS URL: ${config.kmsUrl}`);
