@@ -1422,7 +1422,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig wallets and TSS wallets.",
+                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig and TSS wallets.",
                 "properties": {
                   "isTssRecovery": {
                     "type": "boolean",
