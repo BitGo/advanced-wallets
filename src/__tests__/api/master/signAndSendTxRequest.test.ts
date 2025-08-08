@@ -54,7 +54,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       disableEnvCheck: true,
       authVersion: 2,
       advancedWalletManagerUrl: advancedWalletManagerUrl,
-      advancedWalletManagerCert: 'dummy-cert',
+      awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };

@@ -28,14 +28,19 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   appMode: AppMode.ADVANCED_WALLET_MANAGER;
   // KMS settings
   kmsUrl: string;
-  kmsTlsCertPath?: string;
-  kmsTlsCert?: string;
+  kmsServerCaCertPath?: string;
+  kmsServerCaCert?: string;
+  kmsClientTlsKeyPath?: string;
+  kmsClientTlsCertPath?: string;
+  kmsClientTlsKey?: string;
+  kmsClientTlsCert?: string;
   kmsServerCertAllowSelfSigned?: boolean;
-  // mTLS settings
-  keyPath?: string;
-  crtPath?: string;
-  tlsKey?: string;
-  tlsCert?: string;
+
+  // mTLS server settings
+  serverTlsKeyPath?: string;
+  serverTlsCertPath?: string;
+  serverTlsKey?: string;
+  serverTlsCert?: string;
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
   clientCertAllowSelfSigned?: boolean;
@@ -51,14 +56,19 @@ export interface MasterExpressConfig extends BaseConfig {
   authVersion?: number;
   // AWM client settings
   advancedWalletManagerUrl: string;
-  advancedWalletManagerCert?: string;
+  awmServerCaCertPath?: string;
+  awmServerCaCert?: string;
+  awmClientTlsKeyPath?: string;
+  awmClientTlsCertPath?: string;
+  awmClientTlsKey?: string;
+  awmClientTlsCert?: string;
   awmServerCertAllowSelfSigned?: boolean;
   customBitcoinNetwork?: string;
-  // mTLS settings
-  keyPath?: string;
-  crtPath?: string;
-  tlsKey?: string;
-  tlsCert?: string;
+  // mTLS server settings
+  serverTlsKeyPath?: string;
+  serverTlsCertPath?: string;
+  serverTlsKey?: string;
+  serverTlsCert?: string;
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
   clientCertAllowSelfSigned?: boolean;

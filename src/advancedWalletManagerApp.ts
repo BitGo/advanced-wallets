@@ -29,36 +29,53 @@ export function startup(config: AdvancedWalletManagerConfig, baseUri: string): (
   return () => {
     logger.info('Advanced Wallet Manager starting...');
     logger.info(`Base URI: ${baseUri}`);
-    logger.info(`mTLS Mode: ${config.tlsMode}`);
-    logger.info(`Allow Self-Signed Certificates: ${config.clientCertAllowSelfSigned}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
     logger.info(`KMS URL: ${config.kmsUrl}`);
     logger.info(`Recovery Mode: ${config.recoveryMode}`);
+
+    // mTLS Configuration Section
+    logger.info('=== mTLS Configuration ===');
+    logger.info(`TLS Mode: ${config.tlsMode}`);
+    if (config.tlsMode === 'mtls') {
+      logger.info('Server Settings (incoming connections):');
+      logger.info(`  • Allow Self-Signed Client Certificates: ${config.clientCertAllowSelfSigned}`);
+      if (config.mtlsAllowedClientFingerprints && config.mtlsAllowedClientFingerprints.length > 0) {
+        logger.info(
+          `  • Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.join(', ')}`,
+        );
+      }
+      logger.info('Client Settings (outbound to KMS):');
+      logger.info(
+        `  • Allow Self-Signed KMS Server Certificates: ${config.kmsServerCertAllowSelfSigned}`,
+      );
+    }
+    logger.info('========================');
+
     logger.info('Advanced Wallet Manager started successfully');
   };
 }
 
 function isTLS(config: AdvancedWalletManagerConfig): boolean {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
+  const { serverTlsKeyPath, serverTlsCertPath, serverTlsKey, serverTlsCert, tlsMode } = config;
   if (tlsMode === TlsMode.DISABLED) return false;
-  return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
+  return Boolean((serverTlsKeyPath && serverTlsCertPath) || (serverTlsKey && serverTlsCert));
 }
 
 async function createHttpsServer(
   app: express.Application,
   config: AdvancedWalletManagerConfig,
 ): Promise<https.Server> {
-  const { tlsKey, tlsCert, tlsMode } = config;
+  const { serverTlsKey, serverTlsCert, tlsMode } = config;
 
-  if (!tlsKey || !tlsCert) {
+  if (!serverTlsKey || !serverTlsCert) {
     throw new Error('TLS key and certificate must be provided for HTTPS server');
   }
 
   const httpsOptions: https.ServerOptions = {
     secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
-    key: tlsKey,
-    cert: tlsCert,
+    key: serverTlsKey,
+    cert: serverTlsCert,
     // Always request cert if mTLS is enabled
     requestCert: tlsMode === TlsMode.MTLS,
     rejectUnauthorized: false, // Handle authorization in middleware
@@ -93,12 +110,12 @@ export function app(cfg: AdvancedWalletManagerConfig): express.Application {
 
   const app = express();
 
-  setupLogging(app, cfg);
-
-  // Add custom morgan token for mTLS client certificate
+  // Add custom morgan token for mTLS client certificate BEFORE setting up logging
   morgan.token('remote-user', function (req: express.Request) {
     return (req as any).clientCert ? (req as any).clientCert.subject.CN : 'unknown';
   });
+
+  setupLogging(app, cfg);
 
   setupCommonMiddleware(app, cfg);
 

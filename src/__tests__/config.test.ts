@@ -11,6 +11,10 @@ describe('Configuration', () => {
   const originalEnv = process.env;
   const mockTlsKey = '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----';
   const mockTlsCert = '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----';
+  const mockClientTlsKey =
+    '-----BEGIN PRIVATE KEY-----\nMOCK_CLIENT_KEY\n-----END PRIVATE KEY-----';
+  const mockClientTlsCert =
+    '-----BEGIN CERTIFICATE-----\nMOCK_CLIENT_CERT\n-----END CERTIFICATE-----';
 
   beforeEach(() => {
     // Reset to original environment and clear all relevant variables
@@ -19,12 +23,12 @@ describe('Configuration', () => {
     delete process.env.BITGO_APP_MODE;
     delete process.env.KMS_URL;
     delete process.env.ADVANCED_WALLET_MANAGER_URL;
-    delete process.env.ADVANCED_WALLET_MANAGER_CERT;
+    delete process.env.AWM_SERVER_CA_CERT_PATH;
     delete process.env.TLS_MODE;
-    delete process.env.TLS_KEY;
-    delete process.env.TLS_CERT;
+    delete process.env.SERVER_TLS_KEY;
+    delete process.env.SERVER_TLS_CERT;
     delete process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS;
-    delete process.env.ALLOW_SELF_SIGNED;
+    delete process.env.CLIENT_CERT_ALLOW_SELF_SIGNED;
     delete process.env.ADVANCED_WALLET_MANAGER_PORT;
     delete process.env.MASTER_EXPRESS_PORT;
     delete process.env.BIND;
@@ -37,8 +41,18 @@ describe('Configuration', () => {
     delete process.env.BITGO_DISABLE_ENV_CHECK;
     delete process.env.BITGO_AUTH_VERSION;
     delete process.env.BITGO_CUSTOM_BITCOIN_NETWORK;
-    delete process.env.TLS_KEY_PATH;
-    delete process.env.TLS_CERT_PATH;
+    delete process.env.SERVER_TLS_KEY_PATH;
+    delete process.env.SERVER_TLS_CERT_PATH;
+    delete process.env.KMS_CLIENT_TLS_KEY;
+    delete process.env.KMS_CLIENT_TLS_CERT;
+    delete process.env.KMS_CLIENT_TLS_KEY_PATH;
+    delete process.env.KMS_CLIENT_TLS_CERT_PATH;
+    delete process.env.AWM_CLIENT_TLS_KEY;
+    delete process.env.AWM_CLIENT_TLS_CERT;
+    delete process.env.AWM_CLIENT_TLS_KEY_PATH;
+    delete process.env.AWM_CLIENT_TLS_CERT_PATH;
+    delete process.env.KMS_SERVER_CA_CERT_PATH;
+    delete process.env.RECOVERY_MODE;
   });
 
   after(() => {
@@ -65,9 +79,14 @@ describe('Configuration', () => {
 
     it('should use default configuration when minimal environment variables are set', () => {
       process.env.KMS_URL = 'http://localhost:3000';
-      process.env.TLS_KEY = mockTlsKey;
-      process.env.TLS_CERT = mockTlsCert;
-      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.SERVER_TLS_KEY = mockTlsKey;
+      process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
+      process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/test-ssl-cert.pem',
+      );
       const cfg = initConfig();
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
@@ -76,42 +95,57 @@ describe('Configuration', () => {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.timeout.should.equal(305 * 1000);
         cfg.kmsUrl.should.equal('http://localhost:3000');
-        cfg.tlsKey!.should.equal(mockTlsKey);
-        cfg.tlsCert!.should.equal(mockTlsCert);
+        cfg.serverTlsKey!.should.equal(mockTlsKey);
+        cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
     });
 
     it('should read port from environment variable', () => {
       process.env.ADVANCED_WALLET_MANAGER_PORT = '4000';
       process.env.KMS_URL = 'http://localhost:3000';
-      process.env.TLS_KEY = mockTlsKey;
-      process.env.TLS_CERT = mockTlsCert;
-      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.SERVER_TLS_KEY = mockTlsKey;
+      process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
+      process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/test-ssl-cert.pem',
+      );
       const cfg = initConfig();
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.port.should.equal(4000);
         cfg.kmsUrl.should.equal('http://localhost:3000');
-        cfg.tlsKey!.should.equal(mockTlsKey);
-        cfg.tlsCert!.should.equal(mockTlsCert);
+        cfg.serverTlsKey!.should.equal(mockTlsKey);
+        cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
     });
 
     it('should read the recovery mode from the env', () => {
       process.env.KMS_URL = 'http://localhost:3000';
-      process.env.TLS_KEY = mockTlsKey;
-      process.env.TLS_CERT = mockTlsCert;
+      process.env.SERVER_TLS_KEY = mockTlsKey;
+      process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.RECOVERY_MODE = 'true';
-      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/test-ssl-cert.pem',
+      );
       const cfg = initConfig();
       cfg.recoveryMode!.should.be.true();
     });
 
     it('should read TLS mode from environment variables', () => {
       process.env.KMS_URL = 'http://localhost:3000';
-      process.env.TLS_KEY = mockTlsKey;
-      process.env.TLS_CERT = mockTlsCert;
-      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.SERVER_TLS_KEY = mockTlsKey;
+      process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
+      process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/test-ssl-cert.pem',
+      );
 
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
@@ -129,8 +163,8 @@ describe('Configuration', () => {
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.kmsUrl.should.equal('http://localhost:3000');
-        cfg.tlsKey!.should.equal(mockTlsKey);
-        cfg.tlsCert!.should.equal(mockTlsCert);
+        cfg.serverTlsKey!.should.equal(mockTlsKey);
+        cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
 
       // Test with invalid TLS mode
@@ -146,26 +180,33 @@ describe('Configuration', () => {
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.kmsUrl.should.equal('http://localhost:3000');
-        cfg.tlsKey!.should.equal(mockTlsKey);
-        cfg.tlsCert!.should.equal(mockTlsCert);
+        cfg.serverTlsKey!.should.equal(mockTlsKey);
+        cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
     });
 
     it('should read mTLS settings from environment variables', () => {
       process.env.KMS_URL = 'http://localhost:3000';
-      process.env.TLS_KEY = mockTlsKey;
-      process.env.TLS_CERT = mockTlsCert;
+      process.env.SERVER_TLS_KEY = mockTlsKey;
+      process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'ABC123,DEF456';
-      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/test-ssl-cert.pem',
+      );
 
       const cfg = initConfig();
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.mtlsAllowedClientFingerprints!.should.deepEqual(['ABC123', 'DEF456']);
         cfg.kmsUrl.should.equal('http://localhost:3000');
-        cfg.tlsKey!.should.equal(mockTlsKey);
-        cfg.tlsCert!.should.equal(mockTlsCert);
-        cfg.kmsTlsCertPath!.should.equal(path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem'));
+        cfg.serverTlsKey!.should.equal(mockTlsKey);
+        cfg.serverTlsCert!.should.equal(mockTlsCert);
+        cfg.kmsServerCaCertPath!.should.equal(
+          path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem'),
+        );
       }
     });
 
@@ -186,9 +227,9 @@ describe('Configuration', () => {
     it('should succeed when TLS certificates are not set for disabled TLS mode', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_MODE = 'disabled';
-      delete process.env.TLS_KEY;
-      delete process.env.TLS_CERT;
-      delete process.env.KMS_TLS_CERT_PATH;
+      delete process.env.SERVER_TLS_KEY;
+      delete process.env.SERVER_TLS_CERT;
+      delete process.env.KMS_SERVER_CA_CERT_PATH;
       const cfg = initConfig();
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
@@ -200,17 +241,22 @@ describe('Configuration', () => {
     it('should throw error when TLS certificates are not set for MTLS mode', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_MODE = 'mtls';
-      delete process.env.TLS_KEY;
-      delete process.env.TLS_CERT;
+      delete process.env.SERVER_TLS_KEY;
+      delete process.env.SERVER_TLS_CERT;
       (() => initConfig()).should.throw();
     });
 
     it('should read HTTP_LOGFILE into httpLoggerFile in Advanced wallet manager mode', () => {
       process.env.KMS_URL = 'http://localhost:3000';
-      process.env.TLS_KEY = mockTlsKey;
-      process.env.TLS_CERT = mockTlsCert;
+      process.env.SERVER_TLS_KEY = mockTlsKey;
+      process.env.SERVER_TLS_CERT = mockTlsCert;
+      process.env.KMS_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.KMS_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.HTTP_LOGFILE = '/tmp/test-http-access.log';
-      process.env.KMS_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.KMS_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/test-ssl-cert.pem',
+      );
       const cfg = initConfig();
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
@@ -218,11 +264,13 @@ describe('Configuration', () => {
       }
     });
 
-    it('should throw error when KMS_TLS_CERT_PATH is not set for MTLS mode', () => {
+    it('should throw error when KMS_SERVER_CA_CERT_PATH is not set for MTLS mode', () => {
       process.env.KMS_URL = 'http://localhost:3000';
       process.env.TLS_MODE = 'mtls';
-      delete process.env.KMS_TLS_CERT_PATH;
-      (() => initConfig()).should.throw('KMS_TLS_CERT is required when TLS mode is MTLS');
+      delete process.env.KMS_SERVER_CA_CERT_PATH;
+      (() => initConfig()).should.throw(
+        'KMS_SERVER_CA_CERT_PATH is required when TLS mode is MTLS',
+      );
     });
   });
 
@@ -230,12 +278,14 @@ describe('Configuration', () => {
     beforeEach(() => {
       process.env.APP_MODE = 'master-express';
       process.env.ADVANCED_WALLET_MANAGER_URL = 'http://localhost:3080';
-      process.env.ADVANCED_WALLET_MANAGER_CERT = path.resolve(
+      process.env.AWM_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
         'mocks/certs/advanced-wallet-manager-cert.pem',
       );
-      process.env.TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
-      process.env.TLS_KEY_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-key.pem');
+      process.env.SERVER_TLS_CERT_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-cert.pem');
+      process.env.SERVER_TLS_KEY_PATH = path.resolve(__dirname, 'mocks/certs/test-ssl-key.pem');
+      process.env.AWM_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.AWM_CLIENT_TLS_CERT = mockClientTlsCert;
     });
 
     it('should use default configuration when minimal environment variables are set', () => {
@@ -282,11 +332,11 @@ describe('Configuration', () => {
     it('should handle TLS mode disabled configuration', () => {
       // Test with TLS disabled
       process.env.TLS_MODE = 'disabled';
-      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
-      delete process.env.TLS_KEY_PATH;
-      delete process.env.TLS_CERT_PATH;
-      delete process.env.TLS_KEY;
-      delete process.env.TLS_CERT;
+      delete process.env.AWM_SERVER_CA_CERT_PATH;
+      delete process.env.SERVER_TLS_KEY_PATH;
+      delete process.env.SERVER_TLS_CERT_PATH;
+      delete process.env.SERVER_TLS_KEY;
+      delete process.env.SERVER_TLS_CERT;
 
       const cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
@@ -310,31 +360,31 @@ describe('Configuration', () => {
       );
     });
 
-    it('should throw error when ADVANCED_WALLET_MANAGER_CERT is not set for MTLS mode', () => {
+    it('should throw error when AWM_SERVER_CA_CERT_PATH is not set for MTLS mode', () => {
       process.env.TLS_MODE = 'mtls';
-      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
+      delete process.env.AWM_SERVER_CA_CERT_PATH;
       (() => initConfig()).should.throw(
-        'ADVANCED_WALLET_MANAGER_CERT environment variable is required for MTLS mode.',
+        'AWM_SERVER_CA_CERT_PATH environment variable is required for MTLS mode.',
       );
     });
 
-    it('should succeed when ADVANCED_WALLET_MANAGER_CERT is not set for disabled TLS mode', () => {
+    it('should succeed when AWM_SERVER_CA_CERT_PATH is not set for disabled TLS mode', () => {
       process.env.ADVANCED_WALLET_MANAGER_URL = 'http://localhost:3080';
       process.env.TLS_MODE = 'disabled';
-      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
+      delete process.env.AWM_SERVER_CA_CERT_PATH;
       const cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
         cfg.advancedWalletManagerUrl.should.equal('http://localhost:3080');
-        cfg.advancedWalletManagerCert!.should.equal('');
+        (cfg.awmServerCaCert === undefined).should.be.true();
       }
     });
 
-    it('should throw error when ADVANCED_WALLET_MANAGER_CERT is not set for default MTLS mode', () => {
-      delete process.env.ADVANCED_WALLET_MANAGER_CERT;
+    it('should throw error when AWM_SERVER_CA_CERT_PATH is not set for default MTLS mode', () => {
+      delete process.env.AWM_SERVER_CA_CERT_PATH;
       (() => initConfig()).should.throw(
-        'ADVANCED_WALLET_MANAGER_CERT environment variable is required for MTLS mode.',
+        'AWM_SERVER_CA_CERT_PATH environment variable is required for MTLS mode.',
       );
     });
 

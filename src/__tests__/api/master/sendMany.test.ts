@@ -31,7 +31,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       disableEnvCheck: true,
       authVersion: 2,
       advancedWalletManagerUrl: advancedWalletManagerUrl,
-      advancedWalletManagerCert: 'dummy-cert',
+      awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -595,7 +595,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       );
     } catch (error) {
       (error as Error).message.should.equal(
-        'advancedWalletManagerUrl and advancedWalletManagerCert are required',
+        'advancedWalletManagerUrl and awmServerCaCert are required',
       );
     }
   });

@@ -24,35 +24,53 @@ export function startup(config: MasterExpressConfig, baseUri: string): () => voi
   return () => {
     logger.info('Master Express server starting...');
     logger.info(`Base URI: ${baseUri}`);
-    logger.info(`TLS Mode: ${config.tlsMode}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
     logger.info(`Recovery Mode: ${config.recoveryMode}`);
     logger.info(`Advanced Wallet Manager URL: ${config.advancedWalletManagerUrl}`);
+
+    // mTLS Configuration Section
+    logger.info('=== mTLS Configuration ===');
+    logger.info(`TLS Mode: ${config.tlsMode}`);
+    if (config.tlsMode === 'mtls') {
+      logger.info('Server Settings (incoming connections):');
+      logger.info(`  • Allow Self-Signed Client Certificates: ${config.clientCertAllowSelfSigned}`);
+      if (config.mtlsAllowedClientFingerprints && config.mtlsAllowedClientFingerprints.length > 0) {
+        logger.info(
+          `  • Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.join(', ')}`,
+        );
+      }
+      logger.info('Client Settings (outbound to AWM):');
+      logger.info(
+        `  • Allow Self-Signed AWM Server Certiicates: ${config.awmServerCertAllowSelfSigned}`,
+      );
+    }
+    logger.info('========================');
+
     logger.info('Master Express server started successfully');
   };
 }
 
 function isTLS(config: MasterExpressConfig): boolean {
-  const { keyPath, crtPath, tlsKey, tlsCert, tlsMode } = config;
+  const { serverTlsKeyPath, serverTlsCertPath, serverTlsKey, serverTlsCert, tlsMode } = config;
   if (tlsMode === TlsMode.DISABLED) return false;
-  return Boolean((keyPath && crtPath) || (tlsKey && tlsCert));
+  return Boolean((serverTlsKeyPath && serverTlsCertPath) || (serverTlsKey && serverTlsCert));
 }
 
 async function createHttpsServer(
   app: express.Application,
   config: MasterExpressConfig,
 ): Promise<https.Server> {
-  const { tlsKey, tlsCert, tlsMode } = config;
+  const { serverTlsKey, serverTlsCert, tlsMode } = config;
 
-  if (!tlsKey || !tlsCert) {
+  if (!serverTlsKey || !serverTlsCert) {
     throw new Error('TLS key and certificate must be provided for HTTPS server');
   }
 
   const httpsOptions: https.ServerOptions = {
     secureOptions: SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1,
-    key: tlsKey,
-    cert: tlsCert,
+    key: serverTlsKey,
+    cert: serverTlsCert,
     // Always request cert if mTLS is enabled
     requestCert: tlsMode === TlsMode.MTLS,
     rejectUnauthorized: false, // Handle authorization in middleware

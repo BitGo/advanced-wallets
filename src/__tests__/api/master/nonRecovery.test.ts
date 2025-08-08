@@ -24,7 +24,7 @@ describe('Non Recovery Tests', () => {
     disableEnvCheck: true,
     authVersion: 2,
     advancedWalletManagerUrl: advancedWalletManagerUrl,
-    advancedWalletManagerCert: 'dummy-cert',
+    awmServerCaCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
     httpLoggerFile: '',
     clientCertAllowSelfSigned: true,

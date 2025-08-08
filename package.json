@@ -16,7 +16,7 @@
     "test:coverage": "nyc mocha --require ts-node/register 'src/**/__tests__/**/*.test.ts'",
     "lint": "eslint --quiet --ignore-pattern scripts/bump-version.ts .",
     "lint:fix": "eslint --quiet --ignore-pattern scripts/bump-version.ts . --fix",
-    "generate-test-ssl": "openssl req -x509 -newkey rsa:2048 -keyout test-ssl-key.pem -out test-ssl-cert.pem -days 365 -nodes -subj '/CN=localhost'",
+    "generate-test-ssl": "openssl req -x509 -newkey rsa:2048 -keyout demo.key -out demo.crt -days 365 -nodes -subj '/CN=localhost'",
     "generate:openapi:masterExpress": "npx @api-ts/openapi-generator --name @bitgo/master-bitgo-express ./src/api/master/routers/index.ts > masterBitgoExpress.json",
     "container:build": "podman build -t bitgo-onprem-express .",
     "bump-versions": "ts-node scripts/bump-version.ts"
