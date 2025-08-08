@@ -181,6 +181,12 @@ const CoinSpecificParams = t.partial({
 });
 
 export type CoinSpecificParams = t.TypeOf<typeof CoinSpecificParams>;
+export type CoinSpecificParamsUnion =
+  | EvmRecoveryOptions
+  | UtxoRecoveryOptions
+  | SolanaRecoveryOptions
+  | EcdsaEthLikeRecoverySpecificParams
+  | EcdsaCosmosLikeRecoverySpecificParams;
 
 /**
  * Response type for the wallet recovery endpoint.
