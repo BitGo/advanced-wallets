@@ -263,6 +263,56 @@ Notes:
 - The `:Z` option in volume mounts is specific to SELinux-enabled systems and ensures proper volume labeling
 - The logs directory will be created with appropriate permissions if it doesn't exist
 
+## Docker Compose Deployment
+
+The application includes a Docker Compose configuration that runs both Advanced Wallet Manager (AWM) and Master BitGo Express (MBE) services with proper network isolation for enhanced security.
+
+### Architecture Overview
+
+The Docker Compose setup creates two isolated services:
+
+- **Advanced Wallet Manager (AWM)**: Runs in an isolated internal network with no external access for maximum security
+- **Master BitGo Express (MBE)**: Connected to both internal network (for AWM communication) and public network (for external API access)
+- **Network Isolation**: AWM is completely isolated from external networks and only accessible through MBE
+
+### Network Configuration
+
+The setup creates two distinct networks:
+
+1. **my-internal-network**: 
+   - Internal bridge network with `internal: true`
+   - Used for secure AWM isolation and MBE-to-AWM communication
+   - No external internet access for security
+
+2. **my-public-network**: 
+   - Public bridge network
+   - Used for external access to MBE APIs
+   - Connected to host networking
+
+### Prerequisites
+
+1. **Install Docker and Docker Compose**
+2. **Ensure KMS service is running** on your host machine (typically on port 3000)
+
+### Quick Start
+
+1. **Start the services:**
+
+```bash
+# Navigate to project directory
+cd advanced-wallet
+
+# Start both services in background
+docker-compose up -d
+```
+
+2. **Stop the services:**
+
+```bash
+# Stop and remove containers
+docker-compose down
+```
+
 ## API Endpoints
 
 ### Advanced Wallet Manager (Port 3080)
