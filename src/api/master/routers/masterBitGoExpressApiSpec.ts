@@ -4,7 +4,6 @@ import {
   HttpResponse,
   httpRoute,
   Method as HttpMethod,
-  optional,
 } from '@api-ts/io-ts-http';
 import { Response } from '@api-ts/response';
 import {
@@ -32,6 +31,7 @@ import { WalletGenerateRoute } from './generateWalletRoute';
 import { AccelerateRoute } from './accelerateRoute';
 import { RecoveryRoute } from './recoveryRoute';
 import { RecoveryConsolidationsRoute } from './recoveryConsolidationsRoute';
+import { SendManyRoute } from './sendManyRoute';
 
 export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
 
@@ -40,58 +40,6 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
   req.headers['content-type'] = req.headers['content-type'] || 'application/json';
   return express.json({ limit: '20mb' })(req, res, next);
 }
-
-export const SendManyRequest = {
-  pubkey: t.union([t.undefined, t.string]),
-  // Required for MPC
-  type: t.union([
-    t.undefined,
-    t.literal('transfer'),
-    t.literal('fillNonce'),
-    t.literal('acceleration'),
-    t.literal('accountSet'),
-    t.literal('enabletoken'),
-    t.literal('stakingLock'),
-    t.literal('stakingUnlock'),
-    t.literal('transfertoken'),
-    t.literal('trustline'),
-  ]),
-  commonKeychain: t.union([t.undefined, t.string]),
-  source: t.union([t.literal('user'), t.literal('backup')]),
-  recipients: t.union([t.undefined, t.array(t.any)]),
-  numBlocks: t.union([t.undefined, t.number]),
-  feeRate: t.union([t.undefined, t.number]),
-  feeMultiplier: t.union([t.undefined, t.number]),
-  maxFeeRate: t.union([t.undefined, t.number]),
-  minConfirms: t.union([t.undefined, t.number]),
-  enforceMinConfirmsForChange: t.union([t.undefined, t.boolean]),
-  targetWalletUnspents: t.union([t.undefined, t.number]),
-  message: t.union([t.undefined, t.string]),
-  minValue: t.union([t.undefined, t.union([t.number, t.string])]),
-  maxValue: t.union([t.undefined, t.union([t.number, t.string])]),
-  sequenceId: t.union([t.undefined, t.string]),
-  lastLedgerSequence: t.union([t.undefined, t.number]),
-  ledgerSequenceDelta: t.union([t.undefined, t.number]),
-  noSplitChange: t.union([t.undefined, t.boolean]),
-  unspents: t.union([t.undefined, t.array(t.string)]),
-  comment: t.union([t.undefined, t.string]),
-  otp: t.union([t.undefined, t.string]),
-  changeAddress: t.union([t.undefined, t.string]),
-  allowExternalChangeAddress: t.union([t.undefined, t.boolean]),
-  instant: t.union([t.undefined, t.boolean]),
-  memo: t.union([t.undefined, t.string]),
-  transferId: t.union([t.undefined, t.number]),
-  eip1559: t.union([t.undefined, t.any]),
-  gasLimit: t.union([t.undefined, t.number]),
-  custodianTransactionId: t.union([t.undefined, t.string]),
-  nonce: t.union([t.undefined, t.string]),
-};
-
-export const SendManyResponse: HttpResponse = {
-  // TODO: Get type from public types repo / Wallet Platform
-  200: t.any,
-  ...ErrorResponses,
-};
 
 // Request type for /consolidate endpoint
 export const ConsolidateRequest = {
@@ -151,19 +99,7 @@ export const MasterBitGoExpressApiSpec = apiSpec({
     post: WalletGenerateRoute,
   },
   'v1.wallet.sendMany': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/{walletId}/sendMany',
-      request: httpRequest({
-        params: {
-          walletId: t.string,
-          coin: t.string,
-        },
-        body: SendManyRequest,
-      }),
-      response: SendManyResponse,
-      description: 'Send many transactions',
-    }),
+    post: SendManyRoute,
   },
   'v1.wallet.txrequest.signAndSend': {
     post: httpRoute({
