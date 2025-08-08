@@ -54,6 +54,11 @@ export class KmsClient {
   // Handles http erros from KMS
   private errorHandler(error: superagent.ResponseError, errorLog: string) {
     logger.error(errorLog, error);
+
+    if (['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'ETIMEDOUT'].includes((error as any).code)) {
+      throw error;
+    }
+
     switch (error.status) {
       case 400:
         throw new BadRequestError(error.response?.body.message);
@@ -113,7 +118,6 @@ export class KmsClient {
       if (this.agent) req = req.agent(this.agent);
       kmsResponse = await req;
     } catch (error: any) {
-      console.log('Error getting key from KMS:', error);
       this.errorHandler(error, 'Error getting key from KMS');
     }
 
