@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Service for advanced-wallet-manager (AWM)
+  advanced-wallet-manager:
+    build: .  # Build from the Dockerfile inside the repo
+    container_name: advanced-wallet-manager
+    networks:
+      - my-internal-network  # Only part of the internal network
+    environment:
+      - ADVANCED_WALLET_MANAGER_PORT=3081
+      - TLS_MODE=disabled
+      - ALLOW_SELF_SIGNED=true
+      - MTLS_REQUEST_CERT=false
+      - RECOVERY_MODE=true
+      - APP_MODE=advanced-wallet-manager
+      - KMS_URL=http://172.20.0.1:3000
+      - BIND=0.0.0.0
+    restart: always
+    ports: []  # No public ports exposed
+
+  # Service for master-bitgo-express (MBE) - both internal and publicly accessible
+  master-bitgo-express:
+    build: .  # Build from the Dockerfile inside the repo
+    container_name: master-bitgo-express
+    networks:
+      - my-internal-network  # Connect to the internal network for internal communication
+      - my-public-network  # Connect to the public network for external access
+    environment:
+      - APP_MODE=master-express
+      - BITGO_ENV=test
+      - TLS_KEY_PATH=test-ssl-key.pem
+      - TLS_CERT_PATH=test-ssl-cert.pem
+      - ADVANCED_WALLET_MANAGER_URL=http://advanced-wallet-manager:3081
+      - ENCLAVED_EXPRESS_CERT=./test-ssl-cert.pem
+      - MTLS_REQUEST_CERT=false
+      - ALLOW_SELF_SIGNED=true
+      - TLS_MODE=disabled
+      - RECOVERY_MODE=true
+      - MASTER_EXPRESS_PORT=3081
+      - BIND=0.0.0.0
+    restart: always
+    ports:
+      - "3081:3081"  # Expose MBE publicly on port 3081
+
+# Networks section
+networks:
+  my-internal-network:
+    driver: bridge  # Internal communication network, no access to the internet
+    internal: true  # Ensures this network is not accessible from outside
+  
+  my-public-network:
+    driver: bridge  # Public network, allowing external access to MBE
