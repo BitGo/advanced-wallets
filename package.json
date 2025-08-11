@@ -18,7 +18,8 @@
     "lint:fix": "eslint --quiet --ignore-pattern scripts/bump-version.ts . --fix",
     "generate-test-ssl": "openssl req -x509 -newkey rsa:2048 -keyout demo.key -out demo.crt -days 365 -nodes -subj '/CN=localhost'",
     "generate:openapi:masterExpress": "npx @api-ts/openapi-generator --name @bitgo/master-bitgo-express ./src/api/master/routers/index.ts > masterBitgoExpress.json",
-    "container:build": "podman build -t bitgo-onprem-express .",
+    "container:build:master-bitgo-express": "podman build --build-arg PORT=3081 -t master-bitgo-express .",
+    "container:build:advanced-wallet-manager": "podman build --build-arg PORT=3080 -t advanced-wallet-manager .",
     "bump-versions": "ts-node scripts/bump-version.ts"
   },
   "dependencies": {

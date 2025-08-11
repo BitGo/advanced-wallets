@@ -73,10 +73,10 @@ For containerized deployment, build the Docker images:
 
 ```bash
 # Build Master Express (default port 3081)
-npm run container:build
+npm run container:build:master-bitgo-express
 
 # Build Advanced Wallet Manager (port 3080)
-npm run container:build --build-arg PORT=3080
+npm run container:build:advanced-wallet-manager
 ```
 
 ## Quick Start
@@ -193,10 +193,14 @@ curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 
 ```bash
 # For Master Express (default port 3081)
-npm run container:build
+npm run container:build:master-bitgo-express
 
-# For Advanced Wallet Manager (port 3080)
-npm run container:build --build-arg PORT=3080
+# For Advanced Wallet Manager (default port 3080)
+npm run container:build:advanced-wallet-manager
+
+# Or specify custom ports
+npm run container:build:master-bitgo-express -- --build-arg PORT=3081
+npm run container:build:advanced-wallet-manager -- --build-arg PORT=3082
 ```
 
 ### Run Containers
@@ -216,7 +220,7 @@ podman run -d \
   -e KMS_URL=host.containers.internal:3000 \
   -e NODE_ENV=development \
   -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
-  bitgo-onprem-express
+  advanced-wallet-manager
 
 # View logs
 podman logs -f <container_id>
@@ -236,7 +240,7 @@ podman run -d \
   -e ADVANCED_WALLET_MANAGER_URL=https://host.containers.internal:3080 \
   -e AWM_SERVER_CA_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
   -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
-  bitgo-onprem-express
+  master-bitgo-express
 
 # View logs
 podman logs -f <container_id>
