@@ -51,8 +51,8 @@ npm run build
 
 ```bash
 # Generate private key and certificate for testing
-openssl genrsa -out server.key 2048
-openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/CN=localhost"
+openssl genrsa -out demo.key 2048
+openssl req -new -x509 -key demo.key -out demo.crt -days 365 -subj "/CN=localhost"
 ```
 
 ### Development Setup
@@ -86,27 +86,35 @@ npm run container:build --build-arg PORT=3080
 ```bash
 export APP_MODE=advanced-wallet-manager
 export KMS_URL=https://your-kms-service
-export SERVER_TLS_KEY_PATH=./server.key
-export SERVER_TLS_CERT_PATH=./server.crt
-export KMS_SERVER_CA_CERT_PATH=./server.crt
+export SERVER_TLS_KEY_PATH=./demo.key
+export SERVER_TLS_CERT_PATH=./demo.crt
+export KMS_CLIENT_TLS_KEY_PATH=./demo.key
+export KMS_CLIENT_TLS_CERT_PATH=./demo.crt
+export KMS_SERVER_CA_CERT_PATH=./demo.crt
 export KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true
 export CLIENT_CERT_ALLOW_SELF_SIGNED=true
 npm start
 ```
+
+**Note:** KMS client certificates are required for outbound mTLS connections. For testing, we reuse the demo certificates, but in production, use separate certificates for security.
 
 ### 2. Start Master Express
 
 ```bash
 export APP_MODE=master-express
 export BITGO_ENV=test
-export SERVER_TLS_KEY_PATH=./server.key
-export SERVER_TLS_CERT_PATH=./server.crt
+export SERVER_TLS_KEY_PATH=./demo.key
+export SERVER_TLS_CERT_PATH=./demo.crt
 export ADVANCED_WALLET_MANAGER_URL=https://localhost:3080
-export AWM_SERVER_CA_CERT_PATH=./server.crt
+export AWM_CLIENT_TLS_KEY_PATH=./demo.key
+export AWM_CLIENT_TLS_CERT_PATH=./demo.crt
+export AWM_SERVER_CA_CERT_PATH=./demo.crt
 export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true
 export CLIENT_CERT_ALLOW_SELF_SIGNED=true
 npm start
 ```
+
+**Note:** AWM client certificates are required for outbound mTLS connections to Advanced Wallet Manager. For testing, we reuse the demo certificates, but in production, use separate certificates for security.
 
 ### 3. Test the Connection
 
