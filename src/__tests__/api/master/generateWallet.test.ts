@@ -310,8 +310,22 @@ describe('POST /api/:coin/wallet/generate', () => {
         isTrust: true,
         hsmType: 'institutional',
         keyShares: [
-          { from: 'bitgo', to: 'user', publicShare: 'publicShare' },
-          { from: 'bitgo', to: 'backup', publicShare: 'publicShare' },
+          {
+            from: 'bitgo',
+            to: 'user',
+            publicShare: 'publicShare',
+            privateShare: 'privateShare',
+            vssProof: 'true',
+            gpgKey: 'bitgo-key',
+          },
+          {
+            from: 'bitgo',
+            to: 'backup',
+            publicShare: 'publicShare',
+            privateShare: 'privateShare',
+            vssProof: 'true',
+            gpgKey: 'bitgo-key',
+          },
         ],
         walletHSMGPGPublicKeySigs: 'hsm-sig',
       });
@@ -486,11 +500,19 @@ describe('POST /api/:coin/wallet/generate', () => {
         deleted: false,
         approvalsRequired: 1,
         isCold: true,
-        coinSpecific: {},
+        coinSpecific: {
+          rootAddress: '74AUHib3F6Fq5eVm2ywP5ik9iQjviwAfZXWnGM9JHhJ4',
+          pendingChainInitialization: true,
+          minimumFunding: 2447136,
+          lastChainIndex: ['Object'],
+          nonceExpiresAt: '2025-06-25T23:00:12.019Z',
+          trustedTokens: [],
+        },
         admin: {},
         pendingApprovals: [],
         allowBackupKeySigning: false,
         clientFlags: [],
+        walletFlags: [],
         recoverable: false,
         startDate: '2025-01-01T00:00:00.000Z',
         hasLargeNumberOfAddresses: false,
@@ -1076,7 +1098,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'tss',
         isMPCv2: true,
       })
-      .reply(200, { id: 'user-key-id' });
+      .reply(200, { id: 'user-key-id', source: 'user', type: 'tss' });
 
     const bitgoAddBackupKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${ecdsaCoin}/key`, {
@@ -1085,7 +1107,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'tss',
         isMPCv2: true,
       })
-      .reply(200, { id: 'backup-key-id' });
+      .reply(200, { id: 'backup-key-id', source: 'backup', type: 'tss' });
 
     const bitgoAddBitGoKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${ecdsaCoin}/key`, {

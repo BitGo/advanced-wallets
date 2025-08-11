@@ -7,7 +7,11 @@ export const SendManyRequest = {
    * The key to use for signing the transaction
    */
   source: t.union([t.literal('user'), t.literal('backup')]),
+  /**
+   * Required for transactions from MPC wallets.
+   */
   type: t.union([
+    t.undefined,
     t.literal('transfer'),
     t.literal('fillNonce'),
     t.literal('acceleration'),
@@ -19,21 +23,23 @@ export const SendManyRequest = {
   /**
    * List of recipient addresses and amounts to send
    */
-  recipients: t.array(
-    t.type({
-      /**
-       * Destination address
-       * @maxLength 250
-       * @example "2MvrwRYBAuRtPTiZ5MyKg42Ke55W3fZJfZS"
-       */
-      address: t.string,
-      /**
-       * The amount in base units (e.g. satoshis) to send. For doge, only string is allowed.
-       * @example "2000000"
-       * @pattern ^-?\d+$
-       */
-      amount: t.union([t.string, t.number]),
-    }),
+  recipients: optional(
+    t.array(
+      t.type({
+        /**
+         * Destination address
+         * @maxLength 250
+         * @example "2MvrwRYBAuRtPTiZ5MyKg42Ke55W3fZJfZS"
+         */
+        address: t.string,
+        /**
+         * The amount in base units (e.g. satoshis) to send. For doge, only string is allowed.
+         * @example "2000000"
+         * @pattern ^-?\d+$
+         */
+        amount: t.union([t.string, t.number]),
+      }),
+    ),
   ),
   /**
    * Public key of the key used for signing multisig transactions

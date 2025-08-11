@@ -1,10 +1,4 @@
-import {
-  apiSpec,
-  httpRequest,
-  HttpResponse,
-  httpRoute,
-  Method as HttpMethod,
-} from '@api-ts/io-ts-http';
+import { apiSpec, Method as HttpMethod } from '@api-ts/io-ts-http';
 import { Response } from '@api-ts/response';
 import {
   createRouter,
@@ -12,7 +6,6 @@ import {
   type WrappedRouter,
 } from '@api-ts/typed-express-router';
 import express from 'express';
-import * as t from 'io-ts';
 import { MasterExpressConfig } from '../../../shared/types';
 import * as utxolib from '@bitgo-beta/utxo-lib';
 import { prepareBitGo, responseHandler } from '../../../shared/middleware';
@@ -26,12 +19,14 @@ import { handleAccelerate } from '../handlers/handleAccelerate';
 import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 import { handleSignAndSendTxRequest } from '../handlers/handleSignAndSendTxRequest';
 import { handleRecoveryConsolidationsOnPrem } from '../handlers/recoveryConsolidationsWallet';
-import { ErrorResponses } from '../../../shared/errors';
 import { WalletGenerateRoute } from './generateWalletRoute';
 import { AccelerateRoute } from './accelerateRoute';
 import { RecoveryRoute } from './recoveryRoute';
 import { RecoveryConsolidationsRoute } from './recoveryConsolidationsRoute';
 import { SendManyRoute } from './sendManyRoute';
+import { ConsolidateRoute } from './consolidateRoute';
+import { ConsolidateUnspentsRoute } from './consolidateUnspentsRoute';
+import { SignAndSendMpcRoute } from './signAndSendMpcRoute';
 
 export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
 
@@ -40,58 +35,6 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
   req.headers['content-type'] = req.headers['content-type'] || 'application/json';
   return express.json({ limit: '20mb' })(req, res, next);
 }
-
-// Request type for /consolidate endpoint
-export const ConsolidateRequest = {
-  pubkey: t.union([t.undefined, t.string]),
-  source: t.union([t.literal('user'), t.literal('backup')]),
-  consolidateAddresses: t.union([t.undefined, t.array(t.string)]),
-  apiVersion: t.union([t.undefined, t.literal('full'), t.literal('lite')]),
-  commonKeychain: t.union([t.undefined, t.string]),
-};
-
-// Response type for /consolidate endpoint
-const ConsolidateResponse: HttpResponse = {
-  200: t.any,
-  ...ErrorResponses,
-};
-
-export const ConsolidateUnspentsRequest = {
-  pubkey: t.string,
-  source: t.union([t.literal('user'), t.literal('backup')]),
-  feeRate: t.union([t.undefined, t.number]),
-  maxFeeRate: t.union([t.undefined, t.number]),
-  maxFeePercentage: t.union([t.undefined, t.number]),
-  feeTxConfirmTarget: t.union([t.undefined, t.number]),
-  bulk: t.union([t.undefined, t.boolean]),
-  minValue: t.union([t.undefined, t.union([t.string, t.number])]),
-  maxValue: t.union([t.undefined, t.union([t.string, t.number])]),
-  minHeight: t.union([t.undefined, t.number]),
-  minConfirms: t.union([t.undefined, t.number]),
-  enforceMinConfirmsForChange: t.union([t.undefined, t.boolean]),
-  limit: t.union([t.undefined, t.number]),
-  numUnspentsToMake: t.union([t.undefined, t.number]),
-  targetAddress: t.union([t.undefined, t.string]),
-  txFormat: t.union([t.undefined, t.literal('legacy'), t.literal('psbt'), t.literal('psbt-lite')]),
-};
-
-const ConsolidateUnspentsResponse: HttpResponse = {
-  200: t.type({
-    tx: t.string,
-    txid: t.string,
-  }),
-  ...ErrorResponses,
-};
-
-const SignMpcRequest = {
-  source: t.union([t.literal('user'), t.literal('backup')]),
-  commonKeychain: t.union([t.undefined, t.string]),
-};
-
-const SignMpcResponse: HttpResponse = {
-  200: t.any,
-  ...ErrorResponses,
-};
 
 // API Specification
 export const MasterBitGoExpressApiSpec = apiSpec({
@@ -102,20 +45,7 @@ export const MasterBitGoExpressApiSpec = apiSpec({
     post: SendManyRoute,
   },
   'v1.wallet.txrequest.signAndSend': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/{walletId}/txrequest/{txRequestId}/signAndSend',
-      request: httpRequest({
-        params: {
-          walletId: t.string,
-          coin: t.string,
-          txRequestId: t.string,
-        },
-        body: SignMpcRequest,
-      }),
-      response: SignMpcResponse,
-      description: 'Sign MPC with TxRequest',
-    }),
+    post: SignAndSendMpcRoute,
   },
   'v1.wallet.recovery': {
     post: RecoveryRoute,
@@ -124,37 +54,13 @@ export const MasterBitGoExpressApiSpec = apiSpec({
     post: RecoveryConsolidationsRoute,
   },
   'v1.wallet.consolidate': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/{walletId}/consolidate',
-      request: httpRequest({
-        params: {
-          walletId: t.string,
-          coin: t.string,
-        },
-        body: ConsolidateRequest,
-      }),
-      response: ConsolidateResponse,
-      description: 'Consolidate addresses',
-    }),
+    post: ConsolidateRoute,
   },
   'v1.wallet.accelerate': {
     post: AccelerateRoute,
   },
   'v1.wallet.consolidateunspents': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/api/{coin}/wallet/{walletId}/consolidateunspents',
-      request: httpRequest({
-        params: {
-          walletId: t.string,
-          coin: t.string,
-        },
-        body: ConsolidateUnspentsRequest,
-      }),
-      response: ConsolidateUnspentsResponse,
-      description: 'Consolidate unspents',
-    }),
+    post: ConsolidateUnspentsRoute,
   },
 });
 
