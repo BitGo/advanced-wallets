@@ -131,6 +131,7 @@ async function handleGenerateOnPremOnChainWallet(
     responseType: 'WalletWithKeychains',
   };
 
+  const tet = result.wallet.toJSON();
   return { ...result, wallet: result.wallet.toJSON() };
 }
 
