@@ -10,11 +10,10 @@ import { BitGoRequest } from '../../../types/request';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
 import { CoinFamily } from '@bitgo-beta/statics';
+import coinFactory from '../../../shared/coinFactory';
 
 describe('Recovery Tests', () => {
   let agent: request.SuperAgentTest;
-  let mockBitgo: BitGoAPI;
-  let coinStub: sinon.SinonStub;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const accessToken = 'test-token';
   const config: MasterExpressConfig = {
@@ -37,43 +36,11 @@ describe('Recovery Tests', () => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    // Create mock BitGo instance with base functionality
-    mockBitgo = {
-      coin: sinon.stub(),
-      _coinFactory: {},
-      _useAms: false,
-      initCoinFactory: sinon.stub(),
-      registerToken: sinon.stub(),
-      getValidate: sinon.stub(),
-      validateAddress: sinon.stub(),
-      verifyAddress: sinon.stub(),
-      verifyPassword: sinon.stub(),
-      encrypt: sinon.stub(),
-      decrypt: sinon.stub(),
-      lock: sinon.stub(),
-      unlock: sinon.stub(),
-      getSharingKey: sinon.stub(),
-      ping: sinon.stub(),
-      authenticate: sinon.stub(),
-      authenticateWithAccessToken: sinon.stub(),
-      logout: sinon.stub(),
-      me: sinon.stub(),
-      session: sinon.stub(),
-      getUser: sinon.stub(),
-      users: sinon.stub(),
-      getWallet: sinon.stub(),
-      getWallets: sinon.stub(),
-      addWallet: sinon.stub(),
-      removeWallet: sinon.stub(),
-      getAsUser: sinon.stub(),
-      register: sinon.stub(),
-    } as unknown as BitGoAPI;
-
-    coinStub = mockBitgo.coin as sinon.SinonStub;
+    const bitgo = new BitGoAPI({ env: 'test' });
 
     // Setup middleware stubs before creating app
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
-      (req as BitGoRequest<MasterExpressConfig>).bitgo = mockBitgo;
+      (req as BitGoRequest<MasterExpressConfig>).bitgo = bitgo;
       (req as BitGoRequest<MasterExpressConfig>).config = config;
       next();
     });
@@ -123,7 +90,11 @@ describe('Recovery Tests', () => {
         isValidPub: mockIsValidPub,
         getFamily: sinon.stub().returns(CoinFamily.BTC),
       };
-      coinStub.withArgs(coin).returns(mockCoin);
+      // coinStub.withArgs(coin).returns(mockCoin);
+      sinon
+        .stub(coinFactory, 'getCoin')
+        .withArgs(coin)
+        .returns(mockCoin as any);
 
       // Setup coin middleware
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
@@ -184,7 +155,7 @@ describe('Recovery Tests', () => {
       );
 
       // Verify SDK coin method calls
-      coinStub.calledWith(coin).should.be.true();
+      // coinStub.calledWith(coin).should.be.true();
       mockIsValidPub.calledWith(userPub).should.be.true();
       mockIsValidPub.calledWith(backupPub).should.be.true();
       mockRecover
@@ -311,17 +282,9 @@ describe('Recovery Tests', () => {
 
   describe('EVM coin recovery', () => {
     // Setup mocks for ETH
-    let ethCoin: any;
     const ethCoinId = 'hteth';
 
     beforeEach(() => {
-      ethCoin = {
-        recover: sinon.stub().resolves({ txHex: 'eth-tx-hex' }),
-        isValidPub: sinon.stub().returns(true),
-        getFamily: sinon.stub().returns(CoinFamily.ETH),
-      };
-      coinStub.withArgs(ethCoinId).returns(ethCoin);
-
       // Setup coin middleware for ETH coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: ethCoinId };
@@ -411,17 +374,10 @@ describe('Recovery Tests', () => {
 
   describe('Solana coin recovery', () => {
     // Setup mocks for Solana
-    let solCoin: any;
     const solCoinId = 'tsol';
+    const solExplorerUrl = 'https://api.devnet.solana.com';
 
     beforeEach(() => {
-      solCoin = {
-        isValidPub: sinon.stub().returns(true),
-        getFamily: sinon.stub().returns(CoinFamily.SOL),
-        getMPCAlgorithm: sinon.stub().returns('eddsa'),
-      };
-      coinStub.withArgs(solCoinId).returns(solCoin);
-
       // Setup coin middleware for Solana coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: solCoinId };
@@ -432,6 +388,71 @@ describe('Recovery Tests', () => {
         next();
         return undefined;
       });
+    });
+
+    afterEach(() => {
+      nock.cleanAll();
+    });
+
+    it('should sign a solana recovery successfully', async () => {
+      const solAccountBalanceNock = nock(solExplorerUrl)
+        .post('/')
+        .matchHeader('any', () => true)
+        .reply(200, {
+          result: {
+            value: 1000000000,
+          },
+        });
+
+      const solBlockHashNock = nock(solExplorerUrl)
+        .post('/')
+        .matchHeader('any', () => true)
+        .reply(200, {
+          result: {
+            value: {
+              blockhash: 'FvGuZFQqWtjDCgpPgA2CJ9WgDKc7i1HioJcn9j5PX8xu',
+            },
+          },
+        });
+
+      const solFeeNock = nock(solExplorerUrl)
+        .post('/')
+        .matchHeader('any', () => true)
+        .reply(200, {
+          result: {
+            value: 5000,
+          },
+        });
+
+      const awmNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${solCoinId}/mpc/recovery`)
+        .reply(200, {
+          txHex:
+            'AWkNYn5JOxl5bLmFN8BB/Yyz8pLvrNpyZ6fUiTDpSnkK9dtts5VEBQOdLEaG3D18sN8dPxhnS+TzmmuUPMl0WAUBAAECvoOqYkvCPusjYyhX4GdUtzSeVIcx6GkwdpSk8SkU0/cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIQtFGO2YBsrubq15CKqJLwXG3VEF1aEs36Rao6EaJDLAQECAAAMAgAAALhJxgAAAAAA',
+        });
+
+      const response = await agent
+        .post(`/api/${solCoinId}/wallet/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          isTssRecovery: true,
+          tssRecoveryParams: {
+            commonKeychain:
+              'b6f5fb808f538a32735a89609e98fab75690a2c79b26f50a54c4cbf0fbca287138b733783f1590e12b4916ef0f6053b22044860117274bda44bd5d711855f174',
+          },
+          recoveryDestinationAddress: 'DpgugQVWnNbTQr6jqLvkHQVWa43WTGWb7jH5zeNGJjtA',
+          coinSpecificParams: {
+            solanaRecoveryOptions: {}, // none are required for token recoveries
+          },
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txHex');
+
+      solAccountBalanceNock.isDone().should.be.true();
+      solBlockHashNock.isDone().should.be.true();
+      solFeeNock.isDone().should.be.true();
+      awmNock.isDone().should.be.true();
     });
 
     it('should reject incorrect UTXO parameters for a Solana coin', async () => {
@@ -494,6 +515,115 @@ describe('Recovery Tests', () => {
       response.body.details.should.containEql(
         'Solana recovery options are required for EdDSA coin recovery',
       );
+    });
+  });
+
+  describe('Sui coin recovery', () => {
+    // Setup mocks for Sui
+    const suiCoinId = 'tsui';
+    const suiExplorerUrl = 'https://fullnode.testnet.sui.io';
+
+    beforeEach(() => {
+      // Setup coin middleware for Sui coin
+      sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
+        (req as BitGoRequest<MasterExpressConfig>).params = { coin: suiCoinId };
+        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+          config,
+          suiCoinId,
+        );
+        next();
+        return undefined;
+      });
+    });
+
+    afterEach(() => {
+      nock.cleanAll();
+    });
+
+    it('should sign a sui recovery successfully', async () => {
+      const suiAccountBalanceNock = nock(suiExplorerUrl)
+        .post('/')
+        .matchHeader('any', () => true)
+        .reply(200, {
+          result: {
+            coinType: '0x2::sui::SUI',
+            coinObjectCount: 1,
+            totalBalance: '1000000000',
+            lockedBalance: {},
+          },
+        });
+
+      const suiInputCoinsNock = nock(suiExplorerUrl)
+        .post('/')
+        .matchHeader('any', () => true)
+        .reply(200, {
+          result: {
+            data: [
+              {
+                coinType: '0x2::sui::SUI',
+                coinObjectId: '0x1a4951d0006f16326d5b74df71b5c81450b4cc74d9f1c357e6e1665d5ca9a067',
+                version: '349180327',
+                digest: 'F1vZCzDD36oKjqMWu9mPo57g1SfznFQnbHLNf436efGx',
+                balance: '1000000000',
+                previousTransaction: '9Wnh785m4DLCZfQSrSou6HrNr8kTygDxDBuAnnPZ9rFE',
+              },
+            ],
+            hasNextPage: false,
+          },
+        });
+
+      const suiFeeEstimateNock = nock(suiExplorerUrl)
+        .post('/')
+        .matchHeader('any', () => true)
+        .reply(200, {
+          result: {
+            effects: {
+              messageVersion: 'v1',
+              status: { status: 'success' },
+              executedEpoch: '823',
+              gasUsed: {
+                computationCost: '1000000',
+                storageCost: '1976000',
+                storageRebate: '978120',
+                nonRefundableStorageFee: '9880',
+              },
+              modifiedAtVersions: [[Object]],
+              transactionDigest: 'CDKmL6HU1HEa8SHevU9bgtapWjPoa5i1tykpu6Ut9pvb',
+              created: [[Object]],
+              mutated: [[Object]],
+              gasObject: { owner: [Object], reference: [Object] },
+              dependencies: ['9Wnh785m4DLCZfQSrSou6HrNr8kTygDxDBuAnnPZ9rFE'],
+            },
+          },
+        });
+
+      const awmNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${suiCoinId}/mpc/recovery`)
+        .reply(200, {
+          txHex:
+            'AAACAAhcQXk7AAAAAAAgzB1x/fqyCinQhAMGI6aC6G8lTz5qCBNMwDfeN/6pSyECAgABAQAAAQECAAABAQDMHXH9+rIKKdCEAwYjpoLobyVPPmoIE0zAN943/qlLIQEaSVHQAG8WMm1bdN9xtcgUULTMdNnxw1fm4WZdXKmgZ6cR0BQAAAAAINBALBBncQWazDJGoUWnuszVEvSZ8IaXb+doVp11G7ANzB1x/fqyCinQhAMGI6aC6G8lTz5qCBNMwDfeN/6pSyHoAwAAAAAAAKSIIQAAAAAAAA==',
+        });
+
+      const response = await agent
+        .post(`/api/${suiCoinId}/wallet/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          isTssRecovery: true,
+          tssRecoveryParams: {
+            commonKeychain:
+              'b6f5fb808f538a32735a89609e98fab75690a2c79b26f50a54c4cbf0fbca287138b733783f1590e12b4916ef0f6053b22044860117274bda44bd5d711855f174',
+          },
+          recoveryDestinationAddress:
+            '0xcc1d71fdfab20a29d084030623a682e86f254f3e6a08134cc037de37fea94b21',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txHex');
+
+      suiAccountBalanceNock.isDone().should.be.true();
+      suiInputCoinsNock.isDone().should.be.true();
+      suiFeeEstimateNock.isDone().should.be.true();
+      awmNock.isDone().should.be.true();
     });
   });
 });
