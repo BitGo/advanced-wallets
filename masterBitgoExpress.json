@@ -125,8 +125,58 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -140,6 +190,8 @@
     },
     "/api/{coin}/wallet/{walletId}/consolidate": {
       "post": {
+        "summary": "Build, sign, and send a consolidation transaction for an account-based asset all in 1 call.",
+        "description": "For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.",
         "parameters": [
           {
             "name": "walletId",
@@ -164,31 +216,36 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "pubkey": {
-                    "type": "string"
-                  },
                   "source": {
                     "type": "string",
                     "enum": [
                       "user",
                       "backup"
-                    ]
+                    ],
+                    "description": "The key to use for signing the transaction"
+                  },
+                  "pubkey": {
+                    "type": "string",
+                    "description": "Public key of the key used for signing multisig transactions"
                   },
                   "consolidateAddresses": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Optional: restrict the consolidation to the specified receive addresses. If not provided, will consolidate the funds from all receive addresses up to 500 addresses."
                     }
+                  },
+                  "commonKeychain": {
+                    "type": "string",
+                    "description": "For TSS wallets, this is the common keychain of the wallet"
                   },
                   "apiVersion": {
                     "type": "string",
                     "enum": [
                       "full",
                       "lite"
-                    ]
-                  },
-                  "commonKeychain": {
-                    "type": "string"
+                    ],
+                    "description": "The Trasaction Request API version to use for MPC EdDSA Hot Wallets. Defaults based on the wallet type and asset curve."
                   }
                 },
                 "required": [
@@ -217,8 +274,48 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -232,6 +329,8 @@
     },
     "/api/{coin}/wallet/{walletId}/consolidateunspents": {
       "post": {
+        "summary": "Build and send a transaction to consolidate unspents in a wallet.",
+        "description": "Consolidating unspents is only for UTXO-based assets.",
         "parameters": [
           {
             "name": "walletId",
@@ -257,29 +356,36 @@
                 "type": "object",
                 "properties": {
                   "pubkey": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Public key of the key used for signing multisig transactions"
                   },
                   "source": {
                     "type": "string",
                     "enum": [
                       "user",
                       "backup"
-                    ]
+                    ],
+                    "description": "The key to use for signing the transaction"
                   },
                   "feeRate": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Custom fee rate (in base units) per kilobyte"
                   },
                   "maxFeeRate": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Maximum fee rate (in base units) per kilobyte"
                   },
                   "maxFeePercentage": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Maximum fee percentage"
                   },
                   "feeTxConfirmTarget": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Fee transaction confirmation target"
                   },
                   "bulk": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Enable bulk processing"
                   },
                   "minValue": {
                     "oneOf": [
@@ -289,7 +395,8 @@
                       {
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "description": "Minimum value for unspents"
                   },
                   "maxValue": {
                     "oneOf": [
@@ -299,25 +406,32 @@
                       {
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "description": "Maximum value for unspents"
                   },
                   "minHeight": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Minimum block height"
                   },
                   "minConfirms": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Minimum confirmations required"
                   },
                   "enforceMinConfirmsForChange": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Enforce minimum confirmations for change outputs"
                   },
                   "limit": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Limit the number of unspents to process"
                   },
                   "numUnspentsToMake": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Number of unspents to make"
                   },
                   "targetAddress": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Target address for consolidation"
                   },
                   "txFormat": {
                     "type": "string",
@@ -325,7 +439,8 @@
                       "legacy",
                       "psbt",
                       "psbt-lite"
-                    ]
+                    ],
+                    "description": "Transaction format"
                   }
                 },
                 "required": [
@@ -369,8 +484,48 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -408,8 +563,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "pubkey": {
-                    "type": "string"
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "backup"
+                    ],
+                    "description": "The key to use for signing the transaction"
                   },
                   "type": {
                     "type": "string",
@@ -419,49 +579,87 @@
                       "acceleration",
                       "accountSet",
                       "enabletoken",
-                      "stakingLock",
-                      "stakingUnlock",
                       "transfertoken",
                       "trustline"
-                    ]
-                  },
-                  "commonKeychain": {
-                    "type": "string"
-                  },
-                  "source": {
-                    "type": "string",
-                    "enum": [
-                      "user",
-                      "backup"
-                    ]
+                    ],
+                    "description": "Required for transactions from MPC wallets."
                   },
                   "recipients": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "description": "Destination address",
+                          "example": "2MvrwRYBAuRtPTiZ5MyKg42Ke55W3fZJfZS",
+                          "maxLength": 250
+                        },
+                        "amount": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "description": "The amount in base units (e.g. satoshis) to send. For doge, only string is allowed.",
+                          "example": "\"2000000\"",
+                          "pattern": "^-?\\d+$"
+                        }
+                      },
+                      "required": [
+                        "address",
+                        "amount"
+                      ],
+                      "description": "List of recipient addresses and amounts to send"
+                    }
+                  },
+                  "pubkey": {
+                    "type": "string",
+                    "description": "Public key of the key used for signing multisig transactions i.e if source is user, this is the user's public key if source is backup, this is the backup key's public key"
+                  },
+                  "commonKeychain": {
+                    "type": "string",
+                    "description": "For TSS wallets, this is the common keychain of the wallet, it remains the same whether source is user or backup"
                   },
                   "numBlocks": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "(BTC only) The number of blocks required to confirm a transaction. You can use `numBlocks` to estimate the fee rate by targeting confirmation within a given number of blocks. If both `feeRate` and `numBlocks` are absent, the transaction defaults to 2 blocks for confirmation. Note: The `maxFeeRate` limits the fee rate generated by `numBlocks`.",
+                    "minimum": 2,
+                    "maximum": 1000
                   },
                   "feeRate": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Custom fee rate (in base units) per kilobyte (or virtual kilobyte). For example, satoshis per kvByte. If the `feeRate` is less than the minimum required network fee, then the minimum fee applies. For example, 1000 sat/kvByte, a flat 1000 microAlgos, or a flat 10 drops of xrp. For XRP, the actual fee is usually 4.5 times the open ledger fee. Note: The `feeRate` overrides the `maxFeeRate` and `minFeeRate`."
                   },
                   "feeMultiplier": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "(UTXO only) Custom multiplier to the `feeRate`. The resulting fee rate is limited by the `maxFeeRate`. For replace-by-fee (RBF) transactions (that include `rbfTxIds`), the `feeMultiplier` must be greater than 1, since it's an absolute fee multiplier to the transaction being replaced. Note: The `maxFeeRate` limits the fee rate generated by `feeMultiplier`."
                   },
                   "maxFeeRate": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "(BTC only) The maximum fee rate (in base units) per kilobyte (or virtual kilobyte). For example, satoshis per kvByte. The `maxFeeRate` limits the fee rate generated by both `feeMultiplier` and `numBlocks`. Note: The `feeRate` overrides the `maxFeeRate`."
                   },
                   "minConfirms": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "The unspent selection for the transaction will only consider unspents with at least this many confirmations to be used as inputs. Does not apply to change outputs unless used in combination with `enforceMinConfirmsForChange`."
                   },
                   "enforceMinConfirmsForChange": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When set to true, will enforce minConfirms for change outputs. Defaults to false."
                   },
                   "targetWalletUnspents": {
-                    "type": "number"
+                    "type": "number",
+                    "default": 1000,
+                    "description": "Specifies the minimum count of good-sized unspents to maintain in the wallet. Change splitting ceases when the wallet has `targetWalletUnspents` good-sized unspents. Note: Wallets that continuously send a high count of transactions will automatically split large change amounts into multiple good-sized change outputs while they have fewer than `targetWalletUnspents` good-sized unspents in their unspent pool. Breaking up large unspents helps to reduce the amount of unconfirmed funds in flight in future transactions, and helps to avoid long chains of unconfirmed transactions. This is especially useful for newly funded wallets or recently refilled send-only wallets."
                   },
                   "message": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Optional metadata (only persisted in BitGo) to be applied to the transaction. Use this to add transaction-specific information such as the transaction's purpose or another identifier that you want to reference later. The value is shown in the UI in the transfer listing page.",
+                    "maxLength": 256
                   },
                   "minValue": {
                     "oneOf": [
@@ -471,7 +669,8 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "Ignore unspents smaller than this amount of base units (e.g. satoshis). For doge, only string is allowed."
                   },
                   "maxValue": {
                     "oneOf": [
@@ -481,56 +680,75 @@
                       {
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "description": "Ignore unspents larger than this amount of base units (e.g. satoshis). For doge, only string is allowed."
                   },
                   "sequenceId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "A `sequenceId` is a unique and arbitrary wallet identifier applied to transfers and transactions at creation. It is optional but highly recommended. With a `sequenceId` you can easily reference transfers and transactions—for example, to safely retry sending. Because the system only confirms one send request per `sequenceId` (and fails all subsequent attempts), you can retry sending without the risk of double spending. The `sequenceId` is only visible to users on the wallet and is not shared publicly."
                   },
                   "lastLedgerSequence": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "(XRP only) Absolute max ledger the transaction should be accepted in, whereafter it will be rejected"
                   },
                   "ledgerSequenceDelta": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "(XRP only) Relative ledger height (in relation to the current ledger) that the transaction should be accepted in, whereafter it will be rejected"
                   },
                   "noSplitChange": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Set `true` to disable automatic change splitting. Also see: `targetWalletUnspents`"
                   },
                   "unspents": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Used to explicitly specify the unspents to be used in the input set in the transaction. Each unspent should be in the form `prevTxId:nOutput`."
                     }
                   },
                   "comment": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Optional metadata (only persisted in BitGo) to be applied to the transaction. Use this to add transaction-specific information such as the transaction's purpose or another identifier that you want to reference later. The value is shown in the UI in the transfer listing page.",
+                    "maxLength": 256
                   },
                   "otp": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Two factor auth code to enable sending the transaction. Not necessary if using a long lived access token within the spending limit."
                   },
                   "changeAddress": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Specifies a custom destination address for the transaction's change output(s)",
+                    "maxLength": 250
                   },
                   "allowExternalChangeAddress": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Flag for allowing external change addresses"
                   },
                   "instant": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "(DASH only) Specifies whether or not to use Dash's \"InstantSend\" feature when sending a transaction."
                   },
                   "memo": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Extra transaction information for CSPR, EOS, HBAR, RUNE, STX, TON, XLM, and XRP. Required for XLM transactions. Note: For XRP this is the destination tag (DT). For CSPR this is the transfer ID."
                   },
                   "transferId": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Transfer ID for the transaction"
                   },
                   "eip1559": {},
                   "gasLimit": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Custom gas limit to be used for sending the transaction. Only for ETH and ERC20 tokens."
                   },
                   "custodianTransactionId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Custodian transaction ID"
                   },
                   "nonce": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "(DOT only) A nonce ID is a number used to protect private communications by preventing replay attacks. This is an advanced option where users can manually input a new nonce value in order to correct or fill in a missing nonce ID value."
                   }
                 },
                 "required": [
@@ -569,8 +787,38 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -584,6 +832,8 @@
     },
     "/api/{coin}/wallet/{walletId}/txrequest/{txRequestId}/signAndSend": {
       "post": {
+        "summary": "Sign a TxRequest and Broadcast it (MPC wallets only)",
+        "description": "This is usually needed after resolving a pending approval for a MPC wallet",
         "parameters": [
           {
             "name": "walletId",
@@ -621,83 +871,17 @@
                     "enum": [
                       "user",
                       "backup"
-                    ]
+                    ],
+                    "description": "The key to use for signing the transaction"
                   },
                   "commonKeychain": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "source"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/{coin}/wallet/generate": {
-      "post": {
-        "parameters": [
-          {
-            "name": "coin",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "label": {
-                    "type": "string"
-                  },
-                  "multisigType": {
                     "type": "string",
-                    "enum": [
-                      "onchain",
-                      "tss"
-                    ]
-                  },
-                  "enterprise": {
-                    "type": "string"
-                  },
-                  "disableTransactionNotifications": {
-                    "type": "boolean"
-                  },
-                  "isDistributedCustody": {
-                    "type": "boolean"
+                    "description": "Common keychain of the wallet during wallet creation"
                   }
                 },
                 "required": [
-                  "label",
-                  "multisigType",
-                  "enterprise"
+                  "source",
+                  "commonKeychain"
                 ]
               }
             }
@@ -722,8 +906,213 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/{coin}/wallet/generate": {
+      "post": {
+        "summary": "Generates a new onPrem self-managed cold wallet.",
+        "description": "The wallet creation process involves several steps that happen automatically:\n1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective KMS.\n2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.\n3. Keychain Upload: Uploads the user/backup public keys to BitGo.\n4. BitGo Key Creation: Creates the BitGo key on the BitGo service.\n5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.",
+        "parameters": [
+          {
+            "name": "coin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "A human-readable label for the wallet This will be displayed in the BitGo dashboard and API responses",
+                    "example": "My Wallet"
+                  },
+                  "multisigType": {
+                    "type": "string",
+                    "enum": [
+                      "onchain",
+                      "tss"
+                    ],
+                    "description": "The type of multisig wallet to create - onchain: Traditional multisig wallets using on-chain scripts - tss: Threshold Signature Scheme wallets using MPC protocols If absent, BitGo uses the default wallet type for the asset",
+                    "example": "tss"
+                  },
+                  "enterprise": {
+                    "type": "string",
+                    "description": "Enterprise ID - Required for Ethereum wallets Ethereum wallets can only be created under an enterprise Each enterprise has a fee address which will be used to pay for transaction fees Your enterprise ID can be seen by clicking on the \"Manage Organization\" link on the enterprise dropdown",
+                    "example": "59cd72485007a239fb00282ed480da1f",
+                    "pattern": "^[0-9a-f]{32}$"
+                  },
+                  "disableTransactionNotifications": {
+                    "type": "boolean",
+                    "description": "Flag for disabling wallet transaction notifications When true, BitGo will not send email/SMS notifications for wallet transactions",
+                    "example": false
+                  },
+                  "isDistributedCustody": {
+                    "type": "boolean",
+                    "description": "True, if the wallet type is a distributed-custodial If passed, you must also pass the 'enterprise' parameter Distributed custody allows multiple parties to share control of the wallet",
+                    "example": false
+                  },
+                  "walletVersion": {
+                    "type": "number",
+                    "description": "Specify the wallet creation contract version used when creating an Ethereum wallet contract - 0: Old wallet creation (legacy) - 1: New wallet creation, only deployed upon receiving funds - 2: Same functionality as v1 but with NFT support - 3: MPC wallets",
+                    "example": 1,
+                    "minimum": 0,
+                    "maximum": 3
+                  }
+                },
+                "required": [
+                  "label",
+                  "multisigType",
+                  "enterprise"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "wallet": {
+                      "$ref": "#/components/schemas/WalletType"
+                    },
+                    "userKeychain": {
+                      "$ref": "#/components/schemas/UserKeychainType"
+                    },
+                    "backupKeychain": {
+                      "$ref": "#/components/schemas/UserKeychainType"
+                    },
+                    "bitgoKeychain": {
+                      "$ref": "#/components/schemas/BitgoKeychainType"
+                    },
+                    "responseType": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "wallet",
+                    "userKeychain",
+                    "backupKeychain",
+                    "bitgoKeychain",
+                    "responseType"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -754,7 +1143,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig wallets and TSS wallets.",
+                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig and TSS wallets.",
                 "properties": {
                   "isTssRecovery": {
                     "type": "boolean",
@@ -1027,6 +1416,36 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable Entity",
             "content": {
@@ -1039,6 +1458,16 @@
           },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1164,8 +1593,58 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1347,14 +1826,426 @@
           "details": {
             "type": "string",
             "description": "Error details"
-          },
-          "stack": {
-            "type": "string"
           }
         },
         "required": [
           "error",
           "details"
+        ]
+      },
+      "WalletType": {
+        "title": "WalletType",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Wallet ID",
+            "example": "59cd72485007a239fb00282ed480da1f",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "type": "string"
+                },
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "user",
+                "permissions"
+              ],
+              "description": "Ids of users with access to the wallet"
+            }
+          },
+          "coin": {
+            "type": "string",
+            "description": "Name of the blockchain the wallet is on",
+            "example": "tbtc4"
+          },
+          "label": {
+            "type": "string",
+            "description": "Name the user assigned to the wallet",
+            "example": "My TBTC4 Wallet"
+          },
+          "m": {
+            "type": "number",
+            "description": "Number of signatures required for the wallet to send",
+            "example": 2
+          },
+          "n": {
+            "type": "number",
+            "description": "Number of signers on the wallet",
+            "example": 3
+          },
+          "keys": {
+            "type": "array",
+            "example": [
+              "59cd72485007a239fb00282ed480da1f"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Ids of wallet keys"
+            }
+          },
+          "keySignatures": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Signatures for the backup and BitGo public keys signed by the user key"
+          },
+          "enterprise": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "bitgoOrg": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "example": [
+              "59cd72485007a239fb00282ed480da1f"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Tags set on the wallet"
+            }
+          },
+          "disableTransactionNotifications": {
+            "type": "boolean",
+            "description": "Flag for disabling wallet transaction notifications",
+            "example": false
+          },
+          "freeze": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Freeze state (used to stop the wallet from spending)",
+            "example": {}
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "Flag which indicates the wallet has been deleted",
+            "example": false
+          },
+          "approvalsRequired": {
+            "type": "number",
+            "description": "Number of admin approvals required for an action to fire",
+            "example": 1
+          },
+          "isCold": {
+            "type": "boolean",
+            "description": "Flag for identifying cold wallets",
+            "example": false
+          },
+          "coinSpecific": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Coin-specific data"
+          },
+          "admin": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Admin data (wallet policies)",
+            "example": {}
+          },
+          "pendingApprovals": {
+            "type": "array",
+            "example": [],
+            "items": {
+              "type": "object",
+              "additionalProperties": {},
+              "description": "Pending approvals on the wallet"
+            }
+          },
+          "allowBackupKeySigning": {
+            "type": "boolean",
+            "description": "Flag for allowing signing with backup key",
+            "example": false
+          },
+          "clientFlags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recoverable": {
+            "type": "boolean",
+            "description": "Flag indicating whether this wallet's user key is recoverable with the passphrase held by the user."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Time when this wallet was created"
+          },
+          "hasLargeNumberOfAddresses": {
+            "type": "boolean",
+            "description": "Flag indicating that this wallet is large (more than 100,000 addresses). If this is set, some APIs may omit properties which are expensive to calculate for wallets with many addresses (for example, the total address counts returned by the List Addresses API)."
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Custom configuration options for this wallet"
+          },
+          "balanceString": {
+            "type": "string",
+            "description": "Wallet balance as string",
+            "example": "0"
+          },
+          "confirmedBalanceString": {
+            "type": "string",
+            "description": "Confirmed wallet balance as string",
+            "example": "0"
+          },
+          "spendableBalanceString": {
+            "type": "string",
+            "description": "Spendable wallet balance as string",
+            "example": "0"
+          },
+          "receiveAddress": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "chain": {
+                "type": "number"
+              },
+              "index": {
+                "type": "number"
+              },
+              "coin": {
+                "type": "string"
+              },
+              "wallet": {
+                "type": "string"
+              },
+              "coinSpecific": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "address",
+              "chain",
+              "index",
+              "coin",
+              "wallet",
+              "coinSpecific"
+            ]
+          },
+          "balance": {
+            "type": "number",
+            "description": "Wallet balance as number",
+            "example": 0
+          },
+          "rbfBalance": {
+            "type": "number"
+          },
+          "rbfBalanceString": {
+            "type": "string"
+          },
+          "reservedBalanceString": {
+            "type": "string"
+          },
+          "lockedBalanceString": {
+            "type": "string"
+          },
+          "stakedBalanceString": {
+            "type": "string"
+          },
+          "unspentCount": {
+            "type": "number"
+          },
+          "pendingChainInitialization": {
+            "type": "boolean"
+          },
+          "pendingEcdsaTssInitialization": {
+            "type": "boolean"
+          },
+          "multisigType": {
+            "type": "string"
+          },
+          "multisigTypeVersion": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "walletFullyCreated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "users",
+          "coin",
+          "label",
+          "m",
+          "n",
+          "keys",
+          "keySignatures",
+          "enterprise",
+          "organization",
+          "bitgoOrg",
+          "tags",
+          "disableTransactionNotifications",
+          "freeze",
+          "deleted",
+          "approvalsRequired",
+          "isCold",
+          "coinSpecific",
+          "admin",
+          "pendingApprovals",
+          "allowBackupKeySigning",
+          "clientFlags",
+          "recoverable",
+          "startDate",
+          "hasLargeNumberOfAddresses",
+          "config",
+          "balanceString",
+          "confirmedBalanceString",
+          "spendableBalanceString",
+          "receiveAddress"
+        ]
+      },
+      "UserKeychainType": {
+        "title": "UserKeychainType",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Keychain ID",
+            "example": "59cd72485007a239fb00282ed480da1f",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "source": {
+            "type": "string",
+            "description": "Party that created the key",
+            "example": "user"
+          },
+          "type": {
+            "type": "string",
+            "description": "Keychain type (e.g. \"independent\" for onchain, \"tss\" for MPC)"
+          },
+          "pub": {
+            "type": "string",
+            "description": "Public part of a key pair (onchain wallets)",
+            "example": "xpub661MyMwAqRbcGMVhmc7wqQRYMtcX9LAvSj1pjB213y5TsrkV2uuzJjWnjBrT1FUeNWGPjaVm5p7o6jdNcQJrV1cy3a1R8NQ9m7LuYKA8RpH"
+          },
+          "ethAddress": {
+            "type": "string",
+            "description": "Ethereum address corresponding to this keychain (onchain wallets)",
+            "example": "0xf5b7cca8621691f9dde304cb7128b6bb3d409363"
+          },
+          "coin": {
+            "type": "string",
+            "description": "Asset ticker for this keychain (onchain wallets)"
+          },
+          "commonKeychain": {
+            "type": "string",
+            "description": "Common keychain string (TSS wallets)"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "type"
+        ]
+      },
+      "BitgoKeychainType": {
+        "title": "BitgoKeychainType",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Keychain ID",
+            "example": "59cd72485007a239fb00282ed480da1f",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "source": {
+            "type": "string",
+            "description": "Party that created the key",
+            "example": "bitgo"
+          },
+          "type": {
+            "type": "string",
+            "description": "Keychain type (e.g. \"independent\" for onchain, \"tss\" for MPC)"
+          },
+          "isBitGo": {
+            "type": "boolean",
+            "description": "Flag for identifying keychain as created by BitGo",
+            "example": true
+          },
+          "isTrust": {
+            "type": "boolean",
+            "description": "Flag for identifying keychain as trust keychain",
+            "example": false
+          },
+          "hsmType": {
+            "type": "string",
+            "description": "HSM type used for the BitGo key",
+            "example": "institutional"
+          },
+          "pub": {
+            "type": "string",
+            "description": "Public part of a key pair (onchain wallets)"
+          },
+          "ethAddress": {
+            "type": "string",
+            "description": "Ethereum address corresponding to this keychain (onchain wallets)"
+          },
+          "commonKeychain": {
+            "type": "string",
+            "description": "Common keychain string (TSS wallets)"
+          },
+          "verifiedVssProof": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Whether VSS proof was verified (TSS wallets)"
+          },
+          "keyShares": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {},
+              "description": "TSS key share metadata (TSS wallets)"
+            }
+          },
+          "walletHSMGPGPublicKeySigs": {
+            "type": "string",
+            "description": "Wallet HSM GPG public key signatures (TSS wallets)"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "type",
+          "isBitGo",
+          "isTrust",
+          "hsmType"
         ]
       }
     }

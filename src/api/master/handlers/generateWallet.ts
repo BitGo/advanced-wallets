@@ -48,6 +48,7 @@ async function handleGenerateOnPremOnChainWallet(
 
   // Create wallet parameters with type assertion to allow 'onprem' subtype
   const walletParams = {
+    ...req.decoded,
     label: label,
     m: 2,
     n: 3,
@@ -157,6 +158,7 @@ async function handleGenerateOnPremMpcWallet(
   const { label, enterprise } = req.decoded;
 
   const walletParams: SupplementGenerateWalletOptions = {
+    ...req.decoded,
     label: label,
     m: 2,
     n: 3,

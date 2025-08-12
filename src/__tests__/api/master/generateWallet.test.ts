@@ -114,22 +114,74 @@ describe('POST /api/:coin/wallet/generate', () => {
         keyType: 'independent',
         enterprise: 'test_enterprise',
       })
-      .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
+      .reply(200, {
+        id: 'bitgo-key-id',
+        pub: 'xpub_bitgo',
+        source: 'bitgo',
+        type: 'independent',
+        isBitGo: true,
+        isTrust: false,
+        hsmType: 'institutional',
+      });
 
     const bitgoAddWalletNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/wallet/add`, {
         label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'onchain',
+        coin: coin,
         m: 2,
         n: 3,
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
         type: 'cold',
         subType: 'onPrem',
-        multisigType: 'onchain',
-        enterprise: 'test_enterprise',
       })
       .matchHeader('any', () => true)
       .reply(200, {
         id: 'new-wallet-id',
+        users: [
+          {
+            user: 'user-id',
+            permissions: ['admin', 'spend', 'view'],
+          },
+        ],
+        coin: coin,
+        label: 'test_wallet',
+        m: 2,
+        n: 3,
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        keySignatures: {},
+        enterprise: 'test_enterprise',
+        organization: 'org-id',
+        bitgoOrg: 'BitGo Inc',
+        tags: ['new-wallet-id', 'test_enterprise'],
+        disableTransactionNotifications: false,
+        freeze: {},
+        deleted: false,
+        approvalsRequired: 1,
+        isCold: true,
+        coinSpecific: {},
+        admin: {},
+        pendingApprovals: [],
+        allowBackupKeySigning: false,
+        clientFlags: [],
+        recoverable: false,
+        startDate: '2025-01-01T00:00:00.000Z',
+        hasLargeNumberOfAddresses: false,
+        config: {},
+        balanceString: '0',
+        confirmedBalanceString: '0',
+        spendableBalanceString: '0',
+        receiveAddress: {
+          id: 'addr-id',
+          address: 'tb1qexampleaddress000000000000000000000',
+          chain: 20,
+          index: 0,
+          coin: coin,
+          wallet: 'new-wallet-id',
+          coinSpecific: {},
+        },
+        // optional-ish fields used in assertions
         multisigType: 'onchain',
         type: 'cold',
         subType: 'onPrem',
@@ -416,31 +468,33 @@ describe('POST /api/:coin/wallet/generate', () => {
     const addWalletNock = nock(bitgoApiUrl)
       .post(`/api/v2/${eddsaCoin}/wallet/add`, {
         label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'tss',
+        coin: eddsaCoin,
         m: 2,
         n: 3,
         keys: ['id', 'id', 'id'],
         type: 'cold',
         subType: 'onPrem',
-        multisigType: 'tss',
-        enterprise: 'test_enterprise',
       })
       .reply(200, {
-        id: '685cb53debcd0bcb5ab4fe80d2b74be2',
-        users: [['Object']],
-        coin: 'tsol',
-        label: 'OnPrem eddsa sendMany test 2025-06-26T02:49:18.622Z',
+        id: 'wallet-id',
+        users: [
+          {
+            user: 'user-id',
+            permissions: ['admin', 'spend', 'view'],
+          },
+        ],
+        coin: eddsaCoin,
+        label: 'test_wallet',
         m: 2,
         n: 3,
-        keys: [
-          '685cb5393d57687bdf0a464594ca9e36',
-          '685cb53a3d57687bdf0a4657b5f1f364',
-          '685cb536f21050339163a75dd04d41bf',
-        ],
+        keys: ['id', 'id', 'id'],
         keySignatures: {},
-        enterprise: '6750c2d327511bc4e5f83ccfcfe1b3eb',
-        organization: '6750c2e027511bc4e5f83d251248fc14',
-        bitgoOrg: 'BitGo Trust',
-        tags: ['685cb53debcd0bcb5ab4fe80d2b74be2', '6750c2d327511bc4e5f83ccfcfe1b3eb'],
+        enterprise: 'test_enterprise',
+        organization: 'org-id',
+        bitgoOrg: 'BitGo Inc',
+        tags: ['wallet-id', 'test_enterprise'],
         disableTransactionNotifications: false,
         freeze: {},
         deleted: false,
@@ -454,37 +508,30 @@ describe('POST /api/:coin/wallet/generate', () => {
           nonceExpiresAt: '2025-06-25T23:00:12.019Z',
           trustedTokens: [],
         },
-        admin: {
-          policy: ['Object'],
-        },
+        admin: {},
+        pendingApprovals: [],
+        allowBackupKeySigning: false,
         clientFlags: [],
         walletFlags: [],
-        allowBackupKeySigning: false,
         recoverable: false,
-        startDate: '2025-06-26T02:49:33.000Z',
-        type: 'cold',
-        buildDefaults: {},
-        customChangeKeySignatures: {},
+        startDate: '2025-01-01T00:00:00.000Z',
         hasLargeNumberOfAddresses: false,
-        multisigType: 'tss',
-        hasReceiveTransferPolicy: false,
-        creator: '63f512adc61d7100088e99bf1deece73',
-        subType: 'onPrem',
         config: {},
-        pendingChainInitialization: true,
         balanceString: '0',
         confirmedBalanceString: '0',
         spendableBalanceString: '0',
-        reservedBalanceString: '0',
         receiveAddress: {
-          id: '685cb53eebcd0bcb5ab4fe8ed214d5b9',
-          address: '74AUHib3F6Fq5eVm2ywP5ik9iQjviwAfZXWnGM9JHhJ4',
+          id: 'addr-id',
+          address: '93AHaUAExampleRootAddress',
           chain: 0,
           index: 0,
-          coin: 'tsol',
-          wallet: '685cb53debcd0bcb5ab4fe80d2b74be2',
-          coinSpecific: ['Object'],
+          coin: eddsaCoin,
+          wallet: 'wallet-id',
+          coinSpecific: {},
         },
+        multisigType: 'tss',
+        type: 'cold',
+        subType: 'onPrem',
       });
 
     const response = await agent
@@ -1051,7 +1098,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'tss',
         isMPCv2: true,
       })
-      .reply(200, { id: 'user-key-id' });
+      .reply(200, { id: 'user-key-id', source: 'user', type: 'tss' });
 
     const bitgoAddBackupKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${ecdsaCoin}/key`, {
@@ -1060,7 +1107,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'tss',
         isMPCv2: true,
       })
-      .reply(200, { id: 'backup-key-id' });
+      .reply(200, { id: 'backup-key-id', source: 'backup', type: 'tss' });
 
     const bitgoAddBitGoKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${ecdsaCoin}/key`, {
@@ -1069,21 +1116,72 @@ describe('POST /api/:coin/wallet/generate', () => {
         type: 'tss',
         isMPCv2: true,
       })
-      .reply(200, { id: 'bitgo-key-id' });
+      .reply(200, {
+        id: 'bitgo-key-id',
+        source: 'bitgo',
+        type: 'tss',
+        commonKeychain: 'commonKeychain',
+        isBitGo: true,
+        isTrust: false,
+        hsmType: 'institutional',
+      });
 
     const bitgoAddWalletNock = nock(bitgoApiUrl)
       .post(`/api/v2/${ecdsaCoin}/wallet/add`, {
         label: 'test-wallet', // ?
+        enterprise: 'test-enterprise',
+        multisigType: 'tss',
+        coin: ecdsaCoin,
         m: 2,
         n: 3,
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
         type: 'cold',
         subType: 'onPrem',
-        multisigType: 'tss',
-        enterprise: 'test-enterprise',
       })
       .reply(200, {
         id: 'new-wallet-id',
+        users: [
+          {
+            user: 'user-id',
+            permissions: ['admin', 'spend', 'view'],
+          },
+        ],
+        coin: ecdsaCoin,
+        label: 'test-wallet',
+        m: 2,
+        n: 3,
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        keySignatures: {},
+        enterprise: 'test-enterprise',
+        organization: 'org-id',
+        bitgoOrg: 'BitGo Inc',
+        tags: ['new-wallet-id', 'test-enterprise'],
+        disableTransactionNotifications: false,
+        freeze: {},
+        deleted: false,
+        approvalsRequired: 1,
+        isCold: true,
+        coinSpecific: {},
+        admin: {},
+        pendingApprovals: [],
+        allowBackupKeySigning: false,
+        clientFlags: [],
+        recoverable: false,
+        startDate: '2025-01-01T00:00:00.000Z',
+        hasLargeNumberOfAddresses: false,
+        config: {},
+        balanceString: '0',
+        confirmedBalanceString: '0',
+        spendableBalanceString: '0',
+        receiveAddress: {
+          id: 'addr-id',
+          address: '0xexample',
+          chain: 0,
+          index: 0,
+          coin: ecdsaCoin,
+          wallet: 'new-wallet-id',
+          coinSpecific: {},
+        },
         multisigType: 'tss',
         type: 'cold',
         subType: 'onPrem',

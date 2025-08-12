@@ -21,13 +21,8 @@ import {
 } from '../../../shared/recoveryUtils';
 
 import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
-import {
-  CoinSpecificParams,
-  CoinSpecificParamsUnion,
-  MasterApiSpecRouteRequest,
-  ScriptType2Of3,
-  SolanaRecoveryOptions,
-} from '../routers/masterBitGoExpressApiSpec';
+import { MasterApiSpecRouteRequest, ScriptType2Of3 } from '../routers/masterBitGoExpressApiSpec';
+import { CoinSpecificParams, CoinSpecificParamsUnion } from '../routers/recoveryRoute';
 import { recoverEddsaWallets } from './recoverEddsaWallets';
 import { EnvironmentName, MasterExpressConfig } from '../../../shared/types';
 import { recoverEcdsaMpcV2Params, recoverEcdsaMPCv2Wallets } from './recoverEcdsaWallets';
@@ -154,7 +149,7 @@ async function handleEddsaRecovery(
     };
     let unsignedSweepPrebuildTx: Awaited<ReturnType<typeof recoverEddsaWallets>>;
     if (sdkCoin.getFamily() === CoinFamily.SOL) {
-      const solanaParams = params.coinSpecificParams as SolanaRecoveryOptions;
+      const solanaParams = params.coinSpecificParams as SolRecoveryOptions;
       const solanaRecoveryOptions: SolRecoveryOptions = { ...options };
       solanaRecoveryOptions.recoveryDestinationAtaAddress =
         solanaParams.recoveryDestinationAtaAddress;
