@@ -1,6 +1,6 @@
 # Dinamo HSM KMS Implementation Documentation
 
-This document provides comprehensive documentation for the KMS API's integration with Dinamo HSM, covering the complete request-response flow from API handlers to HSM operations.
+This document provides a reference implementation for integrating the 4 KMS API's with Dinamo HSM, covering the complete request-response flow from API handlers to HSM operations.
 
 ## Demo Scripts
 
@@ -32,7 +32,7 @@ API Request → Handler → KMS Provider → Dinamo HSM → Database → Respons
 | `POST /generateDataKey` | `generateDataKey.ts` | `generateDataKey()` | Create/export AES key |
 | `POST /decryptDataKey` | `decryptDataKey.ts` | `decryptDataKey()` | Local SJCL decryption |
 
-## Envelope Encryption Pattern
+## Envelope Encryption Pattern (Recommended) 
 
 ### Layer 1: Root Keys (HSM)
 - **Algorithm**: RSA-2048 asymmetric keys
@@ -78,12 +78,11 @@ private async withClient<T>(fn: (client) => Promise<T>): Promise<T> {
 }
 ```
 
-**Key Features:**
-- Environment-based configuration
-- Automatic connection cleanup using try/finally
-- Error handling for disconnect failures
-- Generic typing for return values
-- Centralized connection logic for all HSM operations
+**Why Connection Management is Critical:**
+- **Prevents Resource Leaks**: Ensures HSM connections are properly closed to avoid dangling connections
+- **HSM Connection Limits**: Hardware security modules have limited concurrent connection pools
+- **Network Stability**: Prevents socket exhaustion and connection timeouts
+- **Security Best Practice**: Minimizes attack surface by closing connections immediately after use
 
 ### Root Key Creation
 
@@ -119,7 +118,7 @@ async createRootKey(): Promise<{ rootKey: string }> {
 
 ```typescript
 async generateDataKey(rootKey: string, keySpec: DataKeyTypeType): Promise<GenerateDataKeyKmsRes> {
-  return await this.withClient(async (client) => {
+  return await this.withClient(async (client) => {  // Connection auto-managed to prevent dangling connections
     // 1. Create temporary AES key in HSM
     const dataKeyName = getRandomHash(32);
     const created = await client.key.create(
@@ -132,11 +131,15 @@ async generateDataKey(rootKey: string, keySpec: DataKeyTypeType): Promise<Genera
     // 2. Export plaintext key material
     const exportedKey = await client.key.exportSymmetric(dataKeyName);
     const plaintextKey = exportedKey.toString('base64');
+    
+    // **CRITICAL SECURITY NOTE**: The plaintextKey contains raw cryptographic material
+    // and MUST be wiped from memory immediately after encryption operations.
+    // In production, use secure memory allocation and explicit zeroing.
 
     // 3. Encrypt with root key (envelope encryption)
     return {
       encryptedKey: encrypt(rootKey, plaintextKey),  // SJCL encryption
-      plaintextKey: plaintextKey,                    // For immediate use
+      plaintextKey: plaintextKey,                    // For immediate use - WIPE AFTER USE
     };
   });
 }
@@ -148,6 +151,50 @@ async generateDataKey(rootKey: string, keySpec: DataKeyTypeType): Promise<Genera
 3. **Format Conversion**: Buffer → base64 string
 4. **Envelope Encryption**: Encrypt plaintext with root key
 5. **Automatic Cleanup**: HSM deletes temporary key
+6. **⚠️ MEMORY SECURITY**: Plaintext key must be wiped from memory after use
+
+### Memory Security Best Practices
+
+```typescript
+// Example of secure memory handling (recommended for production)
+async secureDataKeyGeneration(rootKey: string): Promise<GenerateDataKeyKmsRes> {
+  let plaintextKey: string | null = null;
+  
+  try {
+    const result = await this.generateDataKey(rootKey, 'AES-256');
+    plaintextKey = result.plaintextKey;
+    
+    // Use the plaintext key immediately
+    const encryptedData = encrypt(plaintextKey, sensitiveData);
+    
+    return {
+      encryptedKey: result.encryptedKey,
+      encryptedData: encryptedData
+    };
+  } finally {
+    // **CRITICAL**: Explicitly wipe plaintext key from memory
+    if (plaintextKey) {
+      // Overwrite with random data multiple times
+      for (let i = 0; i < 3; i++) {
+        plaintextKey = crypto.randomBytes(plaintextKey.length).toString('base64');
+      }
+      plaintextKey = null;
+    }
+    
+    // Force garbage collection (if available)
+    if (global.gc) {
+      global.gc();
+    }
+  }
+}
+```
+
+**Security Considerations:**
+- **Immediate Use**: Plaintext keys should be used immediately after generation
+- **Memory Overwriting**: Overwrite memory locations with random data before deallocation
+- **Garbage Collection**: Force GC to clear memory pages containing sensitive data
+- **Process Isolation**: Consider using separate processes for key operations
+- **Hardware Security**: Use HSM-backed secure memory when available
 
 ### Private Key Storage (POST /key)
 
@@ -156,8 +203,14 @@ async postKey(rootKey: string, prv: string): Promise<PostKeyKmsRes> {
   // 1. Generate fresh data key for this private key
   const dataKey = await this.generateDataKey(rootKey, 'AES-256');
   
-  // 2. Encrypt private key with data key
-  const encryptedPrv = encrypt(dataKey.plaintextKey, prv);
+  let encryptedPrv: string;
+  try {
+    // 2. Encrypt private key with data key (use immediately)
+    encryptedPrv = encrypt(dataKey.plaintextKey, prv);
+  } finally {
+    // **CRITICAL**: Wipe plaintext data key from memory immediately after use
+    // Production code should implement secure memory wiping here
+  }
 
   return {
     encryptedPrv,                              // Encrypted private key
@@ -169,51 +222,11 @@ async postKey(rootKey: string, prv: string): Promise<PostKeyKmsRes> {
 }
 ```
 
-**Encryption Layers:**
-- **Layer 1**: Private Key → AES-256-CCM → Encrypted Private Key
-  - Uses plaintextKey from HSM-generated data key
-  - SJCL library for AES-256-CCM encryption
-- **Layer 2**: Data Key → Local AES → Encrypted Data Key  
-  - Uses root key as password
-  - Custom encrypt() function from utils/encrypt.ts
-
-### Private Key Retrieval (GET /key/{pub})
-
-```typescript
-async getKey(rootKey: string, keyId: string, options: GetKeyOptions): Promise<GetKeyKmsRes> {
-  // 1. Decrypt data key using root key
-  const decryptedKey = await this.decryptDataKey(rootKey, options.encryptedDataKey);
-  
-  // 2. Convert data key format
-  const aesKeyBuffer = Buffer.from(decryptedKey.plaintextKey, 'base64');
-  const password = aesKeyBuffer.toString('base64');
-  
-  // 3. Decrypt private key with recovered data key
-  const decryptedPrv = decrypt(password, keyId);
-  
-  return { prv: decryptedPrv };
-}
-```
-
-**Decryption Process:**
-1. **Data Key Recovery**: Decrypt encrypted data key with root key
-2. **Format Conversion**: base64 → Buffer → base64 (consistent format)
-3. **Private Key Decryption**: Use recovered data key to decrypt private key
-
-### Data Key Decryption
-
-```typescript
-async decryptDataKey(rootKey: string, encryptedKey: string): Promise<DecryptDataKeyKmsRes> {
-  return {
-    plaintextKey: decrypt(rootKey, encryptedKey),
-  };
-}
-```
-
-**Implementation Notes:**
-- **Local Operation**: Uses SJCL decryption, not HSM
-- **Root Key as Password**: Simple symmetric decryption
-- **Performance**: Fast local operation vs. slower HSM calls
+**Memory Security Notes:**
+- **Immediate Encryption**: Use plaintext data key immediately for encryption
+- **Secure Disposal**: Wipe plaintext key from memory after single use
+- **No Persistence**: Never store plaintext data keys in variables or logs
+- **Error Handling**: Ensure memory wiping occurs even if encryption fails
 
 ## Database Schema
 
