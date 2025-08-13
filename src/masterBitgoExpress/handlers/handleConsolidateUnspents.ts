@@ -1,0 +1,48 @@
+import { RequestTracer, KeyIndices } from '@bitgo-beta/sdk-core';
+import logger from '../../shared/logger';
+import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
+import { getWalletAndSigningKeychain, makeCustomSigningFunction } from './utils/utils';
+
+export async function handleConsolidateUnspents(
+  req: MasterApiSpecRouteRequest<'v1.wallet.consolidateunspents', 'post'>,
+) {
+  const awmClient = req.awmClient;
+  const reqId = new RequestTracer();
+  const bitgo = req.bitgo;
+  const params = req.decoded;
+  const walletId = req.params.walletId;
+  const coin = req.params.coin;
+
+  const { wallet, signingKeychain } = await getWalletAndSigningKeychain({
+    bitgo,
+    coin,
+    walletId,
+    params,
+    reqId,
+    KeyIndices,
+  });
+
+  try {
+    // Create custom signing function that delegates to EBE
+    const customSigningFunction = makeCustomSigningFunction({
+      awmClient,
+      source: params.source,
+      pub: signingKeychain.pub!,
+    });
+
+    // Prepare consolidation parameters
+    const consolidationParams = {
+      ...params,
+      customSigningFunction,
+      reqId,
+    };
+
+    // Send consolidate unspents
+    const result = await wallet.consolidateUnspents(consolidationParams);
+    return result;
+  } catch (error) {
+    const err = error as Error;
+    logger.error('Failed to consolidate unspents: %s', err.message);
+    throw err;
+  }
+}

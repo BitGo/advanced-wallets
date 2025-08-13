@@ -7,7 +7,7 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Trx } from '@bitgo-beta/sdk-coin-trx';
 import { Sol } from '@bitgo-beta/sdk-coin-sol';
 import { Sui } from '@bitgo-beta/sdk-coin-sui';
-import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
+import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 
 describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;

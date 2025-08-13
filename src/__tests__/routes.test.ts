@@ -3,7 +3,7 @@ import 'should';
 import request from 'supertest';
 import express from 'express';
 import { AppMode, TlsMode } from '../shared/types';
-import { setupRoutes } from '../routes/advancedWalletManager';
+import { setupRoutes } from '../advancedWalletManager/routers/advancedWalletManager';
 
 describe('Routes', () => {
   let app: express.Application;

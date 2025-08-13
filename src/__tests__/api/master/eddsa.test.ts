@@ -12,8 +12,8 @@ import {
   Wallet,
 } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { AdvancedWalletManagerClient as AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
-import { handleEddsaSigning } from '../../../api/master/handlers/eddsa';
+import { AdvancedWalletManagerClient as AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
+import { handleEddsaSigning } from '../../../masterBitgoExpress/handlers/eddsa';
 import { readKey } from 'openpgp';
 
 describe('Eddsa Signing Handler', () => {

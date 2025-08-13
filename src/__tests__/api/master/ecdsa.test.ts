@@ -13,8 +13,8 @@ import {
   TxRequest,
   Wallet,
 } from '@bitgo-beta/sdk-core';
-import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
-import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../api/master/handlers/ecdsaMPCv2';
+import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
+import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../masterBitgoExpress/handlers/ecdsa';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { readKey } from 'openpgp';
 

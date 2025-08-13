@@ -14,8 +14,8 @@ import {
   prepareIpc,
   createMtlsMiddleware,
 } from './shared/appUtils';
-import logger from './logger';
-import { setupRoutes } from './routes/masterBitGoExpress';
+import logger from './shared/logger';
+import { setupRoutes } from './masterBitgoExpress/routers/masterBitGoExpress';
 
 /**
  * Create a startup function which will be run upon server initialization

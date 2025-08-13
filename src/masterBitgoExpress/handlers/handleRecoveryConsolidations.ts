@@ -1,0 +1,155 @@
+import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
+import logger from '../../shared/logger';
+import {
+  BaseCoin,
+  BitGoBase,
+  MPCConsolidationRecoveryOptions,
+  MPCTx,
+  RecoveryTxRequest,
+} from '@bitgo-beta/sdk-core';
+import { CoinFamily } from '@bitgo-beta/statics';
+import type { Sol, SolConsolidationRecoveryOptions, Tsol } from '@bitgo-beta/sdk-coin-sol';
+import type {
+  ConsolidationRecoveryOptions,
+  RecoveryTransaction,
+  Trx,
+  Ttrx,
+} from '@bitgo-beta/sdk-coin-trx';
+import type { Sui, Tsui } from '@bitgo-beta/sdk-coin-sui';
+import type { Ada, Tada } from '@bitgo-beta/sdk-coin-ada';
+import type { Dot, Tdot } from '@bitgo-beta/sdk-coin-dot';
+import type { Tao, Ttao } from '@bitgo-beta/sdk-coin-tao';
+import coinFactory from '../../shared/coinFactory';
+import { checkRecoveryMode } from './utils/utils';
+import { MasterExpressConfig } from '../../shared/types';
+
+type RecoveryConsolidationParams =
+  | ConsolidationRecoveryOptions
+  | SolConsolidationRecoveryOptions
+  | MPCConsolidationRecoveryOptions;
+
+type RecoveryConsolidationResult = {
+  transactions?: (RecoveryTransaction | MPCTx)[];
+  txRequests?: RecoveryTxRequest[];
+};
+
+// Handler for recovery from receive addresses (consolidation sweeps)
+export async function handleRecoveryConsolidationsOnPrem(
+  req: MasterApiSpecRouteRequest<'v1.wallet.recoveryConsolidations', 'post'>,
+) {
+  checkRecoveryMode(req.config as MasterExpressConfig);
+
+  const bitgo = req.bitgo;
+  const coin = req.decoded.coin;
+  const awmClient = req.awmClient;
+
+  const isMPC = req.decoded.multisigType === 'tss';
+
+  const { commonKeychain, apiKey = '' } = req.decoded;
+  let { userPub, backupPub, bitgoPub } = req.decoded;
+
+  if (isMPC) {
+    if (!commonKeychain) {
+      throw new Error('Missing required key: commonKeychain');
+    }
+
+    userPub = commonKeychain;
+    backupPub = commonKeychain;
+    bitgoPub = commonKeychain;
+  }
+
+  if (!userPub || !backupPub || !bitgoPub) {
+    throw new Error('Missing required keys: userPub, backupPub, bitgoPub');
+  }
+
+  const sdkCoin = await coinFactory.getCoin(coin, bitgo);
+  let txs: (RecoveryTransaction | MPCTx | RecoveryTxRequest)[] = [];
+
+  // Use type assertion to access recoverConsolidations
+  const result = await recoveryConsolidateWallets(bitgo, sdkCoin, {
+    ...req.decoded,
+    userKey: !isMPC ? userPub : '',
+    backupKey: !isMPC ? backupPub : '',
+    bitgoKey: bitgoPub,
+  });
+
+  if (result.transactions) {
+    txs = result.transactions;
+  } else if (result.txRequests) {
+    txs = result.txRequests;
+  } else {
+    throw new Error('recoverConsolidations did not return expected transactions');
+  }
+
+  logger.info(`Found ${txs.length} unsigned consolidation transactions`);
+
+  const signedTxs = [];
+  try {
+    for (const tx of txs) {
+      const signedTx = isMPC
+        ? await awmClient.recoveryMPC({
+            userPub,
+            backupPub,
+            apiKey,
+            unsignedSweepPrebuildTx: tx as MPCTx | RecoveryTxRequest,
+            coinSpecificParams: {},
+            walletContractAddress: '',
+          })
+        : await awmClient.recoveryMultisig({
+            userPub,
+            backupPub,
+            unsignedSweepPrebuildTx: tx as RecoveryTransaction,
+            walletContractAddress: '',
+          });
+
+      signedTxs.push(signedTx);
+    }
+
+    return { signedTxs };
+  } catch (err) {
+    logger.error('Error during consolidation recovery:', err);
+    throw err;
+  }
+}
+
+export async function recoveryConsolidateWallets(
+  sdk: BitGoBase,
+  baseCoin: BaseCoin,
+  params: RecoveryConsolidationParams,
+): Promise<RecoveryConsolidationResult> {
+  const family = baseCoin.getFamily();
+
+  switch (family) {
+    case CoinFamily.SOL: {
+      const { register } = await import('@bitgo-beta/sdk-coin-sol');
+      register(sdk);
+      const solCoin = baseCoin as unknown as Sol | Tsol;
+      return await solCoin.recoverConsolidations(params as SolConsolidationRecoveryOptions);
+    }
+    case CoinFamily.TRX: {
+      const { register } = await import('@bitgo-beta/sdk-coin-trx');
+      register(sdk);
+      const trxCoin = baseCoin as unknown as Trx | Ttrx;
+      return await trxCoin.recoverConsolidations(params as ConsolidationRecoveryOptions);
+    }
+    default: {
+      const [
+        { register: registerSui },
+        { register: registerAda },
+        { register: registerDot },
+        { register: registerTao },
+      ] = await Promise.all([
+        import('@bitgo-beta/sdk-coin-sui'),
+        import('@bitgo-beta/sdk-coin-ada'),
+        import('@bitgo-beta/sdk-coin-dot'),
+        import('@bitgo-beta/sdk-coin-tao'),
+      ]);
+      registerAda(sdk);
+      registerSui(sdk);
+      registerDot(sdk);
+      registerTao(sdk);
+      const coin = baseCoin as unknown as Sui | Tsui | Ada | Tada | Dot | Tdot | Tao | Ttao;
+      return await coin.recoverConsolidations(params as MPCConsolidationRecoveryOptions);
+    }
+  }
+}

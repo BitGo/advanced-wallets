@@ -20,20 +20,20 @@ import * as t from 'io-ts';
 import coinFactory from '../../shared/coinFactory';
 import { ErrorResponses, NotImplementedError } from '../../shared/errors';
 
-import { postIndependentKey } from '../../api/advancedWalletManager/handlers/postIndependentKey';
-import { recoveryMultisigTransaction } from '../../api/advancedWalletManager/handlers/recoveryMultisigTransaction';
-import { signMultisigTransaction } from '../../api/advancedWalletManager/handlers/signMultisigTransaction';
-import { signMpcTransaction } from '../../api/advancedWalletManager/handlers/signMpcTransaction';
+import { postIndependentKey } from '../handlers/postIndependentKey';
+import { recoveryMultisigTransaction } from '../handlers/multisigRecovery';
+import { signMultisigTransaction } from '../handlers/multisigSignTransaction';
+import { signMpcTransaction } from '../handlers/ecdsaEddsaSignTransaction';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { AdvancedWalletManagerConfig as AdvancedWalletManagerConfig } from '../../shared/types';
 import { BitGoRequest } from '../../types/request';
-import { eddsaInitialize } from '../../api/advancedWalletManager/mpcInitialize';
-import { eddsaFinalize } from '../../api/advancedWalletManager/mpcFinalize';
-import { ecdsaMPCv2Initialize } from '../../api/advancedWalletManager/handlers/ecdsaMPCv2Initialize';
-import { ecdsaMPCv2Round } from '../../api/advancedWalletManager/handlers/ecdsaMPCv2Round';
-import { ecdsaMPCv2Finalize } from '../../api/advancedWalletManager/handlers/ecdsaMPCv2Finalize';
-import { ecdsaMPCv2Recovery } from '../../api/advancedWalletManager/handlers/ecdsaMPCv2Recovery';
-import { signEddsaRecoveryTransaction } from '../../api/advancedWalletManager/handlers/signEddsaRecoveryTransaction';
+import { eddsaInitialize } from '../handlers/eddsaMPCWalletGenerationInitialize';
+import { eddsaFinalize } from '../handlers/eddsaMPCWalletGenerationFinalize';
+import { ecdsaMPCv2Initialize } from '../handlers/ecdsaMPCV2WalletGenerationInitialize';
+import { ecdsaMPCv2Round } from '../handlers/ecdsaMPCV2WalletGenerationRound';
+import { ecdsaMPCv2Finalize } from '../handlers/ecdsaMPCV2WalletGenerationFinalize';
+import { ecdsaMPCv2Recovery } from '../handlers/ecdsaMPCV2Recovery';
+import { signEddsaRecoveryTransaction } from '../handlers/eddsaMPCRecovery';
 import { isEddsaCoin } from '../../shared/coinUtils';
 
 // Request type for /key/independent endpoint
