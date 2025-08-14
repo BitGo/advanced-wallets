@@ -1,5 +1,15 @@
 # Dinamo HSM KMS Implementation Documentation
 
+## ⚠️ Security Recommendation
+
+**For production KMS implementations, consider implementing the KMS-API in a C++ like language, or use typed arrays like Uint8Array for all sensitive data because JavaScript does not support secure memory management.**
+
+**Recommended Alternatives:**
+- **C++/Rust**: Languages with explicit memory management and secure allocation
+- **Node.js Typed Arrays**: Use `Uint8Array` for sensitive data with explicit zeroing
+- **Native Addons**: Implement cryptographic operations in native C++ modules
+- **Hardware Security**: Use HSM-backed secure memory when available
+
 This document provides a reference implementation for integrating the 4 KMS API's with Dinamo HSM, covering the complete request-response flow from API handlers to HSM operations.
 
 ## Demo Scripts
@@ -153,41 +163,6 @@ async generateDataKey(rootKey: string, keySpec: DataKeyTypeType): Promise<Genera
 5. **Automatic Cleanup**: HSM deletes temporary key
 6. **⚠️ MEMORY SECURITY**: Plaintext key must be wiped from memory after use
 
-### Memory Security Best Practices
-
-```typescript
-// Example of secure memory handling (recommended for production)
-async secureDataKeyGeneration(rootKey: string): Promise<GenerateDataKeyKmsRes> {
-  let plaintextKey: string | null = null;
-  
-  try {
-    const result = await this.generateDataKey(rootKey, 'AES-256');
-    plaintextKey = result.plaintextKey;
-    
-    // Use the plaintext key immediately
-    const encryptedData = encrypt(plaintextKey, sensitiveData);
-    
-    return {
-      encryptedKey: result.encryptedKey,
-      encryptedData: encryptedData
-    };
-  } finally {
-    // **CRITICAL**: Explicitly wipe plaintext key from memory
-    if (plaintextKey) {
-      // Overwrite with random data multiple times
-      for (let i = 0; i < 3; i++) {
-        plaintextKey = crypto.randomBytes(plaintextKey.length).toString('base64');
-      }
-      plaintextKey = null;
-    }
-    
-    // Force garbage collection (if available)
-    if (global.gc) {
-      global.gc();
-    }
-  }
-}
-```
 
 **Security Considerations:**
 - **Immediate Use**: Plaintext keys should be used immediately after generation
