@@ -3,7 +3,7 @@ import nock from 'nock';
 import sinon from 'sinon';
 import supertest from 'supertest';
 import { Utils } from '@bitgo-beta/sdk-coin-sol';
-import * as kmsUtils from '../../../api/advancedWalletManager/utils';
+import * as kmsUtils from '../../../advancedWalletManager/handlers/utils/utils';
 import { app as expressApp } from '../../../advancedWalletManagerApp';
 import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
 

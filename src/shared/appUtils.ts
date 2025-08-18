@@ -7,7 +7,7 @@ import fs from 'fs';
 import timeout from 'connect-timeout';
 import bodyParser from 'body-parser';
 import pjson from '../../package.json';
-import logger from '../logger';
+import logger from './logger';
 
 import { Config, TlsMode, MasterExpressConfig } from '../shared/types';
 import { isAdvancedWalletManagerConfig, isMasterExpressConfig } from '../initConfig';

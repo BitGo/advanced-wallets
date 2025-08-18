@@ -2,7 +2,7 @@ import { determineAppMode } from './initConfig';
 import { AppMode } from './shared/types';
 import * as advancedWalletManagerApp from './advancedWalletManagerApp';
 import * as masterBitGoExpressApp from './masterBitGoExpressApp';
-import logger from './logger';
+import logger from './shared/logger';
 
 /**
  * Main application entry point that determines the mode and starts the appropriate app

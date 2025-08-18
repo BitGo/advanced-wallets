@@ -10,7 +10,7 @@ import {
   isAdvancedWalletManagerConfig,
 } from './shared/types';
 import { initConfig } from './initConfig';
-import { setupRoutes } from './routes/advancedWalletManager';
+import { setupRoutes } from './advancedWalletManager/routers/advancedWalletManager';
 import {
   setupLogging,
   setupCommonMiddleware,
@@ -20,7 +20,7 @@ import {
   prepareIpc,
   createMtlsMiddleware,
 } from './shared/appUtils';
-import logger from './logger';
+import logger from './shared/logger';
 
 /**
  * Create a startup function which will be run upon server initialization

@@ -4,6 +4,20 @@ import * as t from 'io-ts';
  */
 
 /**
+ * Bitgo API response error
+ */
+export class BitgoApiResponseError extends Error {
+  public result: any;
+  public status: number;
+
+  constructor(message: string, status = 500, result?: any) {
+    super(message);
+    this.status = status;
+    this.result = result;
+  }
+}
+
+/**
  * Base custom error class with common setup
  */
 export class BitgoExpressError extends Error {

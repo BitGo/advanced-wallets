@@ -6,8 +6,8 @@ import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 import { Hteth } from '@bitgo-beta/sdk-coin-eth';
-import * as transactionRequests from '../../../api/master/handlers/transactionRequests';
-import * as handlerUtils from '../../../api/master/handlerUtils';
+import * as transactionRequests from '../../../masterBitgoExpress/handlers/transactionRequests';
+import * as handlerUtils from '../../../masterBitgoExpress/handlers/utils/utils';
 
 describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
   let agent: request.SuperAgentTest;

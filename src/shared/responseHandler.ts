@@ -1,7 +1,6 @@
 import { Request, Response as ExpressResponse, NextFunction } from 'express';
 import { AppMode, Config } from '../shared/types';
 import { BitGoRequest } from '../types/request';
-import { ApiResponseError, AdvancedWalletManagerError } from '../errors';
 import {
   BitgoExpressError,
   ValidationError,
@@ -10,8 +9,9 @@ import {
   UnauthorizedError,
   ForbiddenError,
   ConflictError,
+  BitgoApiResponseError,
 } from './errors';
-import logger from '../logger';
+import logger from './logger';
 import { DecodeError } from '@api-ts/superagent-wrapper';
 
 // Extend Express Response to include sendEncoded
@@ -89,7 +89,7 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
       }
 
       if ((error as any).name === 'ApiResponseError') {
-        const apiError = error as ApiResponseError;
+        const apiError = error as BitgoApiResponseError;
         const body = {
           error: 'BitGoApiResponseError',
           details: apiError.result,
@@ -126,15 +126,6 @@ export function responseHandler<T extends Config = Config>(fn: ServiceFunction<T
         logger.error(statusCode);
         return res.sendEncoded(statusCode, {
           error: error.name,
-          details: error.message,
-        });
-      }
-
-      // If it's an AdvancedWalletManagerError, use its status code
-      if (error instanceof AdvancedWalletManagerError) {
-        return res.sendEncoded(error.status, {
-          error: error.message,
-          name: error.name,
           details: error.message,
         });
       }

@@ -7,7 +7,7 @@ import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { BitGoAPI as BitGo } from '@bitgo-beta/sdk-api';
-import * as kmsUtils from '../../../api/advancedWalletManager/utils';
+import * as kmsUtils from '../../../advancedWalletManager/handlers/utils/utils';
 
 describe('UTXO recovery', () => {
   let agent: request.SuperAgentTest;

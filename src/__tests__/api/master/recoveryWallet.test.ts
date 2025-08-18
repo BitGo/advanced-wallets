@@ -5,10 +5,10 @@ import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
-import * as masterMiddleware from '../../../api/master/middleware/middleware';
+import * as masterMiddleware from '../../../masterBitgoExpress/middleware/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { AdvancedWalletManagerClient } from '../../../api/master/clients/advancedWalletManagerClient';
+import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 import { CoinFamily } from '@bitgo-beta/statics';
 import coinFactory from '../../../shared/coinFactory';
 

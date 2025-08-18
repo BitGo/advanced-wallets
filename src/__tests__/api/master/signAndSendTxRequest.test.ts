@@ -16,8 +16,8 @@ import {
   Wallet,
 } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import * as mpcv2 from '../../../api/master/handlers/ecdsaMPCv2';
-import * as eddsa from '../../../api/master/handlers/eddsa';
+import * as mpcv2 from '../../../masterBitgoExpress/handlers/ecdsa';
+import * as eddsa from '../../../masterBitgoExpress/handlers/eddsa';
 import coinFactory from '../../../shared/coinFactory';
 
 describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', () => {

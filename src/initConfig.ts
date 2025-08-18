@@ -7,7 +7,7 @@ import {
   AppMode,
   EnvironmentName,
 } from './shared/types';
-import logger from './logger';
+import logger from './shared/logger';
 import { validateTlsCertificates, validateMasterExpressConfig } from './shared/appUtils';
 
 export {

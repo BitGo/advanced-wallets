@@ -8,7 +8,7 @@ import { app as enclavedApp } from '../../../advancedWalletManagerApp';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
-import * as utils from '../../../api/advancedWalletManager/utils';
+import * as utils from '../../../advancedWalletManager/handlers/utils/utils';
 
 describe('MPC Finalize', () => {
   let agent: request.SuperAgentTest;
