@@ -118,7 +118,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: "${{ needs.get-context.outputs.new-version }},latest"
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ needs.get-context.outputs.new-version }}
+            ghcr.io/${{ github.repository }}:latest
           build-args: |
             BUILD_VERSION=${{ needs.get-context.outputs.new-version }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
