@@ -58,6 +58,10 @@ jobs:
             echo "Version changed from $previous_version to $current_version in the last commit"
             echo "version-changed=true" >> $GITHUB_OUTPUT
             echo "new-version=$current_version" >> $GITHUB_OUTPUT
+          elif [ -n "${{ github.event.inputs.commit_sha }}" ] && [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Workflow was manually triggered, trying to publish $current_version"
+            echo "version-changed=true" >> $GITHUB_OUTPUT
+            echo "new-version=$current_version" >> $GITHUB_OUTPUT
           else
             echo "Version unchanged or not following semantic versioning format"
             echo "version-changed=false" >> $GITHUB_OUTPUT
