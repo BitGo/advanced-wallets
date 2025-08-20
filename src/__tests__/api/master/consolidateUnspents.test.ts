@@ -173,6 +173,121 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     sinon.assert.calledOnce(consolidateUnspentsStub);
   });
 
+  it('should handle array result from consolidateUnspents and return first element', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData);
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const mockArrayResult = [
+      {
+        transfer: {
+          entries: [
+            { address: 'tb1qu...', value: -4000 },
+            { address: 'tb1qle...', value: -4000 },
+            { address: 'tb1qtw...', value: 2714, isChange: true },
+          ],
+          id: 'first-transfer-id',
+          coin: 'tbtc',
+          wallet: '685abbf19ca95b79f88e0b41d9337109',
+          txid: 'first-tx-id',
+          status: 'signed',
+        },
+        txid: 'first-tx-id',
+        tx: '01000000000102first...',
+        status: 'signed',
+      },
+    ];
+
+    const consolidateUnspentsStub = sinon
+      .stub(Wallet.prototype, 'consolidateUnspents')
+      .resolves(mockArrayResult);
+
+    const requestPayload = {
+      pubkey: mockUserKeychain.pub,
+      source: 'user' as const,
+      feeRate: 1000,
+      bulk: true,
+    };
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(200);
+    // Should return only the first element from the array
+    response.body.should.have.property('transfer');
+    response.body.should.have.property('txid', 'first-tx-id');
+    response.body.should.have.property('tx', '01000000000102first...');
+    response.body.should.have.property('status', 'signed');
+    response.body.transfer.should.have.property('id', 'first-transfer-id');
+    response.body.transfer.should.have.property('txid', 'first-tx-id');
+    response.body.transfer.should.have.property('status', 'signed');
+    response.body.transfer.should.have.property('entries').which.is.Array();
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(consolidateUnspentsStub);
+  });
+
+  it('should fail when consolidateUnspents returns array with more than one element', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData);
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const mockArrayResult = [
+      {
+        txid: 'first-tx-id',
+        tx: '01000000000102first...',
+        status: 'signed',
+      },
+      {
+        txid: 'second-tx-id',
+        tx: '01000000000102second...',
+        status: 'signed',
+      },
+    ];
+
+    const consolidateUnspentsStub = sinon
+      .stub(Wallet.prototype, 'consolidateUnspents')
+      .resolves(mockArrayResult);
+
+    const requestPayload = {
+      pubkey: mockUserKeychain.pub,
+      source: 'user' as const,
+      feeRate: 1000,
+    };
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(500);
+    response.body.should.have.property('error', 'Internal Server Error');
+    response.body.should.have.property('name', 'Error');
+    response.body.should.have.property(
+      'details',
+      'Expected single consolidation result, but received 2 results',
+    );
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(consolidateUnspentsStub);
+  });
+
   it('should succeed in consolidating unspents with all optional parameters', async () => {
     const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)

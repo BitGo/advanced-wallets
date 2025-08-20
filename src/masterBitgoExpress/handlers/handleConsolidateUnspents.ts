@@ -38,7 +38,18 @@ export async function handleConsolidateUnspents(
     };
 
     // Send consolidate unspents
-    const result = await wallet.consolidateUnspents(consolidationParams);
+    let result = await wallet.consolidateUnspents(consolidationParams);
+
+    if (Array.isArray(result)) {
+      if (result.length === 1) {
+        result = result[0];
+      } else if (result.length > 1) {
+        throw new Error(
+          `Expected single consolidation result, but received ${result.length} results`,
+        );
+      }
+    }
+
     return result;
   } catch (error) {
     const err = error as Error;
