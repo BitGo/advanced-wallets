@@ -32,6 +32,14 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.sha }}
           fetch-depth: 0 # Fetch all history for git describe to work
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Compute the context for this release
         id: compute-context
         run: |
@@ -77,6 +85,30 @@ jobs:
       release-id: ${{ steps.create-release.outputs.id }}
       release-url: ${{ steps.create-release.outputs.html_url }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate release notes
+        id: generate-notes
+        run: |
+          # Generate release notes using the existing .releaserc.json configuration
+          notes=$(npx semantic-release --dry-run --no-ci --plugins @semantic-release/release-notes-generator 2>/dev/null | grep -A 1000 "The release notes for this version" | tail -n +2 || echo "## What's Changed\n\nThis release includes various improvements and bug fixes.")
+
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$notes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create release
         id: create-release
         uses: actions/github-script@v7
@@ -87,14 +119,14 @@ jobs:
               repo: context.repo.repo,
               tag_name: `v${process.env.VERSION}`,
               name: `v${process.env.VERSION}`,
-              body: 'Automated release created by GitHub Actions',
+              body: process.env.RELEASE_NOTES,
               draft: false,
-              prerelease: false,
-              generate_release_notes: true
+              prerelease: false
             });
             return release.data;
         env:
           VERSION: ${{ needs.get-context.outputs.new-version }}
+          RELEASE_NOTES: ${{ steps.generate-notes.outputs.notes }}
 
   build-and-push:
     name: Build and push image to GHCR
