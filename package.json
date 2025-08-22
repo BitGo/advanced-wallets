@@ -27,7 +27,7 @@
     "@api-ts/openapi-generator": "^5.7.0",
     "@api-ts/response": "^2.1.0",
     "@api-ts/superagent-wrapper": "^1.3.3",
-    "@api-ts/typed-express-router": "^1.1.13",
+    "@api-ts/typed-express-router": "2.0.0",
     "@bitgo-beta/abstract-cosmos": "^1.0.1-beta.1049",
     "@bitgo-beta/abstract-eth": "1.0.2-beta.1298",
     "@bitgo-beta/abstract-utxo": "1.1.1-beta.1301",

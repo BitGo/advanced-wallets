@@ -6,6 +6,7 @@ import {
   type WrappedRouter,
 } from '@api-ts/typed-express-router';
 import express from 'express';
+import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
 import { MasterExpressConfig } from '../../shared/types';
 import * as utxolib from '@bitgo-beta/utxo-lib';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
@@ -82,7 +83,9 @@ export type GenericMasterApiSpecRouteRequest = MasterApiSpecRouteRequest<any, an
 export function createMasterApiRouter(
   cfg: MasterExpressConfig,
 ): WrappedRouter<typeof MasterBitGoExpressApiSpec> {
-  const router = createRouter(MasterBitGoExpressApiSpec);
+  const router = createRouter(MasterBitGoExpressApiSpec, {
+    decodeErrorFormatter: customDecodeErrorFormatter,
+  });
 
   // Add middleware to all routes
   router.use(parseBody);
