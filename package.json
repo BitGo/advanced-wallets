@@ -125,6 +125,8 @@
   "devDependencies": {
     "@api-ts/openapi-generator": "^5.7.0",
     "@commitlint/cli": "^19.8.1",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/release-notes-generator": "^12.1.0",
     "@types/body-parser": "^1.17.0",
     "@types/chai": "^5.2.2",
     "@types/connect-timeout": "^1.9.0",
@@ -154,6 +156,7 @@
     "nodemon": "^3.1.10",
     "nyc": "^15.0.0",
     "prettier": "^2.0.0",
+    "semantic-release": "^22.0.12",
     "should": "^13.2.3",
     "should-http": "^0.1.1",
     "should-sinon": "^0.0.6",
