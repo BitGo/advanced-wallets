@@ -151,7 +151,7 @@ async decryptDataKey(rootKey: string, encryptedKey: string) {
 - **Hardware Security**: Use HSM-backed secure memory when available
 
 
-### Wallet Priate key storage/retrival
+### Wallet Private key storage/retrival
 ```typescript
 async postKey(rootKey: string, prv: string, pub: string) {
   const dataKey = await this.generateDataKey(rootKey);
