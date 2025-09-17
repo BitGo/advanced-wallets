@@ -103,7 +103,7 @@ jobs:
         id: generate-notes
         run: |
           # Generate release notes using the existing .releaserc.json configuration
-          notes=$(npx semantic-release --dry-run --no-ci --plugins @semantic-release/release-notes-generator 2>/dev/null | grep -A 1000 "The release notes for this version" | tail -n +2 || echo "## What's Changed\n\nThis release includes various improvements and bug fixes.")
+          notes=$(npx semantic-release --dry-run --no-ci --plugins @semantic-release/release-notes-generator 2>/dev/null | grep -A 1000 "Release note for version" | tail -n +2)
 
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT
