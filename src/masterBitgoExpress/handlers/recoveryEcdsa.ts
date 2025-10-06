@@ -55,7 +55,17 @@ export async function recoverEcdsaMPCv2Wallets(
     const chainId = await baseCoin['getChainId']();
 
     const [accountNumber, sequenceNo] = await baseCoin['getAccountDetails'](senderAddress);
-    const balance = new BigNumber(await baseCoin['getAccountBalance'](senderAddress));
+    const balances = await baseCoin['getAccountBalance'](senderAddress);
+    if (
+      !balances ||
+      balances.length === 0 ||
+      !balances.find((coin) => coin.denom === baseCoin.getDenomination())
+    ) {
+      throw new Error(`No balances found for address: ${senderAddress}`);
+    }
+    const balance = new BigNumber(
+      balances.find((coin) => coin.denom === baseCoin.getDenomination())?.amount || 0,
+    );
     const gasBudget = {
       amount: [
         { denom: baseCoin.getDenomination(), amount: baseCoin.getGasAmountDetails().gasAmount },

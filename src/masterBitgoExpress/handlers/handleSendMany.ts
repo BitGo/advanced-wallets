@@ -131,6 +131,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       ...params,
       // Convert memo string to Memo object if present
       memo: params.memo ? ({ type: 'text', value: params.memo } as Memo) : undefined,
+      txFormat: 'psbt-lite',
     };
 
     // First build the transaction with bitgo
