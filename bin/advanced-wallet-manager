@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Load s390x Solana endianness fix FIRST, before any other imports
+// This patches Buffer methods to correctly handle little-endian data on big-endian architectures
+require('../s390x-solana-endianness-fix');
+
 // TODO: Remove this unhandledRejection hook once BG-49996 is implemented.
 process.on('unhandledRejection', (reason, promise) => {
   console.error('----- Unhandled Rejection at -----');
