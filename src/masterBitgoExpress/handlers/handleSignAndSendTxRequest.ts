@@ -20,8 +20,11 @@ export async function handleSignAndSendTxRequest(
     throw new Error(`Wallet ${walletId} not found`);
   }
 
-  if (wallet.type() !== 'cold' || wallet.subType() !== 'onPrem') {
-    throw new Error('Wallet is not an on-prem wallet');
+  if (
+    wallet.type() !== 'advanced' &&
+    !(wallet.type() === 'cold' && wallet.subType() === 'onPrem')
+  ) {
+    throw new Error('Wallet is not an advanced wallet');
   }
 
   const keyIdIndex = params.source === 'user' ? KeyIndices.USER : KeyIndices.BACKUP;

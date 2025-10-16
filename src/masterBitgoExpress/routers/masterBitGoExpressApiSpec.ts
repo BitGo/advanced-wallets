@@ -11,15 +11,15 @@ import { MasterExpressConfig } from '../../shared/types';
 import * as utxolib from '@bitgo-beta/utxo-lib';
 import { prepareBitGo, responseHandler } from '../../shared/middleware';
 import { BitGoRequest } from '../../types/request';
-import { handleGenerateWalletOnPrem } from '../handlers/handleGenerateWallet';
+import { handleGenerateWallet } from '../handlers/handleGenerateWallet';
 import { handleSendMany } from '../handlers/handleSendMany';
 import { validateMasterExpressConfig } from '../middleware/middleware';
-import { handleRecoveryWalletOnPrem } from '../handlers/recoveryWallet';
+import { handleRecoveryWallet } from '../handlers/recoveryWallet';
 import { handleConsolidate } from '../handlers/handleConsolidate';
 import { handleAccelerate } from '../handlers/handleAccelerate';
 import { handleConsolidateUnspents } from '../handlers/handleConsolidateUnspents';
 import { handleSignAndSendTxRequest } from '../handlers/handleSignAndSendTxRequest';
-import { handleRecoveryConsolidationsOnPrem } from '../handlers/handleRecoveryConsolidations';
+import { handleRecoveryConsolidations } from '../handlers/handleRecoveryConsolidations';
 import { WalletGenerateRoute } from './generateWalletRoute';
 import { AccelerateRoute } from './accelerateRoute';
 import { RecoveryRoute } from './recoveryRoute';
@@ -96,7 +96,7 @@ export function createMasterApiRouter(
   router.post('v1.wallet.generate', [
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
-      const result = await handleGenerateWalletOnPrem(typedReq);
+      const result = await handleGenerateWallet(typedReq);
       return Response.ok(result);
     }),
   ]);
@@ -112,7 +112,7 @@ export function createMasterApiRouter(
   router.post('v1.wallet.recovery', [
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
-      const result = await handleRecoveryWalletOnPrem(typedReq);
+      const result = await handleRecoveryWallet(typedReq);
       return Response.ok(result);
     }),
   ]);
@@ -128,7 +128,7 @@ export function createMasterApiRouter(
   router.post('v1.wallet.recoveryConsolidations', [
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
-      const result = await handleRecoveryConsolidationsOnPrem(typedReq);
+      const result = await handleRecoveryConsolidations(typedReq);
       return Response.ok(result);
     }),
   ]);

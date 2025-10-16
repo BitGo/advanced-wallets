@@ -16,24 +16,24 @@ import coinFactory from '../../shared/coinFactory';
 import { BadRequestError } from '../../shared/errors';
 
 /**
- * Request handler for generating a wallet on-premises.
+ * Request handler for generating an advanced wallet.
  */
-export async function handleGenerateWalletOnPrem(
+export async function handleGenerateWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const { multisigType } = req.decoded;
 
   if (multisigType === 'tss') {
-    return handleGenerateOnPremMpcWallet(req);
+    return handleGenerateMpcWallet(req);
   }
 
-  return handleGenerateOnPremOnChainWallet(req);
+  return handleGenerateOnChainWallet(req);
 }
 
 /**
  * This route is used to generate a multisig wallet when advanced wallet manager is enabled
  */
-async function handleGenerateOnPremOnChainWallet(
+async function handleGenerateOnChainWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const bitgo = req.bitgo;
@@ -46,17 +46,16 @@ async function handleGenerateOnPremOnChainWallet(
 
   const { label, enterprise } = req.decoded;
 
-  // Create wallet parameters with type assertion to allow 'onprem' subtype
+  // Create wallet parameters
   const walletParams = {
     ...req.decoded,
     label: label,
     m: 2,
     n: 3,
     keys: [],
-    type: 'cold',
-    subType: 'onPrem',
+    type: 'advanced',
     multisigType: 'onchain',
-  } as unknown as SupplementGenerateWalletOptions; // TODO: Add onprem to the SDK subType and remove "unknown" type casting
+  } as SupplementGenerateWalletOptions;
 
   if (!_.isUndefined(enterprise)) {
     if (!_.isString(enterprise)) {
@@ -137,7 +136,7 @@ async function handleGenerateOnPremOnChainWallet(
 /**
  * Generates a MPC wallet
  */
-async function handleGenerateOnPremMpcWallet(
+async function handleGenerateMpcWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
   const bitgo = req.bitgo;
@@ -163,8 +162,7 @@ async function handleGenerateOnPremMpcWallet(
     m: 2,
     n: 3,
     keys: [],
-    type: 'cold',
-    subType: 'onPrem' as SupplementGenerateWalletOptions['subType'],
+    type: 'advanced',
     multisigType: 'tss',
   };
 

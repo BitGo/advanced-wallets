@@ -336,7 +336,7 @@ const GenerateWalletRequest = {
 };
 
 /**
- * Generates a new onPrem self-managed cold wallet.
+ * Generates a new advanced wallet.
  * The wallet creation process involves several steps that happen automatically:
  * 1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective KMS.
  * 2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.

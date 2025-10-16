@@ -34,7 +34,7 @@ type RecoveryConsolidationResult = {
 };
 
 // Handler for recovery from receive addresses (consolidation sweeps)
-export async function handleRecoveryConsolidationsOnPrem(
+export async function handleRecoveryConsolidations(
   req: MasterApiSpecRouteRequest<'v1.wallet.recoveryConsolidations', 'post'>,
 ) {
   checkRecoveryMode(req.config as MasterExpressConfig);
