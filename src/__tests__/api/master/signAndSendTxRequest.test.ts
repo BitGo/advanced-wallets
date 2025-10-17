@@ -80,8 +80,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
         .matchHeader('any', () => true)
         .reply(200, {
           id: walletId,
-          type: 'cold',
-          subType: 'onPrem',
+          type: 'advanced',
           keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
           multisigType: 'tss',
           coin: 'hteth',
@@ -176,8 +175,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
         .matchHeader('any', () => true)
         .reply(200, {
           id: walletId,
-          type: 'cold',
-          subType: 'onPrem',
+          type: 'advanced',
           keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
           multisigType: 'tss',
           coin: 'hteth',
@@ -275,8 +273,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
         .matchHeader('any', () => true)
         .reply(200, {
           id: walletId,
-          type: 'cold',
-          subType: 'onPrem',
+          type: 'advanced',
           keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
           multisigType: 'tss',
           coin: 'tsol',

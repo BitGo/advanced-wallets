@@ -215,7 +215,7 @@ async function handleUtxoLikeRecovery(
   })) as { txHex: string };
 }
 
-export async function handleRecoveryWalletOnPrem(
+export async function handleRecoveryWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
 ) {
   checkRecoveryMode(req.config as MasterExpressConfig);

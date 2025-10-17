@@ -133,8 +133,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         m: 2,
         n: 3,
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
-        type: 'cold',
-        subType: 'onPrem',
+        type: 'advanced',
       })
       .matchHeader('any', () => true)
       .reply(200, {
@@ -183,8 +182,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         },
         // optional-ish fields used in assertions
         multisigType: 'onchain',
-        type: 'cold',
-        subType: 'onPrem',
+        type: 'advanced',
       });
 
     const response = await agent
@@ -201,8 +199,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     response.body.wallet.should.have.properties({
       id: 'new-wallet-id',
       multisigType: 'onchain',
-      type: 'cold',
-      subType: 'onPrem',
+      type: 'advanced',
     });
     response.body.should.have.propertyByPath('userKeychain', 'pub').eql('xpub_user');
     response.body.should.have.propertyByPath('backupKeychain', 'pub').eql('xpub_backup');
@@ -474,8 +471,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         m: 2,
         n: 3,
         keys: ['id', 'id', 'id'],
-        type: 'cold',
-        subType: 'onPrem',
+        type: 'advanced',
       })
       .reply(200, {
         id: 'wallet-id',
@@ -530,8 +526,7 @@ describe('POST /api/:coin/wallet/generate', () => {
           coinSpecific: {},
         },
         multisigType: 'tss',
-        type: 'cold',
-        subType: 'onPrem',
+        type: 'advanced',
       });
 
     const response = await agent
@@ -1135,8 +1130,7 @@ describe('POST /api/:coin/wallet/generate', () => {
         m: 2,
         n: 3,
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
-        type: 'cold',
-        subType: 'onPrem',
+        type: 'advanced',
       })
       .reply(200, {
         id: 'new-wallet-id',
@@ -1183,8 +1177,7 @@ describe('POST /api/:coin/wallet/generate', () => {
           coinSpecific: {},
         },
         multisigType: 'tss',
-        type: 'cold',
-        subType: 'onPrem',
+        type: 'advanced',
       });
 
     const response = await agent
@@ -1201,8 +1194,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     response.body.wallet.should.have.properties({
       id: 'new-wallet-id',
       multisigType: 'tss',
-      type: 'cold',
-      subType: 'onPrem',
+      type: 'advanced',
     });
 
     // No need to check constantsNock since we're using sinon stub

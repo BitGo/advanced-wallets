@@ -19,8 +19,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
   const mockWalletData = (multisigType: 'onchain' | 'tss') => ({
     id: walletId,
-    type: 'cold',
-    subType: 'onPrem',
+    type: 'advanced',
     keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
     coin: coin,
     label: 'Test Wallet',
