@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.4
 
 # Build stage
-FROM node:22.1.0-alpine@sha256:487dc5d5122d578e13f2231aa4ac0f63068becd921099c4c677c850df93bede8 AS builder
+# Using node:22-alpine with OpenSSL 3.3.2+ to address CVE-2024-6119
+FROM node:22-alpine AS builder
 
 # Set build-time variables for reproducibility
 ARG NODE_ENV=development
@@ -50,7 +51,8 @@ COPY . .
 # Build TypeScript code with deterministic output
 RUN npm run build
 
-FROM node:22.1.0-alpine@sha256:487dc5d5122d578e13f2231aa4ac0f63068becd921099c4c677c850df93bede8 AS production
+# Using node:22-alpine with OpenSSL 3.3.2+ to address CVE-2024-6119
+FROM node:22-alpine AS production
 
 # Declare build arguments in production stage
 ARG PORT=3081
