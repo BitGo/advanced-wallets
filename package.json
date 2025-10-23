@@ -120,7 +120,8 @@
     "zod": "^3.25.48"
   },
   "overrides": {
-    "@bitgo-beta/sdk-core": "8.2.1-beta.1231"
+    "@bitgo-beta/sdk-core": "8.2.1-beta.1231",
+    "elliptic": "^6.6.1"
   },
   "devDependencies": {
     "@api-ts/openapi-generator": "^5.7.0",
