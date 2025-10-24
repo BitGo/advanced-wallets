@@ -4,13 +4,13 @@ This document provides a reference implementation for integrating the 4 KMS API'
 
 ## ⚠️ Security Recommendation
 
-**For production KMS implementations, consider implementing the KMS-API in a C++ like language, or use typed arrays like Uint8Array for all sensitive data because JavaScript does not support secure memory management.**
+For production KMS implementations, consider implementing the KMS-API in a C++ like language, because JavaScript does not support low-level memory management. Depending on your solution, direct memory management with explicit memory allocation/deallocation might be desirable.
 
-**Recommended Alternatives:**
-- **C++/Rust**: Languages with explicit memory management and secure allocation
-- **Node.js Typed Arrays**: Use `Uint8Array` for sensitive data with explicit zeroing
-- **Native Addons**: Implement cryptographic operations in native C++ modules
-- **Hardware Security**: Use HSM-backed secure memory when available
+Also consider implementing low level cryptographic operations using low-level languages like C++ or Rust. They typically provide easier and more efficient data manipulation and transaformation.
+
+If Javascript/Typescript is used, use low level data types such as Uint8Array to store keys. Avoid using datatype such as strings to store keys unless necessary.
+
+When working with AWS HSM, adhere to their guidances and best practices for the [KMS](https://docs.aws.amazon.com/prescriptive-guidance/latest/encryption-best-practices/kms.html) and their [IAM policies](https://docs.aws.amazon.com/kms/latest/developerguide/iam-policies-best-practices.html). You are encouraged to look into how keys are generated stored in AWS, and if certain features AWS offers (e.g. KMS key rotation, key policies) applies to your solution. 
 
 ## API Overview
 
