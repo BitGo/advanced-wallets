@@ -2,7 +2,10 @@
 
 # Build stage
 # Using node:22-alpine with OpenSSL 3.3.2+ to address CVE-2024-6119
-FROM node:22-alpine AS builder
+# Pinned to specific SHA256 digest for supply chain security and deterministic builds
+# To update: podman pull node:22-alpine && podman inspect node:22-alpine --format '{{index .RepoDigests 0}}'
+# Last updated: 2025-10-24
+FROM node:22-alpine@sha256:d31216005bd330aa47f848822d4f269f6c79f0905b60cca1d87577149519daa6 AS builder
 
 # Set build-time variables for reproducibility
 ARG NODE_ENV=development
@@ -51,8 +54,10 @@ COPY . .
 # Build TypeScript code with deterministic output
 RUN npm run build
 
+# Production stage
 # Using node:22-alpine with OpenSSL 3.3.2+ to address CVE-2024-6119
-FROM node:22-alpine AS production
+# Pinned to specific SHA256 digest for supply chain security and deterministic builds
+FROM node:22-alpine@sha256:d31216005bd330aa47f848822d4f269f6c79f0905b60cca1d87577149519daa6 AS production
 
 # Declare build arguments in production stage
 ARG PORT=3081
