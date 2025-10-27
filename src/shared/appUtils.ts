@@ -146,6 +146,20 @@ export function createMtlsMiddleware(config: {
 
     // If client cert is provided, validate it
     if (hasValidClientCert) {
+      if (config.tlsMode === TlsMode.MTLS) {
+        if (
+          !config.mtlsAllowedClientFingerprints ||
+          config.mtlsAllowedClientFingerprints.length === 0
+        ) {
+          return res.status(403).json({
+            error: 'mTLS Authentication Failed',
+            message: 'No client certificate fingerprints configured',
+            details:
+              'MTLS_ALLOWED_CLIENT_FINGERPRINTS must be configured when mTLS mode is enabled',
+          });
+        }
+      }
+
       // Check if self-signed certificates are allowed
       if (!config.clientCertAllowSelfSigned && clientCert.issuer.CN === clientCert.subject.CN) {
         return res.status(403).json({
