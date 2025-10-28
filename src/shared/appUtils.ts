@@ -160,12 +160,17 @@ export function createMtlsMiddleware(config: {
         }
       }
 
-      // Check if self-signed certificates are allowed
-      if (!config.clientCertAllowSelfSigned && clientCert.issuer.CN === clientCert.subject.CN) {
+      const isSelfSigned =
+        clientCert.issuer.CN === clientCert.subject.CN &&
+        clientCert.issuer.O === clientCert.subject.O &&
+        clientCert.issuer.OU === clientCert.subject.OU;
+
+      if (!config.clientCertAllowSelfSigned && isSelfSigned) {
         return res.status(403).json({
           error: 'mTLS Authentication Failed',
           message: 'Self-signed certificates are not allowed',
-          details: 'Please use a certificate issued by a trusted CA',
+          details:
+            'Please use a certificate issued by a trusted CA, or set CLIENT_CERT_ALLOW_SELF_SIGNED=true for testing',
         });
       }
 
