@@ -35,6 +35,7 @@ export async function handleAccelerate(
       ...params,
       customSigningFunction,
       reqId,
+      txFormat: 'psbt-lite',
     };
 
     // Accelerate transaction
