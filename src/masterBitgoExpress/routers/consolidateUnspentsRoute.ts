@@ -63,10 +63,6 @@ export const ConsolidateUnspentsRequest = {
    * Target address for consolidation
    */
   targetAddress: optional(t.string),
-  /**
-   * Transaction format
-   */
-  txFormat: optional(t.union([t.literal('legacy'), t.literal('psbt'), t.literal('psbt-lite')])),
 };
 
 export const ConsolidateUnspentsResponse: HttpResponse = {
