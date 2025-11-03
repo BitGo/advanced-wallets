@@ -770,4 +770,48 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     sinon.assert.calledOnce(verifyStub);
     signNock.done();
   });
+
+  it('should throw an error when neither the pubkey nor the commonKeychain is provided', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: walletId,
+        type: 'advanced',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+      });
+
+    // Mock keychain get request
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+      });
+
+    const response = await agent
+      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [
+          {
+            address: 'tb1qtest1',
+            amount: '100000',
+          },
+        ],
+        source: 'user',
+      });
+
+    console.log(response.body);
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+    response.body.error.should.equal('BadRequestError');
+    response.body.details.should.equal(
+      'Either pubkey or commonKeychain must be provided for user signing',
+    );
+
+    walletGetNock.done();
+    keychainGetNock.done();
+  });
 });
