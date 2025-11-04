@@ -324,7 +324,6 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       limit: 100,
       numUnspentsToMake: 10,
       targetAddress: 'tb1q...',
-      txFormat: 'psbt' as const,
     };
 
     const response = await agent

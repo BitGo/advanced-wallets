@@ -432,15 +432,6 @@
                   "targetAddress": {
                     "type": "string",
                     "description": "Target address for consolidation"
-                  },
-                  "txFormat": {
-                    "type": "string",
-                    "enum": [
-                      "legacy",
-                      "psbt",
-                      "psbt-lite"
-                    ],
-                    "description": "Transaction format"
                   }
                 },
                 "required": [

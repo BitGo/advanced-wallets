@@ -35,6 +35,7 @@ export async function handleConsolidateUnspents(
       ...params,
       customSigningFunction,
       reqId,
+      txFormat: 'psbt-lite',
     };
 
     // Send consolidate unspents
