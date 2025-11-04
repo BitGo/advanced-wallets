@@ -2,6 +2,22 @@
 
 A secure, mTLS-enabled cryptocurrency signing server with two operational modes: Advanced Wallet Manager (dedicated signer) and Master Express (API gateway with integrated signing capabilities).
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+  - [Quick Start (No mTLS)](#quick-start-no-mtls---fastest-way-to-test)
+- [Configuration](#configuration)
+- [Container Deployment](#container-deployment-with-podman)
+- [Docker Compose Deployment](#docker-compose-deployment)
+- [API Endpoints](#api-endpoints)
+  - [API Documentation](#api-documentation)
+- [Production Setup](#production-setup)
+- [License](#license)
+
 ## Overview
 
 This application provides secure cryptocurrency operations with mutual TLS (mTLS) authentication:
@@ -14,7 +30,7 @@ This application provides secure cryptocurrency operations with mutual TLS (mTLS
 ## Architecture
 
 - **Advanced Wallet Manager** (Port 3080): Isolated signing server with no internet access, only connects to KMS API for key operations.
-- **Master Express** (Port 3081): Full BitGo API functionality with secure communication to Advanced Wallet Manager
+- **Master Express** (Port 3081): API gateway providing end-to-end wallet creation and transaction support, integrating BitGo APIs with secure communication to Advanced Wallet Manager
 
 ## Installation
 
@@ -25,6 +41,9 @@ This application provides secure cryptocurrency operations with mutual TLS (mTLS
 - **OpenSSL** for certificate generation
 - **Docker** and **Docker Compose** (for containerized deployment)
 - **Podman** (alternative to Docker for containerized deployment)
+- **KMS API Implementation** - Advanced Wallet Manager requires a KMS (Key Management Service) API for secure key operations. See implementation guides:
+  - [AWS HSM Implementation](./demo-kms-script/aws-interface.md)
+  - [Dinamo HSM Implementation](./demo-kms-script/dinamo-interface.md)
 
 ### Setup
 
@@ -81,46 +100,48 @@ npm run container:build:advanced-wallet-manager
 
 ## Quick Start
 
-### 1. Start Advanced Wallet Manager
+### Quick Start (No mTLS) - Fastest Way to Test
+
+For quick testing without mTLS security, you can disable TLS entirely. This is useful for local development and testing.
+
+#### 1. Start Advanced Wallet Manager (Port 3080)
 
 ```bash
-export APP_MODE=advanced-wallet-manager
-export KMS_URL=https://your-kms-service
-export SERVER_TLS_KEY_PATH=./demo.key
-export SERVER_TLS_CERT_PATH=./demo.crt
-export KMS_CLIENT_TLS_KEY_PATH=./demo.key
-export KMS_CLIENT_TLS_CERT_PATH=./demo.crt
-export KMS_SERVER_CA_CERT_PATH=./demo.crt
-export KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true
-export CLIENT_CERT_ALLOW_SELF_SIGNED=true
+TLS_MODE=disabled \
+BITGO_ENV=test \
+APP_MODE=advanced-wallet-manager \
+ADVANCED_WALLET_MANAGER_PORT=3080 \
+KMS_URL=http://localhost:3000 \
 npm start
 ```
 
-**Note:** KMS client certificates are required for outbound mTLS connections. For testing, we reuse the demo certificates, but in production, use separate certificates for security.
+#### 2. Start Master BitGo Express (Port 3081)
 
-### 2. Start Master Express
+In a new terminal:
 
 ```bash
-export APP_MODE=master-express
-export BITGO_ENV=test
-export SERVER_TLS_KEY_PATH=./demo.key
-export SERVER_TLS_CERT_PATH=./demo.crt
-export ADVANCED_WALLET_MANAGER_URL=https://localhost:3080
-export AWM_CLIENT_TLS_KEY_PATH=./demo.key
-export AWM_CLIENT_TLS_CERT_PATH=./demo.crt
-export AWM_SERVER_CA_CERT_PATH=./demo.crt
-export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true
-export CLIENT_CERT_ALLOW_SELF_SIGNED=true
+TLS_MODE=disabled \
+BITGO_ENV=test \
+APP_MODE=master-express \
+MASTER_EXPRESS_PORT=3081 \
+ADVANCED_WALLET_MANAGER_URL=http://localhost:3080 \
 npm start
 ```
 
-**Note:** AWM client certificates are required for outbound mTLS connections to Advanced Wallet Manager. For testing, we reuse the demo certificates, but in production, use separate certificates for security.
-
-### 3. Test the Connection
+#### 3. Test the Connection
 
 ```bash
-curl -k -X POST https://localhost:3081/ping/advancedWalletManager
+# Test Advanced Wallet Manager
+curl -X POST http://localhost:3080/ping
+
+# Test Master Express
+curl -X POST http://localhost:3081/ping
+
+# Test connection between services
+curl -X POST http://localhost:3081/ping/advancedWalletManager
 ```
+
+**Note:** `TLS_MODE=disabled` should only be used for local development and testing. Always use mTLS in production environments. See the [Production Setup](#production-setup) section for production mTLS configuration.
 
 ## Configuration
 
@@ -141,22 +162,38 @@ curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 | `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on | `3080`  | ❌       |
 | `KMS_URL`                      | KMS service URL   | -       | ✅       |
 
+**Note:** See [Prerequisites](#prerequisites) for KMS API implementation requirements.
+
 ### Master Express Settings
 
-| Variable                      | Description                 | Default | Required |
-| ----------------------------- | --------------------------- | ------- | -------- |
-| `MASTER_EXPRESS_PORT`         | Port to listen on           | `3081`  | ❌       |
-| `BITGO_ENV`                   | BitGo environment           | `test`  | ❌       |
-| `ADVANCED_WALLET_MANAGER_URL` | Advanced Wallet Manager URL | -       | ✅       |
+| Variable                       | Description                                                   | Default | Required |
+| ------------------------------ | ------------------------------------------------------------- | ------- | -------- |
+| `MASTER_EXPRESS_PORT`          | Port to listen on                                             | `3081`  | ❌       |
+| `BITGO_ENV`                    | BitGo environment (`prod`, `test`, `staging`, `dev`, `local`) | `test`  | ❌       |
+| `ADVANCED_WALLET_MANAGER_URL`  | Advanced Wallet Manager URL                                   | -       | ✅       |
+| `BITGO_CUSTOM_ROOT_URI`        | Custom BitGo API root URI (overrides `BITGO_ENV`)             | -       | ❌       |
+| `BITGO_DISABLE_ENV_CHECK`      | Disable environment check                                     | `true`  | ❌       |
+| `BITGO_AUTH_VERSION`           | BitGo authentication version                                  | `2`     | ❌       |
+| `BITGO_CUSTOM_BITCOIN_NETWORK` | Custom Bitcoin network                                        | -       | ❌       |
+
+### Additional Settings
+
+| Variable             | Description                                         | Default                | Applies To |
+| -------------------- | --------------------------------------------------- | ---------------------- | ---------- |
+| `RECOVERY_MODE`      | Enable recovery mode for wallet recovery operations | `false`                | Both       |
+| `HTTP_LOGFILE`       | Path to HTTP access log file                        | `logs/http-access.log` | Both       |
+| `KEEP_ALIVE_TIMEOUT` | Keep-alive timeout in milliseconds                  | -                      | Both       |
+| `HEADERS_TIMEOUT`    | Headers timeout in milliseconds                     | -                      | Both       |
+| `IPC`                | IPC socket path (alternative to TCP port binding)   | -                      | Both       |
 
 ### TLS/mTLS Configuration
 
 #### Basic TLS Settings
 
-| Variable            | Description                     | Default |
-| ------------------- | ------------------------------- | ------- |
-| `TLS_MODE`          | TLS mode (`mtls` or `disabled`) | `mtls`  |
-| `ALLOW_SELF_SIGNED` | Allow self-signed certificates  | `false` |
+| Variable                        | Description                           | Default |
+| ------------------------------- | ------------------------------------- | ------- |
+| `TLS_MODE`                      | TLS mode (`mtls` or `disabled`)       | `mtls`  |
+| `CLIENT_CERT_ALLOW_SELF_SIGNED` | Allow self-signed client certificates | `false` |
 
 #### Server Certificates (for incoming connections)
 
@@ -177,15 +214,29 @@ curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 
 **For Master Express → Advanced Wallet Manager:**
 
-- `AWM_CLIENT_TLS_KEY_PATH` / `AWM_CLIENT_TLS_KEY`
-- `AWM_CLIENT_TLS_CERT_PATH` / `AWM_CLIENT_TLS_CERT`
-- `AWM_SERVER_CA_CERT_PATH` / `AWM_SERVER_CA_CERT`
+| Variable                            | Description                               | Format                     |
+| ----------------------------------- | ----------------------------------------- | -------------------------- |
+| `AWM_CLIENT_TLS_KEY_PATH`           | Client private key file path              | File path                  |
+| `AWM_CLIENT_TLS_KEY`                | Client private key (alternative)          | PEM string                 |
+| `AWM_CLIENT_TLS_CERT_PATH`          | Client certificate file path              | File path                  |
+| `AWM_CLIENT_TLS_CERT`               | Client certificate (alternative)          | PEM string                 |
+| `AWM_SERVER_CA_CERT_PATH`           | AWM server CA certificate file path       | File path                  |
+| `AWM_SERVER_CA_CERT`                | AWM server CA certificate (alternative)   | PEM string                 |
+| `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed AWM server certificates | Boolean (default: `false`) |
 
 **For Advanced Wallet Manager → KMS:**
 
-- `KMS_CLIENT_TLS_KEY_PATH` / `KMS_CLIENT_TLS_KEY`
-- `KMS_CLIENT_TLS_CERT_PATH` / `KMS_CLIENT_TLS_CERT`
-- `KMS_SERVER_CA_CERT_PATH` / `KMS_SERVER_CA_CERT`
+| Variable                            | Description                               | Format                     |
+| ----------------------------------- | ----------------------------------------- | -------------------------- |
+| `KMS_CLIENT_TLS_KEY_PATH`           | Client private key file path              | File path                  |
+| `KMS_CLIENT_TLS_KEY`                | Client private key (alternative)          | PEM string                 |
+| `KMS_CLIENT_TLS_CERT_PATH`          | Client certificate file path              | File path                  |
+| `KMS_CLIENT_TLS_CERT`               | Client certificate (alternative)          | PEM string                 |
+| `KMS_SERVER_CA_CERT_PATH`           | KMS server CA certificate file path       | File path                  |
+| `KMS_SERVER_CA_CERT`                | KMS server CA certificate (alternative)   | PEM string                 |
+| `KMS_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed KMS server certificates | Boolean (default: `false`) |
+
+**Note:** When `TLS_MODE=mtls`, outbound client certificates are required and cannot reuse server certificates for security reasons. In `TLS_MODE=disabled` mode, these certificates are not required.
 
 ## Container Deployment with Podman
 
@@ -328,68 +379,143 @@ docker-compose down
 - `POST /ping/advancedWalletManager` - Test connection to Advanced Wallet Manager
 - `POST /api/:coin/wallet/generate` - Generate wallet (with Advanced Wallet Manager integration)
 
-## Production Security
+### API Documentation
+
+**Master Express OpenAPI Specification**
+
+The OpenAPI specification for Master Express is available at [`masterBitgoExpress.json`](./masterBitgoExpress.json).
+
+To regenerate the API documentation:
+
+```bash
+npm run generate:openapi:masterExpress
+```
+
+This will generate/update the `masterBitgoExpress.json` file with the latest API specification. You can view this file with any OpenAPI viewer such as:
+
+- [Swagger Editor](https://editor.swagger.io/)
+- [Redoc](https://redocly.github.io/redoc/)
+- VS Code OpenAPI extensions
+
+## Production Setup
+
+### Quick Start (With mTLS)
+
+For production deployments with proper mTLS security:
+
+#### 1. Start Advanced Wallet Manager (Port 3080)
+
+```bash
+export APP_MODE=advanced-wallet-manager
+export TLS_MODE=mtls
+export ADVANCED_WALLET_MANAGER_PORT=3080
+export KMS_URL=https://production-kms.example.com:3000
+# Server certificates for incoming mTLS connections
+export SERVER_TLS_KEY_PATH=/secure/certs/awm-server.key
+export SERVER_TLS_CERT_PATH=/secure/certs/awm-server.crt
+# Client certificates for outbound connections to KMS
+export KMS_CLIENT_TLS_KEY_PATH=/secure/certs/awm-kms-client.key
+export KMS_CLIENT_TLS_CERT_PATH=/secure/certs/awm-kms-client.crt
+export KMS_SERVER_CA_CERT_PATH=/secure/certs/kms-ca.crt
+# Security settings - production-grade
+export CLIENT_CERT_ALLOW_SELF_SIGNED=false
+export KMS_SERVER_CERT_ALLOW_SELF_SIGNED=false
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:1a2b3c...,sha256:4d5e6f...
+export BITGO_ENV=prod
+npm start
+```
+
+#### 2. Start Master Express (Port 3081)
+
+In a new terminal:
+
+```bash
+export APP_MODE=master-express
+export TLS_MODE=mtls
+export MASTER_EXPRESS_PORT=3081
+export BITGO_ENV=prod
+export ADVANCED_WALLET_MANAGER_URL=https://awm.internal.example.com:3080
+# Server certificates for incoming mTLS connections
+export SERVER_TLS_KEY_PATH=/secure/certs/mbe-server.key
+export SERVER_TLS_CERT_PATH=/secure/certs/mbe-server.crt
+# Client certificates for outbound connections to AWM
+export AWM_CLIENT_TLS_KEY_PATH=/secure/certs/mbe-awm-client.key
+export AWM_CLIENT_TLS_CERT_PATH=/secure/certs/mbe-awm-client.crt
+export AWM_SERVER_CA_CERT_PATH=/secure/certs/awm-ca.crt
+# Security settings - production-grade
+export CLIENT_CERT_ALLOW_SELF_SIGNED=false
+export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=false
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:7g8h9i...,sha256:0j1k2l...
+npm start
+```
+
+#### 3. Test the Connection
+
+For testing, you can use the server's IP address or `localhost` if running locally. In production deployments, configure your DNS or load balancer to point to the appropriate servers.
+
+```bash
+# Test Advanced Wallet Manager (replace localhost with your server IP/hostname)
+curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
+  --cacert /secure/certs/awm-ca.crt \
+  https://localhost:3080/ping
+
+# Test Master Express (replace localhost with your server IP/hostname)
+curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
+  --cacert /secure/certs/mbe-ca.crt \
+  https://localhost:3081/ping
+
+# Test connection between services
+curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
+  --cacert /secure/certs/mbe-ca.crt \
+  https://localhost:3081/ping/advancedWalletManager
+```
+
+**Testing with Demo Certificates:**
+
+For local testing, you can generate and use demo certificates with the self-signed configuration flags:
+
+- Generate demo certificates: `npm run generate-test-ssl` (creates `demo.key` and `demo.crt`)
+- Set `CLIENT_CERT_ALLOW_SELF_SIGNED=true`, `KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true`, and `AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true`
+- Use the demo certificates for all certificate paths (server and client)
+- **Important:** Demo certificates and self-signed configurations should never be used in production
 
 ### Best Practices
 
 1. **Use CA-signed certificates** instead of self-signed
-2. **Set `ALLOW_SELF_SIGNED=false`** in production
+2. **Set `CLIENT_CERT_ALLOW_SELF_SIGNED=false`** and server-specific allow self-signed flags to `false` in production
 3. **Configure client certificate allowlisting** with `MTLS_ALLOWED_CLIENT_FINGERPRINTS`
-4. **Use separate certificates** for each service
+4. **Use separate certificates** for each service (server, AWM client, KMS client)
 5. **Regularly rotate certificates**
-6. **Secure private key storage**
+6. **Secure private key storage** and use appropriate file permissions
+7. **Always use `TLS_MODE=mtls`** in production environments
 
-### Production Example
+### Certificate Management
 
-```bash
-# Advanced Wallet Manager
-export APP_MODE=advanced-wallet-manager
-export KMS_URL=https://production-kms.example.com
-export SERVER_TLS_KEY_PATH=/secure/awm-server.key
-export SERVER_TLS_CERT_PATH=/secure/awm-server.crt
-export KMS_CLIENT_TLS_KEY_PATH=/secure/awm-kms-client.key
-export KMS_CLIENT_TLS_CERT_PATH=/secure/awm-kms-client.crt
-export KMS_SERVER_CA_CERT_PATH=/secure/kms-ca.crt
-export ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123...,DEF456...
+#### Getting Client Certificate Fingerprints
 
-# Master Express
-export APP_MODE=master-express
-export BITGO_ENV=prod
-export SERVER_TLS_KEY_PATH=/secure/master-server.key
-export SERVER_TLS_CERT_PATH=/secure/master-server.crt
-export AWM_CLIENT_TLS_KEY_PATH=/secure/master-awm-client.key
-export AWM_CLIENT_TLS_CERT_PATH=/secure/master-awm-client.crt
-export ADVANCED_WALLET_MANAGER_URL=https://awm.internal.example.com:3080
-export AWM_SERVER_CA_CERT_PATH=/secure/awm-ca.crt
-export ALLOW_SELF_SIGNED=false
-```
-
-## Troubleshooting
-
-### Common Issues
-
-| Issue                        | Solution                                            |
-| ---------------------------- | --------------------------------------------------- |
-| Certificate loading errors   | Check file paths, permissions, and format           |
-| mTLS authentication failures | Verify certificates, fingerprints, and TLS settings |
-| Connection refused           | Check ports, firewall, and URL format               |
-| Environment variable issues  | Verify required variables are set                   |
-
-### Debug Commands
+To obtain certificate fingerprints for `MTLS_ALLOWED_CLIENT_FINGERPRINTS`:
 
 ```bash
-# Check certificate format
-openssl x509 -in certificate.crt -text -noout
-
-# Verify environment variables
-env | grep -E "(APP_MODE|KMS_URL|ADVANCED_WALLET_MANAGER|TLS_)"
-
-# Test connectivity
-curl -k -X POST https://localhost:3080/ping
-curl -k -X POST https://localhost:3081/ping
+openssl x509 -in /path/to/client-cert.crt -noout -fingerprint -sha256 | cut -d'=' -f2
 ```
+
+The output will be in the format: `sha256:AB:CD:EF:...` which you can use in the configuration.
+
+#### Certificate Requirements for Production
+
+- All certificates should be CA-signed certificates issued by your organization's PKI
+- Each service must use separate certificates (server cert, AWM client cert, KMS client cert)
+- Client certificates for outbound connections must be different from server certificates
+- Store private keys in secure locations with restricted file permissions:
+  ```bash
+  chmod 400 /secure/certs/*.key
+  chown root:root /secure/certs/*.key
+  ```
+- Use `BIND=0.0.0.0` only if the service needs to be accessible from other machines
+- Regularly rotate certificates according to your security policy
 
 ## License
 
-MIT
+Apache License 2.0 - see [LICENSE](./LICENSE) file for details.
+
+Copyright 2025 BitGo
