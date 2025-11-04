@@ -1,6 +1,6 @@
 {
   "name": "@bitgo/advanced-wallets",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Advanced Wallets - On-Premises Key Management with BitGo Express",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
