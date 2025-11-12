@@ -42,7 +42,11 @@ jobs:
         run: npm ci
 
       - name: Validate PR commits with commitlint
-        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        run: ./scripts/filter-commits-by-author.sh ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} "${{ vars.COMMITLINT_EXCLUDED_AUTHORS || '' }}"
+        env:
+          # Optional: Set COMMITLINT_EXCLUDED_AUTHORS as a repository variable to exclude specific authors
+          # Example value: "bot@example.com,dependabot[bot],renovate[bot]"
+          EXCLUDED_AUTHORS: ${{ vars.COMMITLINT_EXCLUDED_AUTHORS || '' }}
 
   build:
     name: Build

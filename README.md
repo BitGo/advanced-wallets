@@ -95,6 +95,35 @@ npm run container:build:master-bitgo-express
 npm run container:build:advanced-wallet-manager
 ```
 
+### CI/CD - Commit Filtering
+
+The repository includes a commit filtering script for CI/CD workflows that allows excluding commits from specific authors during commitlint validation. This is useful for skipping validation of automated commits from bots or tools.
+
+#### Usage in GitHub Actions
+
+The workflow automatically uses the `filter-commits-by-author.sh` script. To configure author exclusions, set the `COMMITLINT_EXCLUDED_AUTHORS` repository variable in GitHub:
+
+1. Go to your repository Settings → Secrets and variables → Actions → Variables
+2. Create a new variable named `COMMITLINT_EXCLUDED_AUTHORS`
+3. Set the value to a comma-separated list of authors to exclude, for example:
+   ```
+   dependabot[bot],renovate[bot],copilot-swe-agent[bot]
+   ```
+
+#### Manual Usage
+
+You can also run the script manually:
+
+```bash
+# Validate all commits between two refs
+./scripts/filter-commits-by-author.sh <from_sha> <to_sha>
+
+# Exclude specific authors
+./scripts/filter-commits-by-author.sh <from_sha> <to_sha> "bot@example.com,dependabot[bot]"
+```
+
+The script matches author emails and names using substring matching, so you can specify partial matches like "bot" to exclude all bot accounts.
+
 ## Quick Start
 
 ### Quick Start (No mTLS) - Fastest Way to Test
