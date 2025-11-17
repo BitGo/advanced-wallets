@@ -1,5 +1,11 @@
 # Advanced Wallets
 
+> **⚠️ BETA SOFTWARE - NOT OFFICIALLY RELEASED**
+>
+> This project is currently in beta and has not been officially released for production use. APIs, features, and documentation may change without notice. Use at your own risk in production environments.
+
+![Beta](https://img.shields.io/badge/status-beta-yellow) ![Version](https://img.shields.io/badge/version-2.0.0--beta-blue) ![License](https://img.shields.io/badge/license-Apache%202.0-green)
+
 Advanced wallets are a type of self-custody cryptocurrency wallet that securely enable mutual TLS (mTLS) signing servers with two operational modes:
 
 - **Advanced Wallet Manager Mode** - A lightweight, dedicated keygen/signing server that you can use for secure key operations. This mode includes support for wallet recoveries.
@@ -304,7 +310,7 @@ curl -k --cert certs/test-ssl-cert.pem --key certs/test-ssl-key.pem -X POST http
 curl -k -X POST https://localhost:3081/ping/advancedWalletManager
 ```
 
->**Note:**
+> **Note:**
 >
 > - `host.containers.internal` is a special DNS name that resolves to the host machine from inside containers.
 > - The `:Z` option in volume mounts is specific to SELinux-enabled systems and ensures proper volume labeling.
@@ -448,7 +454,7 @@ npm start
 
 #### 3. Test Connection
 
-For testing, you can use the IP address of the server  or `localhost` if you're running it locally. In production deployments, configure your DNS or load balancer to point to the appropriate servers.
+For testing, you can use the IP address of the server or `localhost` if you're running it locally. In production deployments, configure your DNS or load balancer to point to the appropriate servers.
 
 ```bash
 # Test Advanced Wallet Manager (replace localhost with your server IP/hostname)
