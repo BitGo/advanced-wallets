@@ -13,7 +13,7 @@ import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
 const PingAwmResponse: HttpResponse = {
   200: t.type({
     status: t.string,
-    advancedWalletManagerResponse: PingResponseType,
+    awmResponse: PingResponseType,
   }),
   500: t.type({
     error: t.string,
