@@ -92,11 +92,6 @@ const WalletType = t.intersection([
      */
     admin: t.record(t.string, t.unknown),
     /**
-     * Pending approvals on the wallet
-     * @example []
-     */
-    pendingApprovals: t.array(t.record(t.string, t.unknown)),
-    /**
      * Flag for allowing signing with backup key
      * @example false
      */
@@ -159,6 +154,7 @@ const WalletType = t.intersection([
     unspentCount: t.number,
     pendingChainInitialization: t.boolean,
     pendingEcdsaTssInitialization: t.boolean,
+    pendingApprovals: t.array(t.record(t.string, t.unknown)),
     multisigType: t.string,
     multisigTypeVersion: t.string,
     type: t.string,
