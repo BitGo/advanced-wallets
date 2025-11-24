@@ -16,7 +16,7 @@ Advanced wallets operate in two modes:
 Key features include:
 
 - **Complete Infrastructure Control** - Host and manage all components in your own secure environment.
-- **KMS/HSM Integration** - Bring your own KMS or HSM by implementing the provided KMS API interface. Reference implementations available for [AWS HSM](./demo-kms-script/aws-interface.md) and [Dinamo HSM](./demo-kms-script/dinamo-interface.md).
+- **KMS/HSM Integration** - Bring your own KMS or HSM by implementing the provided [KMS API interface specification](./kms-api-spec.yaml). Reference implementations available for [AWS HSM](./demo-kms-script/aws-interface.md) and [Dinamo HSM](./demo-kms-script/dinamo-interface.md).
 - **Network Isolation** - Advanced Wallet Manager operates in a completely isolated network segment with no external internet access.
 - **mTLS Security** - Optional mutual TLS with client certificate validation for secure inter-service communications.
 - **Flexible Configuration** - Environment-based setup with file or variable-based certificates.
@@ -38,7 +38,7 @@ Key features include:
 
 ## Architecture
 
-- **Advanced Wallet Manager** (Port 3080) - An isolated signing server with no internet access that only connects to the key management service (KMS) API for key operations.
+- **Advanced Wallet Manager** (Port 3080) - An isolated signing server with no internet access that only connects to your KMS API implementation for key operations.
 - **Master Express** (Port 3081) - An API gateway providing end-to-end wallet creation and transaction support, integrating [BitGo APIs](https://developers.bitgo.com/reference/overview#/) with secure communication to Advanced Wallet Manager.
 
 ## Installation
@@ -49,7 +49,7 @@ Key features include:
 - **npm** or **yarn** package manager.
 - **OpenSSL** for certificate generation.
 - **Docker** and **Docker Compose** for containerized deployment (or you can use **Podman** as alternative to Docker).
-- **KMS API Implementation** - You must implement the KMS API interface to connect your KMS/HSM to the Advanced Wallet Manager. BitGo provides a specification for the interface and the following example implementations:
+- **KMS API Implementation** - You must implement the [KMS API interface specification](./kms-api-spec.yaml) to connect your KMS/HSM to the Advanced Wallet Manager. Reference implementations available:
   - [AWS HSM Implementation Example](./demo-kms-script/aws-interface.md)
   - [Dinamo HSM Implementation Example](./demo-kms-script/dinamo-interface.md)
 
@@ -170,7 +170,7 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on                  | `3080`  | ❌       |
 | `KMS_URL`                      | URL to your KMS API implementation | -       | ✅       |
 
-> **Note:** The `KMS_URL` points to your implementation of the KMS API interface. You must implement this interface to connect your KMS/HSM. For implementation details and examples, see [Prerequisites](#prerequisites).
+> **Note:** The `KMS_URL` points to your implementation of the KMS API interface. You must implement this interface to connect your KMS/HSM. See [Prerequisites](#prerequisites) for the specification and examples.
 
 ### Master Express Settings
 
@@ -351,7 +351,7 @@ The setup creates two distinct networks:
 ### Prerequisites
 
 1. **Install Docker and Docker Compose**
-2. **Ensure KMS service is running** on your host machine (typically on port 3000)
+2. **Ensure your KMS API implementation is running** on your host machine (typically on port 3000)
 
 ### Quick Start
 
