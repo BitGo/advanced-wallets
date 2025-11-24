@@ -4,16 +4,21 @@
 >
 > This project is currently in beta and has not been officially released for production use. APIs, features, and documentation may change without notice. Use at your own risk in production environments.
 
-![Beta](https://img.shields.io/badge/status-beta-yellow) ![Version](https://img.shields.io/badge/version-2.0.0--beta-blue) ![License](https://img.shields.io/badge/license-Apache%202.0-green)
+![Beta](https://img.shields.io/badge/status-beta-yellow) ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 
-Advanced wallets are a type of self-custody cryptocurrency wallet that securely enable mutual TLS (mTLS) signing servers with two operational modes:
+Advanced wallets are a type of self-custody cryptocurrency wallet that enable passwordless transactions by integrating your own Key Management Service (KMS) or Hardware Security Module (HSM) for user and backup private keys. Advanced wallets enable isolating sensitive key generation and signing operations in a dedicated, self-hosted service within your own secure environment.
 
-- **Advanced Wallet Manager Mode** - A lightweight, dedicated keygen/signing server that you can use for secure key operations. This mode includes support for wallet recoveries.
+Advanced wallets operate in two modes:
+
+- **Advanced Wallet Manager Mode** - A lightweight, dedicated keygen/signing server with no internet access that handles all sensitive cryptographic operations. Connects exclusively to your KMS/HSM for secure key operations. This mode includes support for wallet recoveries.
 - **Master Express Mode** - An Express application that's the orchestrator between the Advanced Wallet Manager and [BitGo APIs](https://developers.bitgo.com/reference/overview#/). This mode serves as an API gateway with integrated signing capabilities.
 
-Security includes:
+Key features include:
 
-- **mTLS Security** - Client certificate validation for secure communications.
+- **Complete Infrastructure Control** - Host and manage all components in your own secure environment.
+- **KMS/HSM Integration** - Bring your own KMS or HSM by implementing the provided KMS API interface. Reference implementations available for [AWS HSM](./demo-kms-script/aws-interface.md) and [Dinamo HSM](./demo-kms-script/dinamo-interface.md).
+- **Network Isolation** - Advanced Wallet Manager operates in a completely isolated network segment with no external internet access.
+- **mTLS Security** - Optional mutual TLS with client certificate validation for secure inter-service communications.
 - **Flexible Configuration** - Environment-based setup with file or variable-based certificates.
 
 ## Table of Contents
@@ -44,9 +49,9 @@ Security includes:
 - **npm** or **yarn** package manager.
 - **OpenSSL** for certificate generation.
 - **Docker** and **Docker Compose** for containerized deployment (or you can use **Podman** as alternative to Docker).
-- **KMS API Implementation** - Advanced Wallet Manager requires a KMS API for secure key operations. For example:
-  - [AWS HSM Implementation](./demo-kms-script/aws-interface.md)
-  - [Dinamo HSM Implementation](./demo-kms-script/dinamo-interface.md)
+- **KMS API Implementation** - You must implement the KMS API interface to connect your KMS/HSM to the Advanced Wallet Manager. BitGo provides a specification for the interface and the following example implementations:
+  - [AWS HSM Implementation Example](./demo-kms-script/aws-interface.md)
+  - [Dinamo HSM Implementation Example](./demo-kms-script/dinamo-interface.md)
 
 ### Setup
 
@@ -160,12 +165,12 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 
 ### Advanced Wallet Manager Settings
 
-| Variable                       | Description       | Default | Required |
-| ------------------------------ | ----------------- | ------- | -------- |
-| `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on | `3080`  | ❌       |
-| `KMS_URL`                      | KMS service URL   | -       | ✅       |
+| Variable                       | Description                        | Default | Required |
+| ------------------------------ | ---------------------------------- | ------- | -------- |
+| `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on                  | `3080`  | ❌       |
+| `KMS_URL`                      | URL to your KMS API implementation | -       | ✅       |
 
-> **Note:** For KMS API implementation requirements, see the [Prerequisites](#prerequisites).
+> **Note:** The `KMS_URL` points to your implementation of the KMS API interface. You must implement this interface to connect your KMS/HSM. For implementation details and examples, see [Prerequisites](#prerequisites).
 
 ### Master Express Settings
 
