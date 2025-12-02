@@ -1,5 +1,5 @@
 name: on_pr
-run-name: "on_pr: ${{ github.event.pull_request.number }}"
+run-name: 'on_pr: ${{ github.event.pull_request.number }}'
 
 on:
   pull_request:
@@ -17,6 +17,14 @@ jobs:
     uses: ./.github/workflows/build-and-test.yaml
     secrets:
       fossa-api-key: ${{ secrets.FOSSA_API_KEY }}
+
+  audit-api-spec:
+    name: Audit API spec
+    uses: BitGo/gha-dev-portal-updater/.github/workflows/audit-api-spec.yaml@v5
+    with:
+      repo_name: advanced-wallets
+      api_spec_path: ./src/masterBitgoExpress/routers/index.ts
+      service_file_name: advanced-wallets
 
   build-docker-image:
     name: Build the Docker Image

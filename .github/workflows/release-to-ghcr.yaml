@@ -163,3 +163,14 @@ jobs:
             VCS_REF=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  update-api-docs:
+    name: Update API Docs (Internal Review)
+    uses: BitGo/gha-dev-portal-updater/.github/workflows/generate-and-update.yml@v5
+    with:
+      target-repo: api-docs
+      service-name: advanced-wallets
+      api-spec-file: src/masterBitgoExpress/routers/index.ts
+      api-spec-title: Advanced Wallets
+      remote-working-directory: ''
+    secrets: inherit
