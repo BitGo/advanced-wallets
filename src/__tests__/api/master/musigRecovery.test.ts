@@ -8,7 +8,7 @@ import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { data as ethRecoveryData } from '../../mocks/ethRecoveryMusigMockData';
 
-describe('POST /api/:coin/wallet/recovery', () => {
+describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
   let agent: request.SuperAgentTest;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const coin = 'hteth';
@@ -65,7 +65,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
 
     // the call to our own master api express endpoint
     const response = await agent
-      .post(`/api/${coin}/wallet/recovery`)
+      .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {
@@ -86,7 +86,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
 
   it('should fail when walletContractAddress (origin) not provided', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/recovery`)
+      .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {
@@ -105,7 +105,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
   });
   it('should fail when recoveryDestinationAddress (destiny) not provided', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/recovery`)
+      .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {
@@ -123,7 +123,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
   });
   it('should fail when userPub or backupPub not provided', async () => {
     const responseNoUserKey = await agent
-      .post(`/api/${coin}/wallet/recovery`)
+      .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {
@@ -135,7 +135,7 @@ describe('POST /api/:coin/wallet/recovery', () => {
       });
 
     const responseNoBackupKey = await agent
-      .post(`/api/${coin}/wallet/recovery`)
+      .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {

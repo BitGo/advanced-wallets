@@ -6,7 +6,7 @@ import { ErrorResponses } from '../../shared/errors';
  * Request type for wallet recovery consolidations endpoint.
  * Used to consolidate and recover funds from multiple addresses in a wallet, via signing with user and backup keys.
  *
- * @endpoint POST /api/{coin}/wallet/recoveryconsolidations
+ * @endpoint POST /api/v1/{coin}/advancedwallet/recoveryconsolidations
  * @description Consolidates and recovers funds from multiple addresses in a wallet
  */
 const RecoveryConsolidationsWalletRequest = {
@@ -101,7 +101,7 @@ const RecoveryConsolidationsWalletRequest = {
 /**
  * Response type for the wallet recovery consolidations endpoint
  *
- * @endpoint POST /api/{coin}/wallet/recoveryconsolidations
+ * @endpoint POST /api/v1/{coin}/advancedwallet/recoveryconsolidations
  * @description Returns the signed consolidation transactions
  */
 const RecoveryConsolidationsWalletResponse: HttpResponse = {
@@ -120,7 +120,7 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
  */
 export const RecoveryConsolidationsRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/recoveryconsolidations',
+  path: '/api/v1/{coin}/advancedwallet/recoveryconsolidations',
   request: httpRequest({
     params: {
       coin: t.string,

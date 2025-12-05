@@ -342,7 +342,7 @@ const GenerateWalletRequest = {
  */
 export const WalletGenerateRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/generate',
+  path: '/api/v1/{coin}/advancedwallet/generate',
   request: httpRequest({
     params: { coin: t.string },
     body: GenerateWalletRequest,

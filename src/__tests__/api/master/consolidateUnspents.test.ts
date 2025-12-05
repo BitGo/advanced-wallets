@@ -6,7 +6,7 @@ import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 
-describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
+describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () => {
   let agent: request.SuperAgentTest;
   const coin = 'btc';
   const walletId = 'test-wallet-id';
@@ -104,7 +104,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -158,7 +158,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -215,7 +215,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -270,7 +270,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -327,7 +327,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -348,7 +348,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       .reply(404, { error: 'Wallet not found', name: 'WalletNotFoundError' });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -373,7 +373,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       .reply(404, { error: 'Keychain not found', name: 'KeychainNotFoundError' });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -398,7 +398,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       .reply(200, mockUserKeychain);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: 'xpub661MyMwAqRbcWRONG_PUBKEY_THAT_DOES_NOT_MATCH',
@@ -414,7 +414,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
 
   it('should fail when required pubkey parameter is missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         source: 'user',
@@ -427,7 +427,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
 
   it('should fail when required source parameter is missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -440,7 +440,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
 
   it('should fail when source parameter has invalid value', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -453,11 +453,13 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent.post(`/api/${coin}/wallet/${walletId}/consolidateunspents`).send({
-      pubkey: mockUserKeychain.pub,
-      source: 'user',
-      feeRate: 1000,
-    });
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        feeRate: 1000,
+      });
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
@@ -480,7 +482,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
       .rejects(new Error('No unspents available for consolidation'));
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -500,7 +502,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidateunspents', () => {
 
   it('should fail when pubkey parameter is not a string', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidateunspents`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: 12345,

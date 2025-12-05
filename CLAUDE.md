@@ -139,15 +139,17 @@ API responses follow a standard error format with `error` and `details` fields.
 
 #### Wallet Management
 
-- `POST /api/:coin/wallet/generate` - Generate wallet (supports onchain and TSS multisig types)
+- `POST /api/v1/:coin/advancedwallet/generate` - Generate wallet (supports onchain and TSS multisig types)
 
 #### Transaction Operations
 
-- `POST /api/:coin/wallet/:walletId/sendMany` - Send transaction with multiple recipients
-- `POST /api/:coin/wallet/:walletId/accelerate` - Accelerate pending transactions (CPFP/RBF)
-- `POST /api/:coin/wallet/:walletId/consolidate` - Consolidate wallet addresses
-- `POST /api/:coin/wallet/:walletId/consolidateunspents` - Consolidate unspent transaction outputs
+- `POST /api/v1/:coin/advancedwallet/:walletId/sendMany` - Send transaction with multiple recipients
+- `POST /api/v1/:coin/advancedwallet/:walletId/accelerate` - Accelerate pending transactions (CPFP/RBF)
+- `POST /api/v1/:coin/advancedwallet/:walletId/consolidate` - Consolidate wallet addresses
+- `POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents` - Consolidate unspent transaction outputs
+- `POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/signAndSend` - Sign a TxRequest and broadcast it (MPC wallets only)
 
 #### Recovery
 
-- `POST /api/:coin/wallet/recovery` - Recover wallet funds
+- `POST /api/v1/:coin/advancedwallet/recovery` - Recover wallet funds
+- `POST /api/v1/:coin/advancedwallet/recoveryconsolidations` - Consolidate and recover funds from multiple addresses

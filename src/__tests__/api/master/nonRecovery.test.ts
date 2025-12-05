@@ -77,7 +77,7 @@ describe('Non Recovery Tests', () => {
       const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
       const response = await agent
-        .post(`/api/${coin}/wallet/recovery`)
+        .post(`/api/v1/${coin}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -108,7 +108,7 @@ describe('Non Recovery Tests', () => {
   describe('Recovery Consolidation', () => {
     it('should fail to run mbe recovery consolidation if not in recovery mode', async () => {
       const response = await agent
-        .post(`/api/trx/wallet/recoveryconsolidations`)
+        .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multisigType: 'onchain',

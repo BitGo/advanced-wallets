@@ -40,7 +40,7 @@ export const ConsolidateResponse: HttpResponse = {
  */
 export const ConsolidateRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/{walletId}/consolidate',
+  path: '/api/v1/{coin}/advancedwallet/{walletId}/consolidate',
   request: httpRequest({
     params: {
       walletId: t.string,

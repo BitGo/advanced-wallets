@@ -385,7 +385,14 @@ docker-compose down
 - `POST /ping` - Health check.
 - `GET /version` - Version information.
 - `POST /ping/advancedWalletManager` - Test connection to Advanced Wallet Manager.
-- `POST /api/:coin/wallet/generate` - Generate wallet (with Advanced Wallet Manager integration).
+- `POST /api/v1/:coin/advancedwallet/generate` - Generate wallet (with Advanced Wallet Manager integration).
+- `POST /api/v1/:coin/advancedwallet/:walletId/sendMany` - Send transaction with multiple recipients.
+- `POST /api/v1/:coin/advancedwallet/:walletId/accelerate` - Accelerate pending transactions (CPFP/RBF).
+- `POST /api/v1/:coin/advancedwallet/:walletId/consolidate` - Consolidate wallet addresses.
+- `POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents` - Consolidate unspent transaction outputs.
+- `POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/signAndSend` - Sign a TxRequest and broadcast it (MPC wallets only).
+- `POST /api/v1/:coin/advancedwallet/recovery` - Recover wallet funds.
+- `POST /api/v1/:coin/advancedwallet/recoveryconsolidations` - Consolidate and recover funds from multiple addresses.
 
 ### API Documentation
 

@@ -20,7 +20,7 @@ import { BitGoRequest } from '../../../types/request';
  * in how the constants are fetched.
  */
 
-describe('POST /api/:coin/wallet/generate', () => {
+describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   let agent: request.SuperAgentTest;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const bitgoApiUrl = Environments.test.uri;
@@ -186,7 +186,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/generate`)
+      .post(`/api/v1/${coin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         label: 'test_wallet',
@@ -530,7 +530,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       });
 
     const response = await agent
-      .post(`/api/${eddsaCoin}/wallet/generate`)
+      .post(`/api/v1/${eddsaCoin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         label: 'test_wallet',
@@ -1181,7 +1181,7 @@ describe('POST /api/:coin/wallet/generate', () => {
       });
 
     const response = await agent
-      .post(`/api/${ecdsaCoin}/wallet/generate`)
+      .post(`/api/v1/${ecdsaCoin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         label: 'test-wallet',
@@ -1249,7 +1249,7 @@ describe('POST /api/:coin/wallet/generate', () => {
 
   it('should fail when multisig type is invalid / not provided', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/generate`)
+      .post(`/api/v1/${coin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         label: 'test_wallet',
@@ -1260,7 +1260,7 @@ describe('POST /api/:coin/wallet/generate', () => {
     response.status.should.equal(400);
 
     const response2 = await agent
-      .post(`/api/${coin}/wallet/generate`)
+      .post(`/api/v1/${coin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         label: 'test_wallet',
@@ -1272,7 +1272,7 @@ describe('POST /api/:coin/wallet/generate', () => {
 
   it('should fail when coin does not support TSS', async () => {
     const response = await agent
-      .post(`/api/tbtc/wallet/generate`)
+      .post(`/api/v1/tbtc/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         label: 'test_wallet',

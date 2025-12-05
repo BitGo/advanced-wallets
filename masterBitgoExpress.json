@@ -6,7 +6,7 @@
     "description": "Advanced Wallets - On-Premises Key Management with BitGo Express"
   },
   "paths": {
-    "/api/{coin}/wallet/{walletId}/accelerate": {
+    "/api/v1/{coin}/advancedwallet/{walletId}/accelerate": {
       "post": {
         "summary": "Accelerate unconfirmed transactions on UTXO-based blockchains.",
         "description": "Supports Child-Pays-For-Parent (CPFP) and Replace-By-Fee (RBF) acceleration methods.",
@@ -188,7 +188,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/{walletId}/consolidate": {
+    "/api/v1/{coin}/advancedwallet/{walletId}/consolidate": {
       "post": {
         "summary": "Build, sign, and send a consolidation transaction for an account-based asset all in 1 call.",
         "description": "For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.",
@@ -327,7 +327,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/{walletId}/consolidateunspents": {
+    "/api/v1/{coin}/advancedwallet/{walletId}/consolidateunspents": {
       "post": {
         "summary": "Build and send a transaction to consolidate unspents in a wallet.",
         "description": "Consolidating unspents is only for UTXO-based assets.",
@@ -528,7 +528,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/{walletId}/sendMany": {
+    "/api/v1/{coin}/advancedwallet/{walletId}/sendMany": {
       "post": {
         "parameters": [
           {
@@ -821,7 +821,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/{walletId}/txrequest/{txRequestId}/signAndSend": {
+    "/api/v1/{coin}/advancedwallet/{walletId}/txrequest/{txRequestId}/signAndSend": {
       "post": {
         "summary": "Sign a TxRequest and Broadcast it (MPC wallets only)",
         "description": "This is usually needed after resolving a pending approval for a MPC wallet",
@@ -950,7 +950,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/generate": {
+    "/api/v1/{coin}/advancedwallet/generate": {
       "post": {
         "summary": "Generates a new advanced wallet.",
         "description": "The wallet creation process involves several steps that happen automatically:\n1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective KMS.\n2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.\n3. Keychain Upload: Uploads the user/backup public keys to BitGo.\n4. BitGo Key Creation: Creates the BitGo key on the BitGo service.\n5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.",
@@ -1115,7 +1115,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/recovery": {
+    "/api/v1/{coin}/advancedwallet/recovery": {
       "post": {
         "summary": "Recover funds from an existing wallet using user and backup keys.",
         "description": "This endpoint allows for both standard multisig and TSS wallet recovery.",
@@ -1470,7 +1470,7 @@
         }
       }
     },
-    "/api/{coin}/wallet/recoveryconsolidations": {
+    "/api/v1/{coin}/advancedwallet/recoveryconsolidations": {
       "post": {
         "summary": "Consolidate funds from multiple addresses in a wallet and sign with user & backup keys in a recovery situation.",
         "description": "Used for both standard multisig wallets and TSS wallets to consolidate funds from various addresses.",
