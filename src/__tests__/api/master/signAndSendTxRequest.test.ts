@@ -20,7 +20,7 @@ import * as mpcv2 from '../../../masterBitgoExpress/handlers/ecdsa';
 import * as eddsa from '../../../masterBitgoExpress/handlers/eddsa';
 import coinFactory from '../../../shared/coinFactory';
 
-describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', () => {
+describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/signAndSend', () => {
   let agent: request.SuperAgentTest;
   let bitgo: BitGoBase;
   let baseCoin: IBaseCoin;
@@ -149,7 +149,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       });
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/txrequest/${txRequestId}/signAndSend`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/txrequest/${txRequestId}/signAndSend`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           source: 'user',
@@ -242,7 +242,7 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       sinon.stub(PendingApprovals.prototype, 'get').resolves(mockPendingApproval);
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/txrequest/${txRequestId}/signAndSend`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/txrequest/${txRequestId}/signAndSend`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           source: 'user',
@@ -341,7 +341,9 @@ describe('POST /api/:coin/wallet/:walletId/txrequest/:txRequestId/signAndSend', 
       });
 
       const response = await agent
-        .post(`/api/${eddsaCoin}/wallet/${walletId}/txrequest/${txRequestId}/signAndSend`)
+        .post(
+          `/api/v1/${eddsaCoin}/advancedwallet/${walletId}/txrequest/${txRequestId}/signAndSend`,
+        )
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           source: 'user',

@@ -6,7 +6,7 @@ import { ErrorResponses } from '../../shared/errors';
  * Request type for the transaction acceleration endpoint.
  * Used to accelerate unconfirmed transactions on UTXO-based blockchains using CPFP or RBF.
  *
- * @endpoint POST /api/{coin}/wallet/{walletId}/accelerate
+ * @endpoint POST /api/v1/{coin}/advancedwallet/{walletId}/accelerate
  * @description Speeds up unconfirmed transactions by creating a child transaction (CPFP) or replacing the original transaction (RBF)
  */
 export const AccelerateRequest = {
@@ -62,7 +62,7 @@ export const AccelerateRequest = {
 /**
  * Response type for the transaction acceleration endpoint.
  *
- * @endpoint POST /api/{coin}/wallet/{walletId}/accelerate
+ * @endpoint POST /api/v1/{coin}/advancedwallet/{walletId}/accelerate
  * @description Sign an acceleration transaction and send to BitGo to sign and broadcast
  */
 const AccelerateResponse: HttpResponse = {
@@ -94,7 +94,7 @@ const AccelerateResponse: HttpResponse = {
  */
 export const AccelerateRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/{walletId}/accelerate',
+  path: '/api/v1/{coin}/advancedwallet/{walletId}/accelerate',
   request: httpRequest({
     params: {
       walletId: t.string,

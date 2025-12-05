@@ -191,7 +191,7 @@ export type CoinSpecificParamsUnion =
 /**
  * Response type for the wallet recovery endpoint.
  *
- * @endpoint POST /api/{coin}/wallet/recovery
+ * @endpoint POST /api/v1/{coin}/advancedwallet/recovery
  * @description Returns the signed recovery transaction that can be broadcast to the network
  */
 const RecoveryWalletResponse: HttpResponse = {
@@ -214,7 +214,7 @@ const RecoveryWalletResponse: HttpResponse = {
  * Request type for the wallet recovery endpoint.
  * Used to recover funds from both standard multisig and TSS wallets.
  *
- * @endpoint POST /api/{coin}/wallet/recovery
+ * @endpoint POST /api/v1/{coin}/advancedwallet/recovery
  * @description Recover funds from a wallet by building a transaction with user and backup keys
  */
 const RecoveryWalletRequest = {
@@ -296,7 +296,7 @@ const RecoveryWalletRequest = {
  */
 export const RecoveryRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/recovery',
+  path: '/api/v1/{coin}/advancedwallet/recovery',
   request: httpRequest({
     params: {
       coin: t.string,

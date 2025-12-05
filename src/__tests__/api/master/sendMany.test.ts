@@ -9,7 +9,7 @@ import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import assert from 'assert';
 
-describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
+describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
   let agent: request.SuperAgentTest;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const bitgoApiUrl = Environments.test.uri;
@@ -107,7 +107,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         });
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           recipients: [
@@ -195,7 +195,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
         });
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           recipients: [
@@ -276,7 +276,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           recipients: [
@@ -361,7 +361,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           recipients: [
@@ -443,7 +443,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           type: 'fillNonce',
@@ -502,7 +502,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
 
       const response = await agent
-        .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           recipients: [
@@ -546,7 +546,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         recipients: [
@@ -627,7 +627,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(false);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         recipients: [
@@ -684,7 +684,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       .rejects(new Error('Invalid transaction'));
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         recipients: [
@@ -744,7 +744,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
     });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         recipients: [
@@ -791,7 +791,7 @@ describe('POST /api/:coin/wallet/:walletId/sendmany', () => {
       });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/sendMany`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         recipients: [

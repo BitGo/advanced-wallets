@@ -129,7 +129,7 @@ describe('Recovery Tests', () => {
         });
 
       const response = await agent
-        .post(`/api/${coin}/wallet/recovery`)
+        .post(`/api/v1/${coin}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -182,7 +182,7 @@ describe('Recovery Tests', () => {
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
       const response = await agent
-        .post(`/api/${coin}/wallet/recovery`)
+        .post(`/api/v1/${coin}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -217,7 +217,7 @@ describe('Recovery Tests', () => {
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
       const response = await agent
-        .post(`/api/${coin}/wallet/recovery`)
+        .post(`/api/v1/${coin}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -254,7 +254,7 @@ describe('Recovery Tests', () => {
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
       const response = await agent
-        .post(`/api/${coin}/wallet/recovery`)
+        .post(`/api/v1/${coin}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -305,7 +305,7 @@ describe('Recovery Tests', () => {
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
 
       const response = await agent
-        .post(`/api/${ethCoinId}/wallet/recovery`)
+        .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -341,7 +341,7 @@ describe('Recovery Tests', () => {
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
 
       const response = await agent
-        .post(`/api/${ethCoinId}/wallet/recovery`)
+        .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
@@ -432,7 +432,7 @@ describe('Recovery Tests', () => {
         });
 
       const response = await agent
-        .post(`/api/${solCoinId}/wallet/recovery`)
+        .post(`/api/v1/${solCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           isTssRecovery: true,
@@ -460,7 +460,7 @@ describe('Recovery Tests', () => {
       const recoveryDestination = 'solanaRecoveryAddress123456789012345678901234';
 
       const response = await agent
-        .post(`/api/${solCoinId}/wallet/recovery`)
+        .post(`/api/v1/${solCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           isTssRecovery: true,
@@ -491,7 +491,7 @@ describe('Recovery Tests', () => {
       const recoveryDestination = 'solanaRecoveryAddress123456789012345678901234';
 
       const response = await agent
-        .post(`/api/${solCoinId}/wallet/recovery`)
+        .post(`/api/v1/${solCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           isTssRecovery: true,
@@ -605,7 +605,7 @@ describe('Recovery Tests', () => {
         });
 
       const response = await agent
-        .post(`/api/${suiCoinId}/wallet/recovery`)
+        .post(`/api/v1/${suiCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           isTssRecovery: true,

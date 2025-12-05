@@ -209,7 +209,7 @@ export const SendManyResponse: HttpResponse = {
 
 export const SendManyRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/{walletId}/sendMany',
+  path: '/api/v1/{coin}/advancedwallet/{walletId}/sendMany',
   request: httpRequest({
     params: {
       walletId: t.string,

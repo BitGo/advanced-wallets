@@ -6,7 +6,7 @@ import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 
-describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
+describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
   let agent: request.SuperAgentTest;
   const coin = 'tbtc';
   const walletId = 'test-wallet-id';
@@ -91,7 +91,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -138,7 +138,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -180,7 +180,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -200,7 +200,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .reply(404, { error: 'Wallet not found', name: 'WalletNotFoundError' });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -225,7 +225,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .reply(404, { error: 'Keychain not found', name: 'KeychainNotFoundError' });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -250,7 +250,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .reply(200, mockUserKeychain);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: 'xpub661MyMwAqRbcWRONG_PUBKEY_THAT_DOES_NOT_MATCH',
@@ -266,7 +266,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when required pubkey parameter is missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         source: 'user',
@@ -279,7 +279,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when required source parameter is missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -292,7 +292,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when source parameter has invalid value', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -305,11 +305,13 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent.post(`/api/${coin}/wallet/${walletId}/accelerate`).send({
-      pubkey: mockUserKeychain.pub,
-      source: 'user',
-      cpfpTxIds: ['test-tx-id'],
-    });
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        cpfpTxIds: ['test-tx-id'],
+      });
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
@@ -332,7 +334,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
       .rejects(new Error('Insufficient funds for acceleration'));
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -353,7 +355,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when cpfpTxIds parameter is not an array', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -367,7 +369,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when rbfTxIds parameter is not an array', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -381,7 +383,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when pubkey parameter is not a string', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: 12345,
@@ -395,7 +397,7 @@ describe('POST /api/:coin/wallet/:walletId/accelerate', () => {
 
   it('should fail when both cpfpTxIds and rbfTxIds are missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/accelerate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,

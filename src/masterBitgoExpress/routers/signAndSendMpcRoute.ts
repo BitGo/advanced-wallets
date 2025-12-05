@@ -24,7 +24,7 @@ export const SignMpcResponse: HttpResponse = {
  */
 export const SignAndSendMpcRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/{walletId}/txrequest/{txRequestId}/signAndSend',
+  path: '/api/v1/{coin}/advancedwallet/{walletId}/txrequest/{txRequestId}/signAndSend',
   request: httpRequest({
     params: {
       walletId: t.string,

@@ -9,7 +9,7 @@ import { Hteth } from '@bitgo-beta/sdk-coin-eth';
 import * as transactionRequests from '../../../masterBitgoExpress/handlers/transactionRequests';
 import * as handlerUtils from '../../../masterBitgoExpress/handlers/utils/utils';
 
-describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
+describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
   let agent: request.SuperAgentTest;
   const coin = 'hteth';
   const walletId = 'test-wallet-id';
@@ -118,7 +118,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -204,7 +204,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -267,7 +267,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
     };
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -290,7 +290,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .reply(404, { error: 'Wallet not found', name: 'WalletNotFoundError' });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -315,7 +315,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .reply(404, { error: 'Keychain not found', name: 'KeychainNotFoundError' });
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -340,7 +340,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .reply(200, mockUserKeychain);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: 'xpub661MyMwAqRbcWRONG_PUBKEY_THAT_DOES_NOT_MATCH',
@@ -370,7 +370,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .returns(false);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -392,7 +392,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
   it('should fail when required pubkey parameter is missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         source: 'user',
@@ -406,7 +406,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
   it('should fail when required source parameter is missing', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -420,7 +420,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
   it('should fail when source parameter has invalid value', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -434,11 +434,13 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent.post(`/api/${coin}/wallet/${walletId}/consolidate`).send({
-      pubkey: mockUserKeychain.pub,
-      source: 'user',
-      consolidateAddresses: ['0x1234567890abcdef'],
-    });
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        consolidateAddresses: ['0x1234567890abcdef'],
+      });
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
@@ -481,7 +483,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .returns(true);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -536,7 +538,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
       .returns(true);
 
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -558,7 +560,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
   it('should fail when consolidateAddresses parameter is not an array', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,
@@ -573,7 +575,7 @@ describe('POST /api/:coin/wallet/:walletId/consolidate', () => {
 
   it('should fail when apiVersion parameter has invalid value', async () => {
     const response = await agent
-      .post(`/api/${coin}/wallet/${walletId}/consolidate`)
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         pubkey: mockUserKeychain.pub,

@@ -79,7 +79,7 @@ export const ConsolidateUnspentsResponse: HttpResponse = {
  */
 export const ConsolidateUnspentsRoute = httpRoute({
   method: 'POST',
-  path: '/api/{coin}/wallet/{walletId}/consolidateunspents',
+  path: '/api/v1/{coin}/advancedwallet/{walletId}/consolidateunspents',
   request: httpRequest({
     params: {
       walletId: t.string,

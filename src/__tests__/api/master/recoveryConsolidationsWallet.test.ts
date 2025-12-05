@@ -9,7 +9,7 @@ import { Sol } from '@bitgo-beta/sdk-coin-sol';
 import { Sui } from '@bitgo-beta/sdk-coin-sui';
 import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 
-describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
+describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;
   const advancedWalletManagerUrl = 'https://test-advanced-wallet-manager.com';
   const accessToken = 'test-access-token';
@@ -74,7 +74,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     };
 
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -115,7 +115,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     };
 
     const response = await agent
-      .post(`/api/sol/wallet/recoveryconsolidations`)
+      .post(`/api/v1/sol/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -168,7 +168,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     };
 
     const response = await agent
-      .post(`/api/tsui/wallet/recoveryconsolidations`)
+      .post(`/api/v1/tsui/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -212,7 +212,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     };
 
     const response = await agent
-      .post(`/api/sol/wallet/recoveryconsolidations`)
+      .post(`/api/v1/sol/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -254,7 +254,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     };
 
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
@@ -268,7 +268,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
   it('should fail when commonKeychain is missing for MPC wallet', async () => {
     const response = await agent
-      .post(`/api/tsui/wallet/recoveryconsolidations`)
+      .post(`/api/v1/tsui/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'tss',
@@ -282,7 +282,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
   it('should fail when required keys are missing for onchain wallet', async () => {
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'onchain',
@@ -299,7 +299,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
   it('should fail when required multisigType parameter is missing', async () => {
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         userPub: mockUserPub,
@@ -313,7 +313,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
   it('should fail when multisigType parameter has invalid value', async () => {
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'invalid_type',
@@ -327,7 +327,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
   });
 
   it('should fail when authorization header is missing', async () => {
-    const response = await agent.post(`/api/trx/wallet/recoveryconsolidations`).send({
+    const response = await agent.post(`/api/v1/trx/advancedwallet/recoveryconsolidations`).send({
       multisigType: 'onchain',
       userPub: mockUserPub,
       backupPub: mockBackupPub,
@@ -345,7 +345,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     } as any);
 
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'onchain',
@@ -367,7 +367,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
     } as any);
 
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'onchain',
@@ -392,7 +392,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       .rejects(new Error('Failed to recover consolidations'));
 
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'onchain',
@@ -420,7 +420,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
       .rejects(new Error('Advanced Wallet Manager signing failed'));
 
     const response = await agent
-      .post(`/api/trx/wallet/recoveryconsolidations`)
+      .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'onchain',
@@ -439,7 +439,7 @@ describe('POST /api/:coin/wallet/recoveryconsolidations', () => {
 
   it('should fail when durableNonces parameter is not correctly structured', async () => {
     const response = await agent
-      .post(`/api/sol/wallet/recoveryconsolidations`)
+      .post(`/api/v1/sol/advancedwallet/recoveryconsolidations`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multisigType: 'onchain',

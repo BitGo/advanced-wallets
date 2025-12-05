@@ -92,7 +92,7 @@ describe('MBE mpcv2 recovery', () => {
       });
 
     const response = await agent
-      .post(`/api/${ethLikeCoin}/wallet/recovery`)
+      .post(`/api/v1/${ethLikeCoin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         isTssRecovery: true,
@@ -161,7 +161,7 @@ describe('MBE mpcv2 recovery', () => {
       });
 
     const response = await agent
-      .post(`/api/${cosmosLikeCoin}/wallet/recovery`)
+      .post(`/api/v1/${cosmosLikeCoin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         isTssRecovery: true,
@@ -188,7 +188,7 @@ describe('MBE mpcv2 recovery', () => {
 
   it('should throw 422 Unprocessable Entity for missing coin specific params', async () => {
     const response = await agent
-      .post(`/api/${ethLikeCoin}/wallet/recovery`)
+      .post(`/api/v1/${ethLikeCoin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         isTssRecovery: true,
