@@ -327,7 +327,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         body: RecoveryMultisigRequest,
       }),
       response: RecoveryMultisigResponse,
-      description: 'Recover a multisig transaction',
+      description: 'Sign a multisig recovery transaction',
     }),
   },
   'v1.mpc.recovery': {
@@ -355,7 +355,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         body: IndependentKeyRequest,
       }),
       response: IndependentKeyResponse,
-      description: 'Generate an independent key',
+      description: 'Generate an independent keychain',
     }),
   },
   'v1.mpc.key.initialize': {
@@ -392,7 +392,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         body: SignMpcRequest,
       }),
       response: SignMpcResponse,
-      description: 'Sign a MPC transaction',
+      description: 'Sign an MPC transaction',
     }),
   },
 
@@ -423,7 +423,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         200: MpcV2InitializeResponseType,
         ...ErrorResponses,
       },
-      description: 'Initialize MPC for EdDSA key generation',
+      description: 'Initialize MPC v2 for ECDSA key generation',
     }),
   },
   'v1.mpcv2.round': {
@@ -438,7 +438,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         200: MpcV2RoundResponseType,
         ...ErrorResponses,
       },
-      description: 'Perform a round in the MPC protocol',
+      description: 'Perform a round in the MPC v2 DKG protocol',
     }),
   },
   'v1.mpcv2.finalize': {
@@ -453,7 +453,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         200: MpcV2FinalizeResponseType,
         ...ErrorResponses,
       },
-      description: 'Finalize the MPC protocol',
+      description: 'Finalize the MPC v2 DKG protocol',
     }),
   },
   'v1.mpcv2.recovery': {
@@ -468,7 +468,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
         200: MpcV2RecoveryResponseType,
         ...ErrorResponses,
       },
-      description: 'Recover a MPC transaction',
+      description: 'Sign an MPC v2 recovery transaction',
     }),
   },
 });

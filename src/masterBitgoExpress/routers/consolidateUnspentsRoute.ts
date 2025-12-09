@@ -94,4 +94,5 @@ export const ConsolidateUnspentsRoute = httpRoute({
     body: ConsolidateUnspentsRequest,
   }),
   response: ConsolidateUnspentsResponse,
+  description: 'Consolidate unspents',
 });
