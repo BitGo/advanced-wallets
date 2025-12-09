@@ -2,13 +2,6 @@ import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-ht
 import * as t from 'io-ts';
 import { ErrorResponses } from '../../shared/errors';
 
-/**
- * Request type for the transaction acceleration endpoint.
- * Used to accelerate unconfirmed transactions on UTXO-based blockchains using CPFP or RBF.
- *
- * @endpoint POST /api/v1/{coin}/advancedwallet/{walletId}/accelerate
- * @description Speeds up unconfirmed transactions by creating a child transaction (CPFP) or replacing the original transaction (RBF)
- */
 export const AccelerateRequest = {
   /**
    * Public key used for signing the acceleration transaction.
@@ -59,12 +52,6 @@ export const AccelerateRequest = {
   feeMultiplier: optional(t.number),
 };
 
-/**
- * Response type for the transaction acceleration endpoint.
- *
- * @endpoint POST /api/v1/{coin}/advancedwallet/{walletId}/accelerate
- * @description Sign an acceleration transaction and send to BitGo to sign and broadcast
- */
 const AccelerateResponse: HttpResponse = {
   /**
    * Successful acceleration response.
@@ -89,8 +76,14 @@ const AccelerateResponse: HttpResponse = {
 };
 
 /**
- * Accelerate unconfirmed transactions on UTXO-based blockchains.
- * Supports Child-Pays-For-Parent (CPFP) and Replace-By-Fee (RBF) acceleration methods.
+ * Accelerate transaction (advanced)
+ *
+ * Send a new transaction to accelerate the targeted unconfirmed transaction either by using Child-Pays-For-Parent (CPFP) or Replace-By-Fee (RBF).
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use [Accelerate Transaction](https://developers.bitgo.com/reference/expresswalletacceleratetx).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletalletacceleratetx
  */
 export const AccelerateRoute = httpRoute({
   method: 'POST',

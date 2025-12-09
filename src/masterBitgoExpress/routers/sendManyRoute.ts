@@ -207,6 +207,20 @@ export const SendManyResponse: HttpResponse = {
   ...ErrorResponses,
 };
 
+/**
+ * Send to many (advanced)
+ *
+ * Send coins or tokens to one or more recipients. You can use this endpoint to schedule outgoing transactions in bulk, lowering your aggregate amount of blockchain fees.
+ *
+ * Works with both multisignature and MPC wallets. Also supports external-signer mode.
+ *
+ * Works with most BitGo-supported assets, but currently unavailable for: ALGO, ARBETH, AVAXC, CELO, CELO:CUSD, CSPR, DOT, EOS, HTETH:BGERCH, NEAR, OPETH, STX, TON, TRX, TRX:USDC, XLM, XRP, XTZ
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use [Send to many](https://developers.bitgo.com/reference/expresswalletsendmany).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletsendmany
+ */
 export const SendManyRoute = httpRoute({
   method: 'POST',
   path: '/api/v1/{coin}/advancedwallet/{walletId}/sendMany',

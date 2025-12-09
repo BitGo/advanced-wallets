@@ -29,7 +29,13 @@ const VersionAwmResponse: HttpResponse = {
   }),
 };
 
-// API Specification
+/**
+ * Ping Check
+ *
+ * @tag Advanced Wallets
+ * @operationId v1.advancedwalletmanager.ping
+ * @private
+ */
 export const AdvancedWalletManagerHealthSpec = apiSpec({
   'v1.advancedwalletmanager.ping': {
     post: httpRoute({
@@ -40,6 +46,13 @@ export const AdvancedWalletManagerHealthSpec = apiSpec({
       description: 'Ping the advanced wallet manager server',
     }),
   },
+  /**
+   * Version Check
+   *
+   * @tag Advanced Wallets
+   * @operationId v1.advancedwalletmanager.version
+   * @private
+   */
   'v1.advancedwalletmanager.version': {
     get: httpRoute({
       method: 'GET',
