@@ -41,3 +41,71 @@ jobs:
             VCS_REF=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  audit-api-spec:
+    name: Audit API Spec
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Download and install vacuum v0.18.1
+        run: |
+          curl -L \
+            --output vacuum.tar.gz \
+            --silent \
+            --show-error \
+            --fail \
+            https://github.com/daveshanley/vacuum/releases/download/v0.18.1/vacuum_0.18.1_linux_x86_64.tar.gz
+          tar -xzf vacuum.tar.gz
+          chmod u+x vacuum
+          sudo mv vacuum /usr/local/bin/
+          vacuum version
+
+      - name: Generate API spec
+        run: |
+          ./node_modules/.bin/openapi-generator \
+            src/masterBitgoExpress/routers/index.ts \
+            > api-generated.json
+
+      - name: Audit with Vacuum
+        run: |
+          vacuum report \
+            --no-style \
+            --stdout \
+            --ruleset ruleset.yaml \
+            api-generated.json > vacuum-report.json
+
+          jq '.resultSet.results // []' vacuum-report.json > vacuum-results.json
+
+          ERROR_COUNT=$(jq '[.[] | select(.ruleSeverity == "error")] | length' vacuum-results.json)
+          WARNING_COUNT=$(jq '[.[] | select(.ruleSeverity == "warn")] | length' vacuum-results.json)
+
+          echo "Found $ERROR_COUNT error(s) and $WARNING_COUNT warning(s)"
+
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "API specification audit failed with $ERROR_COUNT error(s)"
+            echo ""
+            echo "Errors:"
+            jq -r '.[] | select(.ruleSeverity == "error") | "  - [\(.ruleId)] \(.message) at \(.path)"' vacuum-results.json
+            exit 1
+          else
+            echo "API specification audit passed!"
+          fi
