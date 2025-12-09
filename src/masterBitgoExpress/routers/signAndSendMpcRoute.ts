@@ -19,8 +19,14 @@ export const SignMpcResponse: HttpResponse = {
 };
 
 /**
- * Sign a TxRequest and Broadcast it (MPC wallets only)
- * This is usually needed after resolving a pending approval for a MPC wallet
+ * Sign and send MPC transaction (advanced)
+ *
+ * Sign and send a MPC transaction.
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use [Sign MPC transaction](https://developers.bitgo.com/reference/expresswalletsigntxtss).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletsigntxtss
  */
 export const SignAndSendMpcRoute = httpRoute({
   method: 'POST',

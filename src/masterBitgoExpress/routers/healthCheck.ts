@@ -15,7 +15,13 @@ const VersionResponse: HttpResponse = {
   200: VersionResponseType,
 };
 
-// API Specification
+/**
+ * Ping Check
+ *
+ * @tag Advanced Wallets
+ * @operationId v1.health.ping
+ * @private
+ */
 export const HealthCheckApiSpec = apiSpec({
   'v1.health.ping': {
     post: httpRoute({
@@ -26,6 +32,13 @@ export const HealthCheckApiSpec = apiSpec({
       description: 'Health check endpoint that returns server status',
     }),
   },
+  /**
+   * Version Check
+   *
+   * @tag Advanced Wallets
+   * @operationId v1.health.version
+   * @private
+   */
   'v1.health.version': {
     get: httpRoute({
       method: 'GET',

@@ -189,10 +189,7 @@ export type CoinSpecificParamsUnion =
   | EcdsaCosmosLikeRecoverySpecificParams;
 
 /**
- * Response type for the wallet recovery endpoint.
- *
- * @endpoint POST /api/v1/{coin}/advancedwallet/recovery
- * @description Returns the signed recovery transaction that can be broadcast to the network
+ * Response type for the wallet recovery endpoint. Returns the signed recovery transaction that can be broadcast to the network
  */
 const RecoveryWalletResponse: HttpResponse = {
   /**
@@ -212,10 +209,7 @@ const RecoveryWalletResponse: HttpResponse = {
 
 /**
  * Request type for the wallet recovery endpoint.
- * Used to recover funds from both standard multisig and TSS wallets.
- *
- * @endpoint POST /api/v1/{coin}/advancedwallet/recovery
- * @description Recover funds from a wallet by building a transaction with user and backup keys
+ * Used to recover funds from both standard multisig and TSS wallets. Recover funds from an advanced wallet by building a transaction with user and backup keys.
  */
 const RecoveryWalletRequest = {
   /**
@@ -291,8 +285,16 @@ const RecoveryWalletRequest = {
 };
 
 /**
- * Recover funds from an existing wallet using user and backup keys.
- * This endpoint allows for both standard multisig and TSS wallet recovery.
+ * Recover assets (advanced)
+ *
+ * Recover assets from an advanced wallet with a balance only in the base address. Works for both multisignature and MPC recoveries.
+ *
+ * To recover assets from an advanced wallet with balances in multiple receive addresses, use [Consolidate and recover assets (advanced)](https://developers.bitgo.com/reference/advancedwalletconsolidaterecovery).
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletrecovery
  */
 export const RecoveryRoute = httpRoute({
   method: 'POST',
