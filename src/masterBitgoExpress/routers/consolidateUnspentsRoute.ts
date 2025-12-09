@@ -94,5 +94,5 @@ export const ConsolidateUnspentsRoute = httpRoute({
     body: ConsolidateUnspentsRequest,
   }),
   response: ConsolidateUnspentsResponse,
-  description: 'Consolidate unspents',
+  description: 'Build, sign, and send a transaction to consolidate unspents for UTXO-based assets',
 });
