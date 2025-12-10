@@ -30,37 +30,43 @@ const VersionAwmResponse: HttpResponse = {
 };
 
 /**
- * Ping Check
+ * Ping (MBE-to-AWM)
+ *
+ * Test your connection between the Advanced Wallet Manager (AWM) and the Master Bitgo Express (MBE) servers.
  *
  * @tag Advanced Wallets
- * @operationId v1.advancedwalletmanager.ping
- * @private
+ * @operationId advancedwallet.mbe.awm.ping
  */
+const PingAwmRoute = httpRoute({
+  method: 'POST',
+  path: '/ping/advancedWalletManager',
+  request: httpRequest({}),
+  response: PingAwmResponse,
+  description: 'Ping the advanced wallet manager server',
+});
+
+/**
+ * Check Version (MBE-to-AWM)
+ *
+ * Use the Master Bitgo Express (MBE) server to check your version of the Advanced Wallet Manager (AWM) server. Calling this endpoint instructs the MBE server to call [Check AWM Version](https://developers.bitgo.com/reference/v1healthversionawm).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwallet.mbe.awm.version
+ */
+const VersionAwmRoute = httpRoute({
+  method: 'GET',
+  path: '/version/advancedWalletManager',
+  request: httpRequest({}),
+  response: VersionAwmResponse,
+  description: 'Get the version of the advanced wallet manager server',
+});
+
 export const AdvancedWalletManagerHealthSpec = apiSpec({
-  'v1.advancedwalletmanager.ping': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/ping/advancedWalletManager',
-      request: httpRequest({}),
-      response: PingAwmResponse,
-      description: 'Ping the advanced wallet manager server',
-    }),
+  'advancedwallet.mbe.awm.ping': {
+    post: PingAwmRoute,
   },
-  /**
-   * Version Check
-   *
-   * @tag Advanced Wallets
-   * @operationId v1.advancedwalletmanager.version
-   * @private
-   */
-  'v1.advancedwalletmanager.version': {
-    get: httpRoute({
-      method: 'GET',
-      path: '/version/advancedWalletManager',
-      request: httpRequest({}),
-      response: VersionAwmResponse,
-      description: 'Get the version of the advanced wallet manager server',
-    }),
+  'advancedwallet.mbe.awm.version': {
+    get: VersionAwmRoute,
   },
 });
 
@@ -76,7 +82,7 @@ export function createAdvancedWalletManagerHealthRouter(
   const awmClient = new AdvancedWalletManagerClient(cfg);
 
   // Ping endpoint handler
-  router.post('v1.advancedwalletmanager.ping', [
+  router.post('advancedwallet.mbe.awm.ping', [
     responseHandler(async () => {
       logger.debug('Pinging advanced wallet manager');
 
@@ -101,7 +107,7 @@ export function createAdvancedWalletManagerHealthRouter(
     }),
   ]);
 
-  router.get('v1.advancedwalletmanager.version', [
+  router.get('advancedwallet.mbe.awm.version', [
     responseHandler(async () => {
       try {
         // Use the client's getVersion method instead of direct HTTP request

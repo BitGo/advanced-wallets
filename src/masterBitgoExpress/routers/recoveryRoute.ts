@@ -294,7 +294,7 @@ const RecoveryWalletRequest = {
  * Use this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletrecovery
+ * @operationId advancedwallet.recovery
  */
 export const RecoveryRoute = httpRoute({
   method: 'POST',

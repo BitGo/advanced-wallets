@@ -83,7 +83,7 @@ const AccelerateResponse: HttpResponse = {
  * Use this endpoint only with advanced wallets. For other wallet types, use [Accelerate Transaction](https://developers.bitgo.com/reference/expresswalletacceleratetx).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletacceleratetx
+ * @operationId advancedwallet.accelerate.tx
  */
 export const AccelerateRoute = httpRoute({
   method: 'POST',

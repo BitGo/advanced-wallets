@@ -42,7 +42,7 @@ export const ConsolidateResponse: HttpResponse = {
  * Use this endpoint only with advanced wallets. For other wallet types, use [Consolidate account (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateaccount).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletconsolidate
+ * @operationId advancedwallet.consolidate
  */
 export const ConsolidateRoute = httpRoute({
   method: 'POST',

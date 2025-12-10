@@ -342,7 +342,7 @@ const GenerateWalletRequest = {
  * 5. Creates the wallet on BitGo with the 3 keys.
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletgenerate
+ * @operationId advancedwallet.generate
  */
 export const WalletGenerateRoute = httpRoute({
   method: 'POST',
