@@ -35,8 +35,14 @@ export const ConsolidateResponse: HttpResponse = {
 };
 
 /**
- * Build, sign, and send a consolidation transaction for an account-based asset all in 1 call.
- * For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.
+ * Consolidate account (advanced)
+ *
+ * Build, sign, and send a consolidation transaction, all in one call. For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use [Consolidate account (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateaccount).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletconsolidate
  */
 export const ConsolidateRoute = httpRoute({
   method: 'POST',

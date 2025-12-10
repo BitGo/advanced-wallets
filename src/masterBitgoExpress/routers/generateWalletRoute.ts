@@ -332,13 +332,17 @@ const GenerateWalletRequest = {
 };
 
 /**
- * Generates a new advanced wallet.
- * The wallet creation process involves several steps that happen automatically:
- * 1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective KMS.
- * 2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.
- * 3. Keychain Upload: Uploads the user/backup public keys to BitGo.
- * 4. BitGo Key Creation: Creates the BitGo key on the BitGo service.
- * 5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.
+ * Generate wallet (advanced)
+ *
+ * Create a new advanced wallet. Calling this endpoint does the following:
+ * 1. Creates the user keychain in the advanced wallet manager and encrypts it with the respective key management service (KMS).
+ * 2. Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.
+ * 3. Uploads the public user and backup keys to BitGo.
+ * 4. Creates the BitGo key on the BitGo service.
+ * 5. Creates the wallet on BitGo with the 3 keys.
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletgenerate
  */
 export const WalletGenerateRoute = httpRoute({
   method: 'POST',

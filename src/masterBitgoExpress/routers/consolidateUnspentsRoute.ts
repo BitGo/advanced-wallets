@@ -74,8 +74,14 @@ export const ConsolidateUnspentsResponse: HttpResponse = {
 };
 
 /**
- * Build and send a transaction to consolidate unspents in a wallet.
- * Consolidating unspents is only for UTXO-based assets.
+ * Consolidate unspents (advanced)
+ *
+ * Builds, signs, and sends a transaction to consolidate unspents all in 1 call. Consolidating unspents is only for UTXO-based assets.
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use [Consolidate unspents (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateunspents).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletconsolidateunspents
  */
 export const ConsolidateUnspentsRoute = httpRoute({
   method: 'POST',

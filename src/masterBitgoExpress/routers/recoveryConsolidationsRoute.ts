@@ -6,7 +6,6 @@ import { ErrorResponses } from '../../shared/errors';
  * Request type for wallet recovery consolidations endpoint.
  * Used to consolidate and recover funds from multiple addresses in a wallet, via signing with user and backup keys.
  *
- * @endpoint POST /api/v1/{coin}/advancedwallet/recoveryconsolidations
  * @description Consolidates and recovers funds from multiple addresses in a wallet
  */
 const RecoveryConsolidationsWalletRequest = {
@@ -101,7 +100,6 @@ const RecoveryConsolidationsWalletRequest = {
 /**
  * Response type for the wallet recovery consolidations endpoint
  *
- * @endpoint POST /api/v1/{coin}/advancedwallet/recoveryconsolidations
  * @description Returns the signed consolidation transactions
  */
 const RecoveryConsolidationsWalletResponse: HttpResponse = {
@@ -115,8 +113,16 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
 };
 
 /**
- * Consolidate funds from multiple addresses in a wallet and sign with user & backup keys in a recovery situation.
- * Used for both standard multisig wallets and TSS wallets to consolidate funds from various addresses.
+ * Consolidate and recover assets (advanced)
+ *
+ * Recover assets from an advanced wallet with a balance in multiple receive addresses. Build, sign, and send a consolidation and recovery, all in one call. Sign using your user and backup keys. Works for both multisignature and MPC recoveries.
+ *
+ * To recover assets from an advanced wallet with a balance only in the base address, use [Recover assets (advanced)](https://developers.bitgo.com/reference/advancedwalletrecovery).
+ *
+ * Use this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwalletconsolidaterecovery
  */
 export const RecoveryConsolidationsRoute = httpRoute({
   method: 'POST',
