@@ -26,7 +26,7 @@ export const SignMpcResponse: HttpResponse = {
  * Use this endpoint only with advanced wallets. For other wallet types, use [Sign MPC transaction](https://developers.bitgo.com/reference/expresswalletsigntxtss).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletsigntxtss
+ * @operationId advancedwallet.sign.tx.tss
  */
 export const SignAndSendMpcRoute = httpRoute({
   method: 'POST',

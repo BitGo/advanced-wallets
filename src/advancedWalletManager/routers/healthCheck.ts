@@ -16,37 +16,43 @@ const VersionResponse: HttpResponse = {
 };
 
 /**
- * Ping Check
+ * Ping (AWM)
+ *
+ * Test your connection to the Advanced Wallet Manager (AWM) server.
  *
  * @tag Advanced Wallets
- * @operationId v1.health.ping
- * @private
+ * @operationId advancedwallet.awm.ping
  */
+const PingRoute = httpRoute({
+  method: 'POST',
+  path: '/ping',
+  request: httpRequest({}),
+  response: PingResponse,
+  description: 'Health check endpoint that returns server status',
+});
+
+/**
+ * Check Version (AWM)
+ *
+ * Check your version of the Advanced Wallet Manager (AWM) server.
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwallet.awm.version
+ */
+const VersionRoute = httpRoute({
+  method: 'GET',
+  path: '/version',
+  request: httpRequest({}),
+  response: VersionResponse,
+  description: 'Returns the current version of the server',
+});
+
 export const HealthCheckApiSpec = apiSpec({
-  'v1.health.ping': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/ping',
-      request: httpRequest({}),
-      response: PingResponse,
-      description: 'Health check endpoint that returns server status',
-    }),
+  'advancedwallet.awm.ping': {
+    post: PingRoute,
   },
-  /**
-   * Version Check
-   *
-   * @tag Advanced Wallets
-   * @operationId v1.health.version
-   * @private
-   */
-  'v1.health.version': {
-    get: httpRoute({
-      method: 'GET',
-      path: '/version',
-      request: httpRequest({}),
-      response: VersionResponse,
-      description: 'Returns the current version of the server',
-    }),
+  'advancedwallet.awm.version': {
+    get: VersionRoute,
   },
 });
 
@@ -56,7 +62,7 @@ export function createHealthCheckRouter(): WrappedRouter<typeof HealthCheckApiSp
     decodeErrorFormatter: customDecodeErrorFormatter,
   });
   // Ping endpoint handler
-  router.post('v1.health.ping', [
+  router.post('advancedwallet.awm.ping', [
     responseHandler(() =>
       Response.ok({
         status: 'advanced wallet manager server is ok!',
@@ -66,7 +72,7 @@ export function createHealthCheckRouter(): WrappedRouter<typeof HealthCheckApiSp
   ]);
 
   // Version endpoint handler
-  router.get('v1.health.version', [
+  router.get('advancedwallet.awm.version', [
     responseHandler(() =>
       Response.ok({
         version: pjson.version,

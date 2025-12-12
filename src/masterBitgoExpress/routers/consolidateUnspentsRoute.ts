@@ -81,7 +81,7 @@ export const ConsolidateUnspentsResponse: HttpResponse = {
  * Use this endpoint only with advanced wallets. For other wallet types, use [Consolidate unspents (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateunspents).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletconsolidateunspents
+ * @operationId advancedwallet.consolidate.unspents
  */
 export const ConsolidateUnspentsRoute = httpRoute({
   method: 'POST',

@@ -16,37 +16,44 @@ const VersionResponse: HttpResponse = {
 };
 
 /**
- * Ping Check
+ * Ping (MBE)
+ *
+ * Test your connection to the Master Bitgo Express (MBE) server.
  *
  * @tag Advanced Wallets
- * @operationId v1.health.ping
- * @private
+ * @operationId advancedwallet.mbe.ping
  */
+const PingRoute = httpRoute({
+  method: 'POST',
+  path: '/ping',
+  request: httpRequest({}),
+  response: PingResponse,
+  description: 'Health check endpoint that returns server status',
+});
+
+/**
+ * Check Version (MBE)
+ *
+ * Check your version of the Master Bitgo Express (MBE) server.
+ *
+ * @tag Advanced Wallets
+ * @operationId advancedwallet.mbe.version
+ */
+const VersionRoute = httpRoute({
+  method: 'GET',
+  path: '/version',
+  request: httpRequest({}),
+  response: VersionResponse,
+  description: 'Returns the current version of the server',
+});
+
 export const HealthCheckApiSpec = apiSpec({
-  'v1.health.ping': {
-    post: httpRoute({
-      method: 'POST',
-      path: '/ping',
-      request: httpRequest({}),
-      response: PingResponse,
-      description: 'Health check endpoint that returns server status',
-    }),
+  'advancedwallet.mbe.ping': {
+    post: PingRoute,
   },
-  /**
-   * Version Check
-   *
-   * @tag Advanced Wallets
-   * @operationId v1.health.version
-   * @private
-   */
-  'v1.health.version': {
-    get: httpRoute({
-      method: 'GET',
-      path: '/version',
-      request: httpRequest({}),
-      response: VersionResponse,
-      description: 'Returns the current version of the server',
-    }),
+
+  'advancedwallet.mbe.version': {
+    get: VersionRoute,
   },
 });
 
@@ -59,7 +66,7 @@ export function createHealthCheckRouter(
   });
 
   // Ping endpoint handler
-  router.post('v1.health.ping', [
+  router.post('advancedwallet.mbe.ping', [
     responseHandler(() =>
       Response.ok({
         status: `${serverType} server is ok!`,
@@ -69,7 +76,7 @@ export function createHealthCheckRouter(
   ]);
 
   // Version endpoint handler
-  router.get('v1.health.version', [
+  router.get('advancedwallet.mbe.version', [
     responseHandler(() =>
       Response.ok({
         version: pjson.version,

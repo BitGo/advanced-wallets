@@ -122,7 +122,7 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
  * Use this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletconsolidaterecovery
+ * @operationId advancedwallet.consolidate.recovery
  */
 export const RecoveryConsolidationsRoute = httpRoute({
   method: 'POST',

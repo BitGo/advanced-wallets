@@ -219,7 +219,7 @@ export const SendManyResponse: HttpResponse = {
  * Use this endpoint only with advanced wallets. For other wallet types, use [Send to many](https://developers.bitgo.com/reference/expresswalletsendmany).
  *
  * @tag Advanced Wallets
- * @operationId advancedwalletsendmany
+ * @operationId advancedwallet.sendmany
  */
 export const SendManyRoute = httpRoute({
   method: 'POST',

@@ -346,7 +346,7 @@ export class AdvancedWalletManagerClient {
   async ping(): Promise<PingResponseType> {
     try {
       logger.info('Pinging Advanced Wallet Manager at: %s', this.baseUrl);
-      let request = this.apiClient['v1.health.ping'].post({});
+      let request = this.apiClient['advancedwallet.awm.ping'].post({});
 
       if (this.tlsMode === TlsMode.MTLS) {
         request = request.agent(this.createHttpsAgent());
@@ -371,7 +371,7 @@ export class AdvancedWalletManagerClient {
   async getVersion(): Promise<VersionResponseType> {
     try {
       logger.info('Getting version information from Advanced Wallet Manager');
-      let request = this.apiClient['v1.health.version'].get({});
+      let request = this.apiClient['advancedwallet.awm.version'].get({});
 
       if (this.tlsMode === TlsMode.MTLS) {
         request = request.agent(this.createHttpsAgent());
