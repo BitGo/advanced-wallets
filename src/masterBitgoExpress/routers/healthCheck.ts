@@ -16,7 +16,7 @@ const VersionResponse: HttpResponse = {
 };
 
 /**
- * Ping (MBE)
+ * Advanced Wallets - Ping
  *
  * Test your connection to the Master Bitgo Express (MBE) server.
  *
@@ -32,7 +32,7 @@ const PingRoute = httpRoute({
 });
 
 /**
- * Check Version (MBE)
+ * Advanced Wallets - Check Version
  *
  * Check your version of the Master Bitgo Express (MBE) server.
  *

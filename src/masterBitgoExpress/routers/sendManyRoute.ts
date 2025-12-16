@@ -208,11 +208,13 @@ export const SendManyResponse: HttpResponse = {
 };
 
 /**
- * Send to many (advanced)
+ * Advanced Wallets - Send to Many
  *
  * Send coins or tokens to one or more recipients. You can use this endpoint to schedule outgoing transactions in bulk, lowering your aggregate amount of blockchain fees.
  *
- * Works with both multisignature and MPC wallets. Also supports external-signer mode.
+ * Retrieves the private key from KMS using the provided public key, then signs and broadcasts the transaction.
+ *
+ * Works with both multisignature and MPC wallets.
  *
  * Works with most BitGo-supported assets, but currently unavailable for: ALGO, ARBETH, AVAXC, CELO, CELO:CUSD, CSPR, DOT, EOS, HTETH:BGERCH, NEAR, OPETH, STX, TON, TRX, TRX:USDC, XLM, XRP, XTZ
  *

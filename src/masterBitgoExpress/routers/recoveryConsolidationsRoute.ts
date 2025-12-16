@@ -113,11 +113,15 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
 };
 
 /**
- * Consolidate and recover assets (advanced)
+ * Advanced Wallets - Consolidate and Recover Assets
  *
  * Recover assets from an advanced wallet with a balance in multiple receive addresses. Build, sign, and send a consolidation and recovery, all in one call. Sign using your user and backup keys. Works for both multisignature and MPC recoveries.
  *
- * To recover assets from an advanced wallet with a balance only in the base address, use [Recover assets (advanced)](https://developers.bitgo.com/reference/advancedwalletrecovery).
+ * Retrieves the private keys from KMS using the provided public keys or common keychain, then signs and returns the broadcastable transaction hex.
+ *
+ * Note: This endpoint only works when AWM and MBE are running in recovery mode.
+ *
+ * To recover assets from an advanced wallet with a balance only in the base address, use [Advanced Wallets - Recover Assets](https://developers.bitgo.com/reference/advancedwalletrecovery).
  *
  * Use this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).
  *
