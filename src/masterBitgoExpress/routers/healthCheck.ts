@@ -25,7 +25,7 @@ const VersionResponse: HttpResponse = {
  */
 const PingRoute = httpRoute({
   method: 'POST',
-  path: '/ping',
+  path: '/advancedwallet/ping',
   request: httpRequest({}),
   response: PingResponse,
   description: 'Health check endpoint that returns server status',
@@ -41,7 +41,7 @@ const PingRoute = httpRoute({
  */
 const VersionRoute = httpRoute({
   method: 'GET',
-  path: '/version',
+  path: '/advancedwallet/version',
   request: httpRequest({}),
   response: VersionResponse,
   description: 'Returns the current version of the server',
