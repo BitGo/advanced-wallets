@@ -332,12 +332,12 @@ const GenerateWalletRequest = {
 };
 
 /**
- * Generate wallet (advanced)
+ * Advanced Wallets - Generate Wallet
  *
  * Create a new advanced wallet. Calling this endpoint does the following:
- * 1. Creates the user keychain in the advanced wallet manager and encrypts it with the respective key management service (KMS).
- * 2. Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.
- * 3. Uploads the public user and backup keys to BitGo.
+ * 1. Generates user keychain in isolated AWM, then sends to KMS (encrypts private key, stores public key mapping).
+ * 2. Generates backup keychain in isolated AWM, then sends to KMS (encrypts private key, stores public key mapping).
+ * 3. Uploads the user and backup public keys to BitGo.
  * 4. Creates the BitGo key on the BitGo service.
  * 5. Creates the wallet on BitGo with the 3 keys.
  *

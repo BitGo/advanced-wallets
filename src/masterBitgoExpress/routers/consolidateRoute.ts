@@ -35,9 +35,11 @@ export const ConsolidateResponse: HttpResponse = {
 };
 
 /**
- * Consolidate account (advanced)
+ * Advanced Wallets - Consolidate Account
  *
  * Build, sign, and send a consolidation transaction, all in one call. For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.
+ *
+ * Retrieves the private key from KMS using the provided public key or common keychain, then signs and broadcasts the transaction.
  *
  * Use this endpoint only with advanced wallets. For other wallet types, use [Consolidate account (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateaccount).
  *
