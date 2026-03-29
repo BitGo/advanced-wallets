@@ -165,12 +165,41 @@ jobs:
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Run Fossa Analysis
-        uses: fossas/fossa-action@3ebcea1862c6ffbd5cf1b4d0bd6b3fe7bd6f2cac # v1.7.0
-        with:
-          api-key: ${{ secrets.fossa-api-key }}
-          branch: ${{ github.head_ref || github.ref_name }}
-          project: BitGo/advanced-wallets
+      - name: Download and Install FOSSA CLI
+        id: install-fossa
+        shell: bash
+        run: |
+          FOSSA_VERSION="3.11.7"
+          FOSSA_CHECKSUM="d6f73d3da1cc7727610dd3f2c1a6021aeb23516f74b6f031e91deb31eba34f2b"
+
+          # Create directory for FOSSA CLI
+          mkdir -p ${{ runner.temp }}/fossa
+          cd ${{ runner.temp }}/fossa
+
+          # Download the FOSSA CLI zip file
+          curl -L -o fossa.zip "https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VERSION}/fossa_${FOSSA_VERSION}_linux_amd64.zip"
+
+          # Verify checksum
+          ACTUAL_CHECKSUM=$(sha256sum fossa.zip | cut -d ' ' -f 1)
+          echo "Expected checksum: ${FOSSA_CHECKSUM}"
+          echo "Actual checksum:   ${ACTUAL_CHECKSUM}"
+          if [ "${ACTUAL_CHECKSUM}" != "${FOSSA_CHECKSUM}" ]; then
+            echo "Checksum verification failed!"
+            exit 1
+          fi
+
+          # Extract the binary and make it executable
+          unzip fossa.zip
+          chmod +x fossa
+          sudo mv fossa /usr/local/bin/
+
+      - name: Run FOSSA Vulnerability Test
+        id: fossa-test
+        shell: bash
+        env:
+          FOSSA_API_KEY: ${{ steps.vault.outputs.FOSSA_API_KEY }}
+        run: |
+          fossa test --project BitGo/advanced-wallets --branch ${{ github.head_ref || github.ref_name }}
 
   test:
     name: Test
