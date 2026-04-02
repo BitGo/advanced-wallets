@@ -8,7 +8,7 @@ export const SendManyRequest = {
    */
   source: t.union([t.literal('user'), t.literal('backup')]),
   /**
-   * Required for transactions from MPC wallets.
+   * Required for transactions from MPC wallets. Defaults to 'transfer' for TSS wallets if not provided.
    */
   type: t.union([
     t.undefined,

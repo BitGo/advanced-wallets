@@ -298,6 +298,10 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       response.body.should.have.property('txid', 'test-tx-id');
       response.body.should.have.property('tx', 'signed-transaction');
 
+      // Verify that type defaults to 'transfer' for TSS wallets when not provided
+      const sendManyArgs = sendManyStub.firstCall.args[0] as Record<string, unknown>;
+      sendManyArgs.should.have.property('type', 'transfer');
+
       walletGetNock.done();
       keychainGetNock.done();
       sinon.assert.calledOnce(sendManyStub);

@@ -125,6 +125,10 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       if (signingKeychain.source === 'backup') {
         throw new BadRequestError('Backup MPC signing not supported for sendMany');
       }
+      // TSS wallets require type to be set; default to 'transfer' if not provided
+      if (!params.type) {
+        params.type = 'transfer';
+      }
       const mpcSendParams = await createMPCSendParamsWithCustomSigningFns(
         req,
         awmClient,
