@@ -1,11 +1,5 @@
 # Advanced Wallets
 
-> **⚠️ BETA SOFTWARE - NOT OFFICIALLY RELEASED**
->
-> This project is currently in beta and has not been officially released for production use. APIs, features, and documentation may change without notice. Use at your own risk in production environments.
-
-![Beta](https://img.shields.io/badge/status-beta-yellow) ![License](https://img.shields.io/badge/license-Apache%202.0-green)
-
 Advanced wallets are a type of self-custody cryptocurrency wallet that enable passwordless transactions by integrating your own Key Management Service (KMS) or Hardware Security Module (HSM) for user and backup private keys. Advanced wallets enable isolating sensitive key generation and signing operations in a dedicated, self-hosted service within your own secure environment.
 
 Advanced wallets operate in two modes:
