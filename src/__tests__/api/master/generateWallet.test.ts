@@ -1247,7 +1247,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     }
   });
 
-  it('should fail when multisig type is invalid / not provided', async () => {
+  it('should fail when multisig type is invalid', async () => {
     const response = await agent
       .post(`/api/v1/${coin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -1258,8 +1258,10 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       });
 
     response.status.should.equal(400);
+  });
 
-    const response2 = await agent
+  it('should fail when multisigType is not provided and evmKeyRingReferenceWalletId is absent', async () => {
+    const response = await agent
       .post(`/api/v1/${coin}/advancedwallet/generate`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
@@ -1267,7 +1269,113 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         enterprise: 'test_enterprise',
       });
 
-    response2.status.should.equal(400);
+    response.status.should.equal(400);
+    response.body.details.should.equal(
+      'multisigType is required when evmKeyRingReferenceWalletId is not provided',
+    );
+  });
+
+  it('should generate an EVM keyring wallet by delegating to the SDK', async () => {
+    const evmCoin = 'hteth';
+    const referenceWalletId = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
+
+    const walletAddNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${evmCoin}/wallet/add`, {
+        label: 'keyring_wallet',
+        evmKeyRingReferenceWalletId: referenceWalletId,
+      })
+      .reply(200, {
+        id: 'keyring-wallet-id',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        users: [{ user: 'user-id', permissions: ['admin', 'spend', 'view'] }],
+        coin: evmCoin,
+        label: 'keyring_wallet',
+        m: 2,
+        n: 3,
+        keySignatures: {},
+        enterprise: 'test_enterprise',
+        organization: 'org-id',
+        bitgoOrg: 'BitGo Inc',
+        tags: ['keyring-wallet-id'],
+        disableTransactionNotifications: false,
+        freeze: {},
+        deleted: false,
+        approvalsRequired: 1,
+        isCold: false,
+        coinSpecific: {},
+        admin: {},
+        allowBackupKeySigning: false,
+        clientFlags: [],
+        recoverable: false,
+        startDate: '2025-01-01T00:00:00.000Z',
+        hasLargeNumberOfAddresses: false,
+        config: {},
+        balanceString: '0',
+        confirmedBalanceString: '0',
+        spendableBalanceString: '0',
+        receiveAddress: {
+          id: 'addr-id',
+          address: '0xkeyringaddress',
+          chain: 0,
+          index: 0,
+          coin: evmCoin,
+          wallet: 'keyring-wallet-id',
+          coinSpecific: {},
+        },
+        multisigType: 'tss',
+        type: 'hot',
+      });
+
+    const getUserKeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${evmCoin}/key/user-key-id`)
+      .reply(200, {
+        id: 'user-key-id',
+        source: 'user',
+        type: 'tss',
+        commonKeychain: 'commonKeychain',
+      });
+
+    const getBackupKeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${evmCoin}/key/backup-key-id`)
+      .reply(200, {
+        id: 'backup-key-id',
+        source: 'backup',
+        type: 'tss',
+        commonKeychain: 'commonKeychain',
+      });
+
+    const getBitgoKeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${evmCoin}/key/bitgo-key-id`)
+      .reply(200, {
+        id: 'bitgo-key-id',
+        source: 'bitgo',
+        type: 'tss',
+        isBitGo: true,
+        isTrust: false,
+        hsmType: 'institutional',
+        commonKeychain: 'commonKeychain',
+      });
+
+    const response = await agent
+      .post(`/api/v1/${evmCoin}/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'keyring_wallet',
+        enterprise: 'test_enterprise',
+        evmKeyRingReferenceWalletId: referenceWalletId,
+      });
+
+    response.status.should.equal(200);
+    response.body.should.have.property('wallet');
+    response.body.wallet.should.have.property('id', 'keyring-wallet-id');
+    response.body.should.have.propertyByPath('userKeychain', 'id').eql('user-key-id');
+    response.body.should.have.propertyByPath('backupKeychain', 'id').eql('backup-key-id');
+    response.body.should.have.propertyByPath('bitgoKeychain', 'id').eql('bitgo-key-id');
+
+    walletAddNock.done();
+    getUserKeyNock.done();
+    getBackupKeyNock.done();
+    getBitgoKeyNock.done();
   });
 
   it('should fail when coin does not support TSS', async () => {

@@ -288,10 +288,20 @@ const GenerateWalletRequest = {
    * The type of multisig wallet to create
    * - onchain: Traditional multisig wallets using on-chain scripts
    * - tss: Threshold Signature Scheme wallets using MPC protocols
-   * If absent, BitGo uses the default wallet type for the asset
+   * If absent, BitGo uses the default wallet type for the asset.
+   * Not required when evmKeyRingReferenceWalletId is provided.
    * @example "tss"
    */
-  multisigType: t.union([t.literal('onchain'), t.literal('tss')]),
+  multisigType: optional(t.union([t.literal('onchain'), t.literal('tss')])),
+
+  /**
+   * Reference wallet ID for EVM keyring wallets.
+   * When provided, the new wallet shares keys with the reference wallet,
+   * bypassing key generation entirely. Only supported for EVM chains.
+   * @example "59cd72485007a239fb00282ed480da1f"
+   * @pattern ^[0-9a-f]{32}$
+   */
+  evmKeyRingReferenceWalletId: optional(t.string),
 
   /**
    * Enterprise ID - Required for Ethereum wallets

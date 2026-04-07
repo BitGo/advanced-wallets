@@ -21,13 +21,42 @@ import { BadRequestError } from '../../shared/errors';
 export async function handleGenerateWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
-  const { multisigType } = req.decoded;
+  const { multisigType, evmKeyRingReferenceWalletId } = req.decoded;
+
+  if (evmKeyRingReferenceWalletId) {
+    return handleGenerateEvmKeyRingWallet(req);
+  }
 
   if (multisigType === 'tss') {
     return handleGenerateMpcWallet(req);
   }
 
-  return handleGenerateOnChainWallet(req);
+  if (multisigType === 'onchain') {
+    return handleGenerateOnChainWallet(req);
+  }
+
+  throw new BadRequestError(
+    'multisigType is required when evmKeyRingReferenceWalletId is not provided',
+  );
+}
+
+/**
+ * Generates an EVM keyring wallet. Keyring wallets share keys from a reference
+ * wallet, so no AWM/KMS interaction is needed — we delegate directly to the SDK.
+ */
+async function handleGenerateEvmKeyRingWallet(
+  req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
+) {
+  const bitgo = req.bitgo;
+  const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
+
+  const result = await baseCoin.wallets().generateWallet({
+    label: req.decoded.label,
+    enterprise: req.decoded.enterprise,
+    evmKeyRingReferenceWalletId: req.decoded.evmKeyRingReferenceWalletId,
+  });
+
+  return { ...result, wallet: result.wallet.toJSON() };
 }
 
 /**
