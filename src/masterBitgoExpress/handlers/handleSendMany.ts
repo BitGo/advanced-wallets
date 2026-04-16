@@ -103,20 +103,30 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   if (!signingKeychain) {
     throw new NotFoundError(`Signing keychain for ${params.source} not found`);
   }
-  if (!params.pubkey && !params.commonKeychain) {
-    throw new BadRequestError(
-      `Either pubkey or commonKeychain must be provided for ${params.source} signing`,
-    );
-  }
-  if (params.pubkey && signingKeychain.pub !== params.pubkey) {
-    throw new BadRequestError(
-      `Pub provided does not match the keychain on wallet for ${params.source}`,
-    );
-  }
-  if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
-    throw new BadRequestError(
-      `Common keychain provided does not match the keychain on wallet for ${params.source}`,
-    );
+  const isTss = wallet.multisigType() === 'tss';
+
+  if (isTss) {
+    if (!params.commonKeychain) {
+      throw new BadRequestError(
+        `commonKeychain must be provided for TSS ${params.source} signing`,
+      );
+    }
+    if (signingKeychain.commonKeychain !== params.commonKeychain) {
+      throw new BadRequestError(
+        `Common keychain provided does not match the keychain on wallet for ${params.source}`,
+      );
+    }
+  } else {
+    if (!params.pubkey) {
+      throw new BadRequestError(
+        `pubkey must be provided for multisig ${params.source} signing`,
+      );
+    }
+    if (signingKeychain.pub !== params.pubkey) {
+      throw new BadRequestError(
+        `Pub provided does not match the keychain on wallet for ${params.source}`,
+      );
+    }
   }
 
   try {
