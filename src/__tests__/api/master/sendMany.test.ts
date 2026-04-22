@@ -59,14 +59,22 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
           multisigType: 'onchain',
         });
 
-      // Mock keychain get request
+      // Mock keychain get requests — user-key-id is fetched twice (signing key + walletPubs for UTXO signing)
       const keychainGetNock = nock(bitgoApiUrl)
         .get(`/api/v2/${coin}/key/user-key-id`)
         .matchHeader('any', () => true)
-        .reply(200, {
-          id: 'user-key-id',
-          pub: 'xpub_user',
-        });
+        .times(2)
+        .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/backup-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/bitgo-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
       const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
         txHex: 'prebuilt-tx-hex',
@@ -136,6 +144,141 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       submitNock.done();
     });
 
+    it('should send walletPubs (all 3 xpubs) to AWM for UTXO signing', async () => {
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'advanced',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'onchain',
+        });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .times(2)
+        .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/backup-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/bitgo-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
+
+      sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+        txHex: 'prebuilt-tx-hex',
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        walletId,
+      });
+
+      sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
+
+      let capturedSignBody: any;
+      const signNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${coin}/multisig/sign`, (body) => {
+          capturedSignBody = body;
+          return true;
+        })
+        .reply(200, {
+          halfSigned: { txHex: 'signed-tx-hex', txInfo: {} },
+          walletId,
+          source: 'user',
+          pub: 'xpub_user',
+        });
+
+      nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+        .matchHeader('any', () => true)
+        .reply(200, { txid: 'test-tx-id', status: 'signed' });
+
+      const response = await agent
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [{ address: 'tb1qtest1', amount: '100000' }],
+          source: 'user',
+          pubkey: 'xpub_user',
+        });
+
+      response.status.should.equal(200);
+      signNock.done();
+      capturedSignBody.should.have.property('walletPubs');
+      capturedSignBody.walletPubs.should.deepEqual(['xpub_user', 'xpub_backup', 'xpub_bitgo']);
+    });
+
+    it('should omit walletPubs from AWM request when any keychain is missing a pub', async () => {
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'advanced',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'onchain',
+        });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .times(2)
+        .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/backup-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'backup-key-id' }); // no pub
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/bitgo-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
+
+      sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+        txHex: 'prebuilt-tx-hex',
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        walletId,
+      });
+
+      sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
+
+      let capturedSignBody: any;
+      const signNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${coin}/multisig/sign`, (body) => {
+          capturedSignBody = body;
+          return true;
+        })
+        .reply(200, {
+          halfSigned: { txHex: 'signed-tx-hex', txInfo: {} },
+          walletId,
+          source: 'user',
+          pub: 'xpub_user',
+        });
+
+      nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+        .matchHeader('any', () => true)
+        .reply(200, { txid: 'test-tx-id', status: 'signed' });
+
+      const response = await agent
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [{ address: 'tb1qtest1', amount: '100000' }],
+          source: 'user',
+          pubkey: 'xpub_user',
+        });
+
+      response.status.should.equal(200);
+      signNock.done();
+      capturedSignBody.should.not.have.property('walletPubs');
+    });
+
     it('should handle backup key signing', async () => {
       // Mock wallet get request
       const walletGetNock = nock(bitgoApiUrl)
@@ -147,14 +290,22 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
           keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
         });
 
-      // Mock keychain get request for backup key
+      // Mock keychain get requests — backup-key-id fetched twice (signing key + walletPubs)
       const keychainGetNock = nock(bitgoApiUrl)
         .get(`/api/v2/${coin}/key/backup-key-id`)
         .matchHeader('any', () => true)
-        .reply(200, {
-          id: 'backup-key-id',
-          pub: 'xpub_backup',
-        });
+        .times(2)
+        .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/bitgo-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
       const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
         txHex: 'prebuilt-tx-hex',
@@ -720,14 +871,25 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
       });
 
-    // Mock keychain get request
+    // Mock keychain get request — user-key-id fetched twice (signing key + walletPubs)
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('any', () => true)
+      .times(2)
       .reply(200, {
         id: 'user-key-id',
         pub: 'xpub_user',
       });
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
     const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
       txHex: 'prebuilt-tx-hex',

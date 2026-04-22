@@ -173,6 +173,16 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       throw new BadRequestError(`Transaction prebuild failed local validation: ${err.message}`);
     }
 
+    const [userKeychain, backupKeychain, bitgoKeychain] = await Promise.all([
+      baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.USER] }),
+      baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BACKUP] }),
+      baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BITGO] }),
+    ]);
+    const walletPubs =
+      userKeychain?.pub && backupKeychain?.pub && bitgoKeychain?.pub
+        ? [userKeychain.pub, backupKeychain.pub, bitgoKeychain.pub]
+        : undefined;
+
     return signAndSendMultisig(
       wallet,
       req.decoded.source,
@@ -181,6 +191,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       awmClient,
       signingKeychain,
       reqId,
+      walletPubs,
     );
   } catch (error) {
     const err = error as Error;
@@ -197,6 +208,7 @@ export async function signAndSendMultisig(
   awmClient: AdvancedWalletManagerClient,
   signingKeychain: Keychain,
   reqId: RequestTracer,
+  walletPubs?: string[],
 ) {
   if (!signingKeychain.pub) {
     throw new BadRequestError(`Signing keychain pub not found for ${source}`);
@@ -206,8 +218,9 @@ export async function signAndSendMultisig(
 
   // Then sign it using the advanced wallet manager client
   const signedTx = await awmClient.signMultisig({
+    source,
+    walletPubs,
     txPrebuild: txPrebuilt,
-    source: source,
     pub: signingKeychain.pub,
   });
 
