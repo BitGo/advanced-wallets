@@ -11,7 +11,9 @@ export async function signMultisigTransaction(
     source,
     pub,
     txPrebuild,
-  }: { source: string; pub: string; txPrebuild: TransactionPrebuild } = req.body;
+    walletPubs,
+  }: { source: string; pub: string; txPrebuild: TransactionPrebuild; walletPubs?: string[] } =
+    req.body;
 
   const bitgo = req.bitgo;
   const kms = new KmsClient(req.config);
@@ -31,7 +33,11 @@ export async function signMultisigTransaction(
   // Sign the transaction using BitGo SDK
   const coin = await coinFactory.getCoin(req.params.coin, bitgo);
   try {
-    const signedTx = await coin.signTransaction({ txPrebuild, prv });
+    const signedTx = await coin.signTransaction({
+      txPrebuild,
+      prv,
+      ...(walletPubs && { pubs: walletPubs }),
+    });
     // The signed transaction format depends on the coin type
     return signedTx;
   } catch (error) {

@@ -84,6 +84,7 @@ interface SignMultisigOptions {
   txPrebuild: TransactionPrebuild;
   source: 'user' | 'backup';
   pub: string;
+  walletPubs?: string[];
 }
 
 interface RecoveryMultisigOptions {
@@ -324,6 +325,7 @@ export class AdvancedWalletManagerClient {
         source: params.source,
         pub: params.pub,
         txPrebuild: params.txPrebuild,
+        walletPubs: params.walletPubs,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {

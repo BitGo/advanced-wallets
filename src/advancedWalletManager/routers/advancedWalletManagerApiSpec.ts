@@ -55,6 +55,7 @@ const SignMultisigRequest = {
   source: t.string,
   pub: t.string,
   txPrebuild: t.any,
+  walletPubs: optional(t.array(t.string)),
 };
 
 // Response type for /multisig/sign endpoint
