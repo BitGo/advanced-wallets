@@ -20,6 +20,49 @@ import { BitGoRequest } from '../../../types/request';
  * in how the constants are fetched.
  */
 
+function mockWalletResponse(id: string, coinName: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id,
+    users: [{ user: 'user-id', permissions: ['admin', 'spend', 'view'] }],
+    coin: coinName,
+    label: 'test_wallet',
+    m: 2,
+    n: 3,
+    keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+    keySignatures: {},
+    enterprise: 'test_enterprise',
+    organization: 'org-id',
+    bitgoOrg: 'BitGo Inc',
+    tags: [id, 'test_enterprise'],
+    disableTransactionNotifications: false,
+    freeze: {},
+    deleted: false,
+    approvalsRequired: 1,
+    isCold: false,
+    coinSpecific: {},
+    admin: {},
+    allowBackupKeySigning: false,
+    clientFlags: [],
+    recoverable: false,
+    startDate: '2025-01-01T00:00:00.000Z',
+    hasLargeNumberOfAddresses: false,
+    config: {},
+    balanceString: '0',
+    confirmedBalanceString: '0',
+    spendableBalanceString: '0',
+    receiveAddress: {
+      id: 'addr-id',
+      address: '0xexampleaddress',
+      chain: 0,
+      index: 0,
+      coin: coinName,
+      wallet: id,
+      coinSpecific: {},
+    },
+    ...overrides,
+  };
+}
+
 describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   let agent: request.SuperAgentTest;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
@@ -136,54 +179,24 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         type: 'advanced',
       })
       .matchHeader('any', () => true)
-      .reply(200, {
-        id: 'new-wallet-id',
-        users: [
-          {
-            user: 'user-id',
-            permissions: ['admin', 'spend', 'view'],
+      .reply(
+        200,
+        mockWalletResponse('new-wallet-id', coin, {
+          isCold: true,
+          pendingApprovals: [],
+          receiveAddress: {
+            id: 'addr-id',
+            address: 'tb1qexampleaddress000000000000000000000',
+            chain: 20,
+            index: 0,
+            coin: coin,
+            wallet: 'new-wallet-id',
+            coinSpecific: {},
           },
-        ],
-        coin: coin,
-        label: 'test_wallet',
-        m: 2,
-        n: 3,
-        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
-        keySignatures: {},
-        enterprise: 'test_enterprise',
-        organization: 'org-id',
-        bitgoOrg: 'BitGo Inc',
-        tags: ['new-wallet-id', 'test_enterprise'],
-        disableTransactionNotifications: false,
-        freeze: {},
-        deleted: false,
-        approvalsRequired: 1,
-        isCold: true,
-        coinSpecific: {},
-        admin: {},
-        pendingApprovals: [],
-        allowBackupKeySigning: false,
-        clientFlags: [],
-        recoverable: false,
-        startDate: '2025-01-01T00:00:00.000Z',
-        hasLargeNumberOfAddresses: false,
-        config: {},
-        balanceString: '0',
-        confirmedBalanceString: '0',
-        spendableBalanceString: '0',
-        receiveAddress: {
-          id: 'addr-id',
-          address: 'tb1qexampleaddress000000000000000000000',
-          chain: 20,
-          index: 0,
-          coin: coin,
-          wallet: 'new-wallet-id',
-          coinSpecific: {},
-        },
-        // optional-ish fields used in assertions
-        multisigType: 'onchain',
-        type: 'advanced',
-      });
+          multisigType: 'onchain',
+          type: 'advanced',
+        }),
+      );
 
     const response = await agent
       .post(`/api/v1/${coin}/advancedwallet/generate`)
@@ -1282,5 +1295,76 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
 
     response.status.should.equal(400);
     response.body.details.should.equal('MPC wallet generation is not supported for coin tbtc');
+  });
+
+  it('should skip calls to AWM and use existing keychains when evmKeyRingReferenceWalletId is provided', async () => {
+    /** GET mocks for Key Retrieval */
+    const userKeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${ecdsaCoin}/key/user-key-id`)
+      .reply(200, { id: 'user-key-id', source: 'user', type: 'independent' });
+
+    const backupKeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${ecdsaCoin}/key/backup-key-id`)
+      .reply(200, { id: 'backup-key-id', source: 'backup', type: 'independent' });
+
+    const bitgoKeyNock = nock(bitgoApiUrl).get(`/api/v2/${ecdsaCoin}/key/bitgo-key-id`).reply(200, {
+      id: 'bitgo-key-id',
+      source: 'bitgo',
+      type: 'independent',
+      isBitGo: true,
+      isTrust: false,
+      hsmType: 'institutional',
+    });
+
+    /** POST mock for the actual wallet creation */
+    const walletAddNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${ecdsaCoin}/wallet/add`, {
+        label: 'test_wallet',
+        evmKeyRingReferenceWalletId: '59cd72485007a239fb00282ed480da1f',
+      })
+      .matchHeader('any', () => true)
+      .reply(
+        200,
+        mockWalletResponse('new-keyring-wallet-id', ecdsaCoin, {
+          multisigType: 'tss',
+          type: 'advanced',
+        }),
+      );
+
+    const response = await agent
+      .post(`/api/v1/${ecdsaCoin}/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'tss',
+        evmKeyRingReferenceWalletId: '59cd72485007a239fb00282ed480da1f',
+      });
+
+    response.status.should.equal(200);
+    response.body.wallet.id.should.equal('new-keyring-wallet-id');
+
+    /** AWM was never called — if it had been, nock would've thrown since we never mocked POST AWM calls */
+    walletAddNock.done();
+    userKeyNock.done();
+    backupKeyNock.done();
+    bitgoKeyNock.done();
+  });
+
+  it('should fail when evmKeyRingReferenceWalletId is provided for a non-EVM coin', async () => {
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'onchain',
+        evmKeyRingReferenceWalletId: '59cd72485007a239fb00282ed480da1f',
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql(
+      'EVM keyring wallet generation is not supported for coin tbtc',
+    );
   });
 });
