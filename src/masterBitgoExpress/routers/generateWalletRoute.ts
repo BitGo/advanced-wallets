@@ -329,6 +329,13 @@ const GenerateWalletRequest = {
    * @maximum 3
    */
   walletVersion: optional(t.number),
+
+  /**
+   * Reference wallet ID for EVM keyring wallets
+   * @example "59cd72485007a239fb00282ed480da1f"
+   * @pattern ^[0-9a-f]{32}$
+   */
+  evmKeyRingReferenceWalletId: optional(t.string),
 };
 
 /**

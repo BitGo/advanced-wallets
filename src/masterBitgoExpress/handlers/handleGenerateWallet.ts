@@ -21,7 +21,11 @@ import { BadRequestError } from '../../shared/errors';
 export async function handleGenerateWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
-  const { multisigType } = req.decoded;
+  const { multisigType, evmKeyRingReferenceWalletId } = req.decoded;
+
+  if (evmKeyRingReferenceWalletId) {
+    return handleGenerateEvmKeyRingWallet(req);
+  }
 
   if (multisigType === 'tss') {
     return handleGenerateMpcWallet(req);
@@ -211,4 +215,26 @@ async function handleGenerateMpcWallet(
   };
 
   return { ...result, wallet: result.wallet.toJSON() };
+}
+
+/**
+ * This function generates an EVM keyring wallet by reusing keys from a reference wallet.
+ */
+async function handleGenerateEvmKeyRingWallet(
+  req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
+) {
+  const bitgo = req.bitgo;
+  const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
+  if (!baseCoin.isEVM()) {
+    throw new BadRequestError(
+      `EVM keyring wallet generation is not supported for coin ${req.decoded.coin}`,
+    );
+  }
+
+  const result = await baseCoin.wallets().generateWallet(req.decoded);
+
+  return {
+    ...result,
+    wallet: result.wallet.toJSON(),
+  };
 }
