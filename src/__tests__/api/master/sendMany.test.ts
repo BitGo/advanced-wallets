@@ -1026,10 +1026,27 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
 
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
+      .times(2)
       .matchHeader('any', () => true)
       .reply(200, {
         id: 'user-key-id',
         pub: 'xpub_user',
+      });
+
+    const backupKeychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'backup-key-id',
+        pub: 'xpub_backup',
+      });
+
+    const bitgoKeychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'bitgo-key-id',
+        pub: 'xpub_bitgo',
       });
 
     const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
@@ -1072,6 +1089,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
+    backupKeychainGetNock.done();
+    bitgoKeychainGetNock.done();
     sinon.assert.calledOnce(prebuildStub);
     sinon.assert.calledOnce(verifyStub);
     signNock.done();
