@@ -113,7 +113,7 @@ API responses follow a standard error format with `error` and `details` fields.
 - `GET /version` - Version information
 
 #### Key Management
-- `POST /:coin/key/independent` - Generate independent keychain
+- `POST /api/:coin/key/independent` - Generate independent keychain
 
 #### Transaction Signing
 - `POST /api/:coin/multisig/sign` - Sign a multisig transaction
@@ -127,15 +127,15 @@ API responses follow a standard error format with `error` and `details` fields.
 - `POST /api/:coin/mpcv2/initialize` - Initialize MPC v2 
 - `POST /api/:coin/mpcv2/round` - Perform a round in the MPC protocol
 - `POST /api/:coin/mpcv2/finalize` - Finalize the MPC DKG protocol
+- `POST /api/:coin/mpcv2/recovery` - Recover an MPC v2 wallet
 
 ### Master Express (Port 3081)
 
 #### Health and Status Endpoints
 
-- `POST /ping` - Health check
-- `GET /version` - Version information
+- `POST /advancedwallet/ping` - Health check
+- `GET /advancedwallet/version` - Version information
 - `POST /ping/advancedWalletManager` - Test connection to Advanced Wallet Manager
-- `GET /version/advancedWalletManager` - Get Advanced Wallet Manager version information
 
 #### Wallet Management
 
