@@ -441,7 +441,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
             },
           ],
           source: 'user',
-          pubkey: 'xpub_user',
+          commonKeychain: 'test-common-keychain',
         });
 
       response.status.should.equal(200);
@@ -530,7 +530,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
             },
           ],
           source: 'user',
-          pubkey: 'xpub_user',
+          commonKeychain: 'test-common-keychain',
         });
 
       response.status.should.equal(200);
@@ -604,7 +604,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
           type: 'fillNonce',
           nonce: '2',
           source: 'user',
-          pubkey: 'xpub_user',
+          commonKeychain: 'test-common-keychain',
         });
 
       response.status.should.equal(200);
@@ -667,7 +667,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
             },
           ],
           source: 'backup',
-          pubkey: 'xpub_backup',
+          commonKeychain: 'test-common-keychain',
         });
 
       response.status.should.equal(400);
@@ -937,7 +937,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     signNock.done();
   });
 
-  it('should throw an error when neither the pubkey nor the commonKeychain is provided', async () => {
+  it('should throw error when pubkey is missing for multisig wallet', async () => {
     const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)
       .matchHeader('any', () => true)
@@ -945,9 +945,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         id: walletId,
         type: 'advanced',
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        multisigType: 'onchain',
       });
 
-    // Mock keychain get request
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('any', () => true)
@@ -960,24 +960,121 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        recipients: [
-          {
-            address: 'tb1qtest1',
-            amount: '100000',
-          },
-        ],
+        recipients: [{ address: 'tb1qtest1', amount: '100000' }],
         source: 'user',
       });
 
-    console.log(response.body);
     response.status.should.equal(400);
     response.body.should.have.property('error');
     response.body.error.should.equal('BadRequestError');
-    response.body.details.should.equal(
-      'Either pubkey or commonKeychain must be provided for user signing',
-    );
+    response.body.details.should.equal('pubkey must be provided for multisig user signing');
 
     walletGetNock.done();
     keychainGetNock.done();
+  });
+
+  it('should throw error when commonKeychain is missing for TSS wallet', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: walletId,
+        type: 'advanced',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        multisigType: 'tss',
+      });
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+        commonKeychain: 'test-common-keychain',
+      });
+
+    const multisigTypeStub = sinon.stub(Wallet.prototype, 'multisigType').returns('tss');
+
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [{ address: 'tb1qtest1', amount: '100000' }],
+        source: 'user',
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('error');
+    response.body.error.should.equal('BadRequestError');
+    response.body.details.should.equal('commonKeychain must be provided for TSS user signing');
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(multisigTypeStub);
+  });
+
+  it('should ignore commonKeychain param for multisig wallet', async () => {
+    const walletGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: walletId,
+        type: 'advanced',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        multisigType: 'onchain',
+      });
+
+    const keychainGetNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'user-key-id',
+        pub: 'xpub_user',
+      });
+
+    const prebuildStub = sinon.stub(Wallet.prototype, 'prebuildTransaction').resolves({
+      txHex: 'prebuilt-tx-hex',
+      txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      walletId,
+    });
+
+    const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
+
+    const signNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .reply(200, {
+        halfSigned: {
+          txHex: 'signed-tx-hex',
+          txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        },
+        walletId: 'test-wallet-id',
+        source: 'user',
+        pub: 'xpub_user',
+      });
+
+    const submitNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .matchHeader('any', () => true)
+      .reply(200, { txid: 'test-tx-id', status: 'signed' });
+
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        recipients: [{ address: 'tb1qtest1', amount: '100000' }],
+        source: 'user',
+        pubkey: 'xpub_user',
+        commonKeychain: 'some-irrelevant-value',
+      });
+
+    response.status.should.equal(200);
+    response.body.should.have.property('txid', 'test-tx-id');
+
+    walletGetNock.done();
+    keychainGetNock.done();
+    sinon.assert.calledOnce(prebuildStub);
+    sinon.assert.calledOnce(verifyStub);
+    signNock.done();
+    submitNock.done();
   });
 });

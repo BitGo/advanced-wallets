@@ -41,14 +41,18 @@ export async function getWalletAndSigningKeychain({
     throw new Error(`Signing keychain for ${params.source} not found`);
   }
 
-  if (params.pubkey && params.pubkey !== signingKeychain.pub) {
-    throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
-  }
+  const isTss = wallet.multisigType() === 'tss';
 
-  if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
-    throw new Error(
-      `Common keychain provided does not match the keychain on wallet for ${params.source}`,
-    );
+  if (isTss) {
+    if (params.commonKeychain && signingKeychain.commonKeychain !== params.commonKeychain) {
+      throw new Error(
+        `Common keychain provided does not match the keychain on wallet for ${params.source}`,
+      );
+    }
+  } else {
+    if (params.pubkey && params.pubkey !== signingKeychain.pub) {
+      throw new Error(`Pub provided does not match the keychain on wallet for ${params.source}`);
+    }
   }
 
   return { baseCoin, wallet, signingKeychain };
