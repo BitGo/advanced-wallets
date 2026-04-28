@@ -3,14 +3,14 @@ import nock from 'nock';
 import sinon from 'sinon';
 import supertest from 'supertest';
 import { Utils } from '@bitgo-beta/sdk-coin-sol';
-import * as kmsUtils from '../../../advancedWalletManager/handlers/utils/utils';
+import * as keyProviderUtils from '../../../advancedWalletManager/handlers/utils/utils';
 import { app as expressApp } from '../../../advancedWalletManagerApp';
 import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
 
 describe('EdDSA Recovery Signing', () => {
   let agent: supertest.SuperTest<supertest.Test>;
   const config: AdvancedWalletManagerConfig = {
-    kmsUrl: 'http://localhost:3000',
+    keyProviderUrl: 'http://localhost:3000',
     appMode: AppMode.ADVANCED_WALLET_MANAGER,
     port: 0,
     bind: 'localhost',
@@ -93,9 +93,9 @@ describe('EdDSA Recovery Signing', () => {
   });
 
   it('should successfully sign a Solana recovery transaction', async () => {
-    // Mock KMS key retrieval
-    const mockRetrieveKmsPrvKey = sinon.stub(kmsUtils, 'retrieveKmsPrvKey');
-    mockRetrieveKmsPrvKey
+    // Mock key provider key retrieval
+    const mockRetrieveKeyProviderPrvKey = sinon.stub(keyProviderUtils, 'retrieveKeyProviderPrvKey');
+    mockRetrieveKeyProviderPrvKey
       .withArgs({
         pub: commonKeychain,
         source: 'user',
@@ -103,7 +103,7 @@ describe('EdDSA Recovery Signing', () => {
       })
       .resolves(JSON.stringify(userPrvShare));
 
-    mockRetrieveKmsPrvKey
+    mockRetrieveKeyProviderPrvKey
       .withArgs({
         pub: commonKeychain,
         source: 'backup',
@@ -128,8 +128,8 @@ describe('EdDSA Recovery Signing', () => {
     response.body.should.have.property('txHex');
     Utils.validateRawTransaction(response.body.txHex, true, true);
 
-    // Verify KMS key retrieval calls
-    mockRetrieveKmsPrvKey
+    // Verify key provider key retrieval calls
+    mockRetrieveKeyProviderPrvKey
       .calledWith({
         pub: commonKeychain,
         source: 'user',
@@ -137,7 +137,7 @@ describe('EdDSA Recovery Signing', () => {
       })
       .should.be.true();
 
-    mockRetrieveKmsPrvKey
+    mockRetrieveKeyProviderPrvKey
       .calledWith({
         pub: commonKeychain,
         source: 'backup',
@@ -147,8 +147,8 @@ describe('EdDSA Recovery Signing', () => {
   });
 
   it('should fail if user private key is missing', async () => {
-    const mockRetrieveKmsPrvKey = sinon.stub(kmsUtils, 'retrieveKmsPrvKey');
-    mockRetrieveKmsPrvKey
+    const mockRetrieveKeyProviderPrvKey = sinon.stub(keyProviderUtils, 'retrieveKeyProviderPrvKey');
+    mockRetrieveKeyProviderPrvKey
       .withArgs({
         pub: commonKeychain,
         source: 'user',
@@ -174,8 +174,8 @@ describe('EdDSA Recovery Signing', () => {
   });
 
   it('should fail if backup private key is missing', async () => {
-    const mockRetrieveKmsPrvKey = sinon.stub(kmsUtils, 'retrieveKmsPrvKey');
-    mockRetrieveKmsPrvKey
+    const mockRetrieveKeyProviderPrvKey = sinon.stub(keyProviderUtils, 'retrieveKeyProviderPrvKey');
+    mockRetrieveKeyProviderPrvKey
       .withArgs({
         pub: commonKeychain,
         source: 'user',
@@ -183,7 +183,7 @@ describe('EdDSA Recovery Signing', () => {
       })
       .resolves(JSON.stringify(userPrvShare));
 
-    mockRetrieveKmsPrvKey
+    mockRetrieveKeyProviderPrvKey
       .withArgs({
         pub: commonKeychain,
         source: 'backup',

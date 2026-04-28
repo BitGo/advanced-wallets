@@ -1,4 +1,4 @@
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { TransactionPrebuild } from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
 import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
@@ -16,17 +16,17 @@ export async function signMultisigTransaction(
     req.body;
 
   const bitgo = req.bitgo;
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
 
-  // Retrieve the private key from KMS
+  // Retrieve the private key from key provider
   let prv: string;
   try {
-    const res = await kms.getKey({ pub, source });
+    const res = await keyProvider.getKey({ pub, source });
     prv = res.prv;
   } catch (error: any) {
     throw {
       status: error.status || 500,
-      message: error.message || 'Failed to retrieve key from KMS',
+      message: error.message || 'Failed to retrieve key from key provider',
     };
   }
 

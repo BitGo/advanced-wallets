@@ -5,7 +5,7 @@ import {
   AwmApiSpecRouteRequest,
   MpcFinalizeRequestType,
 } from '../routers/advancedWalletManagerApiSpec';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { eddsaKeyCombine, gpgDecrypt, gpgEncrypt, verifyWalletSignatures } from './utils/utils';
 import coinFactory from '../../shared/coinFactory';
 
@@ -24,7 +24,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
   const counterPartyToSourceKeyShare = req.decoded.counterPartyKeyShare;
 
   // setup clients
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
   const coinInstance = await coinFactory.getCoin(coin, req.bitgo);
 
   // indexes
@@ -33,7 +33,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
   const bitgoIndex = 3;
 
   // Decrypt the encrypted payload using encryptedDataKey to retrieve the previous state of computation
-  const decryptedDataKey = await kms.decryptDataKey({ encryptedKey: encryptedDataKey });
+  const decryptedDataKey = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const previousState = JSON.parse(
     req.bitgo.decrypt({
       input: encryptedData,
@@ -120,7 +120,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
     }
 
     debugLogger(`Common keychain for ${source}:`, commonKeychain);
-    await kms.postKey({
+    await keyProvider.postKey({
       pub: commonKeychain,
       prv: JSON.stringify(sourceSigningMaterial),
       source,

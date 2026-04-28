@@ -19,7 +19,7 @@ describe('Non Recovery', () => {
     tlsMode: TlsMode.DISABLED,
     httpLoggerFile: '',
     clientCertAllowSelfSigned: true,
-    kmsUrl: 'kms.example.com',
+    keyProviderUrl: 'key-provider.example.com',
   };
 
   beforeEach(() => {

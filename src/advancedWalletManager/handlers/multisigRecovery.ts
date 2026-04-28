@@ -15,7 +15,7 @@ import {
   getReplayProtectionOptions,
 } from '../../shared/recoveryUtils';
 import { SignedEthLikeRecoveryTx } from '../../types/transaction';
-import { checkRecoveryMode, retrieveKmsPrvKey } from './utils/utils';
+import { checkRecoveryMode, retrieveKeyProviderPrvKey } from './utils/utils';
 import coinFactory from '../../shared/coinFactory';
 
 export async function recoveryMultisigTransaction(
@@ -27,8 +27,16 @@ export async function recoveryMultisigTransaction(
     req.decoded;
 
   //fetch prv and check that pub are valid
-  const userPrv = await retrieveKmsPrvKey({ pub: userPub, source: 'user', cfg: req.config });
-  const backupPrv = await retrieveKmsPrvKey({ pub: backupPub, source: 'backup', cfg: req.config });
+  const userPrv = await retrieveKeyProviderPrvKey({
+    pub: userPub,
+    source: 'user',
+    cfg: req.config,
+  });
+  const backupPrv = await retrieveKeyProviderPrvKey({
+    pub: backupPub,
+    source: 'backup',
+    cfg: req.config,
+  });
 
   if (!userPrv || !backupPrv) {
     const errorMsg = `Error while recovery wallet, missing prv keys for user or backup on pub keys user=${userPub}, backup=${backupPub}`;

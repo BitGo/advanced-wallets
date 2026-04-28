@@ -22,16 +22,16 @@ services:
       - TLS_MODE=disabled
       - CLIENT_CERT_ALLOW_SELF_SIGNED=true
 
-      # KMS settings (required)
-      - KMS_URL=http://172.20.0.1:3000 # UPDATE TO YOUR OWN KMS URL
-      - KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true
+      # key provider settings (required)
+      - KEY_PROVIDER_URL=http://172.20.0.1:3000 # UPDATE TO YOUR OWN key provider URL
+      - KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=true
 
-      # Optional KMS TLS settings (uncomment if using mTLS with KMS)
-      # - KMS_SERVER_CA_CERT_PATH=/path/to/kms-ca-cert.pem
-      # - KMS_CLIENT_TLS_KEY_PATH=/path/to/kms-client-key.pem
-      # - KMS_CLIENT_TLS_CERT_PATH=/path/to/kms-client-cert.pem
-      # - KMS_CLIENT_TLS_KEY=<key-content>
-      # - KMS_CLIENT_TLS_CERT=<cert-content>
+      # Optional key provider TLS settings (uncomment if using mTLS with key provider)
+      # - KEY_PROVIDER_SERVER_CA_CERT_PATH=/path/to/key-provider-ca-cert.pem
+      # - KEY_PROVIDER_CLIENT_TLS_KEY_PATH=/path/to/key-provider-client-key.pem
+      # - KEY_PROVIDER_CLIENT_TLS_CERT_PATH=/path/to/key-provider-client-cert.pem
+      # - KEY_PROVIDER_CLIENT_TLS_KEY=<key-content>
+      # - KEY_PROVIDER_CLIENT_TLS_CERT=<cert-content>
 
       # Optional server TLS settings (uncomment if using mTLS)
       # - SERVER_TLS_KEY_PATH=/path/to/server-key.pem

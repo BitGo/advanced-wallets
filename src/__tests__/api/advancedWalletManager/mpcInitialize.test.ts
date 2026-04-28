@@ -10,9 +10,9 @@ describe('MPC Initialize', () => {
   let agent: request.SuperAgentTest;
   let app: express.Application;
   let cfg: AdvancedWalletManagerConfig;
-  const kmsUrl = 'http://kms.com';
+  const keyProviderUrl = 'http://key-provider.test';
 
-  // Sample data key response from KMS
+  // Sample data key response from key provider
   const mockDataKeyResponse = {
     plaintextKey:
       '75,212,73,155,238,206,208,243,103,70,241,121,120,187,188,212,215,169,49,49,158,151,220,182,129,163,146,206,31,176,24,114',
@@ -28,7 +28,7 @@ describe('MPC Initialize', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -42,8 +42,8 @@ describe('MPC Initialize', () => {
   beforeEach(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
-    // Mock KMS service
-    nock(kmsUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
+    // Mock key provider service
+    nock(keyProviderUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
   });
 
   afterEach(() => {

@@ -31,7 +31,7 @@ export function startup(config: AdvancedWalletManagerConfig, baseUri: string): (
     logger.info(`Base URI: ${baseUri}`);
     logger.info(`Port: ${config.port}`);
     logger.info(`Bind: ${config.bind}`);
-    logger.info(`KMS URL: ${config.kmsUrl}`);
+    logger.info(`key provider URL: ${config.keyProviderUrl}`);
     logger.info(`Recovery Mode: ${config.recoveryMode}`);
 
     // mTLS Configuration Section
@@ -45,9 +45,9 @@ export function startup(config: AdvancedWalletManagerConfig, baseUri: string): (
           `  • Allowed Client Fingerprints: ${config.mtlsAllowedClientFingerprints.join(', ')}`,
         );
       }
-      logger.info('Client Settings (outbound to KMS):');
+      logger.info('Client Settings (outbound to key provider):');
       logger.info(
-        `  • Allow Self-Signed KMS Server Certificates: ${config.kmsServerCertAllowSelfSigned}`,
+        `  • Allow Self-Signed key provider Server Certificates: ${config.keyProviderServerCertAllowSelfSigned}`,
       );
     }
     logger.info('========================');

@@ -212,7 +212,7 @@ export const SendManyResponse: HttpResponse = {
  *
  * Send coins or tokens to one or more recipients. You can use this endpoint to schedule outgoing transactions in bulk, lowering your aggregate amount of blockchain fees.
  *
- * Retrieves the private key from KMS using the provided public key, then signs and broadcasts the transaction.
+ * Retrieves the private key from key provider using the provided public key, then signs and broadcasts the transaction.
  *
  * Works with both multisignature and MPC wallets.
  *

@@ -18,7 +18,7 @@ describe('recoveryMultisigTransaction', () => {
   let agent: request.SuperAgentTest;
 
   // test cofig
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const coin = 'hteth';
   const accessToken = 'test-token';
 
@@ -37,7 +37,7 @@ describe('recoveryMultisigTransaction', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
@@ -62,29 +62,29 @@ describe('recoveryMultisigTransaction', () => {
     const { userPub, backupPub, walletContractAddress, userPrv, backupPrv, txHexResult } = awmData;
     const unsignedSweepPrebuildTx = unsignedSweepRecJSON as unknown as any;
 
-    const mockKmsUserResponse = {
+    const mockKeyProviderUserResponse = {
       prv: userPrv,
       pub: userPub,
       source: 'user',
       type: 'independent',
     };
 
-    const mockKmsBackupResponse = {
+    const mockKeyProviderBackupResponse = {
       prv: backupPrv,
       pub: backupPub,
       source: 'backup',
       type: 'independent',
     };
 
-    const kmsNockUser = nock(kmsUrl)
+    const keyProviderNockUser = nock(keyProviderUrl)
       .get(`/key/${userPub}`)
       .query({ source: 'user' })
-      .reply(200, mockKmsUserResponse);
+      .reply(200, mockKeyProviderUserResponse);
 
-    const kmsNockBackup = nock(kmsUrl)
+    const keyProviderNockBackup = nock(keyProviderUrl)
       .get(`/key/${backupPub}`)
       .query({ source: 'backup' })
-      .reply(200, mockKmsBackupResponse);
+      .reply(200, mockKeyProviderBackupResponse);
 
     const response = await agent
       .post(`/api/${coin}/multisig/recovery`)
@@ -101,8 +101,8 @@ describe('recoveryMultisigTransaction', () => {
     response.status.should.equal(200);
     response.body.should.have.property('txHex', txHexResult);
 
-    kmsNockUser.done();
-    kmsNockBackup.done();
+    keyProviderNockUser.done();
+    keyProviderNockBackup.done();
   });
 
   it('should fail when prv keys non related to pub keys', async () => {
@@ -113,29 +113,29 @@ describe('recoveryMultisigTransaction', () => {
     const invalidUserPrv = 'invalid-prv';
     const invalidBackupPrv = 'invalid-prv';
 
-    const mockKmsUserResponse = {
+    const mockKeyProviderUserResponse = {
       prv: invalidUserPrv,
       pub: userPub,
       source: 'user',
       type: 'independent',
     };
 
-    const mockKmsBackupResponse = {
+    const mockKeyProviderBackupResponse = {
       prv: invalidBackupPrv,
       pub: backupPub,
       source: 'backup',
       type: 'independent',
     };
 
-    const kmsNockUser = nock(kmsUrl)
+    const keyProviderNockUser = nock(keyProviderUrl)
       .get(`/key/${userPub}`)
       .query({ source: 'user' })
-      .reply(200, mockKmsUserResponse);
+      .reply(200, mockKeyProviderUserResponse);
 
-    const kmsNockBackup = nock(kmsUrl)
+    const keyProviderNockBackup = nock(keyProviderUrl)
       .get(`/key/${backupPub}`)
       .query({ source: 'backup' })
-      .reply(200, mockKmsBackupResponse);
+      .reply(200, mockKeyProviderBackupResponse);
 
     const response = await agent
       .post(`/api/${coin}/multisig/recovery`)
@@ -152,7 +152,7 @@ describe('recoveryMultisigTransaction', () => {
     response.status.should.equal(500);
     response.body.should.have.property('error');
 
-    kmsNockUser.done();
-    kmsNockBackup.done();
+    keyProviderNockUser.done();
+    keyProviderNockBackup.done();
   });
 });

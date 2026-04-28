@@ -17,7 +17,7 @@ describe('postMpcV2Key', () => {
   let agent: request.SuperAgentTest;
 
   // test config
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const coin = 'hteth';
   const accessToken = 'test-token';
 
@@ -36,7 +36,7 @@ describe('postMpcV2Key', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -49,22 +49,22 @@ describe('postMpcV2Key', () => {
   });
 
   beforeEach(() => {
-    // nocks for KMS responses
-    nock(kmsUrl)
+    // nocks for key provider responses
+    nock(keyProviderUrl)
       .post(`/generateDataKey`)
       .reply(200, {
         plaintextKey: 'test-plaintext-key',
         encryptedKey: 'test-encrypted-key',
       })
       .persist();
-    nock(kmsUrl)
+    nock(keyProviderUrl)
       .post(`/decryptDataKey`)
       .reply(200, {
         plaintextKey: 'test-plaintext-key',
       })
       .persist();
 
-    nock(kmsUrl)
+    nock(keyProviderUrl)
       .post(`/key`)
       .reply(200, {
         pub: 'test-pub-key',
@@ -74,7 +74,7 @@ describe('postMpcV2Key', () => {
       })
       .persist();
 
-    nock(kmsUrl)
+    nock(keyProviderUrl)
       .post(`/key`)
       .reply(200, {
         pub: 'test-pub-key',
@@ -84,7 +84,7 @@ describe('postMpcV2Key', () => {
       })
       .persist();
 
-    nock(kmsUrl).post(`/postKey`).reply(200, {}).persist();
+    nock(keyProviderUrl).post(`/postKey`).reply(200, {}).persist();
   });
 
   afterEach(() => {

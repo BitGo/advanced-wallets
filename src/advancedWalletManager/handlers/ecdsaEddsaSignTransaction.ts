@@ -1,5 +1,5 @@
 import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
-import { decryptDataKey, generateDataKey, retrieveKmsPrvKey } from './utils/utils';
+import { decryptDataKey, generateDataKey, retrieveKeyProviderPrvKey } from './utils/utils';
 import logger from '../../shared/logger';
 import {
   BaseCoin,
@@ -92,8 +92,8 @@ export async function signMpcTransaction(req: AwmApiSpecRouteRequest<'v1.mpc.sig
   const bitgo = req.bitgo;
   const coinInstance = await coinFactory.getCoin(coin, bitgo);
 
-  // Get private key from KMS
-  const prv = await retrieveKmsPrvKey({ pub, source, cfg: req.config });
+  // Get private key from key provider
+  const prv = await retrieveKeyProviderPrvKey({ pub, source, cfg: req.config });
 
   if (!prv) {
     const errorMsg = `Error while MPC signing, missing prv key for pub=${pub}, source=${source}`;

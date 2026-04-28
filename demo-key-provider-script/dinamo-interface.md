@@ -1,8 +1,8 @@
-# Dinamo HSM KMS Implementation Documentation
+# Dinamo HSM Key Provider Implementation Documentation
 
 ## ⚠️ Security Recommendation
 
-**For production KMS implementations, consider implementing the KMS-API in a C++ like language, or use typed arrays like Uint8Array for all sensitive data because JavaScript does not support secure memory management.**
+**For production key provider implementations, consider implementing the Key Provider API in a C++ like language, or use typed arrays like Uint8Array for all sensitive data because JavaScript does not support secure memory management.**
 
 **Recommended Alternatives:**
 - **C++/Rust**: Languages with explicit memory management and secure allocation
@@ -10,7 +10,7 @@
 - **Native Addons**: Implement cryptographic operations in native C++ modules
 - **Hardware Security**: Use HSM-backed secure memory when available
 
-This document provides a reference implementation for integrating the 4 KMS API's with Dinamo HSM, covering the complete request-response flow from API handlers to HSM operations.
+This document provides a reference implementation for integrating the 4 Key Provider API's with Dinamo HSM, covering the complete request-response flow from API handlers to HSM operations.
 
 ## Demo Scripts
 
@@ -20,7 +20,7 @@ This document provides a reference implementation for integrating the 4 KMS API'
 
 ## Quick Overview
 
-The KMS API provides secure key management through four main endpoints that integrate with Dinamo HSM:
+The Key Provider API provides secure key management through four main endpoints that integrate with Dinamo HSM:
 
 - `POST /key` - Store private keys using envelope encryption
 - `GET /key/{pub}` - Retrieve private keys using envelope decryption  
@@ -30,7 +30,7 @@ The KMS API provides secure key management through four main endpoints that inte
 ## Architecture Flow
 
 ```
-API Request → Handler → KMS Provider → Dinamo HSM → Database → Response
+API Request → Handler → Key Provider → Dinamo HSM → Database → Response
 ```
 
 ### Handler-to-Provider Mapping

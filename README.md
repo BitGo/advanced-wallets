@@ -16,7 +16,7 @@ Advanced wallets operate in two modes:
 Key features include:
 
 - **Complete Infrastructure Control** - Host and manage all components in your own secure environment.
-- **KMS/HSM Integration** - Bring your own KMS or HSM by implementing the provided [KMS API interface specification](./kms-api-spec.yaml). Reference implementations available for [AWS HSM](./demo-kms-script/aws-interface.md) and [Dinamo HSM](./demo-kms-script/dinamo-interface.md).
+- **KMS/HSM Integration** - Bring your own KMS or HSM by implementing the provided [Advanced Wallets Key Provider API interface specification](./key-provider-api-spec.yaml). Reference implementations available for [AWS HSM](./demo-key-provider-script/aws-interface.md) and [Dinamo HSM](./demo-key-provider-script/dinamo-interface.md).
 - **Network Isolation** - Advanced Wallet Manager operates in a completely isolated network segment with no external internet access.
 - **mTLS Security** - Optional mutual TLS with client certificate validation for secure inter-service communications.
 - **Flexible Configuration** - Environment-based setup with file or variable-based certificates.
@@ -38,7 +38,7 @@ Key features include:
 
 ## Architecture
 
-- **Advanced Wallet Manager** (Port 3080) - An isolated signing server with no internet access that only connects to your KMS API implementation for key operations.
+- **Advanced Wallet Manager** (Port 3080) - An isolated signing server with no internet access that only connects to your Key Provider API implementation for key operations.
 - **Master Express** (Port 3081) - An API gateway providing end-to-end wallet creation and transaction support, integrating [BitGo APIs](https://developers.bitgo.com/reference/overview#/) with secure communication to Advanced Wallet Manager.
 
 ## Installation
@@ -49,9 +49,9 @@ Key features include:
 - **npm** or **yarn** package manager.
 - **OpenSSL** for certificate generation.
 - **Docker** and **Docker Compose** for containerized deployment (or you can use **Podman** as alternative to Docker).
-- **KMS API Implementation** - You must implement the [KMS API interface specification](./kms-api-spec.yaml) to connect your KMS/HSM to the Advanced Wallet Manager. Reference implementations available:
-  - [AWS HSM Implementation Example](./demo-kms-script/aws-interface.md)
-  - [Dinamo HSM Implementation Example](./demo-kms-script/dinamo-interface.md)
+- **Key Provider API Implementation** - You must implement the [Key Provider API interface specification](./key-provider-api-spec.yaml) to connect your KMS/HSM to the Advanced Wallet Manager. Reference implementations available:
+  - [AWS HSM Implementation Example](./demo-key-provider-script/aws-interface.md)
+  - [Dinamo HSM Implementation Example](./demo-key-provider-script/dinamo-interface.md)
 
 ### Setup
 
@@ -119,7 +119,7 @@ TLS_MODE=disabled \
 BITGO_ENV=test \
 APP_MODE=advanced-wallet-manager \
 ADVANCED_WALLET_MANAGER_PORT=3080 \
-KMS_URL=http://localhost:3000 \
+KEY_PROVIDER_URL=http://localhost:3000 \
 npm start
 ```
 
@@ -168,9 +168,9 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | Variable                       | Description                        | Default | Required |
 | ------------------------------ | ---------------------------------- | ------- | -------- |
 | `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on                  | `3080`  | ❌       |
-| `KMS_URL`                      | URL to your KMS API implementation | -       | ✅       |
+| `KEY_PROVIDER_URL`             | URL to your Key Provider API implementation | -       | ✅       |
 
-> **Note:** The `KMS_URL` points to your implementation of the KMS API interface. You must implement this interface to connect your KMS/HSM. See [Prerequisites](#prerequisites) for the specification and examples.
+> **Note:** The `KEY_PROVIDER_URL` points to your implementation of the Key Provider API interface. You must implement this interface to connect your KMS/HSM. See [Prerequisites](#prerequisites) for the specification and examples.
 
 ### Master Express Settings
 
@@ -232,17 +232,17 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | `AWM_SERVER_CA_CERT`                | AWM server CA certificate (alternative)   | PEM string                 |
 | `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed AWM server certificates | Boolean (default: `false`) |
 
-**For Advanced Wallet Manager → KMS:**
+**For Advanced Wallet Manager → Key Provider:**
 
-| Variable                            | Description                               | Format                     |
-| ----------------------------------- | ----------------------------------------- | -------------------------- |
-| `KMS_CLIENT_TLS_KEY_PATH`           | Client private key file path              | File path                  |
-| `KMS_CLIENT_TLS_KEY`                | Client private key (alternative)          | PEM string                 |
-| `KMS_CLIENT_TLS_CERT_PATH`          | Client certificate file path              | File path                  |
-| `KMS_CLIENT_TLS_CERT`               | Client certificate (alternative)          | PEM string                 |
-| `KMS_SERVER_CA_CERT_PATH`           | KMS server CA certificate file path       | File path                  |
-| `KMS_SERVER_CA_CERT`                | KMS server CA certificate (alternative)   | PEM string                 |
-| `KMS_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed KMS server certificates | Boolean (default: `false`) |
+| Variable                                    | Description                                        | Format                     |
+| ------------------------------------------- | -------------------------------------------------- | -------------------------- |
+| `KEY_PROVIDER_CLIENT_TLS_KEY_PATH`           | Client private key file path                       | File path                  |
+| `KEY_PROVIDER_CLIENT_TLS_KEY`                | Client private key (alternative)                   | PEM string                 |
+| `KEY_PROVIDER_CLIENT_TLS_CERT_PATH`          | Client certificate file path                       | File path                  |
+| `KEY_PROVIDER_CLIENT_TLS_CERT`               | Client certificate (alternative)                   | PEM string                 |
+| `KEY_PROVIDER_SERVER_CA_CERT_PATH`           | key provider server CA certificate file path       | File path                  |
+| `KEY_PROVIDER_SERVER_CA_CERT`                | key provider server CA certificate (alternative)   | PEM string                 |
+| `KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed key provider server certificates | Boolean (default: `false`) |
 
 > **Note:** For security reasons, when `TLS_MODE=mtls`, outbound client certificates are required and cannot reuse server certificates. When `TLS_MODE=disabled`, these certificates aren't required.
 
@@ -276,7 +276,7 @@ podman run -d \
   -e TLS_MODE=mtls \
   -e SERVER_TLS_KEY_PATH=/app/certs/advanced-wallet-manager-key.pem \
   -e SERVER_TLS_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
-  -e KMS_URL=host.containers.internal:3000 \
+  -e KEY_PROVIDER_URL=host.containers.internal:3000 \
   -e NODE_ENV=development \
   -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
   advanced-wallet-manager
@@ -351,7 +351,7 @@ The setup creates two distinct networks:
 ### Prerequisites
 
 1. **Install Docker and Docker Compose**
-2. **Ensure your KMS API implementation is running** on your host machine (typically on port 3000)
+2. **Ensure your Key Provider API implementation is running** on your host machine (typically on port 3000)
 
 ### Quick Start
 
@@ -424,17 +424,17 @@ For production deployments with proper mTLS security:
 export APP_MODE=advanced-wallet-manager
 export TLS_MODE=mtls
 export ADVANCED_WALLET_MANAGER_PORT=3080
-export KMS_URL=https://production-kms.example.com:3000
+export KEY_PROVIDER_URL=https://production-key-provider.example.com:3000
 # Server certificates for incoming mTLS connections
 export SERVER_TLS_KEY_PATH=/secure/certs/awm-server.key
 export SERVER_TLS_CERT_PATH=/secure/certs/awm-server.crt
-# Client certificates for outbound connections to KMS
-export KMS_CLIENT_TLS_KEY_PATH=/secure/certs/awm-kms-client.key
-export KMS_CLIENT_TLS_CERT_PATH=/secure/certs/awm-kms-client.crt
-export KMS_SERVER_CA_CERT_PATH=/secure/certs/kms-ca.crt
+# Client certificates for outbound connections to key provider
+export KEY_PROVIDER_CLIENT_TLS_KEY_PATH=/secure/certs/awm-key-provider-client.key
+export KEY_PROVIDER_CLIENT_TLS_CERT_PATH=/secure/certs/awm-key-provider-client.crt
+export KEY_PROVIDER_SERVER_CA_CERT_PATH=/secure/certs/key-provider-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
-export KMS_SERVER_CERT_ALLOW_SELF_SIGNED=false
+export KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=false
 export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:1a2b3c...,sha256:4d5e6f...
 export BITGO_ENV=prod
 npm start
@@ -490,7 +490,7 @@ curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
 For local testing, you can generate and use demo certificates with the self-signed configuration flags:
 
 - Generate demo certificates: `npm run generate-test-ssl` (creates `demo.key` and `demo.crt`).
-- Set `CLIENT_CERT_ALLOW_SELF_SIGNED=true`, `KMS_SERVER_CERT_ALLOW_SELF_SIGNED=true`, and `AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true`.
+- Set `CLIENT_CERT_ALLOW_SELF_SIGNED=true`, `KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=true`, and `AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true`.
 - Use the demo certificates for all certificate paths (server and client).
 - **Important:** Demo certificates and self-signed configurations should never be used in production.
 
@@ -499,7 +499,7 @@ For local testing, you can generate and use demo certificates with the self-sign
 1. **Use CA-signed certificates** instead of self-signed.
 2. **Set `CLIENT_CERT_ALLOW_SELF_SIGNED=false`** and server-specific allow self-signed flags to `false` in production.
 3. **Configure client certificate allowlisting** with `MTLS_ALLOWED_CLIENT_FINGERPRINTS`.
-4. **Use separate certificates** for each service (server, AWM client, KMS client).
+4. **Use separate certificates** for each service (server, AWM client, key provider client).
 5. **Regularly rotate certificates**.
 6. **Secure private key storage** and use appropriate file permissions.
 7. **Always use `TLS_MODE=mtls`** in production environments.
@@ -519,7 +519,7 @@ The output format is: `sha256:AB:CD:EF:...` which you can use in the configurati
 #### Certificate Requirements for Production
 
 - All certificates should be CA-signed certificates issued by your organization's PKI.
-- Each service must use separate certificates (server cert, AWM client cert, KMS client cert).
+- Each service must use separate certificates (server cert, AWM client cert, key provider client cert).
 - Client certificates for outbound connections must be different from server certificates.
 - Store private keys in secure locations with restricted file permissions:
   ```bash

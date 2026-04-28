@@ -15,7 +15,7 @@ describe('recoveryMpcV2', async () => {
   let agent: request.SuperAgentTest;
 
   // test config
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const ethLikeCoin = 'hteth';
   const cosmosLikeCoin = 'tsei';
   const accessToken = 'test-token';
@@ -23,20 +23,20 @@ describe('recoveryMpcV2', async () => {
   // sinon stubs
   let configStub: sinon.SinonStub;
 
-  // kms nocks setup
+  // key provider nocks setup
   const [userShare, backupShare] = await DklsUtils.generateDKGKeyShares();
   const userKeyShare = userShare.getKeyShare().toString('base64');
   const backupKeyShare = backupShare.getKeyShare().toString('base64');
   const commonKeychain = DklsTypes.getCommonKeychain(userShare.getKeyShare());
 
-  const mockKmsUserResponse = {
+  const mockKeyProviderUserResponse = {
     prv: JSON.stringify(userKeyShare),
     pub: commonKeychain,
     source: 'user',
     type: 'tss',
   };
 
-  const mockKmsBackupResponse = {
+  const mockKeyProviderBackupResponse = {
     prv: JSON.stringify(backupKeyShare),
     pub: commonKeychain,
     source: 'backup',
@@ -59,7 +59,7 @@ describe('recoveryMpcV2', async () => {
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       httpLoggerFile: '',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
@@ -83,16 +83,16 @@ describe('recoveryMpcV2', async () => {
 
   // happy path test
   it('should be sign a Mpc V2 Recovery', async () => {
-    // nocks for KMS responses
-    const userKmsNock = nock(kmsUrl)
+    // nocks for key provider responses
+    const userKeyProviderNock = nock(keyProviderUrl)
       .get(`/key/${input.pub}`)
       .query({ source: 'user' })
-      .reply(200, mockKmsUserResponse)
+      .reply(200, mockKeyProviderUserResponse)
       .persist();
-    const backupKmsNock = nock(kmsUrl)
+    const backupKeyProviderNock = nock(keyProviderUrl)
       .get(`/key/${input.pub}`)
       .query({ source: 'backup' })
-      .reply(200, mockKmsBackupResponse)
+      .reply(200, mockKeyProviderBackupResponse)
       .persist();
 
     const ethLikeSignatureResponse = await agent
@@ -127,8 +127,8 @@ describe('recoveryMpcV2', async () => {
     cosmosLikeSignature.should.have.property('s');
     cosmosLikeSignature.should.have.property('y');
 
-    userKmsNock.isDone().should.be.true();
-    backupKmsNock.isDone().should.be.true();
+    userKeyProviderNock.isDone().should.be.true();
+    backupKeyProviderNock.isDone().should.be.true();
   });
 
   // failure test case
@@ -138,12 +138,15 @@ describe('recoveryMpcV2', async () => {
       pub: commonKeychain,
     };
 
-    // nocks for KMS responses
-    nock(kmsUrl).get(`/key/${input.pub}`).query({ source: 'user' }).reply(200, mockKmsUserResponse);
-    nock(kmsUrl)
+    // nocks for key provider responses
+    nock(keyProviderUrl)
+      .get(`/key/${input.pub}`)
+      .query({ source: 'user' })
+      .reply(200, mockKeyProviderUserResponse);
+    nock(keyProviderUrl)
       .get(`/key/${input.pub}`)
       .query({ source: 'backup' })
-      .reply(200, mockKmsBackupResponse);
+      .reply(200, mockKeyProviderBackupResponse);
 
     const signatureResponse = await agent
       .post(`/api/${ethLikeCoin}/mpcv2/recovery`)

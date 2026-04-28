@@ -1,7 +1,7 @@
 import debug from 'debug';
 import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import { assert } from 'console';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import {
   AwmApiSpecRouteRequest,
   KeyShareType,
@@ -22,7 +22,7 @@ export async function eddsaInitialize(
   }
 
   // setup clients
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
 
   // MPC configuration
   const MPC = await bitgoSdk.Eddsa.initialize();
@@ -99,7 +99,7 @@ export async function eddsaInitialize(
     sourcePrivateShare,
     counterPartyKeyShare: counterPartyGpgPub ? undefined : counterPartyKeyShare, // if counterPartyGpgPub is NOT gpg encrypted, store in payload to be encrypted in finalize
   };
-  const { plaintextKey, encryptedKey } = await kms.generateDataKey({ keyType: 'AES-256' });
+  const { plaintextKey, encryptedKey } = await keyProvider.generateDataKey({ keyType: 'AES-256' });
   try {
     const encryptedPayload = req.bitgo.encrypt({
       input: JSON.stringify(payload),

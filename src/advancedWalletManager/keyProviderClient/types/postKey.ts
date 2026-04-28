@@ -16,7 +16,7 @@ export interface PostKeyResponse {
   type: 'independent' | 'tss';
 }
 
-export const PostKeyKmsSchema = z.object({
+export const PostKeyResponseSchema = z.object({
   pub: z.string(),
   coin: z.string(),
   source: z.enum(['user', 'backup']),

@@ -23,7 +23,7 @@ export const SignMpcResponse: HttpResponse = {
  *
  * Sign and send a MPC transaction.
  *
- * Retrieves the private key from KMS using the provided common keychain, then signs and broadcasts the transaction.
+ * Retrieves the private key from key provider using the provided common keychain, then signs and broadcasts the transaction.
  *
  * Use this endpoint only with advanced wallets. For other wallet types, use [Sign MPC transaction](https://developers.bitgo.com/reference/expresswalletsigntxtss).
  *

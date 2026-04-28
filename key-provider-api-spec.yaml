@@ -1,17 +1,17 @@
 openapi: 3.0.0
 
 info:
-  title: KMS API Interface Specification
+  title: Advanced Wallets Key Provider API Interface Specification
   version: 1.0.0
   description: |
     # API Interface for Advanced Wallet Integration
 
-    This specification defines the required API interface that must be implemented by clients to integrate 
-    their KMS (Key Management Service) or HSM (Hardware Security Module) provider with advanced wallets.
+    This specification defines the required API interface that must be implemented by clients to integrate
+    their KMS/HSM provider with advanced wallets through the Advanced Wallets Key Provider interface.
 
     ## Purpose
 
-    Clients must implement this API specification to enable secure cryptographic key storage and management 
+    Clients must implement this Advanced Wallets Key Provider API specification to enable secure cryptographic key storage and management
     for advanced wallets. The implementation should connect to your organization's KMS/HSM provider.
 
     ## Implementation Requirements
@@ -36,9 +36,9 @@ paths:
         - Key Management
       summary: Store a private key
       description: |
-        Store a new private key encrypted using the configured KMS provider.
+        Store a new private key encrypted using the configured KMS/HSM provider.
 
-        The private key is encrypted using the KMS before storage. The implementation uses envelope 
+        The private key is encrypted before storage. The implementation uses envelope
         encryption for large payloads and direct encryption for smaller payloads.
 
         **Important**: Keys are identified by the combination of `pub` (public key) and `source` 
@@ -101,7 +101,7 @@ paths:
         Retrieve and decrypt a previously stored private key.
 
         The key is identified by the public key (`pub`) path parameter and the `source` query parameter.
-        The KMS provider decrypts the key before returning it.
+        The KMS/HSM provider decrypts the key before returning it.
       operationId: getPrivateKey
       parameters:
         - name: pub
@@ -149,12 +149,12 @@ paths:
       description: |
         Generate a new data encryption key for envelope encryption operations.
 
-        The KMS provider generates a symmetric key and returns both:
+        The KMS/HSM provider generates a symmetric key and returns both:
         - **plaintextKey**: Use immediately for encryption, then discard
         - **encryptedKey**: Store this to decrypt data later using `/decryptDataKey`
 
         This follows the envelope encryption pattern where data is encrypted with the data key,
-        and the data key itself is encrypted with the KMS root key.
+        and the data key itself is encrypted with the root key.
       operationId: generateDataKey
       requestBody:
         required: true
@@ -182,7 +182,7 @@ paths:
                 plaintextKey: '1,2,3,0,120,222,140,157,217,111,195,208,47,200,213,217,82,189,16,171,207,16,138,46,228,224,190,138,63,132,239,80,164,8,124,105,140,1,174,211,14,152,144,66,115,54,226,169,178,37,100,105,154,15,0,0,0,126,48,124,6,9,42,134,72,134,247,13,1,7,6,160,111,48,109,2,1,0,48,104,6,9,42,134,72,134,247,13,1,7,1,48,30,6,9,96,134,72,1,101,3,4,1,46,48,17,4,12,247,0,189,155,147,80,121,250,71,64,30,121,2,1,16,128,59,175,44,60,80,240,109,12,47,202,7,20,250,186,219,247,41,129,85,0,16,202,62,33,42,240,91,175,106,165,120,107,65,28,21,122,211,235,23,79,65,25,56,107,106,95,112,39,148,183,6,160,119,205,12,116,187,127,63,83'
                 encryptedKey: '62,137,108,179,93,237,135,139,245,68,225,226,124,238,181,134,151,103,246,23,4,9,186,197,223,50,53,196,52,94,22,16'
         '409':
-          description: Database conflict - generated another root key for the same KMS provider
+          description: Database conflict - generated another root key for the same provider
           content:
             application/json:
               schema:
@@ -199,7 +199,7 @@ paths:
         Decrypt a previously generated data encryption key.
 
         Provide the `encryptedKey` value that was returned from `/generateDataKey`.
-        The KMS provider decrypts it and returns the plaintext key.
+        The KMS/HSM provider decrypts it and returns the plaintext key.
 
         Use the plaintext key for decryption operations, then discard it immediately.
       operationId: decryptDataKey
@@ -370,7 +370,7 @@ components:
         encryptedKey:
           type: string
           description: |
-            Encrypted data key or KMS identifier (comma-separated byte array as string).
+            Encrypted data key or provider identifier (comma-separated byte array as string).
             Store this value to decrypt data later using /decryptDataKey.
 
     DecryptDataKeyRequest:
@@ -422,16 +422,16 @@ components:
             message: 'Entry with pub MIGeMA0GCSqGSIb3DQEBAQUAA4... and source user not found in database'
 
     InternalServerError:
-      description: Internal server error or KMS operation failure
+      description: Internal server error or key provider operation failure
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
-            kmsFailure:
-              summary: KMS operation failed
+            keyProviderFailure:
+              summary: key provider operation failed
               value:
-                message: 'Failed to encrypt private key in KMS. AWS KMS returned InvalidKeyId'
+                message: 'Failed to encrypt private key. AWS KMS returned InvalidKeyId'
             databaseFailure:
               summary: Database operation failed
               value:

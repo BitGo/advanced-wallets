@@ -289,7 +289,7 @@ const RecoveryWalletRequest = {
  *
  * Recover assets from an advanced wallet with a balance only in the base address. Works for both multisignature and MPC recoveries.
  *
- * Retrieves the private keys from KMS using the provided public keys or common keychain, then signs and returns the broadcastable transaction hex.
+ * Retrieves the private keys from key provider using the provided public keys or common keychain, then signs and returns the broadcastable transaction hex.
  *
  * Note: This endpoint only works when AWM and MBE are running in recovery mode.
  *

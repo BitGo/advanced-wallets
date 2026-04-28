@@ -953,7 +953,7 @@
     "/api/v1/{coin}/advancedwallet/generate": {
       "post": {
         "summary": "Generates a new advanced wallet.",
-        "description": "The wallet creation process involves several steps that happen automatically:\n1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective KMS.\n2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective KMS.\n3. Keychain Upload: Uploads the user/backup public keys to BitGo.\n4. BitGo Key Creation: Creates the BitGo key on the BitGo service.\n5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.",
+        "description": "The wallet creation process involves several steps that happen automatically:\n1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective key provider.\n2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective key provider.\n3. Keychain Upload: Uploads the user/backup public keys to BitGo.\n4. BitGo Key Creation: Creates the BitGo key on the BitGo service.\n5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.",
         "parameters": [
           {
             "name": "coin",
