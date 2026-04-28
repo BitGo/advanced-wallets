@@ -143,7 +143,7 @@ npm start
 curl -X POST http://localhost:3080/ping
 
 # Test Master Express
-curl -X POST http://localhost:3081/ping
+curl -X POST http://localhost:3081/advancedwallet/ping
 
 # Test connection between services
 curl -X POST http://localhost:3081/ping/advancedWalletManager
@@ -309,7 +309,7 @@ podman logs -f <container_id>
 curl -k --cert certs/test-ssl-cert.pem --key certs/advanced-wallet-manager-key.pem -X POST https://localhost:3080/ping
 
 # For Master Express
-curl -k --cert certs/test-ssl-cert.pem --key certs/test-ssl-key.pem -X POST https://localhost:3081/ping
+curl -k --cert certs/test-ssl-cert.pem --key certs/test-ssl-key.pem -X POST https://localhost:3081/advancedwallet/ping
 
 # Test the connection
 curl -k -X POST https://localhost:3081/ping/advancedWalletManager
@@ -378,12 +378,22 @@ docker-compose down
 
 - `POST /ping` - Health check.
 - `GET /version` - Version information.
-- `POST /:coin/key/independent` - Generate independent keychain.
+- `POST /api/:coin/key/independent` - Generate independent keychain.
+- `POST /api/:coin/multisig/sign` - Sign a multisig transaction.
+- `POST /api/:coin/multisig/recovery` - Recover a multisig transaction.
+- `POST /api/:coin/mpc/recovery` - Sign a recovery transaction with EdDSA user & backup keyshares.
+- `POST /api/:coin/mpc/sign/:shareType` - Sign an MPC transaction.
+- `POST /api/:coin/mpc/key/initialize` - Initialize MPC for EdDSA key generation.
+- `POST /api/:coin/mpc/key/finalize` - Finalize key generation.
+- `POST /api/:coin/mpcv2/initialize` - Initialize MPC v2.
+- `POST /api/:coin/mpcv2/round` - Perform a round in the MPC protocol.
+- `POST /api/:coin/mpcv2/finalize` - Finalize the MPC DKG protocol.
+- `POST /api/:coin/mpcv2/recovery` - Recover an MPC v2 wallet.
 
 ### Master Express (Port 3081)
 
-- `POST /ping` - Health check.
-- `GET /version` - Version information.
+- `POST /advancedwallet/ping` - Health check.
+- `GET /advancedwallet/version` - Version information.
 - `POST /ping/advancedWalletManager` - Test connection to Advanced Wallet Manager.
 - `POST /api/v1/:coin/advancedwallet/generate` - Generate wallet (with Advanced Wallet Manager integration).
 - `POST /api/v1/:coin/advancedwallet/:walletId/sendMany` - Send transaction with multiple recipients.
@@ -477,7 +487,7 @@ curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
 # Test Master Express (replace localhost with your server IP/hostname)
 curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
   --cacert /secure/certs/mbe-ca.crt \
-  https://localhost:3081/ping
+  https://localhost:3081/advancedwallet/ping
 
 # Test connection between services
 curl --cert /path/to/client-cert.crt --key /path/to/client-key.key \
