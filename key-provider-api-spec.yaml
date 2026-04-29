@@ -7,11 +7,11 @@ info:
     # API Interface for Advanced Wallet Integration
 
     This specification defines the required API interface that must be implemented by clients to integrate
-    their KMS/HSM provider with advanced wallets through the Advanced Wallets Key Provider interface.
+    their KMS/HSM provider with advanced wallets through the advanced wallets key provider interface.
 
     ## Purpose
 
-    Clients must implement this Advanced Wallets Key Provider API specification to enable secure cryptographic key storage and management
+    Clients must implement this advanced wallets key provider API specification to enable secure cryptographic key storage and management
     for advanced wallets. The implementation should connect to your organization's KMS/HSM provider.
 
     ## Implementation Requirements

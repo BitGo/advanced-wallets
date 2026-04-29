@@ -1,10 +1,10 @@
 # AWS HSM Key Provider Implementation Documentation
 
-This document provides a reference implementation for integrating the 4 Key Provider API's with AWS HSM, covering the complete request-response flow from API handlers to HSM operations.
+This document provides a reference implementation for integrating the 4 key provider API's with AWS HSM, covering the complete request-response flow from API handlers to HSM operations.
 
 ## ⚠️ Security Recommendation
 
-For production key provider implementations, consider implementing the Key Provider API in a C++ like language, because JavaScript does not support low-level memory management. Depending on your solution, direct memory management with explicit memory allocation/deallocation might be desirable.
+For production key provider implementations, consider implementing the key provider API in a C++ like language, because JavaScript does not support low-level memory management. Depending on your solution, direct memory management with explicit memory allocation/deallocation might be desirable.
 
 Also consider implementing low level cryptographic operations using low-level languages like C++ or Rust. They typically provide easier and more efficient data manipulation and transaformation.
 
@@ -14,7 +14,7 @@ When working with AWS HSM, adhere to their guidances and best practices for the 
 
 ## API Overview
 
-The Key Provider API provides secure key management through four main endpoints that integrate with AWS HSM:
+The key provider API provides secure key management through four main endpoints that integrate with AWS HSM:
 
 - `POST /key` - Store private keys using envelope encryption
 - `GET /key/{pub}` - Retrieve private keys using envelope decryption  
@@ -25,10 +25,10 @@ The Key Provider API provides secure key management through four main endpoints 
 All 4 API's implementation should follow roughly the same dataflow as outlined bellow:
 
 ```
-API Request → Handler → Key Provider → AWS HSM → Key Provider → Database (if required) → Response
+API Request → Handler → key provider → AWS HSM → key provider → Database (if required) → Response
 ```
 
-A Key Provider is the implementation of the code that is in charge of making the necessary calls to the HSM directly. You might have multiple providers in your solution, one for each 3rd party HSM that you wish to use, for example.
+A key provider is the implementation of the code that is in charge of making the necessary calls to the HSM directly. You might have multiple providers in your solution, one for each 3rd party HSM that you wish to use, for example.
 
 ### Handler-to-Provider Mapping
 
@@ -67,7 +67,7 @@ The 3 levels consist of the root-level key from the KMS/HSM, 2nd level data keys
 
 ### Root Key Creation
 
-This following needs to be only run once. The Key Provider should be functional with just one root-level key.
+This following needs to be only run once. The key provider should be functional with just one root-level key.
 
 ```typescript
 import * as awskms from '@aws-sdk/client-kms';
