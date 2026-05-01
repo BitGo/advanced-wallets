@@ -173,4 +173,4 @@ jobs:
           MTLS_ENABLED: true
           MTLS_REQUEST_CERT: true
           MTLS_REJECT_UNAUTHORIZED: false
-          KMS_URL: 'https://localhost:3000/'
+          KEY_PROVIDER_URL: 'https://localhost:3000/'

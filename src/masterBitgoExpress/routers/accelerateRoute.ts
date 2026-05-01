@@ -80,7 +80,7 @@ const AccelerateResponse: HttpResponse = {
  *
  * Send a new transaction to accelerate the targeted unconfirmed transaction either by using Child-Pays-For-Parent (CPFP) or Replace-By-Fee (RBF).
  *
- * Retrieves the private key from KMS using the provided public key, then signs and broadcasts the transaction.
+ * Retrieves the private key from key provider using the provided public key, then signs and broadcasts the transaction.
  *
  * Use this endpoint only with advanced wallets. For other wallet types, use [Accelerate Transaction](https://developers.bitgo.com/reference/expresswalletacceleratetx).
  *

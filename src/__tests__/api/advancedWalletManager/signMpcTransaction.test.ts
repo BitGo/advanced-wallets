@@ -22,7 +22,7 @@ describe('signMpcTransaction', () => {
   let agent: request.SuperAgentTest;
 
   // test config
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const coin = 'tsol';
   const accessToken = 'test-token';
 
@@ -41,7 +41,7 @@ describe('signMpcTransaction', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -110,7 +110,7 @@ describe('signMpcTransaction', () => {
         backupYShare: backup.yShares[1],
       };
 
-      const mockKmsResponse = {
+      const mockKeyProviderResponse = {
         prv: JSON.stringify(userSigningMaterial),
         pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
         source: 'user',
@@ -129,13 +129,15 @@ describe('signMpcTransaction', () => {
         encryptedKey: 'mock-encrypted-data-key',
       };
 
-      // Mock KMS responses
-      const kmsNock = nock(kmsUrl)
+      // Mock key provider responses
+      const keyProviderNock = nock(keyProviderUrl)
         .get(`/key/${input.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
-      const dataKeyNock = nock(kmsUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
+      const dataKeyNock = nock(keyProviderUrl)
+        .post('/generateDataKey')
+        .reply(200, mockDataKeyResponse);
 
       const response = await agent
         .post(`/api/${coin}/mpc/sign/commitment`)
@@ -148,7 +150,7 @@ describe('signMpcTransaction', () => {
       response.body.should.have.property('encryptedUserToBitgoRShare');
       response.body.should.have.property('encryptedDataKey');
 
-      kmsNock.done();
+      keyProviderNock.done();
       dataKeyNock.done();
 
       // Continue with R share test using the returned encryptedUserToBitgoRShare
@@ -167,13 +169,13 @@ describe('signMpcTransaction', () => {
         plaintextKey: 'mock-plaintext-data-key',
       };
 
-      // Mock KMS responses for R share
-      const rKmsNock = nock(kmsUrl)
+      // Mock key provider responses for R share
+      const rKeyProviderNock = nock(keyProviderUrl)
         .get(`/key/${rInput.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
-      const decryptDataKeyNock = nock(kmsUrl)
+      const decryptDataKeyNock = nock(keyProviderUrl)
         .post('/decryptDataKey')
         .reply(200, mockDecryptedDataKeyResponse);
 
@@ -185,7 +187,7 @@ describe('signMpcTransaction', () => {
       rResponse.status.should.equal(200);
       rResponse.body.should.have.property('rShare');
 
-      rKmsNock.done();
+      rKeyProviderNock.done();
       decryptDataKeyNock.done();
 
       // Continue with G share test using the returned rShare
@@ -229,11 +231,11 @@ describe('signMpcTransaction', () => {
         bitgoToUserCommitment: bitgoToUserCommitmentShare,
       };
 
-      // Mock KMS response for G share
-      const gKmsNock = nock(kmsUrl)
+      // Mock key provider response for G share
+      const gKeyProviderNock = nock(keyProviderUrl)
         .get(`/key/${gInput.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
       const gResponse = await agent
         .post(`/api/${coin}/mpc/sign/g`)
@@ -247,10 +249,10 @@ describe('signMpcTransaction', () => {
       gResponse.body.gShare.should.have.property('gamma');
       gResponse.body.gShare.should.have.property('R');
 
-      gKmsNock.done();
+      gKeyProviderNock.done();
     });
 
-    it('should fail when KMS returns no private key', async () => {
+    it('should fail when key provider returns no private key', async () => {
       const input = {
         source: 'user',
         pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
@@ -258,7 +260,7 @@ describe('signMpcTransaction', () => {
         bitgoGpgPubKey: bitgoGpgPubKey,
       };
 
-      const kmsNock = nock(kmsUrl)
+      const keyProviderNock = nock(keyProviderUrl)
         .get(`/key/${input.pub}`)
         .query({ source: 'user' })
         .reply(404, { error: 'Key not found' });
@@ -270,7 +272,7 @@ describe('signMpcTransaction', () => {
 
       response.status.should.equal(500);
       response.body.should.have.property('error');
-      kmsNock.done();
+      keyProviderNock.done();
     });
 
     it('should fail for unsupported share type', async () => {
@@ -319,7 +321,7 @@ describe('signMpcTransaction', () => {
 
       const userKeyShare = userShare.getKeyShare().toString('base64');
 
-      const mockKmsResponse = {
+      const mockKeyProviderResponse = {
         prv: JSON.stringify(userKeyShare),
         pub: 'mock-ecdsa-public-key',
         source: 'user',
@@ -369,13 +371,15 @@ describe('signMpcTransaction', () => {
         encryptedKey: 'mock-encrypted-data-key',
       };
 
-      // Mock KMS responses for Round 1
-      const kmsNock = nock(kmsUrl)
+      // Mock key provider responses for Round 1
+      const keyProviderNock = nock(keyProviderUrl)
         .get(`/key/${round1Input.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
-      const dataKeyNock = nock(kmsUrl).post('/generateDataKey').reply(200, mockDataKeyResponse);
+      const dataKeyNock = nock(keyProviderUrl)
+        .post('/generateDataKey')
+        .reply(200, mockDataKeyResponse);
 
       /* Signing Round 1 with User Key */
       const round1Response = await agent
@@ -390,7 +394,7 @@ describe('signMpcTransaction', () => {
       round1Response.body.should.have.property('encryptedUserGpgPrvKey');
       round1Response.body.should.have.property('encryptedDataKey');
 
-      kmsNock.done();
+      keyProviderNock.done();
       dataKeyNock.done();
 
       /* Signing Round 1 with Bitgo Key */
@@ -431,13 +435,13 @@ describe('signMpcTransaction', () => {
         plaintextKey: 'mock-plaintext-data-key',
       };
 
-      // Mock KMS responses for Round 2
-      const r2KmsNock = nock(kmsUrl)
+      // Mock key provider responses for Round 2
+      const r2KeyProviderNock = nock(keyProviderUrl)
         .get(`/key/${round2Input.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
-      const decryptDataKeyNock = nock(kmsUrl)
+      const decryptDataKeyNock = nock(keyProviderUrl)
         .post('/decryptDataKey')
         .reply(200, mockDecryptedDataKeyResponse);
 
@@ -449,7 +453,7 @@ describe('signMpcTransaction', () => {
       round2Response.status.should.equal(200);
       round2Response.body.should.have.property('signatureShareRound2');
       round2Response.body.should.have.property('encryptedRound2Session');
-      r2KmsNock.done();
+      r2KeyProviderNock.done();
       decryptDataKeyNock.done();
 
       // Round 2 Signing with Bitgo Key
@@ -479,13 +483,13 @@ describe('signMpcTransaction', () => {
         encryptedRound2Session,
       };
 
-      // Mock KMS responses for Round 3
-      const r3KmsNock = nock(kmsUrl)
+      // Mock key provider responses for Round 3
+      const r3KeyProviderNock = nock(keyProviderUrl)
         .get(`/key/${round3Input.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
-      const r3DecryptDataKeyNock = nock(kmsUrl)
+      const r3DecryptDataKeyNock = nock(keyProviderUrl)
         .post('/decryptDataKey')
         .reply(200, mockDecryptedDataKeyResponse);
 
@@ -497,7 +501,7 @@ describe('signMpcTransaction', () => {
       round3Response.status.should.equal(200);
       round3Response.body.should.have.property('signatureShareRound3');
 
-      r3KmsNock.done();
+      r3KeyProviderNock.done();
       r3DecryptDataKeyNock.done();
 
       const { userMsg4 } = await signBitgoMPCv2Round3(
@@ -548,7 +552,7 @@ describe('signMpcTransaction', () => {
     });
 
     it('should fail when required fields are missing for Round 2', async () => {
-      const mockKmsResponse = {
+      const mockKeyProviderResponse = {
         prv: 'mock-ecdsa-private-key',
         pub: 'mock-ecdsa-public-key',
         source: 'user',
@@ -562,10 +566,10 @@ describe('signMpcTransaction', () => {
         // Missing encryptedDataKey, encryptedUserGpgPrvKey, encryptedRound1Session
       };
 
-      const kmsNock = nock(kmsUrl)
+      const keyProviderNock = nock(keyProviderUrl)
         .get(`/key/${input.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
       const response = await agent
         .post(`/api/${coin}/mpc/sign/mpcv2round2`)
@@ -578,11 +582,11 @@ describe('signMpcTransaction', () => {
         'encryptedDataKey from Round 1 is required for MPCv2 Round 2',
       );
 
-      kmsNock.done();
+      keyProviderNock.done();
     });
 
     it('should fail when required fields are missing for Round 3', async () => {
-      const mockKmsResponse = {
+      const mockKeyProviderResponse = {
         prv: 'mock-ecdsa-private-key',
         pub: 'mock-ecdsa-public-key',
         source: 'user',
@@ -597,10 +601,10 @@ describe('signMpcTransaction', () => {
         // Missing bitgoGpgPubKey, encryptedUserGpgPrvKey, encryptedRound2Session
       };
 
-      const kmsNock = nock(kmsUrl)
+      const keyProviderNock = nock(keyProviderUrl)
         .get(`/key/${input.pub}`)
         .query({ source: 'user' })
-        .reply(200, mockKmsResponse);
+        .reply(200, mockKeyProviderResponse);
 
       const response = await agent
         .post(`/api/${coin}/mpc/sign/mpcv2round3`)
@@ -611,7 +615,7 @@ describe('signMpcTransaction', () => {
       response.body.should.have.property('error');
       response.body.details.should.equal('bitgoGpgPubKey is required for MPCv2 Round 3');
 
-      kmsNock.done();
+      keyProviderNock.done();
     });
 
     it('should fail for unsupported share type', async () => {

@@ -12,7 +12,7 @@ export interface GetKeyResponse {
   type: 'independent' | 'tss';
 }
 
-export const GetKeyKmsSchema = z.object({
+export const GetKeyResponseSchema = z.object({
   pub: z.string(),
   prv: z.string(),
   source: z.enum(['user', 'backup']),

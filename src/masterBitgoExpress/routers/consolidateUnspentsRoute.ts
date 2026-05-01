@@ -78,7 +78,7 @@ export const ConsolidateUnspentsResponse: HttpResponse = {
  *
  * Builds, signs, and sends a transaction to consolidate unspents all in 1 call. Consolidating unspents is only for UTXO-based assets.
  *
- * Retrieves the private key from KMS using the provided public key, then signs and broadcasts the transaction.
+ * Retrieves the private key from key provider using the provided public key, then signs and broadcasts the transaction.
  *
  * Use this endpoint only with advanced wallets. For other wallet types, use [Consolidate unspents (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateunspents).
  *

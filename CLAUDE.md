@@ -30,7 +30,7 @@ Advanced Wallet Manager is a secure cryptocurrency signing server with two opera
 
 - Lightweight server focused solely on secure signing operations
 - Runs on port 3080 by default
-- Integrates with KMS for key management
+- Integrates with advanced wallets key provider for key management
 - Handles cryptographic operations securely
 - Exposes minimal endpoints focused on key generation and signing
 
@@ -56,7 +56,7 @@ Advanced Wallet Manager is a secure cryptocurrency signing server with two opera
 - `src/initConfig.ts` - Configuration loading and validation
 - `src/routes/` - Express routes for both modes
 - `src/api/` - API implementation for both modes
-- `src/kms/` - KMS client and operations
+- `src/advancedWalletManager/keyProviderClient/` - key provider client and operations
 - `src/shared/` - Shared utilities and types
 
 ### Configuration
@@ -73,7 +73,7 @@ Configuration is managed through environment variables with defaults defined in 
 #### Advanced Wallet Manager Mode Specific
 
 - `ADVANCED_WALLET_MANAGER_PORT` - Port to listen on (default: 3080)
-- `KMS_URL` - Required KMS service URL
+- `KEY_PROVIDER_URL` - Required key provider service URL
 
 #### Master Express Mode Specific
 

@@ -3,11 +3,11 @@ import { BaseCoin, type EddsaUtils, Eddsa, EDDSA } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as bitgoSdk from '@bitgo-beta/sdk-core';
 
-import { KmsClient } from '../../kmsClient/kmsClient';
-import { GenerateDataKeyResponse } from '../../kmsClient/types/dataKey';
+import { KeyProviderClient } from '../../keyProviderClient/keyProviderClient';
+import { GenerateDataKeyResponse } from '../../keyProviderClient/types/dataKey';
 import { AdvancedWalletManagerConfig } from '../../../shared/types';
 
-export async function retrieveKmsPrvKey({
+export async function retrieveKeyProviderPrvKey({
   pub,
   source,
   cfg,
@@ -16,17 +16,17 @@ export async function retrieveKmsPrvKey({
   source: string;
   cfg: AdvancedWalletManagerConfig;
 }): Promise<string> {
-  const kms = new KmsClient(cfg);
-  // Retrieve the private key from KMS
+  const keyProvider = new KeyProviderClient(cfg);
+  // Retrieve the private key from key provider
   let prv: string;
   try {
-    const res = await kms.getKey({ pub, source });
+    const res = await keyProvider.getKey({ pub, source });
     prv = res.prv;
     return prv;
   } catch (error: any) {
     throw {
       status: error.status || 500,
-      message: error.message || 'Failed to retrieve key from KMS',
+      message: error.message || 'Failed to retrieve key from key provider',
     };
   }
 }
@@ -87,12 +87,12 @@ export async function generateDataKey({
   cfg: AdvancedWalletManagerConfig;
 }): Promise<GenerateDataKeyResponse> {
   try {
-    const kms = new KmsClient(cfg);
-    return await kms.generateDataKey({ keyType });
+    const keyProvider = new KeyProviderClient(cfg);
+    return await keyProvider.generateDataKey({ keyType });
   } catch (error: any) {
     throw {
       status: error.status || 500,
-      message: error.message || 'Failed to generate data key from KMS',
+      message: error.message || 'Failed to generate data key from key provider',
     };
   }
 }
@@ -105,13 +105,13 @@ export async function decryptDataKey({
   cfg: AdvancedWalletManagerConfig;
 }): Promise<string> {
   try {
-    const kms = new KmsClient(cfg);
-    const decryptedDataKey = await kms.decryptDataKey({ encryptedKey: encryptedDataKey });
+    const keyProvider = new KeyProviderClient(cfg);
+    const decryptedDataKey = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
     return decryptedDataKey.plaintextKey;
   } catch (error: any) {
     throw {
       status: error.status || 500,
-      message: error.message || 'Failed to decrypt data key from KMS',
+      message: error.message || 'Failed to decrypt data key from key provider',
     };
   }
 }

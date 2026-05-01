@@ -15,7 +15,7 @@ describe('Routes', () => {
       httpLoggerFile: '',
       clientCertAllowSelfSigned: true,
       tlsMode: TlsMode.DISABLED,
-      kmsUrl: 'http://localhost:3000/kms',
+      keyProviderUrl: 'http://localhost:3000/key-provider',
       timeout: 5000,
       port: 3000,
       bind: 'localhost',

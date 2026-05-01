@@ -1,5 +1,5 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
 import coinFactory from '../../shared/coinFactory';
 
@@ -10,7 +10,7 @@ export async function postIndependentKey(
 
   // setup clients
   const bitgo: BitGoAPI = req.bitgo;
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
 
   // create public and private key pairs on BitGo SDK
   const coin = await coinFactory.getCoin(req.params.coin, bitgo);
@@ -20,9 +20,9 @@ export async function postIndependentKey(
     throw new Error('BitGo SDK failed to create public key');
   }
 
-  // post key to KMS for encryption and storage
+  // post key to key provider for encryption and storage
   try {
-    return await kms.postKey({
+    return await keyProvider.postKey({
       pub,
       prv,
       coin: req.params.coin,
@@ -33,7 +33,7 @@ export async function postIndependentKey(
   } catch (error: any) {
     throw {
       status: error.status || 500,
-      message: error.message || 'Failed to post key to KMS',
+      message: error.message || 'Failed to post key to key provider',
     };
   }
 }

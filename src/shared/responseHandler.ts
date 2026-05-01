@@ -42,7 +42,7 @@ function checkApiServerRunning(req: BitGoRequest, error: any): void {
   if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ECONNRESET') {
     throw new Error(
       `${
-        isMbe ? 'Advanced Wallet Manager' : 'KMS'
+        isMbe ? 'Advanced Wallet Manager' : 'key provider'
       } API service is not running or unreachable. Please check if the service is available.`,
     );
   }
@@ -50,7 +50,7 @@ function checkApiServerRunning(req: BitGoRequest, error: any): void {
   if (error.code === 'ETIMEDOUT' || error.timeout) {
     throw new Error(
       `${
-        isMbe ? 'Advanced Wallet Manager' : 'KMS'
+        isMbe ? 'Advanced Wallet Manager' : 'key provider'
       } API request timed out. The service may be overloaded or unreachable.`,
     );
   }

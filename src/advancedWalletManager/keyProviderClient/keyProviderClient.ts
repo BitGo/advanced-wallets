@@ -1,14 +1,14 @@
 import * as superagent from 'superagent';
 import { AdvancedWalletManagerConfig, isMasterExpressConfig, TlsMode } from '../../shared/types';
-import { PostKeyKmsSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
-import { GetKeyKmsSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
+import { PostKeyResponseSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
+import { GetKeyResponseSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
 import {
-  DecryptDataKeyKmsSchema,
+  DecryptDataKeyResponseSchema,
   DecryptDataKeyParams,
   DecryptDataKeyResponse,
 } from './types/dataKey';
 import {
-  GenerateDataKeyKmsSchema,
+  GenerateDataKeyResponseSchema,
   GenerateDataKeyParams,
   GenerateDataKeyResponse,
 } from './types/generateDataKey';
@@ -18,39 +18,43 @@ import { URL } from 'url';
 
 import logger from '../../shared/logger';
 
-export class KmsClient {
+export class KeyProviderClient {
   private readonly url: string;
   private readonly agent?: https.Agent;
 
   constructor(cfg: AdvancedWalletManagerConfig) {
     if (isMasterExpressConfig(cfg)) {
-      logger.error('KMS client cannot be initialized in master express mode');
+      logger.error('key provider client cannot be initialized in master express mode');
       throw new Error('Configuration is not in advanced wallet manager mode');
     }
-    if (!cfg.kmsUrl) {
-      logger.error('KMS URL not configured. Please set KMS_URL in your environment.');
-      throw new Error('KMS URL not configured. Please set KMS_URL in your environment.');
+    if (!cfg.keyProviderUrl) {
+      logger.error(
+        'key provider URL not configured. Please set KEY_PROVIDER_URL in your environment.',
+      );
+      throw new Error(
+        'key provider URL not configured. Please set KEY_PROVIDER_URL in your environment.',
+      );
     }
 
-    const kmsUrlObj = new URL(cfg.kmsUrl);
+    const urlObj = new URL(cfg.keyProviderUrl);
     if (cfg.tlsMode === TlsMode.MTLS) {
-      kmsUrlObj.protocol = 'https:';
-      if (cfg.kmsServerCaCert || cfg.kmsServerCertAllowSelfSigned) {
+      urlObj.protocol = 'https:';
+      if (cfg.keyProviderServerCaCert || cfg.keyProviderServerCertAllowSelfSigned) {
         this.agent = new https.Agent({
-          ca: cfg.kmsServerCaCert,
-          cert: cfg.kmsClientTlsCert,
-          key: cfg.kmsClientTlsKey,
-          rejectUnauthorized: !cfg.kmsServerCertAllowSelfSigned,
+          ca: cfg.keyProviderServerCaCert,
+          cert: cfg.keyProviderClientTlsCert,
+          key: cfg.keyProviderClientTlsKey,
+          rejectUnauthorized: !cfg.keyProviderServerCertAllowSelfSigned,
         });
       }
     } else {
-      kmsUrlObj.protocol = 'http:';
+      urlObj.protocol = 'http:';
     }
 
-    this.url = kmsUrlObj.toString().replace(/\/$/, '');
+    this.url = urlObj.toString().replace(/\/$/, '');
   }
 
-  // Handles http erros from KMS
+  // Handles http errors from key provider
   private errorHandler(error: superagent.ResponseError, errorLog: string) {
     logger.error(errorLog, error);
 
@@ -69,7 +73,7 @@ export class KmsClient {
         throw new Error(error.response?.body.message);
       default:
         throw new Error(
-          `KMS returned unexpected response.${error.status ? ` ${error.status}` : ''}${
+          `key provider returned unexpected response.${error.status ? ` ${error.status}` : ''}${
             error.response?.body.message ? `: ${error.response?.body.message}` : ''
           }`,
         );
@@ -77,118 +81,126 @@ export class KmsClient {
   }
 
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
-    logger.info('Posting key to KMS with pub: %s and source: %s', params.pub, params.source);
+    logger.info(
+      'Posting key to key provider with pub: %s and source: %s',
+      params.pub,
+      params.source,
+    );
 
-    // Call KMS to post the key
-    let kmsResponse: any;
+    // Call key provider to post the key
+    let response: any;
     try {
       let req = superagent.post(`${this.url}/key`).send(params);
       if (this.agent) req = req.agent(this.agent);
-      kmsResponse = await req;
+      response = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error posting key to KMS');
+      this.errorHandler(error, 'Error posting key to key provider');
     }
 
     // validate the response
     try {
-      PostKeyKmsSchema.parse(kmsResponse.body);
+      PostKeyResponseSchema.parse(response.body);
     } catch (error: any) {
-      logger.error('KMS returned unexpected when posting key: ', error);
+      logger.error('key provider returned unexpected when posting key: ', error);
       throw new Error(
-        `KMS returned unexpected response when posting key${
+        `key provider returned unexpected response when posting key${
           error.message ? `: ${error.message}` : ''
         }`,
       );
     }
 
-    const { pub, coin, source } = kmsResponse.body;
+    const { pub, coin, source } = response.body;
     return { pub, coin, source } as PostKeyResponse;
   }
 
   async getKey(params: GetKeyParams): Promise<GetKeyResponse> {
-    logger.info('Getting key from KMS with pub: %s and source: %s', params.pub, params.source);
+    logger.info(
+      'Getting key from key provider with pub: %s and source: %s',
+      params.pub,
+      params.source,
+    );
 
-    // Call KMS to get the key
-    let kmsResponse: any;
+    // Call key provider to get the key
+    let response: any;
     try {
       let req = superagent.get(`${this.url}/key/${params.pub}`).query({
         source: params.source,
       });
       if (this.agent) req = req.agent(this.agent);
-      kmsResponse = await req;
+      response = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error getting key from KMS');
+      this.errorHandler(error, 'Error getting key from key provider');
     }
 
     // validate the response
     try {
-      GetKeyKmsSchema.parse(kmsResponse.body);
+      GetKeyResponseSchema.parse(response.body);
     } catch (error: any) {
-      logger.error('KMS returned unexpected response when getting key', error);
+      logger.error('key provider returned unexpected response when getting key', error);
       throw new Error(
-        `KMS returned unexpected response when getting key${
+        `key provider returned unexpected response when getting key${
           error.message ? `: ${error.message}` : ''
         }`,
       );
     }
 
-    return kmsResponse.body as GetKeyResponse;
+    return response.body as GetKeyResponse;
   }
 
   async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
-    logger.info('Generating data key from KMS with type: %s', params.keyType);
+    logger.info('Generating data key from key provider with type: %s', params.keyType);
 
-    // Call KMS to generate the data key
-    let kmsResponse: any;
+    // Call key provider to generate the data key
+    let response: any;
     try {
       let req = superagent.post(`${this.url}/generateDataKey`).send(params);
       if (this.agent) req = req.agent(this.agent);
-      kmsResponse = await req;
+      response = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error generating data key from KMS');
+      this.errorHandler(error, 'Error generating data key from key provider');
     }
 
     // validate the response
     try {
-      GenerateDataKeyKmsSchema.parse(kmsResponse.body);
+      GenerateDataKeyResponseSchema.parse(response.body);
     } catch (error: any) {
-      logger.error('KMS returned unexpected response when generating data key', error);
+      logger.error('key provider returned unexpected response when generating data key', error);
       throw new Error(
-        `KMS returned unexpected response when generating data key${
+        `key provider returned unexpected response when generating data key${
           error.message ? `: ${error.message}` : ''
         }`,
       );
     }
 
     return {
-      plaintextKey: kmsResponse.body.plaintextKey,
-      encryptedKey: kmsResponse.body.encryptedKey,
+      plaintextKey: response.body.plaintextKey,
+      encryptedKey: response.body.encryptedKey,
     };
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
-    // Call KMS to decrypt the data key
-    let kmsResponse: any;
+    // Call key provider to decrypt the data key
+    let response: any;
     try {
       let req = superagent.post(`${this.url}/decryptDataKey`).send(params);
       if (this.agent) req = req.agent(this.agent);
-      kmsResponse = await req;
+      response = await req;
     } catch (error: any) {
-      this.errorHandler(error, 'Error decrypting data key from KMS');
+      this.errorHandler(error, 'Error decrypting data key from key provider');
     }
 
     // validate the response
     try {
-      DecryptDataKeyKmsSchema.parse(kmsResponse.body);
+      DecryptDataKeyResponseSchema.parse(response.body);
     } catch (error: any) {
-      logger.error('KMS returned unexpected response when decrypting data key', error);
+      logger.error('key provider returned unexpected response when decrypting data key', error);
       throw new Error(
-        `KMS returned unexpected response when decrypting data key${
+        `key provider returned unexpected response when decrypting data key${
           error.message ? `: ${error.message}` : ''
         }`,
       );
     }
 
-    return kmsResponse.body as DecryptDataKeyResponse;
+    return response.body as DecryptDataKeyResponse;
   }
 }

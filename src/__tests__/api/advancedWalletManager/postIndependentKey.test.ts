@@ -16,7 +16,7 @@ describe('postIndependentKey', () => {
   let agent: request.SuperAgentTest;
 
   // test cofig
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const coin = 'hteth';
   const accessToken = 'test-token';
 
@@ -34,7 +34,7 @@ describe('postIndependentKey', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -50,14 +50,14 @@ describe('postIndependentKey', () => {
 
   // test cases
   it('should post an independent key successfully', async () => {
-    const mockKmsResponse = {
+    const mockKeyProviderResponse = {
       coin: coin,
       pub: 'xpub661MyMwAqRbcGAEfZmG74QD11P4dCKRkuwpsJG87QKVPcMdA1PLe76de1Ted54rZ2gyqLYhmdhBCFMrt7AoVwPZwXa3Na9aUnvndvXbvmwu',
       source: 'user',
       type: 'independent',
     };
 
-    const kmsNock = nock(kmsUrl).post(`/key`).reply(200, mockKmsResponse);
+    const keyProviderNock = nock(keyProviderUrl).post(`/key`).reply(200, mockKeyProviderResponse);
 
     const response = await agent
       .post(`/api/${coin}/key/independent`)
@@ -65,11 +65,11 @@ describe('postIndependentKey', () => {
       .send({ source: 'user' });
 
     response.status.should.equal(200);
-    response.body.should.have.property('pub', mockKmsResponse.pub);
-    response.body.should.have.property('coin', mockKmsResponse.coin);
-    response.body.should.have.property('source', mockKmsResponse.source);
+    response.body.should.have.property('pub', mockKeyProviderResponse.pub);
+    response.body.should.have.property('coin', mockKeyProviderResponse.coin);
+    response.body.should.have.property('source', mockKeyProviderResponse.source);
 
-    kmsNock.done();
+    keyProviderNock.done();
   });
 
   it('should fail to post an independent key if source is not provided', async () => {

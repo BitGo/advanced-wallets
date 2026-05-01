@@ -9,7 +9,7 @@ export interface GenerateDataKeyResponse {
   encryptedKey: string;
 }
 
-export const GenerateDataKeyKmsSchema = z.object({
+export const GenerateDataKeyResponseSchema = z.object({
   plaintextKey: z.string(),
   encryptedKey: z.string(),
 });

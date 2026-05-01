@@ -3,7 +3,7 @@ import {
   MpcV2InitializeResponseType,
   MpcV2RoundState,
 } from '../routers/advancedWalletManagerApiSpec';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
 import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
@@ -14,11 +14,11 @@ export async function ecdsaMPCv2Initialize(
   const { source } = req.decoded;
 
   // setup clients
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
 
   // generate keys required
   const sourceGpgKey = await bitgoSdk.generateGPGKeyPair('secp256k1');
-  const { plaintextKey, encryptedKey } = await kms.generateDataKey({ keyType: 'AES-256' });
+  const { plaintextKey, encryptedKey } = await keyProvider.generateDataKey({ keyType: 'AES-256' });
 
   // store the state of execution
   const state: MpcV2RoundState = {

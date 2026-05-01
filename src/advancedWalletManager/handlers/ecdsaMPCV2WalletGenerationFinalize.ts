@@ -4,7 +4,7 @@ import {
   MpcV2FinalizeResponseType,
   MpcV2RoundState,
 } from '../routers/advancedWalletManagerApiSpec';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import assert from 'assert';
 
 export async function ecdsaMPCv2Finalize(
@@ -14,10 +14,10 @@ export async function ecdsaMPCv2Finalize(
     req.decoded;
 
   // setup clients
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
 
   // fetch previous state of execution
-  const { plaintextKey } = await kms.decryptDataKey({ encryptedKey: encryptedDataKey });
+  const { plaintextKey } = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const state: MpcV2RoundState = JSON.parse(
     req.bitgo.decrypt({
       input: encryptedData,
@@ -59,7 +59,7 @@ export async function ecdsaMPCv2Finalize(
     'Source and Bitgo Common keychains do not match',
   );
 
-  await kms.postKey({
+  await keyProvider.postKey({
     coin: req.decoded.coin,
     source: req.decoded.source,
     pub: commonKeychain,

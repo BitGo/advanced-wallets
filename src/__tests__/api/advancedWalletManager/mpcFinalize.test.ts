@@ -14,7 +14,7 @@ describe('MPC Finalize', () => {
   let agent: request.SuperAgentTest;
   let app: express.Application;
   let cfg: AdvancedWalletManagerConfig;
-  const kmsUrl = 'http://kms.com';
+  const keyProviderUrl = 'http://key-provider.test';
   let bitgo: BitGoAPI;
 
   before(() => {
@@ -27,7 +27,7 @@ describe('MPC Finalize', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -81,13 +81,13 @@ describe('MPC Finalize', () => {
   });
 
   it('should successfully finalize MPC key generation for user source', async () => {
-    // Mock data key response from KMS
+    // Mock data key response from key provider
     const mockDataKeyResponse = {
       plaintextKey:
         '115,23,145,49,185,59,87,165,87,53,233,8,177,59,137,233,118,9,5,73,119,147,55,122,141,249,161,156,19,13,224,101',
     };
-    nock(kmsUrl).post('/decryptDataKey').reply(200, mockDataKeyResponse);
-    nock(kmsUrl).post('/key').reply(200, {
+    nock(keyProviderUrl).post('/decryptDataKey').reply(200, mockDataKeyResponse);
+    nock(keyProviderUrl).post('/key').reply(200, {
       pub: '821273e7e8ad33fd73d4b924bc83322b5a57027b3db9005355153c57d0512a9e97398fa3ac5f3f0cc6d2fe82c8d8b12c85e8ff572b212aa41ba384201552c9e0',
       source: 'user',
       coin: 'tnear',

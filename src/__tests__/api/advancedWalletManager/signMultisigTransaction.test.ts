@@ -15,7 +15,7 @@ describe('signMultisigTransaction', () => {
   let agent: request.SuperAgentTest;
 
   // test cofig
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const coin = 'hteth';
   const accessToken = 'test-token';
 
@@ -34,7 +34,7 @@ describe('signMultisigTransaction', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -95,17 +95,17 @@ describe('signMultisigTransaction', () => {
       },
     };
 
-    const mockKmsResponse = {
+    const mockKeyProviderResponse = {
       prv: 'xprv9s21ZrQH143K3gACTjj6hGGGTME8nrhuYiuGVsiVqyxQjZJ1Tr2PZJKAABHLm2gMSwqRmXBXT8VcXppDy43xjwvt9xdgkDSyRPsBUekEaPq',
       pub: 'xpub661MyMwAqRbcGAEfZmG74QD11P4dCKRkuwpsJG87QKVPcMdA1PLe76de1Ted54rZ2gyqLYhmdhBCFMrt7AoVwPZwXa3Na9aUnvndvXbvmwu',
       source: 'user',
       type: 'independent',
     };
 
-    const kmsNock = nock(kmsUrl)
+    const keyProviderNock = nock(keyProviderUrl)
       .get(`/key/${input.pub}`)
       .query({ source: 'user' })
-      .reply(200, mockKmsResponse);
+      .reply(200, mockKeyProviderResponse);
 
     const response = await agent
       .post(`/api/${coin}/multisig/sign`)
@@ -116,7 +116,7 @@ describe('signMultisigTransaction', () => {
     response.status.should.equal(200);
     response.body.should.have.property('halfSigned');
 
-    kmsNock.done();
+    keyProviderNock.done();
   });
 
   it('should sign a tbtc PSBT when walletPubs are provided', async () => {
@@ -130,12 +130,15 @@ describe('signMultisigTransaction', () => {
 
     const txHex = `${txHexPrefix}01005e0100000001edd7a583fef5aabf265e6dca24452581a3cca2671a1fa6b4e404bccb6ff4c83b0000000000ffffffff01780f0000000000002200202120dcf53e62a4cc9d3843993aa2258bd14fbf911a4ea4cf4f3ac840f4170279000000000001012ba00f00000000000022002008da4d49c618c6a00dc86a962f9c452dc0151653d2630470dcf8375a9f6496a501030401000000010569522103a1c425fd9b169e6ab5ed3de596acb777ccae0cda3d91256238b5e739a3f14aae210222a76697605c890dc4365132f9ae0d351952a1aad7eecf78d9923766dbe74a1e21033b21c0758ffbd446204914fa1d1c5921e9f82c2671dac89737666aa9375973e953ae22060222a76697605c890dc4365132f9ae0d351952a1aad7eecf78d9923766dbe74a1e14502e31ca000000000000000014000000000000002206033b21c0758ffbd446204914fa1d1c5921e9f82c2671dac89737666aa9375973e9146700d77100000000000000001400000000000000220603a1c425fd9b169e6ab5ed3de596acb777ccae0cda3d91256238b5e739a3f14aae14c2d0eb0a000000000000000014000000000000000000`;
 
-    const kmsNock = nock(kmsUrl).get(`/key/${userPub}`).query({ source: 'user' }).reply(200, {
-      prv: 'xprv9s21ZrQH143K2ZbYmTE75wsdaTsiSgsajJnooSi1wBieWRwQ89xSBwAYK1VJR795Y8XFCCXYHHs4sk2Heg6dkX3CHMBq5bw8DwBWByWx883',
-      pub: userPub,
-      source: 'user',
-      type: 'independent',
-    });
+    const keyProviderNock = nock(keyProviderUrl)
+      .get(`/key/${userPub}`)
+      .query({ source: 'user' })
+      .reply(200, {
+        prv: 'xprv9s21ZrQH143K2ZbYmTE75wsdaTsiSgsajJnooSi1wBieWRwQ89xSBwAYK1VJR795Y8XFCCXYHHs4sk2Heg6dkX3CHMBq5bw8DwBWByWx883',
+        pub: userPub,
+        source: 'user',
+        type: 'independent',
+      });
 
     const response = await agent
       .post(`/api/tbtc/multisig/sign`)
@@ -152,6 +155,6 @@ describe('signMultisigTransaction', () => {
     response.body.should.have.property('txHex');
     response.body.txHex.should.startWith(txHexPrefix);
 
-    kmsNock.done();
+    keyProviderNock.done();
   });
 });

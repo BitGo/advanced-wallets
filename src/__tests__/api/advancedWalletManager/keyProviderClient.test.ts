@@ -12,7 +12,7 @@ describe('postMpcV2Key', () => {
   let agent: request.SuperAgentTest;
 
   // test config
-  const kmsUrl = 'http://kms.invalid';
+  const keyProviderUrl = 'http://key-provider.invalid';
   const coin = 'tsol';
   const accessToken = 'test-token';
 
@@ -28,7 +28,7 @@ describe('postMpcV2Key', () => {
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
-      kmsUrl: kmsUrl,
+      keyProviderUrl: keyProviderUrl,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
     };
@@ -42,8 +42,8 @@ describe('postMpcV2Key', () => {
     nock.cleanAll();
   });
 
-  it('should bubble up 400 KMS errors', async () => {
-    nock(kmsUrl).post(/.*/).reply(400, { message: 'This is an error message' }).persist();
+  it('should bubble up 400 key provider errors', async () => {
+    nock(keyProviderUrl).post(/.*/).reply(400, { message: 'This is an error message' }).persist();
 
     const response = await agent
       .post(`/api/${coin}/mpcv2/initialize`)
@@ -55,8 +55,8 @@ describe('postMpcV2Key', () => {
     response.body.should.have.property('details', 'This is an error message');
   });
 
-  it('should bubble up 404 KMS errors', async () => {
-    nock(kmsUrl).post(/.*/).reply(404, { message: 'This is an error message' }).persist();
+  it('should bubble up 404 key provider errors', async () => {
+    nock(keyProviderUrl).post(/.*/).reply(404, { message: 'This is an error message' }).persist();
 
     const response = await agent
       .post(`/api/${coin}/mpcv2/initialize`)
@@ -68,8 +68,8 @@ describe('postMpcV2Key', () => {
     response.body.should.have.property('details', 'This is an error message');
   });
 
-  it('should bubble up 409 KMS errors', async () => {
-    nock(kmsUrl).post(/.*/).reply(409, { message: 'This is an error message' }).persist();
+  it('should bubble up 409 key provider errors', async () => {
+    nock(keyProviderUrl).post(/.*/).reply(409, { message: 'This is an error message' }).persist();
 
     const response = await agent
       .post(`/api/${coin}/mpcv2/initialize`)
@@ -81,8 +81,8 @@ describe('postMpcV2Key', () => {
     response.body.should.have.property('details', 'This is an error message');
   });
 
-  it('should bubble up 500 KMS errors', async () => {
-    nock(kmsUrl).post(/.*/).reply(500, { message: 'This is an error message' }).persist();
+  it('should bubble up 500 key provider errors', async () => {
+    nock(keyProviderUrl).post(/.*/).reply(500, { message: 'This is an error message' }).persist();
 
     const response = await agent
       .post(`/api/${coin}/mpcv2/initialize`)
@@ -94,8 +94,8 @@ describe('postMpcV2Key', () => {
     response.body.should.have.property('details', 'This is an error message');
   });
 
-  it('should handle unexpected KMS errors', async () => {
-    nock(kmsUrl).post(/.*/).reply(502, { message: 'Unexpected error' }).persist();
+  it('should handle unexpected key provider errors', async () => {
+    nock(keyProviderUrl).post(/.*/).reply(502, { message: 'Unexpected error' }).persist();
 
     const response = await agent
       .post(`/api/${coin}/mpcv2/initialize`)
@@ -106,7 +106,7 @@ describe('postMpcV2Key', () => {
     response.body.should.have.property('error', 'Internal Server Error');
     response.body.should.have.property(
       'details',
-      'KMS returned unexpected response. 502: Unexpected error',
+      'key provider returned unexpected response. 502: Unexpected error',
     );
   });
 });

@@ -5,7 +5,7 @@ import {
   MpcV2RoundState,
 } from '../routers/advancedWalletManagerApiSpec';
 import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import logger from '../../shared/logger';
 import { BadRequestError, ValidationError } from '../../shared/errors';
 
@@ -18,7 +18,7 @@ export async function ecdsaMPCv2Round(
   const counterPartyGpgPubInput = req.body.counterPartyGpgPub;
 
   // setup clients
-  const kms = new KmsClient(req.config);
+  const keyProvider = new KeyProviderClient(req.config);
 
   // sanity checks
   if (round < 1 || round > 4) {
@@ -38,7 +38,7 @@ export async function ecdsaMPCv2Round(
   }
 
   // fetch previous state of execution
-  const { plaintextKey } = await kms.decryptDataKey({ encryptedKey: encryptedDataKey });
+  const { plaintextKey } = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const state: MpcV2RoundState = JSON.parse(
     req.bitgo.decrypt({
       input: encryptedData,

@@ -59,7 +59,7 @@ const advancedWalletManagerConfig: AdvancedWalletManagerConfig = {
   bind: 'localhost',
   timeout: 305 * 1000,
   httpLoggerFile: 'logs/http-access.log',
-  kmsUrl: '', // Will be overridden by environment variable
+  keyProviderUrl: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
   clientCertAllowSelfSigned: false,
 };
@@ -84,11 +84,11 @@ function determineTlsMode(): TlsMode {
 }
 
 function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> {
-  const kmsUrl = readEnvVar('KMS_URL');
+  const keyProviderUrl = readEnvVar('KEY_PROVIDER_URL');
 
-  if (!kmsUrl) {
-    logger.error('KMS_URL environment variable is required and cannot be empty');
-    throw new Error('KMS_URL environment variable is required and cannot be empty');
+  if (!keyProviderUrl) {
+    logger.error('KEY_PROVIDER_URL environment variable is required and cannot be empty');
+    throw new Error('KEY_PROVIDER_URL environment variable is required and cannot be empty');
   }
 
   return {
@@ -100,14 +100,15 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     timeout: Number(readEnvVar('TIMEOUT')),
     keepAliveTimeout: Number(readEnvVar('KEEP_ALIVE_TIMEOUT')),
     headersTimeout: Number(readEnvVar('HEADERS_TIMEOUT')),
-    // KMS settings
-    kmsUrl,
-    kmsServerCaCertPath: readEnvVar('KMS_SERVER_CA_CERT_PATH'),
-    kmsClientTlsKeyPath: readEnvVar('KMS_CLIENT_TLS_KEY_PATH'),
-    kmsClientTlsCertPath: readEnvVar('KMS_CLIENT_TLS_CERT_PATH'),
-    kmsClientTlsKey: readEnvVar('KMS_CLIENT_TLS_KEY'),
-    kmsClientTlsCert: readEnvVar('KMS_CLIENT_TLS_CERT'),
-    kmsServerCertAllowSelfSigned: readEnvVar('KMS_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
+    // key provider settings
+    keyProviderUrl,
+    keyProviderServerCaCertPath: readEnvVar('KEY_PROVIDER_SERVER_CA_CERT_PATH'),
+    keyProviderClientTlsKeyPath: readEnvVar('KEY_PROVIDER_CLIENT_TLS_KEY_PATH'),
+    keyProviderClientTlsCertPath: readEnvVar('KEY_PROVIDER_CLIENT_TLS_CERT_PATH'),
+    keyProviderClientTlsKey: readEnvVar('KEY_PROVIDER_CLIENT_TLS_KEY'),
+    keyProviderClientTlsCert: readEnvVar('KEY_PROVIDER_CLIENT_TLS_CERT'),
+    keyProviderServerCertAllowSelfSigned:
+      readEnvVar('KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
     // mTLS server settings
     serverTlsKeyPath: readEnvVar('SERVER_TLS_KEY_PATH'),
     serverTlsCertPath: readEnvVar('SERVER_TLS_CERT_PATH'),
@@ -140,14 +141,14 @@ function mergeAkmConfigs(
     timeout: get('timeout'),
     keepAliveTimeout: get('keepAliveTimeout'),
     headersTimeout: get('headersTimeout'),
-    kmsUrl: get('kmsUrl'),
-    kmsServerCaCertPath: get('kmsServerCaCertPath'),
-    kmsServerCaCert: get('kmsServerCaCert'),
-    kmsClientTlsKeyPath: get('kmsClientTlsKeyPath'),
-    kmsClientTlsCertPath: get('kmsClientTlsCertPath'),
-    kmsClientTlsKey: get('kmsClientTlsKey'),
-    kmsClientTlsCert: get('kmsClientTlsCert'),
-    kmsServerCertAllowSelfSigned: get('kmsServerCertAllowSelfSigned'),
+    keyProviderUrl: get('keyProviderUrl'),
+    keyProviderServerCaCertPath: get('keyProviderServerCaCertPath'),
+    keyProviderServerCaCert: get('keyProviderServerCaCert'),
+    keyProviderClientTlsKeyPath: get('keyProviderClientTlsKeyPath'),
+    keyProviderClientTlsCertPath: get('keyProviderClientTlsCertPath'),
+    keyProviderClientTlsKey: get('keyProviderClientTlsKey'),
+    keyProviderClientTlsCert: get('keyProviderClientTlsCert'),
+    keyProviderServerCertAllowSelfSigned: get('keyProviderServerCertAllowSelfSigned'),
     serverTlsKeyPath: get('serverTlsKeyPath'),
     serverTlsCertPath: get('serverTlsCertPath'),
     serverTlsKey: get('serverTlsKey'),
@@ -196,44 +197,65 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
       logger.info('✓ TLS certificate loaded from environment variable');
     }
 
-    if (!config.kmsServerCaCertPath) {
-      throw new Error('KMS_SERVER_CA_CERT_PATH is required when TLS mode is MTLS');
+    if (!config.keyProviderServerCaCertPath) {
+      throw new Error('KEY_PROVIDER_SERVER_CA_CERT_PATH is required when TLS mode is MTLS');
     }
-    if (config.kmsServerCaCertPath) {
+    if (config.keyProviderServerCaCertPath) {
       try {
-        config.kmsServerCaCert = fs.readFileSync(config.kmsServerCaCertPath, 'utf-8');
-        logger.info(`✓ KMS server CA certificate loaded from file: ${config.kmsServerCaCertPath}`);
+        config.keyProviderServerCaCert = fs.readFileSync(
+          config.keyProviderServerCaCertPath,
+          'utf-8',
+        );
+        logger.info(
+          `✓ key provider server CA certificate loaded from file: ${config.keyProviderServerCaCertPath}`,
+        );
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read KMS TLS certificate from kmsTlsCert: ${err.message}`);
+        throw new Error(
+          `Failed to read key provider TLS certificate from keyProviderTlsCert: ${err.message}`,
+        );
       }
     }
 
-    if (config.kmsClientTlsKeyPath) {
+    if (config.keyProviderClientTlsKeyPath) {
       try {
-        config.kmsClientTlsKey = fs.readFileSync(config.kmsClientTlsKeyPath, 'utf-8');
-        logger.info(`✓ KMS client key loaded from file: ${config.kmsClientTlsKeyPath}`);
+        config.keyProviderClientTlsKey = fs.readFileSync(
+          config.keyProviderClientTlsKeyPath,
+          'utf-8',
+        );
+        logger.info(
+          `✓ key provider client key loaded from file: ${config.keyProviderClientTlsKeyPath}`,
+        );
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read KMS client key from kmsClientTlsKeyPath: ${err.message}`);
+        throw new Error(
+          `Failed to read key provider client key from keyProviderClientTlsKeyPath: ${err.message}`,
+        );
       }
     }
 
-    if (config.kmsClientTlsCertPath) {
+    if (config.keyProviderClientTlsCertPath) {
       try {
-        config.kmsClientTlsCert = fs.readFileSync(config.kmsClientTlsCertPath, 'utf-8');
-        logger.info(`✓ KMS client certificate loaded from file: ${config.kmsClientTlsCertPath}`);
+        config.keyProviderClientTlsCert = fs.readFileSync(
+          config.keyProviderClientTlsCertPath,
+          'utf-8',
+        );
+        logger.info(
+          `✓ key provider client certificate loaded from file: ${config.keyProviderClientTlsCertPath}`,
+        );
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read KMS client cert from kmsClientTlsCertPath: ${err.message}`);
+        throw new Error(
+          `Failed to read key provider client cert from keyProviderClientTlsCertPath: ${err.message}`,
+        );
       }
     }
 
     // Validate that client certificates are provided for outbound mTLS connections
     if (config.tlsMode === TlsMode.MTLS) {
-      if (!config.kmsClientTlsKey || !config.kmsClientTlsCert) {
+      if (!config.keyProviderClientTlsKey || !config.keyProviderClientTlsCert) {
         throw new Error(
-          'KMS_CLIENT_TLS_KEY_PATH and KMS_CLIENT_TLS_CERT_PATH (or KMS_CLIENT_TLS_KEY and KMS_CLIENT_TLS_CERT) are required for outbound mTLS connections to KMS. Client certificates cannot reuse server certificates for security reasons.',
+          'KEY_PROVIDER_CLIENT_TLS_KEY_PATH and KEY_PROVIDER_CLIENT_TLS_CERT_PATH (or KEY_PROVIDER_CLIENT_TLS_KEY and KEY_PROVIDER_CLIENT_TLS_CERT) are required for outbound mTLS connections to key provider. Client certificates cannot reuse server certificates for security reasons.',
         );
       }
     }

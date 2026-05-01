@@ -3,7 +3,7 @@ import {
   AwmApiSpecRouteRequest,
   MpcV2RecoveryResponseType,
 } from '../routers/advancedWalletManagerApiSpec';
-import { KmsClient } from '../kmsClient/kmsClient';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { BaseCoin, ECDSAMethodTypes } from '@bitgo-beta/sdk-core';
 import { isCosmosLikeCoin, isEcdsaCoin, isEthLikeCoin } from '../../shared/coinUtils';
 import { BadRequestError, NotImplementedError } from '../../shared/errors';
@@ -54,9 +54,9 @@ export async function ecdsaMPCv2Recovery(
 
   // setup clients and retreive the keys
   // TODO: this needs to be segerated if the EBE instance cannot retrieve both keys
-  const kms = new KmsClient(req.config);
-  const { prv: userPrv } = await kms.getKey({ pub, source: 'user' });
-  const { prv: backupPrv } = await kms.getKey({ pub, source: 'backup' });
+  const keyProvider = new KeyProviderClient(req.config);
+  const { prv: userPrv } = await keyProvider.getKey({ pub, source: 'user' });
+  const { prv: backupPrv } = await keyProvider.getKey({ pub, source: 'backup' });
 
   // construct tx builder
   const txHash = await getMessageHash(coin, txHex);

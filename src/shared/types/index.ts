@@ -26,15 +26,15 @@ export interface BaseConfig {
 // Advanced wallet manager mode specific configuration
 export interface AdvancedWalletManagerConfig extends BaseConfig {
   appMode: AppMode.ADVANCED_WALLET_MANAGER;
-  // KMS settings
-  kmsUrl: string;
-  kmsServerCaCertPath?: string;
-  kmsServerCaCert?: string;
-  kmsClientTlsKeyPath?: string;
-  kmsClientTlsCertPath?: string;
-  kmsClientTlsKey?: string;
-  kmsClientTlsCert?: string;
-  kmsServerCertAllowSelfSigned?: boolean;
+  // key provider settings
+  keyProviderUrl: string;
+  keyProviderServerCaCertPath?: string;
+  keyProviderServerCaCert?: string;
+  keyProviderClientTlsKeyPath?: string;
+  keyProviderClientTlsCertPath?: string;
+  keyProviderClientTlsKey?: string;
+  keyProviderClientTlsCert?: string;
+  keyProviderServerCertAllowSelfSigned?: boolean;
 
   // mTLS server settings
   serverTlsKeyPath?: string;
