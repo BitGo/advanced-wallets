@@ -2,7 +2,7 @@ import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../advancedWalletManagerApp';
-import { AdvancedWalletManagerConfig, AppMode, TlsMode } from '../../../shared/types';
+import { AdvancedWalletManagerConfig, AppMode, TlsMode, SigningMode } from '../../../shared/types';
 
 describe('recoveryMpc', () => {
   let agent: request.SuperAgentTest;
@@ -19,6 +19,7 @@ describe('recoveryMpc', () => {
 
     const config: AdvancedWalletManagerConfig = {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,

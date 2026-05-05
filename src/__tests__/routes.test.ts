@@ -2,7 +2,7 @@ import 'should';
 
 import request from 'supertest';
 import express from 'express';
-import { AppMode, TlsMode } from '../shared/types';
+import { AppMode, TlsMode, SigningMode } from '../shared/types';
 import { setupRoutes } from '../advancedWalletManager/routers/advancedWalletManager';
 
 describe('Routes', () => {
@@ -12,6 +12,7 @@ describe('Routes', () => {
     app = express();
     setupRoutes(app, {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
       httpLoggerFile: '',
       clientCertAllowSelfSigned: true,
       tlsMode: TlsMode.DISABLED,

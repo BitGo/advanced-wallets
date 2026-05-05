@@ -3,7 +3,7 @@ import 'should';
 import * as sinon from 'sinon';
 import * as express from 'express';
 import * as request from 'supertest';
-import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
+import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../shared/types';
 import { app as enclavedApp } from '../../../advancedWalletManagerApp';
 
 describe('MPC Initialize', () => {
@@ -24,6 +24,7 @@ describe('MPC Initialize', () => {
     // app config
     cfg = {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,

@@ -3,7 +3,7 @@ import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
 import { app as advancedWalletManagerApp } from '../../../advancedWalletManagerApp';
-import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
+import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../shared/types';
 import express from 'express';
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
@@ -37,6 +37,7 @@ describe('signMpcTransaction', () => {
     // app config
     cfg = {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,

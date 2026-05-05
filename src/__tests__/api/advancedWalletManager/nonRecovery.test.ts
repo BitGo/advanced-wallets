@@ -2,7 +2,7 @@ import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
 import { app as expressApp } from '../../../advancedWalletManagerApp';
-import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
+import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../shared/types';
 import sinon from 'sinon';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
@@ -13,6 +13,7 @@ describe('Non Recovery', () => {
   const coin = 'tbtc';
   const config: AdvancedWalletManagerConfig = {
     appMode: AppMode.ADVANCED_WALLET_MANAGER,
+    signingMode: SigningMode.LOCAL,
     port: 0,
     bind: 'localhost',
     timeout: 60000,
