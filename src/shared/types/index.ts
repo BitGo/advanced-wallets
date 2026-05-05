@@ -3,11 +3,15 @@ export enum TlsMode {
   MTLS = 'mtls', // TLS with both server and client certs
 }
 
+export enum SigningMode {
+  LOCAL = 'local',
+  EXTERNAL = 'external',
+}
+
 export enum AppMode {
   ADVANCED_WALLET_MANAGER = 'advanced-wallet-manager',
   MASTER_EXPRESS = 'master-express',
 }
-
 export type EnvironmentName = 'prod' | 'test' | 'staging' | 'dev' | 'local';
 
 // Common base configuration shared by both modes
@@ -44,6 +48,7 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
   clientCertAllowSelfSigned?: boolean;
+  signingMode: SigningMode;
 }
 
 // Master Express mode specific configuration

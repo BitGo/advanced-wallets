@@ -2,6 +2,7 @@ import * as superagent from 'superagent';
 import { AdvancedWalletManagerConfig, isMasterExpressConfig, TlsMode } from '../../shared/types';
 import { PostKeyResponseSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyResponseSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
+
 import {
   DecryptDataKeyResponseSchema,
   DecryptDataKeyParams,
@@ -17,6 +18,9 @@ import { BadRequestError, ConflictError, NotFoundError } from '../../shared/erro
 import { URL } from 'url';
 
 import logger from '../../shared/logger';
+
+type QueryArg = Parameters<superagent.Request['query']>[0];
+type BodyArg = Parameters<superagent.Request['send']>[0];
 
 export class KeyProviderClient {
   private readonly url: string;
@@ -54,8 +58,7 @@ export class KeyProviderClient {
     this.url = urlObj.toString().replace(/\/$/, '');
   }
 
-  // Handles http errors from key provider
-  private errorHandler(error: superagent.ResponseError, errorLog: string) {
+  private errorHandler(error: superagent.ResponseError, errorLog: string): never {
     logger.error(errorLog, error);
 
     if (['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'ETIMEDOUT'].includes((error as any).code)) {
@@ -80,6 +83,25 @@ export class KeyProviderClient {
     }
   }
 
+  private async call<M extends 'get' | 'post'>(
+    method: M,
+    url: string,
+    options: { errorContext: string } & (M extends 'get'
+      ? { query?: QueryArg }
+      : { body?: BodyArg }),
+  ): Promise<superagent.Response> {
+    try {
+      let req =
+        method === 'get'
+          ? superagent.get(url).query((options as unknown as { query?: QueryArg }).query ?? {})
+          : superagent.post(url).send((options as unknown as { body?: BodyArg }).body);
+      if (this.agent) req = req.agent(this.agent);
+      return await req;
+    } catch (error: any) {
+      this.errorHandler(error, options.errorContext);
+    }
+  }
+
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
     logger.info(
       'Posting key to key provider with pub: %s and source: %s',
@@ -87,17 +109,11 @@ export class KeyProviderClient {
       params.source,
     );
 
-    // Call key provider to post the key
-    let response: any;
-    try {
-      let req = superagent.post(`${this.url}/key`).send(params);
-      if (this.agent) req = req.agent(this.agent);
-      response = await req;
-    } catch (error: any) {
-      this.errorHandler(error, 'Error posting key to key provider');
-    }
+    const response = await this.call('post', `${this.url}/key`, {
+      body: params,
+      errorContext: 'Error posting key to key provider',
+    });
 
-    // validate the response
     try {
       PostKeyResponseSchema.parse(response.body);
     } catch (error: any) {
@@ -120,19 +136,11 @@ export class KeyProviderClient {
       params.source,
     );
 
-    // Call key provider to get the key
-    let response: any;
-    try {
-      let req = superagent.get(`${this.url}/key/${params.pub}`).query({
-        source: params.source,
-      });
-      if (this.agent) req = req.agent(this.agent);
-      response = await req;
-    } catch (error: any) {
-      this.errorHandler(error, 'Error getting key from key provider');
-    }
+    const response = await this.call('get', `${this.url}/key/${params.pub}`, {
+      query: { source: params.source },
+      errorContext: 'Error getting key from key provider',
+    });
 
-    // validate the response
     try {
       GetKeyResponseSchema.parse(response.body);
     } catch (error: any) {
@@ -150,17 +158,11 @@ export class KeyProviderClient {
   async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
     logger.info('Generating data key from key provider with type: %s', params.keyType);
 
-    // Call key provider to generate the data key
-    let response: any;
-    try {
-      let req = superagent.post(`${this.url}/generateDataKey`).send(params);
-      if (this.agent) req = req.agent(this.agent);
-      response = await req;
-    } catch (error: any) {
-      this.errorHandler(error, 'Error generating data key from key provider');
-    }
+    const response = await this.call('post', `${this.url}/generateDataKey`, {
+      body: params,
+      errorContext: 'Error generating data key from key provider',
+    });
 
-    // validate the response
     try {
       GenerateDataKeyResponseSchema.parse(response.body);
     } catch (error: any) {
@@ -179,17 +181,11 @@ export class KeyProviderClient {
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
-    // Call key provider to decrypt the data key
-    let response: any;
-    try {
-      let req = superagent.post(`${this.url}/decryptDataKey`).send(params);
-      if (this.agent) req = req.agent(this.agent);
-      response = await req;
-    } catch (error: any) {
-      this.errorHandler(error, 'Error decrypting data key from key provider');
-    }
+    const response = await this.call('post', `${this.url}/decryptDataKey`, {
+      body: params,
+      errorContext: 'Error decrypting data key from key provider',
+    });
 
-    // validate the response
     try {
       DecryptDataKeyResponseSchema.parse(response.body);
     } catch (error: any) {

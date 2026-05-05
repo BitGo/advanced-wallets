@@ -5,13 +5,14 @@ import supertest from 'supertest';
 import { Utils } from '@bitgo-beta/sdk-coin-sol';
 import * as keyProviderUtils from '../../../advancedWalletManager/handlers/utils/utils';
 import { app as expressApp } from '../../../advancedWalletManagerApp';
-import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
+import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../shared/types';
 
 describe('EdDSA Recovery Signing', () => {
   let agent: supertest.SuperTest<supertest.Test>;
   const config: AdvancedWalletManagerConfig = {
     keyProviderUrl: 'http://localhost:3000',
     appMode: AppMode.ADVANCED_WALLET_MANAGER,
+    signingMode: SigningMode.LOCAL,
     port: 0,
     bind: 'localhost',
     timeout: 60000,

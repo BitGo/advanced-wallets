@@ -43,6 +43,7 @@ services:
       # Logging and debug
       - HTTP_LOGFILE=logs/http-access.log
       - RECOVERY_MODE=true
+      # Default to local signing mode 
       - NODE_ENV=production
       - LOG_LEVEL=info
     restart: always

@@ -1,4 +1,4 @@
-import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../initConfig';
+import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../initConfig';
 import { app as advancedWalletManagerApp } from '../../../advancedWalletManagerApp';
 
 import express from 'express';
@@ -32,6 +32,7 @@ describe('postMpcV2Key', () => {
     // app config
     cfg = {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,

@@ -4,7 +4,7 @@ import express from 'express';
 import nock from 'nock';
 import * as request from 'supertest';
 import { app as advancedWalletManagerApp } from '../../../advancedWalletManagerApp';
-import { AppMode, AdvancedWalletManagerConfig, TlsMode } from '../../../shared/types';
+import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../shared/types';
 
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
@@ -33,6 +33,7 @@ describe('recoveryMultisigTransaction', () => {
     // app config
     cfg = {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
       port: 0, // Let OS assign a free port
       bind: 'localhost',
       timeout: 60000,

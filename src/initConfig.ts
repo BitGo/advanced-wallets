@@ -4,6 +4,7 @@ import {
   AdvancedWalletManagerConfig,
   MasterExpressConfig,
   TlsMode,
+  SigningMode,
   AppMode,
   EnvironmentName,
 } from './shared/types';
@@ -15,6 +16,7 @@ export {
   AdvancedWalletManagerConfig,
   MasterExpressConfig,
   TlsMode,
+  SigningMode,
   AppMode,
   EnvironmentName,
 };
@@ -61,8 +63,26 @@ const advancedWalletManagerConfig: AdvancedWalletManagerConfig = {
   httpLoggerFile: 'logs/http-access.log',
   keyProviderUrl: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
+  signingMode: SigningMode.LOCAL,
   clientCertAllowSelfSigned: false,
 };
+
+const SIGNING_MODE_MAP: Record<string, SigningMode> = {
+  local: SigningMode.LOCAL,
+  external: SigningMode.EXTERNAL,
+};
+
+function determineSigningMode(): SigningMode {
+  const raw = readEnvVar('SIGNING_MODE')?.toLowerCase();
+  if (!raw) return SigningMode.LOCAL;
+  const mode = SIGNING_MODE_MAP[raw];
+  if (!mode) {
+    throw new Error(
+      `Invalid SIGNING_MODE: ${raw}. Must be one of: ${Object.keys(SIGNING_MODE_MAP).join(', ')}`,
+    );
+  }
+  return mode;
+}
 
 function determineTlsMode(): TlsMode {
   const tlsMode = readEnvVar('TLS_MODE')?.toLowerCase();
@@ -115,6 +135,7 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     serverTlsKey: readEnvVar('SERVER_TLS_KEY'),
     serverTlsCert: readEnvVar('SERVER_TLS_CERT'),
     tlsMode: determineTlsMode(),
+    signingMode: determineSigningMode(),
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
@@ -154,6 +175,7 @@ function mergeAkmConfigs(
     serverTlsKey: get('serverTlsKey'),
     serverTlsCert: get('serverTlsCert'),
     tlsMode: get('tlsMode'),
+    signingMode: get('signingMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),

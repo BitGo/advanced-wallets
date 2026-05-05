@@ -4,6 +4,7 @@ import {
   isAdvancedWalletManagerConfig,
   isMasterExpressConfig,
   TlsMode,
+  SigningMode,
 } from '../initConfig';
 import path from 'path';
 
@@ -183,6 +184,35 @@ describe('Configuration', () => {
         cfg.serverTlsKey!.should.equal(mockTlsKey);
         cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
+    });
+
+    it('should read SIGNING_MODE from environment variables', () => {
+      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'disabled';
+
+      // unset defaults to LOCAL
+      delete process.env.SIGNING_MODE;
+      let cfg = initConfig();
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
+        cfg.should.have.property('signingMode', SigningMode.LOCAL);
+      }
+
+      // explicit external
+      process.env.SIGNING_MODE = 'external';
+      cfg = initConfig();
+      isAdvancedWalletManagerConfig(cfg).should.be.true();
+      if (isAdvancedWalletManagerConfig(cfg)) {
+        cfg.should.have.property('signingMode', SigningMode.EXTERNAL);
+      }
+
+      // invalid value throws
+      process.env.SIGNING_MODE = 'invalid';
+      (() => initConfig()).should.throw(
+        'Invalid SIGNING_MODE: invalid. Must be one of: local, external',
+      );
+
+      delete process.env.SIGNING_MODE;
     });
 
     it('should read mTLS settings from environment variables', () => {
