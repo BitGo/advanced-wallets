@@ -811,7 +811,7 @@ export class AdvancedWalletManagerClient {
 /**
  * Create an advanced wallet manager client if the configuration is present
  */
-export function createawmClient(
+export function createAwmClient(
   cfg: MasterExpressConfig,
   coin?: string,
 ): AdvancedWalletManagerClient | undefined {
@@ -821,5 +821,52 @@ export function createawmClient(
     const err = error as Error;
     logger.error('Failed to create advanced wallet manager client: %s', err.message);
     return undefined;
+  }
+}
+
+/**
+ * Create a backup AWM client when a separate backup URL is configured.
+ * Requires dedicated backup certs when mTLS is enabled — does not fall back to primary certs.
+ * Returns undefined if no backup URL is configured (same-HSM mode).
+ */
+export function createAwmBackupClient(
+  cfg: MasterExpressConfig,
+  coin?: string,
+): AdvancedWalletManagerClient | undefined {
+  if (!cfg.advancedWalletManagerBackupUrl) {
+    return undefined;
+  }
+
+  if (cfg.tlsMode === TlsMode.MTLS) {
+    if (!cfg.awmBackupServerCaCert) {
+      throw new Error(
+        'awmBackupServerCaCert is required for mTLS communication with the backup AWM. ' +
+          'Set AWM_BACKUP_SERVER_CA_CERT_PATH to the backup AWM server CA certificate.',
+      );
+    }
+    if (!cfg.awmBackupClientTlsKey || !cfg.awmBackupClientTlsCert) {
+      throw new Error(
+        'awmBackupClientTlsKey and awmBackupClientTlsCert are required for mTLS communication with the backup AWM. ' +
+          'Set AWM_BACKUP_CLIENT_TLS_KEY_PATH and AWM_BACKUP_CLIENT_TLS_CERT_PATH to the backup AWM client credentials.',
+      );
+    }
+  }
+
+  try {
+    const backupConfig: MasterExpressConfig = {
+      ...cfg,
+      advancedWalletManagerUrl: cfg.advancedWalletManagerBackupUrl,
+      awmServerCaCert: cfg.awmBackupServerCaCert,
+      awmClientTlsKey: cfg.awmBackupClientTlsKey,
+      awmClientTlsCert: cfg.awmBackupClientTlsCert,
+    };
+    return new AdvancedWalletManagerClient(backupConfig, coin);
+  } catch (error) {
+    const err = error as Error;
+    throw new Error(
+      `Failed to create backup advanced wallet manager client: ${err.message}. ` +
+        `Backup AWM URL is configured (${cfg.advancedWalletManagerBackupUrl}) but the client could not be initialized. ` +
+        `Please verify your backup AWM TLS/mTLS configuration.`,
+    );
   }
 }

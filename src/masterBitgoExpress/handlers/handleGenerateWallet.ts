@@ -44,7 +44,8 @@ async function handleGenerateOnChainWallet(
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
 
   // The awmClient is now available from the request
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
+  const awmBackupClient = req.awmBackupClient;
 
   const reqId = new RequestTracer();
 
@@ -86,7 +87,7 @@ async function handleGenerateOnChainWallet(
   };
 
   const backupKeychainPromise = async (): Promise<Keychain> => {
-    const backupKeychain = await awmClient.createIndependentKeychain({
+    const backupKeychain = await awmBackupClient.createIndependentKeychain({
       source: 'backup',
       coin: req.params.coin,
       type: 'independent',
@@ -145,7 +146,8 @@ async function handleGenerateMpcWallet(
 ) {
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
+  const awmBackupClient = req.awmBackupClient;
 
   if (!baseCoin.supportsTss()) {
     throw new BadRequestError(
@@ -185,6 +187,7 @@ async function handleGenerateMpcWallet(
         bitgo,
         baseCoin,
         awmClient,
+        awmBackupClient,
         enterprise,
         walletParams,
       });
@@ -194,6 +197,7 @@ async function handleGenerateMpcWallet(
         bitgo,
         baseCoin,
         awmClient,
+        awmBackupClient,
         walletParams,
         enterprise,
       });

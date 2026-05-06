@@ -6,7 +6,7 @@ import { getWalletAndSigningKeychain, makeCustomSigningFunction } from './utils/
 export async function handleAccelerate(
   req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>,
 ) {
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;

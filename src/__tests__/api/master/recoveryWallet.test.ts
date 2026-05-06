@@ -99,7 +99,7 @@ describe('Recovery Tests', () => {
       // Setup coin middleware
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
           config,
           coin,
         );
@@ -288,7 +288,7 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for ETH coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: ethCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
           config,
           ethCoinId,
         );
@@ -381,7 +381,7 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for Solana coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: solCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
           config,
           solCoinId,
         );
@@ -527,7 +527,7 @@ describe('Recovery Tests', () => {
       // Setup coin middleware for Sui coin
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: suiCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
           config,
           suiCoinId,
         );

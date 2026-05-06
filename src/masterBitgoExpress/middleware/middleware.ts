@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { isMasterExpressConfig } from '../../shared/types';
-import { createawmClient } from '../clients/advancedWalletManagerClient';
+import { createAwmClient, createAwmBackupClient } from '../clients/advancedWalletManagerClient';
 import { BitGoRequest } from '../../types/request';
 
 /**
@@ -18,7 +18,7 @@ export function validateMasterExpressConfig(req: Request, res: Response, next: N
   }
 
   // Validate advanced wallet manager client
-  const awmClient = createawmClient(bitgoReq.config, bitgoReq.params?.coin);
+  const awmClient = createAwmClient(bitgoReq.config, bitgoReq.params?.coin);
   if (!awmClient) {
     return res.status(500).json({
       error: 'Please configure advanced wallet manager configs.',
@@ -27,6 +27,19 @@ export function validateMasterExpressConfig(req: Request, res: Response, next: N
   }
 
   // Attach the client to the request for use in route handlers
-  bitgoReq.awmClient = awmClient;
+  bitgoReq.awmUserClient = awmClient;
+
+  // Create backup client if backup URL is configured; falls back to primary client
+  try {
+    const awmBackupClient = createAwmBackupClient(bitgoReq.config, bitgoReq.params?.coin);
+    bitgoReq.awmBackupClient = awmBackupClient ?? awmClient;
+  } catch (error) {
+    const err = error as Error;
+    return res.status(500).json({
+      error: 'Failed to initialize backup advanced wallet manager client.',
+      details: err.message,
+    });
+  }
+
   next();
 }

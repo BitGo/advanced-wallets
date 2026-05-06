@@ -12,7 +12,7 @@ import { signAndSendTxRequests } from './transactionRequests';
 export async function handleConsolidate(
   req: MasterApiSpecRouteRequest<'v1.wallet.consolidate', 'post'>,
 ) {
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;

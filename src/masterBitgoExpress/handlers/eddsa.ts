@@ -120,6 +120,7 @@ interface OrchestrateEddsaKeyGenParams {
   bitgo: BitGoBase;
   baseCoin: BaseCoin;
   awmClient: AdvancedWalletManagerClient;
+  awmBackupClient: AdvancedWalletManagerClient;
   enterprise: string;
   walletParams: any;
 }
@@ -128,6 +129,7 @@ export async function orchestrateEddsaKeyGen({
   bitgo,
   baseCoin,
   awmClient,
+  awmBackupClient,
   enterprise,
   walletParams,
 }: OrchestrateEddsaKeyGenParams) {
@@ -140,7 +142,7 @@ export async function orchestrateEddsaKeyGen({
     source: 'user',
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
   });
-  const backupInitResponse = await awmClient.initMpcKeyGeneration({
+  const backupInitResponse = await awmBackupClient.initMpcKeyGeneration({
     source: 'backup',
     bitgoGpgKey: constants.mpc.bitgoPublicKey,
     userGpgKey: userInitResponse.bitgoPayload.gpgKey,
@@ -197,7 +199,7 @@ export async function orchestrateEddsaKeyGen({
     source: 'user',
     type: 'tss',
   });
-  const backupKeychainPromise = await awmClient.finalizeMpcKeyGeneration({
+  const backupKeychainPromise = await awmBackupClient.finalizeMpcKeyGeneration({
     source: 'backup',
     coin: baseCoin.getFamily(),
     encryptedDataKey: backupInitResponse.encryptedDataKey,

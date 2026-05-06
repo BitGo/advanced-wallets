@@ -222,7 +222,7 @@ export async function handleRecoveryWallet(
 
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
 
   const sdkCoin = await coinFactory.getCoin(coin, bitgo);
@@ -350,7 +350,7 @@ export async function handleRecoveryWallet(
   }
 
   if (isUtxoCoin(sdkCoin)) {
-    return handleUtxoLikeRecovery(sdkCoin, req.awmClient, {
+    return handleUtxoLikeRecovery(sdkCoin, req.awmUserClient, {
       userKey: userPub,
       backupKey: backupPub,
       bitgoKey: bitgoPub,

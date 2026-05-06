@@ -54,6 +54,12 @@ describe('Configuration', () => {
     delete process.env.AWM_CLIENT_TLS_CERT_PATH;
     delete process.env.KEY_PROVIDER_SERVER_CA_CERT_PATH;
     delete process.env.RECOVERY_MODE;
+    delete process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL;
+    delete process.env.AWM_BACKUP_SERVER_CA_CERT_PATH;
+    delete process.env.AWM_BACKUP_CLIENT_TLS_KEY_PATH;
+    delete process.env.AWM_BACKUP_CLIENT_TLS_CERT_PATH;
+    delete process.env.AWM_BACKUP_CLIENT_TLS_KEY;
+    delete process.env.AWM_BACKUP_CLIENT_TLS_CERT;
   });
 
   after(() => {
@@ -460,6 +466,188 @@ describe('Configuration', () => {
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
         cfg.httpLoggerFile.should.equal('/tmp/test-http-access.log');
+      }
+    });
+
+    it('should not set backup URL when ADVANCED_WALLET_MANAGER_BACKUP_URL is not set', () => {
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        (cfg.advancedWalletManagerBackupUrl === undefined).should.be.true();
+      }
+    });
+
+    it('should read and protocol-process backup URL when configured', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT = mockClientTlsCert;
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.advancedWalletManagerBackupUrl!.should.equal('https://backup-awm.example.com:3080');
+      }
+    });
+
+    it('should use http protocol for backup URL when TLS is disabled', () => {
+      process.env.TLS_MODE = 'disabled';
+      delete process.env.AWM_SERVER_CA_CERT_PATH;
+      delete process.env.SERVER_TLS_KEY_PATH;
+      delete process.env.SERVER_TLS_CERT_PATH;
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.advancedWalletManagerBackupUrl!.should.equal('http://backup-awm.example.com:3080');
+      }
+    });
+
+    it('should throw error when backup URL is set without AWM_BACKUP_SERVER_CA_CERT_PATH in MTLS mode', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'https://backup-awm.example.com:3080';
+      (() => initConfig()).should.throw(
+        'AWM_BACKUP_SERVER_CA_CERT_PATH environment variable is required for MTLS mode when provisioning a backup AWM URL.',
+      );
+    });
+
+    it('should load backup server CA cert from file', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT = mockClientTlsCert;
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.awmBackupServerCaCert!.should.be.a.String();
+        cfg.awmBackupServerCaCert!.length.should.be.greaterThan(0);
+      }
+    });
+
+    it('should not require backup cert paths when backup URL is not set in MTLS mode', () => {
+      // This verifies backward compatibility — no backup URL means no backup cert validation
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        (cfg.advancedWalletManagerBackupUrl === undefined).should.be.true();
+        (cfg.awmBackupServerCaCert === undefined).should.be.true();
+      }
+    });
+
+    it('should load backup client TLS key from file path', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/client.key',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT = mockClientTlsCert;
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.awmBackupClientTlsKey!.should.be.a.String();
+        cfg.awmBackupClientTlsKey!.length.should.be.greaterThan(0);
+      }
+    });
+
+    it('should load backup client TLS cert from file path', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/client.crt',
+      );
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.awmBackupClientTlsCert!.should.be.a.String();
+        cfg.awmBackupClientTlsCert!.length.should.be.greaterThan(0);
+      }
+    });
+
+    it('should throw error when backup client TLS key path points to a nonexistent file', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY_PATH = '/nonexistent/path/client.key';
+      (() => initConfig()).should.throw(/Failed to read AWM backup client key/);
+    });
+
+    it('should throw error when backup client TLS cert path points to a nonexistent file', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT_PATH = '/nonexistent/path/client.crt';
+      (() => initConfig()).should.throw(/Failed to read AWM backup client cert/);
+    });
+
+    it('should throw error when backup URL is set in mTLS mode but no backup or primary client certs are available', () => {
+      // Remove primary client certs so fallback also fails
+      delete process.env.AWM_CLIENT_TLS_KEY;
+      delete process.env.AWM_CLIENT_TLS_CERT;
+      delete process.env.AWM_CLIENT_TLS_KEY_PATH;
+      delete process.env.AWM_CLIENT_TLS_CERT_PATH;
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      // Primary cert validation fires first since both primary and backup certs are missing
+      (() => initConfig()).should.throw(
+        /AWM_CLIENT_TLS_KEY_PATH and AWM_CLIENT_TLS_CERT_PATH.*are required for outbound mTLS connections to Advanced Wallet Manager/,
+      );
+    });
+
+    it('should succeed when backup URL is set in mTLS mode and dedicated backup client certs are provided', () => {
+      process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL = 'backup-awm.example.com:3080';
+      process.env.AWM_BACKUP_SERVER_CA_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/advanced-wallet-manager-cert.pem',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY = mockClientTlsKey;
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT = mockClientTlsCert;
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.advancedWalletManagerBackupUrl!.should.be.a.String();
+      }
+    });
+
+    it('should not load backup client certs from file when backup URL is not set', () => {
+      process.env.TLS_MODE = 'disabled';
+      delete process.env.AWM_SERVER_CA_CERT_PATH;
+      delete process.env.SERVER_TLS_KEY_PATH;
+      delete process.env.SERVER_TLS_CERT_PATH;
+      process.env.AWM_BACKUP_CLIENT_TLS_KEY_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/client.key',
+      );
+      process.env.AWM_BACKUP_CLIENT_TLS_CERT_PATH = path.resolve(
+        __dirname,
+        'mocks/certs/client.crt',
+      );
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        // Paths are stored in config but files are not loaded without a backup URL
+        (cfg.advancedWalletManagerBackupUrl === undefined).should.be.true();
+        (cfg.awmBackupClientTlsKey === undefined).should.be.true();
+        (cfg.awmBackupClientTlsCert === undefined).should.be.true();
       }
     });
   });

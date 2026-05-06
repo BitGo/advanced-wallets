@@ -7,7 +7,8 @@ import { AdvancedWalletManagerClient } from '../masterBitgoExpress/clients/advan
 export interface BitGoRequest<T extends Config = Config> extends express.Request {
   bitgo: BitGoAPI;
   config: T;
-  awmClient: AdvancedWalletManagerClient;
+  awmUserClient: AdvancedWalletManagerClient;
+  awmBackupClient: AdvancedWalletManagerClient;
 }
 
 export function isBitGoRequest<T extends Config>(req: express.Request): req is BitGoRequest<T> {

@@ -31,6 +31,38 @@ function readEnvVar(name: string): string | undefined {
   }
 }
 
+function readCertFile(filePath: string, label: string): string {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    logger.info(`✓ ${label} loaded from file: ${filePath}`);
+    return content;
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e));
+    throw new Error(`Failed to read ${label} from ${filePath}: ${err.message}`);
+  }
+}
+
+/**
+ * Loads a certificate/key value from either an environment variable or a file path.
+ * If the value is already set (from env), it logs and returns it.
+ * If a path is provided, it reads the file.
+ * Returns undefined if neither is set.
+ */
+function loadCert(
+  value: string | undefined,
+  path: string | undefined,
+  label: string,
+): string | undefined {
+  if (value) {
+    logger.info(`✓ ${label} loaded from environment variable`);
+    return value;
+  }
+  if (path) {
+    return readCertFile(path, label);
+  }
+  return undefined;
+}
+
 function determineAppMode(): AppMode {
   const mode = readEnvVar('APP_MODE') || readEnvVar('BITGO_APP_MODE');
   if (!mode) {
@@ -182,7 +214,7 @@ function mergeAkmConfigs(
   };
 }
 
-function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
+function configureAdvancedWalletManagerMode(): AdvancedWalletManagerConfig {
   const env = advancedWalletManagerEnvConfig();
   let config = mergeAkmConfigs(env);
 
@@ -191,87 +223,29 @@ function configureAdvancedWalletManagaerMode(): AdvancedWalletManagerConfig {
 
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
-    // Handle file loading for TLS certificates
-    if (!config.serverTlsKey && config.serverTlsKeyPath) {
-      try {
-        config = { ...config, serverTlsKey: fs.readFileSync(config.serverTlsKeyPath, 'utf-8') };
-        logger.info(`✓ TLS private key loaded from file: ${config.serverTlsKeyPath}`);
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS key from serverTlsKeyPath: ${err.message}`);
-      }
-    } else if (config.serverTlsKey) {
-      logger.info('✓ TLS private key loaded from environment variable');
-    }
-
-    if (!config.serverTlsCert && config.serverTlsCertPath) {
-      try {
-        config = {
-          ...config,
-          serverTlsCert: fs.readFileSync(config.serverTlsCertPath, 'utf-8'),
-        };
-        logger.info(`✓ TLS certificate loaded from file: ${config.serverTlsCertPath}`);
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS certificate from serverTlsCertPath: ${err.message}`);
-      }
-    } else if (config.serverTlsCert) {
-      logger.info('✓ TLS certificate loaded from environment variable');
-    }
-
     if (!config.keyProviderServerCaCertPath) {
       throw new Error('KEY_PROVIDER_SERVER_CA_CERT_PATH is required when TLS mode is MTLS');
     }
-    if (config.keyProviderServerCaCertPath) {
-      try {
-        config.keyProviderServerCaCert = fs.readFileSync(
-          config.keyProviderServerCaCertPath,
-          'utf-8',
-        );
-        logger.info(
-          `✓ key provider server CA certificate loaded from file: ${config.keyProviderServerCaCertPath}`,
-        );
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(
-          `Failed to read key provider TLS certificate from keyProviderTlsCert: ${err.message}`,
-        );
-      }
-    }
 
-    if (config.keyProviderClientTlsKeyPath) {
-      try {
-        config.keyProviderClientTlsKey = fs.readFileSync(
-          config.keyProviderClientTlsKeyPath,
-          'utf-8',
-        );
-        logger.info(
-          `✓ key provider client key loaded from file: ${config.keyProviderClientTlsKeyPath}`,
-        );
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(
-          `Failed to read key provider client key from keyProviderClientTlsKeyPath: ${err.message}`,
-        );
-      }
-    }
-
-    if (config.keyProviderClientTlsCertPath) {
-      try {
-        config.keyProviderClientTlsCert = fs.readFileSync(
-          config.keyProviderClientTlsCertPath,
-          'utf-8',
-        );
-        logger.info(
-          `✓ key provider client certificate loaded from file: ${config.keyProviderClientTlsCertPath}`,
-        );
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(
-          `Failed to read key provider client cert from keyProviderClientTlsCertPath: ${err.message}`,
-        );
-      }
-    }
+    config = {
+      ...config,
+      serverTlsKey: loadCert(config.serverTlsKey, config.serverTlsKeyPath, 'TLS private key'),
+      serverTlsCert: loadCert(config.serverTlsCert, config.serverTlsCertPath, 'TLS certificate'),
+      keyProviderServerCaCert: readCertFile(
+        config.keyProviderServerCaCertPath,
+        'Key provider server CA certificate',
+      ),
+      keyProviderClientTlsKey: loadCert(
+        config.keyProviderClientTlsKey,
+        config.keyProviderClientTlsKeyPath,
+        'Key provider client key',
+      ),
+      keyProviderClientTlsCert: loadCert(
+        config.keyProviderClientTlsCert,
+        config.keyProviderClientTlsCertPath,
+        'Key provider client certificate',
+      ),
+    };
 
     // Validate that client certificates are provided for outbound mTLS connections
     if (config.tlsMode === TlsMode.MTLS) {
@@ -321,7 +295,9 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
 
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const advancedWalletManagerUrl = readEnvVar('ADVANCED_WALLET_MANAGER_URL');
+  const advancedWalletManagerBackupUrl = readEnvVar('ADVANCED_WALLET_MANAGER_BACKUP_URL');
   const awmServerCaCertPath = readEnvVar('AWM_SERVER_CA_CERT_PATH');
+  const awmBackupServerCaCertPath = readEnvVar('AWM_BACKUP_SERVER_CA_CERT_PATH');
   const awmServerCertAllowSelfSigned = readEnvVar('AWM_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true';
   const tlsMode = determineTlsMode();
 
@@ -333,6 +309,12 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
 
   if (tlsMode === TlsMode.MTLS && !awmServerCaCertPath) {
     throw new Error('AWM_SERVER_CA_CERT_PATH environment variable is required for MTLS mode.');
+  }
+
+  if (advancedWalletManagerBackupUrl && tlsMode === TlsMode.MTLS && !awmBackupServerCaCertPath) {
+    throw new Error(
+      'AWM_BACKUP_SERVER_CA_CERT_PATH environment variable is required for MTLS mode when provisioning a backup AWM URL.',
+    );
   }
 
   // Debug mTLS environment variables
@@ -354,11 +336,17 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     disableEnvCheck: readEnvVar('BITGO_DISABLE_ENV_CHECK') === 'true',
     authVersion: Number(readEnvVar('BITGO_AUTH_VERSION')),
     advancedWalletManagerUrl: advancedWalletManagerUrl,
+    advancedWalletManagerBackupUrl: advancedWalletManagerBackupUrl,
     awmServerCaCertPath: awmServerCaCertPath,
     awmClientTlsKeyPath: readEnvVar('AWM_CLIENT_TLS_KEY_PATH'),
     awmClientTlsCertPath: readEnvVar('AWM_CLIENT_TLS_CERT_PATH'),
     awmClientTlsKey: readEnvVar('AWM_CLIENT_TLS_KEY'),
     awmClientTlsCert: readEnvVar('AWM_CLIENT_TLS_CERT'),
+    awmBackupServerCaCertPath: awmBackupServerCaCertPath,
+    awmBackupClientTlsKeyPath: readEnvVar('AWM_BACKUP_CLIENT_TLS_KEY_PATH'),
+    awmBackupClientTlsCertPath: readEnvVar('AWM_BACKUP_CLIENT_TLS_CERT_PATH'),
+    awmBackupClientTlsKey: readEnvVar('AWM_BACKUP_CLIENT_TLS_KEY'),
+    awmBackupClientTlsCert: readEnvVar('AWM_BACKUP_CLIENT_TLS_CERT'),
     awmServerCertAllowSelfSigned,
     customBitcoinNetwork: readEnvVar('BITGO_CUSTOM_BITCOIN_NETWORK'),
     // mTLS server settings
@@ -398,12 +386,20 @@ function mergeMasterExpressConfigs(
     disableEnvCheck: get('disableEnvCheck'),
     authVersion: get('authVersion'),
     advancedWalletManagerUrl: get('advancedWalletManagerUrl'),
+    advancedWalletManagerBackupUrl: get('advancedWalletManagerBackupUrl'),
     awmServerCaCertPath: get('awmServerCaCertPath'),
     awmServerCaCert: get('awmServerCaCert'),
     awmClientTlsKeyPath: get('awmClientTlsKeyPath'),
     awmClientTlsCertPath: get('awmClientTlsCertPath'),
     awmClientTlsKey: get('awmClientTlsKey'),
     awmClientTlsCert: get('awmClientTlsCert'),
+    // Backup AWM configs
+    awmBackupServerCaCertPath: get('awmBackupServerCaCertPath'),
+    awmBackupServerCaCert: get('awmBackupServerCaCert'),
+    awmBackupClientTlsKeyPath: get('awmBackupClientTlsKeyPath'),
+    awmBackupClientTlsCertPath: get('awmBackupClientTlsCertPath'),
+    awmBackupClientTlsKey: get('awmBackupClientTlsKey'),
+    awmBackupClientTlsCert: get('awmBackupClientTlsCert'),
     awmServerCertAllowSelfSigned: get('awmServerCertAllowSelfSigned'),
     customBitcoinNetwork: get('customBitcoinNetwork'),
     serverTlsKeyPath: get('serverTlsKeyPath'),
@@ -433,6 +429,13 @@ export function configureMasterExpressMode(): MasterExpressConfig {
       false,
     );
   }
+  if (config.advancedWalletManagerBackupUrl) {
+    updates.advancedWalletManagerBackupUrl = determineProtocol(
+      config.advancedWalletManagerBackupUrl,
+      config.tlsMode,
+      false,
+    );
+  }
   config = { ...config, ...updates };
 
   // Certificate Loading Section
@@ -440,79 +443,52 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 
   // Only load certificates if TLS is enabled
   if (config.tlsMode !== TlsMode.DISABLED) {
-    // Handle file loading for TLS certificates
-    if (!config.serverTlsKey && config.serverTlsKeyPath) {
-      try {
-        config = { ...config, serverTlsKey: fs.readFileSync(config.serverTlsKeyPath, 'utf-8') };
-        logger.info(`✓ TLS private key loaded from file: ${config.serverTlsKeyPath}`);
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS key from serverTlsKeyPath: ${err.message}`);
-      }
-    } else if (config.serverTlsKey) {
-      logger.info('✓ TLS private key loaded from environment variable');
-    }
-
-    if (!config.serverTlsCert && config.serverTlsCertPath) {
-      try {
-        config = {
-          ...config,
-          serverTlsCert: fs.readFileSync(config.serverTlsCertPath, 'utf-8'),
-        };
-        logger.info(`✓ TLS certificate loaded from file: ${config.serverTlsCertPath}`);
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(`Failed to read TLS certificate from serverTlsCertPath: ${err.message}`);
-      }
-    } else if (config.serverTlsCert) {
-      logger.info('✓ TLS certificate loaded from environment variable');
-    }
+    config = {
+      ...config,
+      serverTlsKey: loadCert(config.serverTlsKey, config.serverTlsKeyPath, 'TLS private key'),
+      serverTlsCert: loadCert(config.serverTlsCert, config.serverTlsCertPath, 'TLS certificate'),
+    };
 
     // Validate that certificates are properly loaded when TLS is enabled
     validateTlsCertificates(config);
   }
 
   // Handle cert loading for Advanced Wallet Manager (always required for Master Express)
-  if (config.awmServerCaCertPath) {
-    try {
-      if (fs.existsSync(config.awmServerCaCertPath)) {
-        config = {
-          ...config,
-          awmServerCaCert: fs.readFileSync(config.awmServerCaCertPath, 'utf-8'),
-        };
-        logger.info(
-          `✓ AWM server CA certificate loaded from file: ${config.awmServerCaCertPath?.substring(
-            0,
-            50,
-          )}...`,
-        );
-      } else {
-        throw new Error(`Certificate file not found: ${config.awmServerCaCertPath}`);
-      }
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read advanced wallet manager cert: ${err.message}`);
-    }
-  }
+  config = {
+    ...config,
+    awmServerCaCert: loadCert(
+      config.awmServerCaCert,
+      config.awmServerCaCertPath,
+      'AWM server CA certificate',
+    ),
+    awmClientTlsKey: loadCert(config.awmClientTlsKey, config.awmClientTlsKeyPath, 'AWM client key'),
+    awmClientTlsCert: loadCert(
+      config.awmClientTlsCert,
+      config.awmClientTlsCertPath,
+      'AWM client certificate',
+    ),
+  };
 
-  if (config.awmClientTlsKeyPath) {
-    try {
-      config.awmClientTlsKey = fs.readFileSync(config.awmClientTlsKeyPath, 'utf-8');
-      logger.info(`✓ AWM client key loaded from file: ${config.awmClientTlsKeyPath}`);
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read AWM client key from awmClientTlsKeyPath: ${err.message}`);
-    }
-  }
-
-  if (config.awmClientTlsCertPath) {
-    try {
-      config.awmClientTlsCert = fs.readFileSync(config.awmClientTlsCertPath, 'utf-8');
-      logger.info(`✓ AWM client certificate loaded from file: ${config.awmClientTlsCertPath}`);
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      throw new Error(`Failed to read AWM client cert from awmClientTlsCertPath: ${err.message}`);
-    }
+  // Handle cert loading for backup AWM (only when backup URL is configured)
+  if (config.advancedWalletManagerBackupUrl) {
+    config = {
+      ...config,
+      awmBackupServerCaCert: loadCert(
+        config.awmBackupServerCaCert,
+        config.awmBackupServerCaCertPath,
+        'AWM backup server CA certificate',
+      ),
+      awmBackupClientTlsKey: loadCert(
+        config.awmBackupClientTlsKey,
+        config.awmBackupClientTlsKeyPath,
+        'AWM backup client key',
+      ),
+      awmBackupClientTlsCert: loadCert(
+        config.awmBackupClientTlsCert,
+        config.awmBackupClientTlsCertPath,
+        'AWM backup client certificate',
+      ),
+    };
   }
 
   logger.info('==========================');
@@ -523,6 +499,20 @@ export function configureMasterExpressMode(): MasterExpressConfig {
       throw new Error(
         'AWM_CLIENT_TLS_KEY_PATH and AWM_CLIENT_TLS_CERT_PATH (or AWM_CLIENT_TLS_KEY and AWM_CLIENT_TLS_CERT) are required for outbound mTLS connections to Advanced Wallet Manager. Client certificates cannot reuse server certificates for security reasons.',
       );
+    }
+
+    // Validate that dedicated backup certificates are provided when a backup AWM URL is configured
+    if (config.advancedWalletManagerBackupUrl) {
+      if (!config.awmBackupServerCaCert) {
+        throw new Error(
+          'AWM_BACKUP_SERVER_CA_CERT_PATH is required for mTLS communication with the backup Advanced Wallet Manager.',
+        );
+      }
+      if (!config.awmBackupClientTlsKey || !config.awmBackupClientTlsCert) {
+        throw new Error(
+          'AWM_BACKUP_CLIENT_TLS_KEY_PATH and AWM_BACKUP_CLIENT_TLS_CERT_PATH (or AWM_BACKUP_CLIENT_TLS_KEY and AWM_BACKUP_CLIENT_TLS_CERT) are required for mTLS communication with the backup Advanced Wallet Manager.',
+        );
+      }
     }
   }
 
@@ -540,7 +530,7 @@ export function initConfig(): Config {
   const appMode = determineAppMode();
 
   if (appMode === AppMode.ADVANCED_WALLET_MANAGER) {
-    return configureAdvancedWalletManagaerMode();
+    return configureAdvancedWalletManagerMode();
   } else if (appMode === AppMode.MASTER_EXPRESS) {
     return configureMasterExpressMode();
   } else {
