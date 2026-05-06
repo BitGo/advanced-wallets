@@ -61,7 +61,7 @@ describe('Non Recovery Tests', () => {
     beforeEach(() => {
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).awmClient = new AdvancedWalletManagerClient(
+        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
           config,
           coin,
         );

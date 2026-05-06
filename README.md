@@ -41,6 +41,17 @@ Key features include:
 - **Advanced Wallet Manager** (Port 3080) - An isolated signing server with no internet access that only connects to your key provider API implementation for key operations.
 - **Master Express** (Port 3081) - An API gateway providing end-to-end wallet creation and transaction support, integrating [BitGo APIs](https://developers.bitgo.com/reference/overview#/) with secure communication to Advanced Wallet Manager.
 
+### User and Backup AWM Instances
+
+Master Express supports configuring **separate Advanced Wallet Manager instances** for user and backup key operations. This allows you to isolate the user key and backup key into independent AWM deployments, each connected to its own KMS/HSM, for stronger security and operational separation.
+
+- **User AWM** — Configured via `ADVANCED_WALLET_MANAGER_URL`. This is the primary AWM instance and handles all user key operations. It is always required.
+- **Backup AWM** — Configured via `ADVANCED_WALLET_MANAGER_BACKUP_URL`. This is an optional, separate AWM instance dedicated to backup key operations.
+
+**Fallback behavior:** If `ADVANCED_WALLET_MANAGER_BACKUP_URL` is not set, backup key operations automatically fall back to the user AWM instance. This means a single AWM instance handles both user and backup keys — which is the default behavior and sufficient for most deployments.
+
+When a backup AWM URL **is** provided, dedicated mTLS certificates for the backup AWM are also required (see [Backup AWM mTLS Settings](#backup-awm-mtls-settings) below). The backup AWM will not reuse the primary AWM's certificates.
+
 ## Installation
 
 ### Prerequisites
@@ -185,6 +196,16 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | `BITGO_AUTH_VERSION`           | BitGo authentication version                                  | `2`     | ❌       |
 | `BITGO_CUSTOM_BITCOIN_NETWORK` | Custom Bitcoin network                                        | -       | ❌       |
 
+### Backup AWM Settings (Optional)
+
+These settings are only required when you want to use a **separate AWM instance for backup key operations**. If these are not configured, backup operations fall back to the primary (user) AWM instance.
+
+| Variable                              | Description                          | Default | Required                              |
+| ------------------------------------- | ------------------------------------ | ------- | ------------------------------------- |
+| `ADVANCED_WALLET_MANAGER_BACKUP_URL`  | Backup AWM URL                       | -       | Only if using a separate backup AWM   |
+
+> **Note:** When `ADVANCED_WALLET_MANAGER_BACKUP_URL` is not set, the system uses the primary AWM (`ADVANCED_WALLET_MANAGER_URL`) for both user and backup key operations. This is the simplest configuration and works well when a single AWM instance manages both keys.
+
 ### Additional Settings
 
 | Variable             | Description                                         | Default                | Applies To |
@@ -233,6 +254,19 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | `AWM_SERVER_CA_CERT`                | AWM server CA certificate (alternative)   | PEM string                 |
 | `AWM_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed AWM server certificates | Boolean (default: `false`) |
 
+**For Master Express → Backup Advanced Wallet Manager (optional):** <a id="backup-awm-mtls-settings"></a>
+
+These are only required when `ADVANCED_WALLET_MANAGER_BACKUP_URL` is set. If the backup URL is not configured, backup key operations use the primary AWM connection and these settings are ignored.
+
+| Variable                                  | Description                                        | Format                     |
+| ----------------------------------------- | -------------------------------------------------- | -------------------------- |
+| `AWM_BACKUP_CLIENT_TLS_KEY_PATH`          | Backup AWM client private key file path            | File path                  |
+| `AWM_BACKUP_CLIENT_TLS_KEY`               | Backup AWM client private key (alternative)        | PEM string                 |
+| `AWM_BACKUP_CLIENT_TLS_CERT_PATH`         | Backup AWM client certificate file path            | File path                  |
+| `AWM_BACKUP_CLIENT_TLS_CERT`              | Backup AWM client certificate (alternative)        | PEM string                 |
+| `AWM_BACKUP_SERVER_CA_CERT_PATH`          | Backup AWM server CA certificate file path         | File path                  |
+| `AWM_BACKUP_SERVER_CA_CERT`               | Backup AWM server CA certificate (alternative)     | PEM string                 |
+
 **For Advanced Wallet Manager → key provider:**
 
 | Variable                                    | Description                                        | Format                     |
@@ -245,7 +279,7 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | `KEY_PROVIDER_SERVER_CA_CERT`                | Key provider server CA certificate (alternative)   | PEM string                 |
 | `KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED` | Allow self-signed key provider server certificates | Boolean (default: `false`) |
 
-> **Note:** For security reasons, when `TLS_MODE=mtls`, outbound client certificates are required and cannot reuse server certificates. When `TLS_MODE=disabled`, these certificates aren't required.
+> **Note:** For security reasons, when `TLS_MODE=mtls`, outbound client certificates are required and cannot reuse server certificates. When a backup AWM is configured, it requires its own dedicated set of certificates — it will not reuse the primary AWM's certificates. When `TLS_MODE=disabled`, these certificates aren't required.
 
 ## Container Deployment with Podman
 

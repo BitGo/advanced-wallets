@@ -41,7 +41,7 @@ export async function handleRecoveryConsolidations(
 
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
 
   const isMPC = req.decoded.multisigType === 'tss';
 

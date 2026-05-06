@@ -72,7 +72,7 @@ async function createMPCSendParamsWithCustomSigningFns(
 }
 
 export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>) {
-  const awmClient = req.awmClient;
+  const awmClient = req.awmUserClient;
   const reqId = new RequestTracer();
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);

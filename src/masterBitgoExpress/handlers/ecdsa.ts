@@ -107,6 +107,7 @@ interface OrchestrateEcdsaKeyGenParams {
   bitgo: BitGoBase;
   baseCoin: BaseCoin;
   awmClient: AdvancedWalletManagerClient;
+  awmBackupClient: AdvancedWalletManagerClient;
   enterprise: string;
   walletParams: SupplementGenerateWalletOptions;
 }
@@ -115,6 +116,7 @@ export async function orchestrateEcdsaKeyGen({
   bitgo,
   baseCoin,
   awmClient,
+  awmBackupClient,
   enterprise,
   walletParams,
 }: OrchestrateEcdsaKeyGenParams) {
@@ -135,7 +137,7 @@ export async function orchestrateEcdsaKeyGen({
   ) {
     throw new Error('Missing required fields in user init response');
   }
-  const backupInitResponse = await awmClient.initEcdsaMpcV2KeyGenMpcV2({
+  const backupInitResponse = await awmBackupClient.initEcdsaMpcV2KeyGenMpcV2({
     source: 'backup',
   });
   if (
@@ -155,7 +157,7 @@ export async function orchestrateEcdsaKeyGen({
     bitgoGpgPub: constants.mpc.bitgoMPCv2PublicKey,
     counterPartyGpgPub: backupInitResponse.gpgPub,
   });
-  const backupRound1Promise = awmClient.roundEcdsaMPCv2KeyGen({
+  const backupRound1Promise = awmBackupClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupInitResponse.encryptedData,
     encryptedDataKey: backupInitResponse.encryptedDataKey,
@@ -200,7 +202,7 @@ export async function orchestrateEcdsaKeyGen({
       counterParty: backupRound1Response.broadcastMessage,
     },
   });
-  const backupRound2Promise = awmClient.roundEcdsaMPCv2KeyGen({
+  const backupRound2Promise = awmBackupClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound1Response.encryptedData,
     encryptedDataKey: backupRound1Response.encryptedDataKey,
@@ -232,7 +234,7 @@ export async function orchestrateEcdsaKeyGen({
       counterParty: backupRound2Response.p2pMessages?.counterParty,
     },
   });
-  const backupRound3Promise = awmClient.roundEcdsaMPCv2KeyGen({
+  const backupRound3Promise = awmBackupClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound2Response.encryptedData,
     encryptedDataKey: backupRound2Response.encryptedDataKey,
@@ -281,7 +283,7 @@ export async function orchestrateEcdsaKeyGen({
       counterParty: backupRound3Response.p2pMessages?.counterParty,
     },
   });
-  const backupRound4Promise = awmClient.roundEcdsaMPCv2KeyGen({
+  const backupRound4Promise = awmBackupClient.roundEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound3Response.encryptedData,
     encryptedDataKey: backupRound3Response.encryptedDataKey,
@@ -328,7 +330,7 @@ export async function orchestrateEcdsaKeyGen({
     },
     bitgoCommonKeychain,
   });
-  const backupFinalizePromise = awmClient.finalizeEcdsaMPCv2KeyGen({
+  const backupFinalizePromise = awmBackupClient.finalizeEcdsaMPCv2KeyGen({
     source: 'backup',
     encryptedData: backupRound4Response.encryptedData,
     encryptedDataKey: backupRound4Response.encryptedDataKey,

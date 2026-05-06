@@ -61,6 +61,7 @@ export interface MasterExpressConfig extends BaseConfig {
   authVersion?: number;
   // AWM client settings
   advancedWalletManagerUrl: string;
+  advancedWalletManagerBackupUrl?: string;
   awmServerCaCertPath?: string;
   awmServerCaCert?: string;
   awmClientTlsKeyPath?: string;
@@ -68,6 +69,13 @@ export interface MasterExpressConfig extends BaseConfig {
   awmClientTlsKey?: string;
   awmClientTlsCert?: string;
   awmServerCertAllowSelfSigned?: boolean;
+  // AWM backup client settings (separate HSM for backup key)
+  awmBackupServerCaCertPath?: string;
+  awmBackupServerCaCert?: string;
+  awmBackupClientTlsKeyPath?: string;
+  awmBackupClientTlsCertPath?: string;
+  awmBackupClientTlsKey?: string;
+  awmBackupClientTlsCert?: string;
   customBitcoinNetwork?: string;
   // mTLS server settings
   serverTlsKeyPath?: string;
