@@ -13,7 +13,7 @@ export async function handleConsolidateUnspents(
   const walletId = req.params.walletId;
   const coin = req.params.coin;
 
-  const { wallet, signingKeychain } = await getWalletAndSigningKeychain({
+  const { baseCoin, wallet, signingKeychain } = await getWalletAndSigningKeychain({
     bitgo,
     coin,
     walletId,
@@ -22,12 +22,23 @@ export async function handleConsolidateUnspents(
     KeyIndices,
   });
 
+  const [userKeychain, backupKeychain, bitgoKeychain] = await Promise.all([
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.USER] }),
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BACKUP] }),
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BITGO] }),
+  ]);
+  const walletPubs =
+    userKeychain?.pub && backupKeychain?.pub && bitgoKeychain?.pub
+      ? [userKeychain.pub, backupKeychain.pub, bitgoKeychain.pub]
+      : undefined;
+
   try {
     // Create custom signing function that delegates to EBE
     const customSigningFunction = makeCustomSigningFunction({
       awmClient,
       source: params.source,
       pub: signingKeychain.pub!,
+      walletPubs,
     });
 
     // Prepare consolidation parameters

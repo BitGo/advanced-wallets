@@ -65,16 +65,19 @@ export function makeCustomSigningFunction({
   awmClient,
   source,
   pub,
+  walletPubs,
 }: {
   awmClient: AdvancedWalletManagerClient;
   source: 'user' | 'backup';
   pub: string;
+  walletPubs?: string[];
 }): CustomSigningFunction {
   return async function customSigningFunction(signParams: any) {
     return awmClient.signMultisig({
       txPrebuild: signParams.txPrebuild,
       source,
       pub,
+      walletPubs,
     });
   };
 }
