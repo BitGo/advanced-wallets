@@ -8,6 +8,9 @@ import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { BitGoAPI as BitGo } from '@bitgo-beta/sdk-api';
 import * as keyProviderUtils from '../../../advancedWalletManager/handlers/utils/utils';
+import coinFactory from '../../../shared/coinFactory';
+import { BaseCoin } from '@bitgo-beta/sdk-core';
+import { CoinFamily } from '@bitgo-beta/statics';
 
 describe('UTXO recovery', () => {
   let agent: request.SuperAgentTest;
@@ -132,5 +135,149 @@ describe('UTXO recovery', () => {
         cfg: config,
       })
       .should.be.true();
+  });
+});
+
+describe('UTXO recovery — external signing mode', () => {
+  let agent: request.SuperAgentTest;
+
+  const keyProviderUrl = 'http://key-provider.invalid';
+  const coin = 'tbtc';
+  const userPub =
+    'xpub661MyMwAqRbcF3g1sUm7T5pN8ViCr9bS6XiQbq7dVXFdPEGYfhGgjjV2AFxTYVWik29y7NHmCZjWYDkt4RGw57HNYpHnoHeeqJV6s8hwcsV';
+  const backupPub =
+    'xpub661MyMwAqRbcEywGPF6Pg1FDUtHGyxsn7nph8dcy8GFLKvQ8hSCKgUm8sNbJhegDbmLtMpMnGZtrqfRXCjeDtfJ2UGDSzNTkRuvAQ5KNPcH';
+  const bitgoPub =
+    'xpub661MyMwAqRbcGcBurxn9ptqqKGmMhnKa8D7TeZkaWpfQNTeG4qKEJ67eb6Hy58kZBwPHqjUt5iApUwvFVk9ffQYaV42RRom2p7yU5bcCwpq';
+  const unsignedTxHex = '70736274ff01000000';
+  const halfSignedTxHex = '70736274ff01000001';
+  const fullSignedTxHex = '70736274ff01000002';
+
+  const config: AdvancedWalletManagerConfig = {
+    appMode: AppMode.ADVANCED_WALLET_MANAGER,
+    signingMode: SigningMode.EXTERNAL,
+    port: 0,
+    bind: 'localhost',
+    timeout: 60000,
+    httpLoggerFile: '',
+    tlsMode: TlsMode.DISABLED,
+    clientCertAllowSelfSigned: true,
+    keyProviderUrl,
+    recoveryMode: true,
+  };
+
+  const utxoCoinStub = {
+    getFamily: () => CoinFamily.BTC,
+    getFullName: () => 'Test Bitcoin',
+    isEVM: () => false,
+  } as unknown as BaseCoin;
+
+  beforeEach(() => {
+    nock.disableNetConnect();
+    nock.enableNetConnect('127.0.0.1');
+
+    const bitgo = new BitGo({ env: 'test', accessToken: 'test_token' });
+
+    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
+      (req as BitGoRequest<AdvancedWalletManagerConfig>).bitgo = bitgo;
+      (req as BitGoRequest<AdvancedWalletManagerConfig>).config = config;
+      next();
+    });
+
+    sinon.stub(coinFactory, 'getCoin').resolves(utxoCoinStub);
+
+    const app = expressApp(config);
+    agent = request.agent(app);
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+    sinon.restore();
+  });
+
+  it('should call POST /sign twice (user then backup) and not call retrieveKeyProviderPrvKey', async () => {
+    const retrieveStub = sinon.stub(keyProviderUtils, 'retrieveKeyProviderPrvKey');
+
+    const userSignNock = nock(keyProviderUrl)
+      .post('/sign', {
+        pub: userPub,
+        source: 'user',
+        signablePayload: unsignedTxHex,
+        algorithm: 'ecdsa',
+      })
+      .reply(200, { signature: halfSignedTxHex });
+    const backupSignNock = nock(keyProviderUrl)
+      .post('/sign', {
+        pub: backupPub,
+        source: 'backup',
+        signablePayload: halfSignedTxHex,
+        algorithm: 'ecdsa',
+      })
+      .reply(200, { signature: fullSignedTxHex });
+
+    const response = await agent.post(`/api/${coin}/multisig/recovery`).send({
+      userPub,
+      backupPub,
+      bitgoPub,
+      unsignedSweepPrebuildTx: { txHex: unsignedTxHex },
+      walletContractAddress: '',
+      coin,
+    });
+
+    response.status.should.equal(200);
+    response.body.should.have.property('txHex', fullSignedTxHex);
+    userSignNock.done();
+    backupSignNock.done();
+    retrieveStub.called.should.equal(false);
+  });
+
+  it('should use half-signed PSBT from user sign as input to backup sign', async () => {
+    nock(keyProviderUrl)
+      .post('/sign', {
+        pub: userPub,
+        source: 'user',
+        signablePayload: unsignedTxHex,
+        algorithm: 'ecdsa',
+      })
+      .reply(200, { signature: halfSignedTxHex });
+    // backup receives the half-signed PSBT (output of user sign), not the original unsigned one
+    const backupNock = nock(keyProviderUrl)
+      .post('/sign', {
+        pub: backupPub,
+        source: 'backup',
+        signablePayload: halfSignedTxHex,
+        algorithm: 'ecdsa',
+      })
+      .reply(200, { signature: fullSignedTxHex });
+
+    const response = await agent.post(`/api/${coin}/multisig/recovery`).send({
+      userPub,
+      backupPub,
+      bitgoPub,
+      unsignedSweepPrebuildTx: { txHex: unsignedTxHex },
+      walletContractAddress: '',
+      coin,
+    });
+
+    response.status.should.equal(200);
+    /** Verify backup sign call was made */
+    backupNock.done();
+  });
+
+  it('should return 500 if user sign call fails', async () => {
+    nock(keyProviderUrl)
+      .post('/sign', (body) => body.source === 'user')
+      .reply(500, { message: 'HSM error' });
+
+    const response = await agent.post(`/api/${coin}/multisig/recovery`).send({
+      userPub,
+      backupPub,
+      bitgoPub,
+      unsignedSweepPrebuildTx: { txHex: unsignedTxHex },
+      walletContractAddress: '',
+      coin,
+    });
+
+    response.status.should.equal(500);
   });
 });

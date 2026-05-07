@@ -5,7 +5,8 @@ import * as bitgoSdk from '@bitgo-beta/sdk-core';
 
 import { KeyProviderClient } from '../../keyProviderClient/keyProviderClient';
 import { GenerateDataKeyResponse } from '../../keyProviderClient/types/dataKey';
-import { AdvancedWalletManagerConfig } from '../../../shared/types';
+import { AdvancedWalletManagerConfig, KeySource, SigningMode } from '../../../shared/types';
+import { isUtxoCoin } from '../../../shared/coinUtils';
 
 export async function retrieveKeyProviderPrvKey({
   pub,
@@ -114,6 +115,22 @@ export async function decryptDataKey({
       message: error.message || 'Failed to decrypt data key from key provider',
     };
   }
+}
+
+export function isExternalSigningModeEnabled(config: AdvancedWalletManagerConfig): boolean {
+  return config.signingMode === SigningMode.EXTERNAL;
+}
+
+export function isExternalSigningEnabledForCoin(
+  config: AdvancedWalletManagerConfig,
+  coin: BaseCoin,
+): boolean {
+  /** Support ETH after COIN-108 */
+  return isExternalSigningModeEnabled(config) && isUtxoCoin(coin);
+}
+
+export function isNonBitgoKeySource(source: string): source is KeySource.USER | KeySource.BACKUP {
+  return source === KeySource.USER || source === KeySource.BACKUP;
 }
 
 export function checkRecoveryMode(config: AdvancedWalletManagerConfig) {

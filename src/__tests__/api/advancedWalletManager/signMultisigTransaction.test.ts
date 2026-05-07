@@ -8,6 +8,9 @@ import express from 'express';
 
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
+import coinFactory from '../../../shared/coinFactory';
+import { BaseCoin } from '@bitgo-beta/sdk-core';
+import { CoinFamily } from '@bitgo-beta/statics';
 
 describe('signMultisigTransaction', () => {
   let cfg: AdvancedWalletManagerConfig;
@@ -157,5 +160,105 @@ describe('signMultisigTransaction', () => {
     response.body.txHex.should.startWith(txHexPrefix);
 
     keyProviderNock.done();
+  });
+});
+
+describe('signMultisigTransaction — external signing mode', () => {
+  let app: express.Application;
+  let agent: request.SuperAgentTest;
+  let coinStub: sinon.SinonStub;
+
+  const keyProviderUrl = 'http://key-provider.invalid';
+  const accessToken = 'test-token';
+
+  const txHexPrefix = '70736274ff';
+  const txHex = `${txHexPrefix}01000000`;
+  const userPub =
+    'xpub661MyMwAqRbcF3g1sUm7T5pN8ViCr9bS6XiQbq7dVXFdPEGYfhGgjjV2AFxTYVWik29y7NHmCZjWYDkt4RGw57HNYpHnoHeeqJV6s8hwcsV';
+
+  const utxoCoinStub = {
+    getFamily: () => CoinFamily.BTC,
+    getFullName: () => 'Test Bitcoin',
+  } as unknown as BaseCoin;
+
+  coinStub = sinon.stub(coinFactory, 'getCoin').resolves(utxoCoinStub);
+
+  const nonUtxoCoinStub = {
+    getFamily: () => CoinFamily.ETH,
+    getFullName: () => 'Test Ethereum',
+  } as unknown as BaseCoin;
+
+  before(() => {
+    nock.disableNetConnect();
+    nock.enableNetConnect('127.0.0.1');
+
+    app = advancedWalletManagerApp({
+      appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.EXTERNAL,
+      port: 0,
+      bind: 'localhost',
+      timeout: 60000,
+      httpLoggerFile: '',
+      keyProviderUrl,
+      tlsMode: TlsMode.DISABLED,
+      clientCertAllowSelfSigned: true,
+    });
+    agent = request.agent(app);
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+    coinStub.restore();
+  });
+
+  it('should call POST /sign for UTXO coin and not call GET /key/:pub', async () => {
+    coinStub = sinon.stub(coinFactory, 'getCoin').resolves(utxoCoinStub);
+    const signedPsbt = `${txHexPrefix}signed`;
+
+    const signNock = nock(keyProviderUrl)
+      .post('/sign', { pub: userPub, source: 'user', signablePayload: txHex, algorithm: 'ecdsa' })
+      .reply(200, { signature: signedPsbt });
+    const getKeyNock = nock(keyProviderUrl).get(`/key/${userPub}`).reply(200, {});
+
+    const response = await agent
+      .post(`/api/tbtc/multisig/sign`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user', pub: userPub, txPrebuild: { txHex } });
+
+    response.status.should.equal(200);
+    response.body.should.have.property('txHex', signedPsbt);
+    signNock.done();
+    getKeyNock.isDone().should.equal(false);
+  });
+
+  it('should fall through to local path for non-UTXO coin in external mode', async () => {
+    coinStub = sinon.stub(coinFactory, 'getCoin').resolves(nonUtxoCoinStub);
+
+    const signNock = nock(keyProviderUrl).post('/sign').reply(200, {});
+    nock(keyProviderUrl).get(`/key/${userPub}`).query({ source: 'user' }).reply(200, {
+      prv: 'xprv9s21ZrQH143K2ZbYmTE75wsdaTsiSgsajJnooSi1wBieWRwQ89xSBwAYK1VJR795Y8XFCCXYHHs4sk2Heg6dkX3CHMBq5bw8DwBWByWx883',
+      pub: userPub,
+      source: 'user',
+      type: 'independent',
+    });
+
+    await agent
+      .post(`/api/hteth/multisig/sign`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user', pub: userPub, txPrebuild: { txHex } });
+
+    /** assert that /sign endpoint is not called */
+    signNock.isDone().should.equal(false);
+  });
+
+  it('should return 500 for invalid source in external mode on UTXO coin', async () => {
+    coinStub = sinon.stub(coinFactory, 'getCoin').resolves(utxoCoinStub);
+
+    const response = await agent
+      .post(`/api/tbtc/multisig/sign`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'bitgo', pub: userPub, txPrebuild: { txHex } });
+
+    response.status.should.equal(500);
   });
 });

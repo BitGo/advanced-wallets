@@ -30,7 +30,7 @@ enum ShareType {
 }
 
 // Define MPC algorithm types
-enum MPCType {
+export enum MPCType {
   EDDSA = 'eddsa',
   ECDSA = 'ecdsa',
 }
