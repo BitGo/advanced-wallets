@@ -15,6 +15,7 @@ import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerCli
 import { createEddsaCustomSigningFunctions } from './eddsa';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import coinFactory from '../../shared/coinFactory';
+import { getWalletPubs } from './utils/utils';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -179,15 +180,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       throw new BadRequestError(`Transaction prebuild failed local validation: ${err.message}`);
     }
 
-    const [userKeychain, backupKeychain, bitgoKeychain] = await Promise.all([
-      baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.USER] }),
-      baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BACKUP] }),
-      baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BITGO] }),
-    ]);
-    const walletPubs =
-      userKeychain?.pub && backupKeychain?.pub && bitgoKeychain?.pub
-        ? [userKeychain.pub, backupKeychain.pub, bitgoKeychain.pub]
-        : undefined;
+    const walletPubs = await getWalletPubs({ baseCoin, wallet });
 
     return signAndSendMultisig(
       wallet,

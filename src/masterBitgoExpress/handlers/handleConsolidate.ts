@@ -6,7 +6,11 @@ import {
 } from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
-import { getWalletAndSigningKeychain, makeCustomSigningFunction } from './utils/utils';
+import {
+  getWalletAndSigningKeychain,
+  makeCustomSigningFunction,
+  getWalletPubs,
+} from './utils/utils';
 import { signAndSendTxRequests } from './transactionRequests';
 
 export async function handleConsolidate(
@@ -27,6 +31,8 @@ export async function handleConsolidate(
     reqId,
     KeyIndices,
   });
+
+  const walletPubs = await getWalletPubs({ baseCoin, wallet });
 
   // Check if the coin supports account consolidations
   if (!baseCoin.allowsAccountConsolidations()) {
@@ -86,6 +92,7 @@ export async function handleConsolidate(
                   awmClient,
                   source: params.source,
                   pub: signingKeychain.pub!,
+                  walletPubs,
                 }),
               });
 

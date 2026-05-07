@@ -38,6 +38,12 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
     type: 'independent',
   };
 
+  const mockBitgoKeychain = {
+    id: 'bitgo-key-id',
+    pub: 'xpub661MyMwAqRbcHtYNxRNuEtDFmPMRzBVPDfBXNu2RUBVFNz8MnWQgkrMZCNB',
+    type: 'bitgo',
+  };
+
   before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
@@ -76,6 +82,20 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const mockBuilds = [
       {
@@ -146,6 +166,20 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, { ...mockUserKeychain, commonKeychain: 'user-common-key' });
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, { ...mockUserKeychain, commonKeychain: 'user-common-key' });
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const mockMpcBuild = {
       walletId,
@@ -233,6 +267,20 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       .get(`/api/v2/${coin}/key/backup-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBackupKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const mockBuild = {
       walletId,
@@ -365,6 +413,20 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
 
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
+
     const allowsConsolidationsStub = sinon
       .stub(Hteth.prototype, 'allowsAccountConsolidations')
       .returns(false);
@@ -458,6 +520,20 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
 
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
+
     const mockBuilds = [
       { walletId, txHex: 'unsigned-tx-hex-1' },
       { walletId, txHex: 'unsigned-tx-hex-2' },
@@ -515,6 +591,20 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const mockBuilds = [
       { walletId, txHex: 'unsigned-tx-hex-1' },
