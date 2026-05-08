@@ -9,7 +9,7 @@ import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
 import { DklsTypes, DklsUtils } from '@bitgo-beta/sdk-lib-mpc';
 
-describe('recoveryMpcV2', async () => {
+describe('recoveryMpcV2', () => {
   let cfg: AdvancedWalletManagerConfig;
   let app: express.Application;
   let agent: request.SuperAgentTest;
@@ -23,35 +23,42 @@ describe('recoveryMpcV2', async () => {
   // sinon stubs
   let configStub: sinon.SinonStub;
 
-  // key provider nocks setup
-  const [userShare, backupShare] = await DklsUtils.generateDKGKeyShares();
-  const userKeyShare = userShare.getKeyShare().toString('base64');
-  const backupKeyShare = backupShare.getKeyShare().toString('base64');
-  const commonKeychain = DklsTypes.getCommonKeychain(userShare.getKeyShare());
-
-  const mockKeyProviderUserResponse = {
-    prv: JSON.stringify(userKeyShare),
-    pub: commonKeychain,
-    source: 'user',
-    type: 'tss',
-  };
-
-  const mockKeyProviderBackupResponse = {
-    prv: JSON.stringify(backupKeyShare),
-    pub: commonKeychain,
-    source: 'backup',
-    type: 'tss',
-  };
-  const input = {
-    txHex:
-      '02f6824268018502540be4008504a817c80083030d409443442e403d64d29c4f64065d0c1a0e8edc03d6c88801550f7dca700000823078c0',
-    pub: commonKeychain,
-  };
+  // key provider nocks setup — initialized in before()
+  let commonKeychain!: string;
+  let mockKeyProviderUserResponse: { prv: string; pub: string; source: string; type: string };
+  let mockKeyProviderBackupResponse: { prv: string; pub: string; source: string; type: string };
+  let input: { txHex: string; pub: string };
 
   before(async () => {
     // nock config
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
+
+    // generate DKG key shares
+    const [userShare, backupShare] = await DklsUtils.generateDKGKeyShares();
+    const userKeyShare = userShare.getKeyShare().toString('base64');
+    const backupKeyShare = backupShare.getKeyShare().toString('base64');
+    commonKeychain = DklsTypes.getCommonKeychain(userShare.getKeyShare());
+
+    mockKeyProviderUserResponse = {
+      prv: JSON.stringify(userKeyShare),
+      pub: commonKeychain,
+      source: 'user',
+      type: 'tss',
+    };
+
+    mockKeyProviderBackupResponse = {
+      prv: JSON.stringify(backupKeyShare),
+      pub: commonKeychain,
+      source: 'backup',
+      type: 'tss',
+    };
+
+    input = {
+      txHex:
+        '02f6824268018502540be4008504a817c80083030d409443442e403d64d29c4f64065d0c1a0e8edc03d6c88801550f7dca700000823078c0',
+      pub: commonKeychain,
+    };
 
     // app config
     cfg = {

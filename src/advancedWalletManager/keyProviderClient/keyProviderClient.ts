@@ -13,6 +13,12 @@ import {
   GenerateDataKeyParams,
   GenerateDataKeyResponse,
 } from './types/generateDataKey';
+import {
+  GenerateKeyResponseSchema,
+  GenerateKeyParams,
+  GenerateKeyResponse,
+} from './types/generateKey';
+import { SignResponseSchema, SignParams, SignResponse } from './types/sign';
 import https from 'https';
 import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
 import { URL } from 'url';
@@ -153,6 +159,54 @@ export class KeyProviderClient {
     }
 
     return response.body as GetKeyResponse;
+  }
+
+  async generateKey(params: GenerateKeyParams): Promise<GenerateKeyResponse> {
+    logger.info(
+      'Generating key via key provider with coin: %s and source: %s',
+      params.coin,
+      params.source,
+    );
+
+    const response = await this.call('post', `${this.url}/key/generate`, {
+      body: params,
+      errorContext: 'Error generating key via key provider',
+    });
+
+    try {
+      GenerateKeyResponseSchema.parse(response.body);
+    } catch (error: any) {
+      logger.error('key provider returned unexpected response when generating key', error);
+      throw new Error(
+        `key provider returned unexpected response when generating key${
+          error.message ? `: ${error.message}` : ''
+        }`,
+      );
+    }
+
+    return response.body as GenerateKeyResponse;
+  }
+
+  async sign(params: SignParams): Promise<SignResponse> {
+    logger.info('Signing via key provider with pub: %s and source: %s', params.pub, params.source);
+
+    const response = await this.call('post', `${this.url}/sign`, {
+      body: params,
+      errorContext: 'Error signing via key provider',
+    });
+
+    try {
+      SignResponseSchema.parse(response.body);
+    } catch (error: any) {
+      logger.error('key provider returned unexpected response when signing', error);
+      throw new Error(
+        `key provider returned unexpected response when signing${
+          error.message ? `: ${error.message}` : ''
+        }`,
+      );
+    }
+
+    return response.body as SignResponse;
   }
 
   async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {

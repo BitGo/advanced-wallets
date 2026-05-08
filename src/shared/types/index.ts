@@ -8,6 +8,12 @@ export enum SigningMode {
   EXTERNAL = 'external',
 }
 
+export enum KeySource {
+  USER = 'user',
+  BACKUP = 'backup',
+  BITGO = 'bitgo',
+}
+
 export enum AppMode {
   ADVANCED_WALLET_MANAGER = 'advanced-wallet-manager',
   MASTER_EXPRESS = 'master-express',

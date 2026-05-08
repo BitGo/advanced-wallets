@@ -3,6 +3,7 @@ import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
 import {
   HalfSignedUtxoTransaction,
   MethodNotImplementedError,
+  MPCType,
   TransactionRecipient,
 } from '@bitgo-beta/sdk-core';
 import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
@@ -15,8 +16,15 @@ import {
   getReplayProtectionOptions,
 } from '../../shared/recoveryUtils';
 import { SignedEthLikeRecoveryTx } from '../../types/transaction';
-import { checkRecoveryMode, retrieveKeyProviderPrvKey } from './utils/utils';
+import {
+  checkRecoveryMode,
+  retrieveKeyProviderPrvKey,
+  isExternalSigningEnabledForCoin,
+} from './utils/utils';
 import coinFactory from '../../shared/coinFactory';
+import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
+import { SignResponse } from '../keyProviderClient/types/sign';
+import { KeySource } from '../../shared/types';
 
 export async function recoveryMultisigTransaction(
   req: AwmApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
@@ -25,6 +33,19 @@ export async function recoveryMultisigTransaction(
 
   const { userPub, backupPub, bitgoPub, unsignedSweepPrebuildTx, walletContractAddress, coin } =
     req.decoded;
+
+  const bitgo = req.bitgo;
+  const baseCoin = await coinFactory.getCoin(coin, bitgo);
+
+  if (isExternalSigningEnabledForCoin(req.config, baseCoin)) {
+    const keyProvider = new KeyProviderClient(req.config);
+    return recoverTransactionExternally({
+      keyProvider,
+      userPub,
+      backupPub,
+      unsignedTxHex: unsignedSweepPrebuildTx.txHex,
+    });
+  }
 
   //fetch prv and check that pub are valid
   const userPrv = await retrieveKeyProviderPrvKey({
@@ -43,9 +64,6 @@ export async function recoveryMultisigTransaction(
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
-
-  const bitgo = req.bitgo;
-  const baseCoin = await coinFactory.getCoin(coin, bitgo);
 
   // The signed transaction format depends on the coin type so we do this check as a guard
   // If you check the type of coin before and after the "if", you may see "BaseCoin" vs "AbstractEthLikeCoin"
@@ -177,6 +195,49 @@ export async function recoveryMultisigTransaction(
     }
   } else {
     throw new MethodNotImplementedError('Unsupported coin type for recovery: ' + baseCoin);
+  }
+}
+
+async function recoverTransactionExternally({
+  keyProvider,
+  userPub,
+  backupPub,
+  unsignedTxHex,
+}: {
+  keyProvider: KeyProviderClient;
+  userPub: string;
+  backupPub: string;
+  unsignedTxHex: string;
+}): Promise<{ txHex: string }> {
+  const errorResponse = (error: any, keySource: string) => ({
+    status: error.status || 500,
+    message: error.message || `Failed to sign recovery transaction for source=${keySource}`,
+  });
+
+  /** User Key Signs */
+  let halfSignedRes: SignResponse;
+  try {
+    halfSignedRes = await keyProvider.sign({
+      pub: userPub,
+      source: KeySource.USER,
+      signablePayload: unsignedTxHex,
+      algorithm: MPCType.ECDSA,
+    });
+  } catch (error: any) {
+    throw errorResponse(error, KeySource.USER);
+  }
+
+  /** Backup Key Signs */
+  try {
+    const fullSignedRes = await keyProvider.sign({
+      pub: backupPub,
+      source: KeySource.BACKUP,
+      signablePayload: halfSignedRes.signature,
+      algorithm: MPCType.ECDSA,
+    });
+    return { txHex: fullSignedRes.signature };
+  } catch (error: any) {
+    throw errorResponse(error, KeySource.BACKUP);
   }
 }
 
