@@ -161,6 +161,16 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     keyProviderClientTlsCert: readEnvVar('KEY_PROVIDER_CLIENT_TLS_CERT'),
     keyProviderServerCertAllowSelfSigned:
       readEnvVar('KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
+    // backup KMS settings
+    backupKmsUrl: readEnvVar('BACKUP_KMS_URL'),
+    backupKmsServerCaCertPath: readEnvVar('BACKUP_KMS_SERVER_CA_CERT_PATH'),
+    backupKmsServerCaCert: readEnvVar('BACKUP_KMS_SERVER_CA_CERT'),
+    backupKmsClientTlsKeyPath: readEnvVar('BACKUP_KMS_CLIENT_TLS_KEY_PATH'),
+    backupKmsClientTlsCertPath: readEnvVar('BACKUP_KMS_CLIENT_TLS_CERT_PATH'),
+    backupKmsClientTlsKey: readEnvVar('BACKUP_KMS_CLIENT_TLS_KEY'),
+    backupKmsClientTlsCert: readEnvVar('BACKUP_KMS_CLIENT_TLS_CERT'),
+    backupKmsServerCertAllowSelfSigned:
+      readEnvVar('BACKUP_KMS_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true',
     // mTLS server settings
     serverTlsKeyPath: readEnvVar('SERVER_TLS_KEY_PATH'),
     serverTlsCertPath: readEnvVar('SERVER_TLS_CERT_PATH'),
@@ -202,6 +212,15 @@ function mergeAkmConfigs(
     keyProviderClientTlsKey: get('keyProviderClientTlsKey'),
     keyProviderClientTlsCert: get('keyProviderClientTlsCert'),
     keyProviderServerCertAllowSelfSigned: get('keyProviderServerCertAllowSelfSigned'),
+    // Backup KMS configs
+    backupKmsUrl: get('backupKmsUrl'),
+    backupKmsServerCaCertPath: get('backupKmsServerCaCertPath'),
+    backupKmsServerCaCert: get('backupKmsServerCaCert'),
+    backupKmsClientTlsKeyPath: get('backupKmsClientTlsKeyPath'),
+    backupKmsClientTlsCertPath: get('backupKmsClientTlsCertPath'),
+    backupKmsClientTlsKey: get('backupKmsClientTlsKey'),
+    backupKmsClientTlsCert: get('backupKmsClientTlsCert'),
+    backupKmsServerCertAllowSelfSigned: get('backupKmsServerCertAllowSelfSigned'),
     serverTlsKeyPath: get('serverTlsKeyPath'),
     serverTlsCertPath: get('serverTlsCertPath'),
     serverTlsKey: get('serverTlsKey'),
@@ -258,6 +277,36 @@ function configureAdvancedWalletManagerMode(): AdvancedWalletManagerConfig {
 
     // Validate that certificates are properly loaded when TLS is enabled
     validateTlsCertificates(config);
+  }
+
+  // Handle cert loading for backup KMS (only when backup KMS URL is configured)
+  if (config.backupKmsUrl) {
+    config = {
+      ...config,
+      backupKmsServerCaCert: loadCert(
+        config.backupKmsServerCaCert,
+        config.backupKmsServerCaCertPath,
+        'Backup KMS server CA certificate',
+      ),
+      backupKmsClientTlsKey: loadCert(
+        config.backupKmsClientTlsKey,
+        config.backupKmsClientTlsKeyPath,
+        'Backup KMS client key',
+      ),
+      backupKmsClientTlsCert: loadCert(
+        config.backupKmsClientTlsCert,
+        config.backupKmsClientTlsCertPath,
+        'Backup KMS client certificate',
+      ),
+    };
+
+    if (config.tlsMode === TlsMode.MTLS) {
+      if (!config.backupKmsClientTlsKey || !config.backupKmsClientTlsCert) {
+        throw new Error(
+          'BACKUP_KMS_CLIENT_TLS_KEY_PATH and BACKUP_KMS_CLIENT_TLS_CERT_PATH (or BACKUP_KMS_CLIENT_TLS_KEY and BACKUP_KMS_CLIENT_TLS_CERT) are required for outbound mTLS connections to backup KMS when BACKUP_KMS_URL is configured.',
+        );
+      }
+    }
   }
 
   logger.info('==========================');

@@ -142,6 +142,85 @@ describe('recoveryMpc', () => {
     });
   });
 
+  describe('EdDSA dual-KMS recovery', () => {
+    it('should route backup key retrieval to backup KMS when configured', async () => {
+      const primaryKmsUrl = 'http://primary-kms.invalid';
+      const backupKmsUrl = 'http://backup-kms.invalid';
+
+      const commonKeychain =
+        'b6f5fb808f538a32735a89609e98fab75690a2c79b26f50a54c4cbf0fbca287138b733783f1590e12b4916ef0f6053b22044860117274bda44bd5d711855f174';
+
+      const mockKmsUserResponse = {
+        prv: '{"uShare":{"i":1,"t":2,"n":3,"y":"85aa6462d927329418f70f6d0863cf6cf33e7da2934f935e5927f1b13062d779","seed":"2f55c80fd6b5583dcde8037b2ee461d2e7d445a4d3e7a9b2a0d3d00b5f534169","chaincode":"66e80f2bf41a5706608352d51ceb07a5aa1729cab6c6993c124d5731546ed9a1"},"bitgoYShare":{"i":1,"j":3,"y":"483e53b72de3aa893df698d0b20b20777fb3d2716cc8483a9e9797174fd52b16","v":"e70696459e46434a2a12cc988e3ae714a61fe96da8a6764d058b849cab50d6dc","u":"49abf8144d265a77cf6d098eff784d6ce56ec77a182f6b39f47d5d8e28f2a802","chaincode":"797348468202f1d7fede0a7851f80162b02e7da306e65075dd864b6789b9bc5b"},"backupYShare":{"i":1,"j":2,"y":"249a9798d0064a989a16cd8f479edf09ffaee73f4175d2ac555ba90ff41b89da","v":"98e31d2b643e40060ba344c6a41fc096ea7e39a1ae879f65e4af645870e90ee0","u":"ac047b1bceab2e1a42d97ab540b39176e545d9c0af4a192aee8e1dae91a4240b","chaincode":"585bdc05c8f84802cbe7b9a1a07d4aa9c5fede93597a622854e9bad83a2d5b78"}}',
+        pub: commonKeychain,
+        source: 'user',
+        type: 'tss',
+      };
+
+      const mockKmsBackupResponse = {
+        prv: '{"uShare":{"i":2,"t":2,"n":3,"y":"249a9798d0064a989a16cd8f479edf09ffaee73f4175d2ac555ba90ff41b89da","seed":"abab5be2b32d07cf39b2a162af0f78bad8325b2fbdc89d14fd8b4e5767b74097","chaincode":"585bdc05c8f84802cbe7b9a1a07d4aa9c5fede93597a622854e9bad83a2d5b78"},"bitgoYShare":{"i":2,"j":3,"y":"483e53b72de3aa893df698d0b20b20777fb3d2716cc8483a9e9797174fd52b16","v":"e70696459e46434a2a12cc988e3ae714a61fe96da8a6764d058b849cab50d6dc","u":"eb54da28da3da22eb3d61797a02a96264be8940b7115aefbb90b9dd044db7f06","chaincode":"797348468202f1d7fede0a7851f80162b02e7da306e65075dd864b6789b9bc5b"},"userYShare":{"i":2,"j":1,"y":"85aa6462d927329418f70f6d0863cf6cf33e7da2934f935e5927f1b13062d779","v":"76cfdcbf0f769f21c64e0faf0072ebccbcc3aaa844522336af27f8e50ed7ca5f","u":"6ce814af82683423c8d8befd13f6eeeb0cd3f7274d1ebfdd5807fd2e4eaadb08","chaincode":"66e80f2bf41a5706608352d51ceb07a5aa1729cab6c6993c124d5731546ed9a1"}}',
+        pub: commonKeychain,
+        source: 'backup',
+        type: 'tss',
+      };
+
+      const dualCfg: AdvancedWalletManagerConfig = {
+        appMode: AppMode.ADVANCED_WALLET_MANAGER,
+        signingMode: SigningMode.LOCAL,
+        port: 0,
+        bind: 'localhost',
+        timeout: 60000,
+        keyProviderUrl: primaryKmsUrl,
+        backupKmsUrl,
+        httpLoggerFile: '',
+        tlsMode: TlsMode.DISABLED,
+        recoveryMode: true,
+      };
+
+      const dualApp = expressApp(dualCfg);
+      const dualAgent = request.agent(dualApp);
+
+      // User key served from primary KMS
+      const userKmsNock = nock(primaryKmsUrl)
+        .get(`/key/${commonKeychain}`)
+        .query({ source: 'user' })
+        .reply(200, mockKmsUserResponse)
+        .persist();
+
+      // Backup key served from backup KMS
+      const backupKmsNock = nock(backupKmsUrl)
+        .get(`/key/${commonKeychain}`)
+        .query({ source: 'backup' })
+        .reply(200, mockKmsBackupResponse)
+        .persist();
+
+      const input = {
+        commonKeychain,
+        unsignedSweepPrebuildTx: {
+          txRequests: [
+            {
+              unsignedTx: '',
+              signableHex:
+                'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAECvoOqYkvCPusjYyhX4GdUtzSeVIcx6GkwdpSk8SkU0/cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIQtFGO2YBsrubq15CKqJLwXG3VEF1aEs36Rao6EaJDLAQECAAAMAgAAALhJxgAAAAAA',
+              derivationPath: 'm/0',
+            },
+          ],
+        },
+      };
+
+      const response = await dualAgent
+        .post(`/api/${sol}/mpc/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(input);
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txHex');
+
+      userKmsNock.isDone().should.be.true();
+      backupKmsNock.isDone().should.be.true();
+    });
+  });
+
   describe('ECDSA sui recovery', () => {
     it('should successfully generate MPC sui transactions', async () => {
       const mockKeyProviderUserResponse = {

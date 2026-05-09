@@ -99,6 +99,10 @@ interface RecoveryMultisigOptions {
     | MPCTx
     | RecoveryTransaction;
   walletContractAddress: string;
+  // When set, only sign with the specified key (user half-sign or backup full-sign).
+  keyToSign?: 'user' | 'backup';
+  // Required when keyToSign is 'backup': the half-signed transaction from the user-key phase.
+  halfSignedTransaction?: any;
 }
 
 interface SignMpcCommitmentParams {

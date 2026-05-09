@@ -20,24 +20,22 @@ describe('recoveryMpcV2', () => {
   const cosmosLikeCoin = 'tsei';
   const accessToken = 'test-token';
 
-  // sinon stubs
+  // sinon sandbox
+  const sandbox = sinon.createSandbox();
   let configStub: sinon.SinonStub;
 
-  // key provider nocks setup — initialized in before()
-  let commonKeychain!: string;
+  // key provider nocks setup
+  let userKeyShare: string;
+  let backupKeyShare: string;
+  let commonKeychain: string;
   let mockKeyProviderUserResponse: { prv: string; pub: string; source: string; type: string };
   let mockKeyProviderBackupResponse: { prv: string; pub: string; source: string; type: string };
   let input: { txHex: string; pub: string };
 
   before(async () => {
-    // nock config
-    nock.disableNetConnect();
-    nock.enableNetConnect('127.0.0.1');
-
-    // generate DKG key shares
     const [userShare, backupShare] = await DklsUtils.generateDKGKeyShares();
-    const userKeyShare = userShare.getKeyShare().toString('base64');
-    const backupKeyShare = backupShare.getKeyShare().toString('base64');
+    userKeyShare = userShare.getKeyShare().toString('base64');
+    backupKeyShare = backupShare.getKeyShare().toString('base64');
     commonKeychain = DklsTypes.getCommonKeychain(userShare.getKeyShare());
 
     mockKeyProviderUserResponse = {
@@ -60,6 +58,10 @@ describe('recoveryMpcV2', () => {
       pub: commonKeychain,
     };
 
+    // nock config
+    nock.disableNetConnect();
+    nock.enableNetConnect('127.0.0.1');
+
     // app config
     cfg = {
       appMode: AppMode.ADVANCED_WALLET_MANAGER,
@@ -74,7 +76,7 @@ describe('recoveryMpcV2', () => {
       recoveryMode: true,
     };
 
-    configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
+    configStub = sandbox.stub(configModule, 'initConfig').returns(cfg);
 
     // app setup
     app = advancedWalletManagerApp(cfg);
@@ -86,7 +88,7 @@ describe('recoveryMpcV2', () => {
   });
 
   after(() => {
-    configStub.restore();
+    sandbox.restore();
   });
 
   // happy path test
@@ -137,6 +139,61 @@ describe('recoveryMpcV2', () => {
 
     userKeyProviderNock.isDone().should.be.true();
     backupKeyProviderNock.isDone().should.be.true();
+  });
+
+  it('should route backup key retrieval to backup KMS when configured', async () => {
+    const kmsUrl = 'http://kms.invalid';
+    const backupKmsUrl = 'http://backup-kms.invalid';
+
+    const mockKmsUserResponse = {
+      prv: JSON.stringify(userKeyShare),
+      pub: commonKeychain,
+      source: 'user',
+      type: 'tss',
+    };
+
+    const mockKmsBackupResponse = {
+      prv: JSON.stringify(backupKeyShare),
+      pub: commonKeychain,
+      source: 'backup',
+      type: 'tss',
+    };
+
+    // Reconfigure app with backup KMS URL
+    const dualCfg: AdvancedWalletManagerConfig = {
+      ...cfg,
+      keyProviderUrl: kmsUrl,
+      backupKmsUrl,
+    };
+    configStub.returns(dualCfg);
+    const dualApp = advancedWalletManagerApp(dualCfg);
+    const dualAgent = request.agent(dualApp);
+
+    // User key served from primary KMS
+    const userKmsNock = nock(kmsUrl)
+      .get(`/key/${input.pub}`)
+      .query({ source: 'user' })
+      .reply(200, mockKmsUserResponse)
+      .persist();
+
+    // Backup key served from backup KMS
+    const backupKmsNock = nock(backupKmsUrl)
+      .get(`/key/${input.pub}`)
+      .query({ source: 'backup' })
+      .reply(200, mockKmsBackupResponse)
+      .persist();
+
+    const response = await dualAgent
+      .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(input);
+
+    response.status.should.equal(200);
+    response.body.should.have.property('txHex');
+    response.body.should.have.property('stringifiedSignature');
+
+    userKmsNock.isDone().should.be.true();
+    backupKmsNock.isDone().should.be.true();
   });
 
   // failure test case
