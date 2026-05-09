@@ -72,6 +72,11 @@ const RecoveryMultisigRequest = {
   bitgoPub: optional(t.string),
   unsignedSweepPrebuildTx: t.any,
   walletContractAddress: optional(t.string),
+  // When set, only sign with the specified key (user half-sign or backup full-sign).
+  // When omitted, the endpoint signs with both keys (default single-AWM behavior).
+  keyToSign: optional(t.union([t.literal('user'), t.literal('backup')])),
+  // Required when keyToSign is 'backup': the half-signed transaction from the user-key phase.
+  halfSignedTransaction: optional(t.any),
 };
 
 // Response type for /multisig/recovery endpoint

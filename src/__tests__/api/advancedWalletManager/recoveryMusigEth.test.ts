@@ -22,7 +22,8 @@ describe('recoveryMultisigTransaction', () => {
   const coin = 'hteth';
   const accessToken = 'test-token';
 
-  // sinon stubs
+  // sinon sandbox
+  const sandbox = sinon.createSandbox();
   let configStub: sinon.SinonStub;
 
   before(() => {
@@ -44,7 +45,7 @@ describe('recoveryMultisigTransaction', () => {
       recoveryMode: true,
     };
 
-    configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
+    configStub = sandbox.stub(configModule, 'initConfig').returns(cfg);
 
     // app setup
     app = advancedWalletManagerApp(cfg);
@@ -56,7 +57,7 @@ describe('recoveryMultisigTransaction', () => {
   });
 
   after(() => {
-    configStub.restore();
+    sandbox.restore();
   });
 
   it('should generate a successful txHex from unsigned sweep prebuild data', async () => {
@@ -104,6 +105,67 @@ describe('recoveryMultisigTransaction', () => {
 
     keyProviderNockUser.done();
     keyProviderNockBackup.done();
+  });
+
+  it('should route backup key retrieval to backup KMS when configured', async () => {
+    const kmsUrl = 'http://kms.invalid';
+    const backupKmsUrl = 'http://backup-kms.invalid';
+    const { userPub, backupPub, walletContractAddress, userPrv, backupPrv, txHexResult } = awmData;
+    const unsignedSweepPrebuildTx = unsignedSweepRecJSON as unknown as any;
+
+    // Reconfigure app with backup KMS URL
+    const dualCfg: AdvancedWalletManagerConfig = {
+      ...cfg,
+      keyProviderUrl: kmsUrl,
+      backupKmsUrl,
+    };
+    configStub.returns(dualCfg);
+    const dualApp = advancedWalletManagerApp(dualCfg);
+    const dualAgent = request.agent(dualApp);
+
+    const mockKmsUserResponse = {
+      prv: userPrv,
+      pub: userPub,
+      source: 'user',
+      type: 'independent',
+    };
+
+    const mockKmsBackupResponse = {
+      prv: backupPrv,
+      pub: backupPub,
+      source: 'backup',
+      type: 'independent',
+    };
+
+    // User key from primary KMS
+    const kmsNockUser = nock(kmsUrl)
+      .get(`/key/${userPub}`)
+      .query({ source: 'user' })
+      .reply(200, mockKmsUserResponse);
+
+    // Backup key from backup KMS
+    const kmsNockBackup = nock(backupKmsUrl)
+      .get(`/key/${backupPub}`)
+      .query({ source: 'backup' })
+      .reply(200, mockKmsBackupResponse);
+
+    const response = await dualAgent
+      .post(`/api/${coin}/multisig/recovery`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        userPub,
+        backupPub,
+        apiKey: 'etherscan-api-token',
+        unsignedSweepPrebuildTx,
+        walletContractAddress,
+        coinSpecificParams: undefined,
+      });
+
+    response.status.should.equal(200);
+    response.body.should.have.property('txHex', txHexResult);
+
+    kmsNockUser.done();
+    kmsNockBackup.done();
   });
 
   it('should fail when prv keys non related to pub keys', async () => {

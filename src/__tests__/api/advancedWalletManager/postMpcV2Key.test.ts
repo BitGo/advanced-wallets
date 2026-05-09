@@ -21,8 +21,8 @@ describe('postMpcV2Key', () => {
   const coin = 'hteth';
   const accessToken = 'test-token';
 
-  // sinon stubs
-  let configStub: sinon.SinonStub;
+  // sinon sandbox
+  const sandbox = sinon.createSandbox();
 
   before(() => {
     // nock config
@@ -42,7 +42,7 @@ describe('postMpcV2Key', () => {
       clientCertAllowSelfSigned: true,
     };
 
-    configStub = sinon.stub(configModule, 'initConfig').returns(cfg);
+    sandbox.stub(configModule, 'initConfig').returns(cfg);
 
     // app setup
     app = advancedWalletManagerApp(cfg);
@@ -93,7 +93,7 @@ describe('postMpcV2Key', () => {
   });
 
   after(() => {
-    configStub.restore();
+    sandbox.restore();
   });
 
   it('should be able to create a new MPC V2 wallet', async () => {

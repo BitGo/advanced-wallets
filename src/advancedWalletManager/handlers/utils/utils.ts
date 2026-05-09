@@ -8,6 +8,30 @@ import { GenerateDataKeyResponse } from '../../keyProviderClient/types/dataKey';
 import { AdvancedWalletManagerConfig, KeySource, SigningMode } from '../../../shared/types';
 import { isUtxoCoin } from '../../../shared/coinUtils';
 
+export function buildBackupKmsConfig(
+  cfg: AdvancedWalletManagerConfig,
+): AdvancedWalletManagerConfig {
+  if (!cfg.backupKmsUrl) {
+    return cfg;
+  }
+  return {
+    ...cfg,
+    keyProviderUrl: cfg.backupKmsUrl,
+    ...(cfg.backupKmsServerCaCert !== undefined && {
+      keyProviderServerCaCert: cfg.backupKmsServerCaCert,
+    }),
+    ...(cfg.backupKmsClientTlsKey !== undefined && {
+      keyProviderClientTlsKey: cfg.backupKmsClientTlsKey,
+    }),
+    ...(cfg.backupKmsClientTlsCert !== undefined && {
+      keyProviderClientTlsCert: cfg.backupKmsClientTlsCert,
+    }),
+    ...(cfg.backupKmsServerCertAllowSelfSigned !== true && {
+      keyProviderServerCertAllowSelfSigned: cfg.backupKmsServerCertAllowSelfSigned,
+    }),
+  };
+}
+
 export async function retrieveKeyProviderPrvKey({
   pub,
   source,
@@ -17,7 +41,8 @@ export async function retrieveKeyProviderPrvKey({
   source: string;
   cfg: AdvancedWalletManagerConfig;
 }): Promise<string> {
-  const keyProvider = new KeyProviderClient(cfg);
+  const effectiveCfg = source === 'backup' ? buildBackupKmsConfig(cfg) : cfg;
+  const keyProvider = new KeyProviderClient(effectiveCfg);
   // Retrieve the private key from key provider
   let prv: string;
   try {

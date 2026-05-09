@@ -3,12 +3,12 @@ import {
   AwmApiSpecRouteRequest,
   MpcV2RecoveryResponseType,
 } from '../routers/advancedWalletManagerApiSpec';
-import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { BaseCoin, ECDSAMethodTypes } from '@bitgo-beta/sdk-core';
 import { isCosmosLikeCoin, isEcdsaCoin, isEthLikeCoin } from '../../shared/coinUtils';
 import { BadRequestError, NotImplementedError } from '../../shared/errors';
 import logger from '../../shared/logger';
 import coinFactory from '../../shared/coinFactory';
+import { buildBackupKmsConfig, retrieveKeyProviderPrvKey } from './utils/utils';
 
 async function getMessageHash(coin: BaseCoin, txHex: string): Promise<Buffer> {
   const txBuffer = Buffer.from(txHex, 'hex');
@@ -52,11 +52,10 @@ export async function ecdsaMPCv2Recovery(
     );
   }
 
-  // setup clients and retreive the keys
-  // TODO: this needs to be segerated if the EBE instance cannot retrieve both keys
-  const keyProvider = new KeyProviderClient(req.config);
-  const { prv: userPrv } = await keyProvider.getKey({ pub, source: 'user' });
-  const { prv: backupPrv } = await keyProvider.getKey({ pub, source: 'backup' });
+  // setup clients and retrieve the keys
+  const backupCfg = buildBackupKmsConfig(req.config);
+  const userPrv = await retrieveKeyProviderPrvKey({ pub, source: 'user', cfg: req.config });
+  const backupPrv = await retrieveKeyProviderPrvKey({ pub, source: 'backup', cfg: backupCfg });
 
   // construct tx builder
   const txHash = await getMessageHash(coin, txHex);

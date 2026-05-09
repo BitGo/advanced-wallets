@@ -46,6 +46,16 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   keyProviderClientTlsCert?: string;
   keyProviderServerCertAllowSelfSigned?: boolean;
 
+  // Backup KMS settings (separate HSM for backup key)
+  backupKmsUrl?: string;
+  backupKmsServerCaCertPath?: string;
+  backupKmsServerCaCert?: string;
+  backupKmsClientTlsKeyPath?: string;
+  backupKmsClientTlsCertPath?: string;
+  backupKmsClientTlsKey?: string;
+  backupKmsClientTlsCert?: string;
+  backupKmsServerCertAllowSelfSigned?: boolean;
+
   // mTLS server settings
   serverTlsKeyPath?: string;
   serverTlsCertPath?: string;
