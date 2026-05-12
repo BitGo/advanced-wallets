@@ -29,6 +29,7 @@ export const SignMpcResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.sign.tx.tss
+ * @public
  */
 export const SignAndSendMpcRoute = httpRoute({
   method: 'POST',

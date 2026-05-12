@@ -299,6 +299,7 @@ const RecoveryWalletRequest = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.recovery
+ * @public
  */
 export const RecoveryRoute = httpRoute({
   method: 'POST',

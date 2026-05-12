@@ -222,6 +222,7 @@ export const SendManyResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.sendmany
+ * @public
  */
 export const SendManyRoute = httpRoute({
   method: 'POST',

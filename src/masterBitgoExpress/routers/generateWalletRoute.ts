@@ -350,6 +350,7 @@ const GenerateWalletRequest = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.generate
+ * @public
  */
 export const WalletGenerateRoute = httpRoute({
   method: 'POST',

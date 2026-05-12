@@ -45,6 +45,7 @@ export const ConsolidateResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.consolidate
+ * @public
  */
 export const ConsolidateRoute = httpRoute({
   method: 'POST',

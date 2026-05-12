@@ -22,6 +22,7 @@ const VersionResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.mbe.ping
+ * @public
  */
 const PingRoute = httpRoute({
   method: 'POST',
@@ -38,6 +39,7 @@ const PingRoute = httpRoute({
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.mbe.version
+ * @public
  */
 const VersionRoute = httpRoute({
   method: 'GET',
