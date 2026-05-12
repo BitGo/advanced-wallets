@@ -28,6 +28,7 @@ const PingAwmResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.mbe.awm.ping
+ * @public
  */
 const PingAwmRoute = httpRoute({
   method: 'POST',

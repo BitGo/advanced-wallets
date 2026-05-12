@@ -86,6 +86,7 @@ const AccelerateResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.accelerate.tx
+ * @public
  */
 export const AccelerateRoute = httpRoute({
   method: 'POST',

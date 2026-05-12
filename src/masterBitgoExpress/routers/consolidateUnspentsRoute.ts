@@ -84,6 +84,7 @@ export const ConsolidateUnspentsResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.consolidate.unspents
+ * @public
  */
 export const ConsolidateUnspentsRoute = httpRoute({
   method: 'POST',

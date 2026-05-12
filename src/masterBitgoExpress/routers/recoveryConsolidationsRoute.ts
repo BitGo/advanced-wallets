@@ -127,6 +127,7 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
  *
  * @tag Advanced Wallets
  * @operationId advancedwallet.consolidate.recovery
+ * @public
  */
 export const RecoveryConsolidationsRoute = httpRoute({
   method: 'POST',
