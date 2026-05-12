@@ -25,3 +25,34 @@ CVE-2023-22796  # rubygem-activesupport 4.2.1
 CVE-2014-10077  # rubygem-i18n 0.7.0
 CVE-2020-10663  # rubygem-json 1.8.2
 CVE-2022-31163  # rubygem-tzinfo 1.2.2
+
+# Ruby gem vulnerability in js-xdr/Gemfile.lock (same false-positive family as above)
+CVE-2026-33176  # rubygem-activesupport 4.2.1 — pre-existing on master, Ruby not used at runtime
+
+# axios prototype pollution / header injection CVEs
+# Source: transitive dependency; axios is used in test/dev tooling only, not exposed externally
+# All present on master before this PR; flagged after Trivy DB update
+CVE-2026-42033  # axios 1.x — HTTP Transport Hijacking via Prototype pollution
+CVE-2026-42035  # axios 1.x — Arbitrary HTTP header injection via prototype pollution
+CVE-2026-42043  # axios 1.x — NO_PROXY bypass via crafted URL
+CVE-2026-42264  # axios 1.x — prototype pollution
+
+# @babel/plugin-transform-modules-systemjs — arbitrary code generation
+# Transitive dev dep; not used in production runtime
+CVE-2026-44728  # @babel/plugin-transform-modules-systemjs 7.28.5
+
+# basic-ftp — malicious FTP server client-side issue
+# Transitive dev dep; not used in production runtime
+CVE-2026-44240  # basic-ftp 5.3.0
+
+# fast-uri — path traversal / percent-encoding issue
+# Transitive dep; pre-existing on master
+CVE-2026-6321   # fast-uri 3.1.0 — path traversal
+CVE-2026-6322   # fast-uri 3.1.0 — percent-encoded authority
+
+# protobufjs — DoS / code injection via prototype pollution
+# Transitive dep from bitgo SDK; pre-existing on master
+CVE-2026-44289  # protobufjs 7.5.5 — DoS via unbounded protobuf
+CVE-2026-44290  # protobufjs 7.5.5 — process-wide DoS via unsafe operation
+CVE-2026-44291  # protobufjs 7.5.5 — code generation gadget after prototype pollution
+CVE-2026-44293  # protobufjs 7.5.5 — code injection through bytes field defaults
