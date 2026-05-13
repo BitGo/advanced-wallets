@@ -1,5 +1,6 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { CustomSigningFunction, RequestTracer } from '@bitgo-beta/sdk-core';
+import { BaseCoin } from '@bitgo-beta/sdk-core';
+import { CustomSigningFunction, RequestTracer, KeyIndices, Wallet } from '@bitgo-beta/sdk-core';
 import coinFactory from '../../../shared/coinFactory';
 import { AdvancedWalletManagerClient } from '../../clients/advancedWalletManagerClient';
 import { MasterExpressConfig } from '../../../shared/types';
@@ -57,6 +58,29 @@ export async function getWalletAndSigningKeychain({
 
   return { baseCoin, wallet, signingKeychain };
 }
+
+/**
+ * Fetches all 3 wallet keychains (user, backup, bitgo) and returns their public keys.
+ * Returns undefined if any keychain is missing a pub (required for UTXO multisig signing).
+ */
+export async function getWalletPubs({
+  baseCoin,
+  wallet,
+}: {
+  baseCoin: BaseCoin;
+  wallet: Wallet;
+}): Promise<string[] | undefined> {
+  const [userKeychain, backupKeychain, bitgoKeychain] = await Promise.all([
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.USER] }),
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BACKUP] }),
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BITGO] }),
+  ]);
+
+  return userKeychain?.pub && backupKeychain?.pub && bitgoKeychain?.pub
+    ? [userKeychain.pub, backupKeychain.pub, bitgoKeychain.pub]
+    : undefined;
+}
+
 /**
  * Create a custom signing function that delegates to awmClient.signMultisig.
  */
@@ -65,16 +89,19 @@ export function makeCustomSigningFunction({
   awmClient,
   source,
   pub,
+  walletPubs,
 }: {
   awmClient: AdvancedWalletManagerClient;
   source: 'user' | 'backup';
   pub: string;
+  walletPubs?: string[];
 }): CustomSigningFunction {
   return async function customSigningFunction(signParams: any) {
     return awmClient.signMultisig({
       txPrebuild: signParams.txPrebuild,
       source,
       pub,
+      walletPubs,
     });
   };
 }

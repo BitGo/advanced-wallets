@@ -34,6 +34,12 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
     type: 'independent',
   };
 
+  const mockBitgoKeychain = {
+    id: 'bitgo-key-id',
+    pub: 'xpub661MyMwAqRbcHtYNxRNuEtDFmPMRzBVPDfBXNu2RUBVFNz8MnWQgkrMZCNB',
+    type: 'bitgo',
+  };
+
   before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
@@ -68,10 +74,25 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockWalletData);
 
+    // Signing keychain fetched by getWalletAndSigningKeychain
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
@@ -117,10 +138,25 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockWalletData);
 
+    // Signing keychain fetched by getWalletAndSigningKeychain
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/backup-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBackupKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
@@ -157,10 +193,25 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockWalletData);
 
+    // Signing keychain fetched by getWalletAndSigningKeychain
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
@@ -324,10 +375,25 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockWalletData);
 
+    // Signing keychain fetched by getWalletAndSigningKeychain
     const keychainGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
 
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
@@ -407,5 +473,129 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
     response.body.should.have.property('details');
+  });
+
+  it('should pass walletPubs (all 3 xpubs) to AWM for UTXO signing', async () => {
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData);
+
+    // Signing keychain (user) — fetched once by getWalletAndSigningKeychain
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    // All 3 keychains fetched for walletPubs
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBackupKeychain);
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
+
+    let capturedSignBody: any;
+    const awmSignNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`, (body) => {
+        capturedSignBody = body;
+        return true;
+      })
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'user',
+        pub: mockUserKeychain.pub,
+      });
+
+    // Stub accelerateTransaction to call customSigningFunction so the AWM request is made
+    sinon.stub(Wallet.prototype, 'accelerateTransaction').callsFake(async (params: any) => {
+      await params.customSigningFunction({ txPrebuild: { txHex: 'prebuilt-tx' } });
+      return { txid: 'accelerated-tx-id', tx: '0100000001abcdef...', status: 'signed' };
+    });
+
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        cpfpTxIds: ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'],
+        cpfpFeeRate: 50,
+      });
+
+    response.status.should.equal(200);
+    awmSignNock.done();
+    capturedSignBody.should.have.property('walletPubs');
+    capturedSignBody.walletPubs.should.deepEqual([
+      mockUserKeychain.pub,
+      mockBackupKeychain.pub,
+      mockBitgoKeychain.pub,
+    ]);
+  });
+
+  it('should omit walletPubs from AWM request when any keychain is missing a pub', async () => {
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockWalletData);
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/backup-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, { id: 'backup-key-id' }); // no pub
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${coin}/key/bitgo-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockBitgoKeychain);
+
+    let capturedSignBody: any;
+    const awmSignNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`, (body) => {
+        capturedSignBody = body;
+        return true;
+      })
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'user',
+        pub: mockUserKeychain.pub,
+      });
+
+    sinon.stub(Wallet.prototype, 'accelerateTransaction').callsFake(async (params: any) => {
+      await params.customSigningFunction({ txPrebuild: { txHex: 'prebuilt-tx' } });
+      return { txid: 'accelerated-tx-id', tx: '0100000001abcdef...', status: 'signed' };
+    });
+
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        cpfpTxIds: ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'],
+        cpfpFeeRate: 50,
+      });
+
+    response.status.should.equal(200);
+    awmSignNock.done();
+    capturedSignBody.should.not.have.property('walletPubs');
   });
 });
