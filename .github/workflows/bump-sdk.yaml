@@ -1,0 +1,94 @@
+name: Bump @bitgo-beta SDK Dependencies
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-sdk:
+    name: Bump SDK deps and open PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.1.0'
+          cache: 'npm'
+
+      - name: Install current dependencies
+        run: npm ci
+
+      - name: Bump @bitgo-beta versions
+        run: npm run bump-versions
+
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only
+
+      - name: Install updated dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate test SSL certificates
+        run: npm run generate-test-ssl
+
+      - name: Test
+        run: npm test
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+          MASTER_BITGO_EXPRESS_KEYPATH: ./demo.key
+          MASTER_BITGO_EXPRESS_CRTPATH: ./demo.crt
+          MTLS_ENABLED: true
+          MTLS_REQUEST_CERT: true
+          MTLS_REJECT_UNAUTHORIZED: false
+          KEY_PROVIDER_URL: 'https://localhost:3000/'
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet HEAD -- package.json package-lock.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push branch
+        id: push-branch
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          DATE=$(date +'%Y-%m-%d')
+          BRANCH="chore/bump-bitgo-beta-$(date +'%Y%m%d-%H%M')"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json package-lock.json
+          git commit -m "chore: bump @bitgo-beta dependencies ${DATE}"
+          git push origin "$BRANCH"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+
+      - name: Open draft PR
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          gh pr create \
+            --title "chore: bump @bitgo-beta dependencies ${{ steps.push-branch.outputs.date }}" \
+            --body "Automated weekly bump of \`@bitgo-beta/*\` dependencies.
+
+          Build and tests passed on this branch before opening." \
+            --base master \
+            --head "${{ steps.push-branch.outputs.branch }}" \
+            --draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
