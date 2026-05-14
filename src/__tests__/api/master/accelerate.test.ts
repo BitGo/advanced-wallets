@@ -34,6 +34,29 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
     type: 'independent',
   };
 
+  const mockBitgoKeychain = {
+    id: 'bitgo-key-id',
+    pub: 'xpub661MyMwAqRbcH7HSwqXjBxRr2imXfTnCTLBiSHqFMb8FGnXtKEmYYrakVg1YBR6mY8gQwUfq9P',
+    type: 'independent',
+  };
+
+  function nockAllKeychains(accessToken: string) {
+    return [
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('authorization', `Bearer ${accessToken}`)
+        .reply(200, mockUserKeychain),
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/backup-key-id`)
+        .matchHeader('authorization', `Bearer ${accessToken}`)
+        .reply(200, mockBackupKeychain),
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/bitgo-key-id`)
+        .matchHeader('authorization', `Bearer ${accessToken}`)
+        .reply(200, mockBitgoKeychain),
+    ];
+  }
+
   before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
@@ -73,6 +96,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
 
+    const allKeychainNocks = nockAllKeychains(accessToken);
+
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
       .resolves({
@@ -101,6 +126,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
+    allKeychainNocks.forEach((n) => n.done());
     sinon.assert.calledOnce(accelerateTransactionStub);
 
     const callArgs = accelerateTransactionStub.firstCall.args[0];
@@ -121,6 +147,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .get(`/api/v2/${coin}/key/backup-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBackupKeychain);
+
+    const allKeychainNocks = nockAllKeychains(accessToken);
 
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
@@ -148,6 +176,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
+    allKeychainNocks.forEach((n) => n.done());
     sinon.assert.calledOnce(accelerateTransactionStub);
   });
 
@@ -161,6 +190,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
+
+    const allKeychainNocks = nockAllKeychains(accessToken);
 
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
@@ -190,6 +221,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
+    allKeychainNocks.forEach((n) => n.done());
     sinon.assert.calledOnce(accelerateTransactionStub);
   });
 
@@ -329,6 +361,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
 
+    const allKeychainNocks = nockAllKeychains(accessToken);
+
     const accelerateTransactionStub = sinon
       .stub(Wallet.prototype, 'accelerateTransaction')
       .rejects(new Error('Insufficient funds for acceleration'));
@@ -350,6 +384,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
+    allKeychainNocks.forEach((n) => n.done());
     sinon.assert.calledOnce(accelerateTransactionStub);
   });
 

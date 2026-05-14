@@ -1,5 +1,5 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { CustomSigningFunction, RequestTracer } from '@bitgo-beta/sdk-core';
+import { BaseCoin, CustomSigningFunction, RequestTracer, Wallet } from '@bitgo-beta/sdk-core';
 import coinFactory from '../../../shared/coinFactory';
 import { AdvancedWalletManagerClient } from '../../clients/advancedWalletManagerClient';
 import { MasterExpressConfig } from '../../../shared/types';
@@ -65,18 +65,40 @@ export function makeCustomSigningFunction({
   awmClient,
   source,
   pub,
+  walletPubs,
 }: {
   awmClient: AdvancedWalletManagerClient;
   source: 'user' | 'backup';
   pub: string;
+  walletPubs?: string[];
 }): CustomSigningFunction {
   return async function customSigningFunction(signParams: any) {
     return awmClient.signMultisig({
       txPrebuild: signParams.txPrebuild,
       source,
       pub,
+      walletPubs,
     });
   };
+}
+
+export async function getWalletPubs({
+  baseCoin,
+  wallet,
+  KeyIndices,
+}: {
+  baseCoin: BaseCoin;
+  wallet: Wallet;
+  KeyIndices: { USER: number; BACKUP: number; BITGO: number };
+}): Promise<string[] | undefined> {
+  const [userKeychain, backupKeychain, bitgoKeychain] = await Promise.all([
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.USER] }),
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BACKUP] }),
+    baseCoin.keychains().get({ id: wallet.keyIds()[KeyIndices.BITGO] }),
+  ]);
+  return userKeychain?.pub && backupKeychain?.pub && bitgoKeychain?.pub
+    ? [userKeychain.pub, backupKeychain.pub, bitgoKeychain.pub]
+    : undefined;
 }
 
 export function checkRecoveryMode(config: MasterExpressConfig) {

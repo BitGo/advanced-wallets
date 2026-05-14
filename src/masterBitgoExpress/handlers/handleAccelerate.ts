@@ -1,7 +1,11 @@
 import { RequestTracer, KeyIndices } from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
-import { getWalletAndSigningKeychain, makeCustomSigningFunction } from './utils/utils';
+import {
+  getWalletAndSigningKeychain,
+  getWalletPubs,
+  makeCustomSigningFunction,
+} from './utils/utils';
 
 export async function handleAccelerate(
   req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>,
@@ -13,7 +17,7 @@ export async function handleAccelerate(
   const walletId = req.params.walletId;
   const coin = req.params.coin;
 
-  const { wallet, signingKeychain } = await getWalletAndSigningKeychain({
+  const { baseCoin, wallet, signingKeychain } = await getWalletAndSigningKeychain({
     bitgo,
     coin,
     walletId,
@@ -22,12 +26,15 @@ export async function handleAccelerate(
     KeyIndices,
   });
 
+  const walletPubs = await getWalletPubs({ baseCoin, wallet, KeyIndices });
+
   try {
     // Create custom signing function that delegates to EBE
     const customSigningFunction = makeCustomSigningFunction({
       awmClient,
       source: params.source,
       pub: signingKeychain.pub!,
+      walletPubs,
     });
 
     // Prepare acceleration parameters
