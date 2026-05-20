@@ -8,6 +8,7 @@ import { Environments, Wallet } from '@bitgo-beta/sdk-core';
 import { Hteth } from '@bitgo-beta/sdk-coin-eth';
 import * as transactionRequests from '../../../masterBitgoExpress/handlers/transactionRequests';
 import * as handlerUtils from '../../../masterBitgoExpress/handlers/utils/utils';
+import assert from 'assert';
 
 describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
   let agent: request.SuperAgentTest;
@@ -153,7 +154,15 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
     sinon.assert.calledOnce(buildConsolidationsStub);
     sinon.assert.calledTwice(sendAccountConsolidationStub);
     sinon.assert.calledTwice(makeCustomSigningFunctionStub);
+    const signingArgs = makeCustomSigningFunctionStub.firstCall.args[0];
+    signingArgs.should.have.property('walletPubs').which.is.an.Array();
     sinon.assert.calledOnce(allowsConsolidationsStub);
+
+    const { walletPubs } = signingArgs;
+    assert(walletPubs, 'Expected walletPubs to be defined');
+    walletPubs.should.containEql(mockUserKeychain.pub);
+    walletPubs.should.containEql(mockBackupKeychain.pub);
+    walletPubs.should.containEql(mockBitgoKeychain.pub);
   });
 
   it('should succeed in consolidating MPC wallet using signAndSendTxRequests', async () => {

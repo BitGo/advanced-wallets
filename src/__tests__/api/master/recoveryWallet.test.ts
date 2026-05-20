@@ -285,7 +285,18 @@ describe('Recovery Tests', () => {
     const ethCoinId = 'hteth';
 
     beforeEach(() => {
-      // Setup coin middleware for ETH coin
+      const mockRecover = sinon.stub().resolves({ txHex: 'eth-signed-tx-hex' });
+      const mockIsValidPub = sinon.stub().returns(true);
+      sinon
+        .stub(coinFactory, 'getCoin')
+        .withArgs(ethCoinId)
+        .returns({
+          /** Mock the recover() method on EVM coins */
+          recover: mockRecover,
+          isValidPub: mockIsValidPub,
+          getFamily: sinon.stub().returns(CoinFamily.ETH),
+        } as any);
+
       sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
         (req as BitGoRequest<MasterExpressConfig>).params = { coin: ethCoinId };
         (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
@@ -295,6 +306,35 @@ describe('Recovery Tests', () => {
         next();
         return undefined;
       });
+    });
+
+    it('should recover an EVM wallet by calling the advanced wallet manager service', async () => {
+      const userPub = 'xpub_user';
+      const backupPub = 'xpub_backup';
+      const bitgoPub = 'xpub_bitgo';
+      const recoveryDestination = '0x1234567890123456789012345678901234567890';
+      const walletContractAddress = '0x0987654321098765432109876543210987654321';
+
+      const recoveryNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${ethCoinId}/multisig/recovery`)
+        .reply(200, { txHex: 'eth-signed-tx-hex' });
+
+      const response = await agent
+        .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          multiSigRecoveryParams: { userPub, backupPub, bitgoPub, walletContractAddress },
+          recoveryDestinationAddress: recoveryDestination,
+          coin: ethCoinId,
+          apiKey: 'key',
+          coinSpecificParams: {
+            evmRecoveryOptions: {},
+          },
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txHex', 'eth-signed-tx-hex');
+      recoveryNock.done();
     });
 
     it('should reject incorrect UTXO parameters for an ETH coin', async () => {

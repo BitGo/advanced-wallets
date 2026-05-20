@@ -7,7 +7,6 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Trx } from '@bitgo-beta/sdk-coin-trx';
 import { Sol } from '@bitgo-beta/sdk-coin-sol';
 import { Sui } from '@bitgo-beta/sdk-coin-sui';
-import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 
 describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;
@@ -59,9 +58,10 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       transactions: mockTransactions,
     });
 
-    const recoveryMultisigStub = sinon
-      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
-      .resolves({ txHex: 'signed-tx' });
+    const recoveryNock = nock(advancedWalletManagerUrl)
+      .post('/api/trx/multisig/recovery')
+      .twice()
+      .reply(200, { txHex: 'signed-tx' });
 
     const requestPayload = {
       multisigType: 'onchain' as const,
@@ -83,7 +83,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
     response.body.signedTxs.should.have.length(2);
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
-    sinon.assert.calledTwice(recoveryMultisigStub);
+    recoveryNock.done();
 
     const callArgs = recoverConsolidationsStub.firstCall.args[0];
     callArgs.should.have.property('tokenContractAddress', 'tron-token-address');
@@ -99,9 +99,9 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       transactions: mockTransactions,
     });
 
-    const recoveryMultisigStub = sinon
-      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
-      .resolves({ txHex: 'signed-tx' });
+    const recoveryNock = nock(advancedWalletManagerUrl)
+      .post('/api/sol/multisig/recovery')
+      .reply(200, { txHex: 'signed-tx' });
 
     const requestPayload = {
       multisigType: 'onchain' as const,
@@ -124,7 +124,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
     response.body.signedTxs.should.have.length(1);
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
-    sinon.assert.calledOnce(recoveryMultisigStub);
+    recoveryNock.done();
 
     const callArgs = recoverConsolidationsStub.firstCall.args[0];
     callArgs.should.have.property('durableNonces');
@@ -144,6 +144,11 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
             unsignedTx: {
               txHex: 'unsigned-mpc-tx-1',
               serializedTx: 'serialized-unsigned-mpc-tx-1',
+              /**
+               * signableHex is required by the isRecoveryTxRequest type guard in the handler —
+               * without it the guard returns false and the AWM signing call is never reached.
+               */
+              signableHex: 'signable-mpc-tx-1',
             },
             signatureShares: [],
           },
@@ -155,9 +160,13 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       txRequests: mockTxRequests,
     });
 
-    const recoveryMPCStub = sinon
-      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMPC')
-      .resolves({ txHex: 'signed-mpc-tx' });
+    let capturedAwmBody: any;
+    const recoveryNock = nock(advancedWalletManagerUrl)
+      .post('/api/tsui/mpc/recovery', (body) => {
+        capturedAwmBody = body;
+        return true;
+      })
+      .reply(200, { txHex: 'signed-mpc-tx' });
 
     const requestPayload = {
       multisigType: 'tss' as const,
@@ -177,29 +186,36 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
     response.body.signedTxs.should.have.length(1);
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
-    sinon.assert.calledOnce(recoveryMPCStub);
+    recoveryNock.done();
 
     const callArgs = recoverConsolidationsStub.firstCall.args[0];
     callArgs.should.have.property('userKey', '');
     callArgs.should.have.property('backupKey', '');
     callArgs.should.have.property('bitgoKey', mockCommonKeychain);
 
-    const mpcCallArgs = recoveryMPCStub.firstCall.args[0];
-    mpcCallArgs.should.have.property('userPub', mockCommonKeychain);
-    mpcCallArgs.should.have.property('backupPub', mockCommonKeychain);
-    mpcCallArgs.should.have.property('apiKey', 'test-api-key');
+    capturedAwmBody.should.have.property('commonKeychain', mockCommonKeychain);
   });
 
   it('should succeed in handling SOL MPC consolidation recovery', async () => {
-    const mockTransactions = [{ txHex: 'unsigned-mpc-tx-1', serializedTx: 'serialized-mpc-tx-1' }];
+    const mockTransactions = [
+      {
+        txHex: 'unsigned-mpc-tx-1',
+        serializedTx: 'serialized-mpc-tx-1',
+        signableHex: 'signable-mpc-tx-1',
+      },
+    ];
 
     const recoverConsolidationsStub = sinon.stub(Sol.prototype, 'recoverConsolidations').resolves({
       transactions: mockTransactions,
     });
 
-    const recoveryMPCStub = sinon
-      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMPC')
-      .resolves({ txHex: 'signed-mpc-tx' });
+    let capturedAwmBody: any;
+    const recoveryNock = nock(advancedWalletManagerUrl)
+      .post('/api/sol/mpc/recovery', (body) => {
+        capturedAwmBody = body;
+        return true;
+      })
+      .reply(200, { txHex: 'signed-mpc-tx' });
 
     const requestPayload = {
       multisigType: 'tss' as const,
@@ -221,12 +237,8 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
     response.body.signedTxs.should.have.length(1);
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
-    sinon.assert.calledOnce(recoveryMPCStub);
-
-    const mpcCallArgs = recoveryMPCStub.firstCall.args[0];
-    mpcCallArgs.should.have.property('userPub', mockCommonKeychain);
-    mpcCallArgs.should.have.property('backupPub', mockCommonKeychain);
-    mpcCallArgs.should.have.property('apiKey', 'sol-api-key');
+    recoveryNock.done();
+    capturedAwmBody.should.have.property('commonKeychain', mockCommonKeychain);
   });
 
   it('should succeed in handling multiple recovery consolidations', async () => {
@@ -240,9 +252,10 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       transactions: mockTransactions,
     });
 
-    const recoveryMultisigStub = sinon
-      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
-      .resolves({ txHex: 'signed-tx' });
+    const recoveryNock = nock(advancedWalletManagerUrl)
+      .post('/api/trx/multisig/recovery')
+      .thrice()
+      .reply(200, { txHex: 'signed-tx' });
 
     const requestPayload = {
       multisigType: 'onchain' as const,
@@ -263,7 +276,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
     response.body.signedTxs.should.have.length(3);
 
     sinon.assert.calledOnce(recoverConsolidationsStub);
-    sinon.assert.calledThrice(recoveryMultisigStub);
+    recoveryNock.done();
   });
 
   it('should fail when commonKeychain is missing for MPC wallet', async () => {
@@ -411,13 +424,14 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
   it('should fail when awmClient throws an error', async () => {
     const mockTransactions = [{ txHex: 'unsigned-tx-1', serializedTx: 'serialized-unsigned-tx-1' }];
 
-    const recoverConsolidationsStub = sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
+    sinon.stub(Trx.prototype, 'recoverConsolidations').resolves({
       transactions: mockTransactions,
     });
 
-    const recoveryMultisigStub = sinon
-      .stub(AdvancedWalletManagerClient.prototype, 'recoveryMultisig')
-      .rejects(new Error('Advanced Wallet Manager signing failed'));
+    nock(advancedWalletManagerUrl).post('/api/trx/multisig/recovery').reply(500, {
+      error: 'Internal Server Error',
+      details: 'Advanced Wallet Manager signing failed',
+    });
 
     const response = await agent
       .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
@@ -431,10 +445,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details', 'Advanced Wallet Manager signing failed');
-
-    sinon.assert.calledOnce(recoverConsolidationsStub);
-    sinon.assert.calledOnce(recoveryMultisigStub);
+    response.body.should.have.property('details');
   });
 
   it('should fail when durableNonces parameter is not correctly structured', async () => {

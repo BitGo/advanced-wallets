@@ -10,6 +10,15 @@ import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import * as utils from '../../../advancedWalletManager/handlers/utils/utils';
 
+const ENCRYPTED_DATA_KEY =
+  '1,2,3,0,120,222,140,157,217,111,195,208,47,200,213,217,82,189,16,171,207,16,138,46,228,224,190,138,63,132,239,80,164,8,124,105,140,1,27,61,180,40,45,94,243,196,95,71,146,240,249,140,231,178,0,0,0,126,48,124,6,9,42,134,72,134,247,13,1,7,6,160,111,48,109,2,1,0,48,104,6,9,42,134,72,134,247,13,1,7,1,48,30,6,9,96,134,72,1,101,3,4,1,46,48,17,4,12,115,239,175,219,100,1,209,88,93,117,98,167,2,1,16,128,59,21,22,232,220,65,90,225,157,209,67,125,11,176,151,84,9,229,154,164,67,17,135,158,106,222,220,93,124,231,14,167,59,236,161,55,34,249,62,170,252,0,170,211,100,168,123,50,23,187,247,30,140,221,224,150,25,180,142,14';
+
+const USER_GPG_PUB =
+  '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwRRQgq/FOV/rats/YBQB+bg7L8Z/uIY9OE9uWEy\nl18NwQvnxPDRQSFhXT4gmgSbPhCpKKLz4uACggRPQ48w/iZFzVViMzBlY2Iw\nOWY0ZjEzZmYxNzIxYjBjZGUgPHVzZXItYjMwZWNiMDlmNGYxM2ZmMTcyMWIw\nY2RlQGIzMGVjYjA5ZjRmMTNmZjE3MjFiMGNkZS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQ+GFfDyTprSUDFQgKBBYAAgECGQECmwMCHgEWIQSrLYVqNCwc\nOgNIraH4YV8PJOmtJQAAjz8BAL2A/ZSVyXqGnQL9e0wlQWMv5RAauVen/sSc\n7ksmTR5CAP9Ou1EUsVAxp82g4stNlmLLxCz+4qYz1Xhe6wckJ5IZF85TBGiK\nQMASBSuBBAAKAgMExA577OmWJP1MOCwofghOiX6RVWzZzkdjrt9cJcpzeDkI\n/8ScaOnQqbwoCmqhOYr0SvdsoRwS+Uw2KIPmy70DFAMBCAfCdwQYEwgAKgWC\naIpAwAmQ+GFfDyTprSUCmwwWIQSrLYVqNCwcOgNIraH4YV8PJOmtJQAAFDgB\nAI7jc6fOBSQPuzWjtswmQPC2K5pk71OoiCNDBW7dixWYAPikuVv70uWB0FA+\nvcg6kUCMCu3PG57kN1cKXrQZnQ8F\n=DJaC\n-----END PGP PUBLIC KEY BLOCK-----\n';
+
+const USER_PUBLIC_SHARE =
+  'b50eef93f764af40da7561d302bed1e14707fb73633f60e267b3d4b25fb9a94a56e56301b217ebdf27e6e8e1dcdfcb5de5e9c2fda6aba998b754c8baaba2ebe2';
+
 describe('MPC Finalize', () => {
   let agent: request.SuperAgentTest;
   let app: express.Application;
@@ -41,8 +50,7 @@ describe('MPC Finalize', () => {
     bitgo = new BitGoAPI({ env: 'test' });
     sinon.stub(bitgo, 'decrypt').returns(
       JSON.stringify({
-        sourceGpgPub:
-          '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwRRQgq/FOV/rats/YBQB+bg7L8Z/uIY9OE9uWEy\nl18NwQvnxPDRQSFhXT4gmgSbPhCpKKLz4uACggRPQ48w/iZFzVViMzBlY2Iw\nOWY0ZjEzZmYxNzIxYjBjZGUgPHVzZXItYjMwZWNiMDlmNGYxM2ZmMTcyMWIw\nY2RlQGIzMGVjYjA5ZjRmMTNmZjE3MjFiMGNkZS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQ+GFfDyTprSUDFQgKBBYAAgECGQECmwMCHgEWIQSrLYVqNCwc\nOgNIraH4YV8PJOmtJQAAjz8BAL2A/ZSVyXqGnQL9e0wlQWMv5RAauVen/sSc\n7ksmTR5CAP9Ou1EUsVAxp82g4stNlmLLxCz+4qYz1Xhe6wckJ5IZF85TBGiK\nQMASBSuBBAAKAgMExA577OmWJP1MOCwofghOiX6RVWzZzkdjrt9cJcpzeDkI\n/8ScaOnQqbwoCmqhOYr0SvdsoRwS+Uw2KIPmy70DFAMBCAfCdwQYEwgAKgWC\naIpAwAmQ+GFfDyTprSUCmwwWIQSrLYVqNCwcOgNIraH4YV8PJOmtJQAAFDgB\nAI7jc6fOBSQPuzWjtswmQPC2K5pk71OoiCNDBW7dixWYAPikuVv70uWB0FA+\nvcg6kUCMCu3PG57kN1cKXrQZnQ8F\n=DJaC\n-----END PGP PUBLIC KEY BLOCK-----\n',
+        sourceGpgPub: USER_GPG_PUB,
         sourceGpgPrv:
           '-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nxXQEaIpAwBMFK4EEAAoCAwRRQgq/FOV/rats/YBQB+bg7L8Z/uIY9OE9uWEy\nl18NwQvnxPDRQSFhXT4gmgSbPhCpKKLz4uACggRPQ48w/iZFAAD9HpBMPmFQ\nKOF3lO/vX9MT0NjNX8ZDyjLX4gs3EJ94xF0ROc1VYjMwZWNiMDlmNGYxM2Zm\nMTcyMWIwY2RlIDx1c2VyLWIzMGVjYjA5ZjRmMTNmZjE3MjFiMGNkZUBiMzBl\nY2IwOWY0ZjEzZmYxNzIxYjBjZGUuY29tPsKMBBATCAA+BYJoikDABAsJBwgJ\nkPhhXw8k6a0lAxUICgQWAAIBAhkBApsDAh4BFiEEqy2FajQsHDoDSK2h+GFf\nDyTprSUAAI8/AQC9gP2Ulcl6hp0C/XtMJUFjL+UQGrlXp/7EnO5LJk0eQgD/\nTrtRFLFQMafNoOLLTZZiy8Qs/uKmM9V4XusHJCeSGRfHeARoikDAEgUrgQQA\nCgIDBMQOe+zpliT9TDgsKH4ITol+kVVs2c5HY67fXCXKc3g5CP/EnGjp0Km8\nKApqoTmK9Er3bKEcEvlMNiiD5su9AxQDAQgHAAD9FLLcWPJa0qjiX6FhahZI\nvlOvrtS1/BX1EH4FgW3HlP0SnsJ3BBgTCAAqBYJoikDACZD4YV8PJOmtJQKb\nDBYhBKsthWo0LBw6A0itofhhXw8k6a0lAAAUOAEAjuNzp84FJA+7NaO2zCZA\n8LYrmmTvU6iII0MFbt2LFZgA+KS5W/vS5YHQUD69yDqRQIwK7c8bnuQ3Vwpe\ntBmdDwU=\n=a275\n-----END PGP PRIVATE KEY BLOCK-----\n',
         sourcePrivateShare: {
@@ -56,15 +64,13 @@ describe('MPC Finalize', () => {
         counterPartyKeyShare: {
           from: 'user',
           to: 'backup',
-          publicShare:
-            'b50eef93f764af40da7561d302bed1e14707fb73633f60e267b3d4b25fb9a94a56e56301b217ebdf27e6e8e1dcdfcb5de5e9c2fda6aba998b754c8baaba2ebe2',
+          publicShare: USER_PUBLIC_SHARE,
           privateShare:
             '3e3de1036d07e779451494097d1700ba9554ab384be1a83fd03bbe2ab670e50456e56301b217ebdf27e6e8e1dcdfcb5de5e9c2fda6aba998b754c8baaba2ebe2',
           privateShareProof:
             '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwRRQgq/FOV/rats/YBQB+bg7L8Z/uIY9OE9uWEy\nl18NwQvnxPDRQSFhXT4gmgSbPhCpKKLz4uACggRPQ48w/iZFzVViMzBlY2Iw\nOWY0ZjEzZmYxNzIxYjBjZGUgPHVzZXItYjMwZWNiMDlmNGYxM2ZmMTcyMWIw\nY2RlQGIzMGVjYjA5ZjRmMTNmZjE3MjFiMGNkZS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQ+GFfDyTprSUDFQgKBBYAAgECGQECmwMCHgEWIQSrLYVqNCwc\nOgNIraH4YV8PJOmtJQAAjz8BAL2A/ZSVyXqGnQL9e0wlQWMv5RAauVen/sSc\n7ksmTR5CAP9Ou1EUsVAxp82g4stNlmLLxCz+4qYz1Xhe6wckJ5IZF85TBGiK\nQMASBSuBBAAKAgMExA577OmWJP1MOCwofghOiX6RVWzZzkdjrt9cJcpzeDkI\n/8ScaOnQqbwoCmqhOYr0SvdsoRwS+Uw2KIPmy70DFAMBCAfCdwQYEwgAKgWC\naIpAwAmQ+GFfDyTprSUCmwwWIQSrLYVqNCwcOgNIraH4YV8PJOmtJQAAFDgB\nAI7jc6fOBSQPuzWjtswmQPC2K5pk71OoiCNDBW7dixWYAPikuVv70uWB0FA+\nvcg6kUCMCu3PG57kN1cKXrQZnQ8FzjMEaIpAwBYJKwYBBAHaRw8BAQdA1Skn\nocK2X6QzVJIipUbXhwg52vaH6rlJxia1UR0aPnrCeAQYEwgAKgWCaIpAwAmQ\n+GFfDyTprSUCmyAWIQSrLYVqNCwcOgNIraH4YV8PJOmtJQAAfMsBAPJe5buE\n8bUCZR7AZMf4XSZ888GU4CVAvt2zOB8IQwxZAP4lZjF1pBsqP2NN1YLrpe38\njd/uuqBVgPFwyIJ4NUyTag==\n=wznf\n-----END PGP PUBLIC KEY BLOCK-----\n',
           vssProof: '03c8d98bece0c8aae81c59ca77cd3ea76a58bf7d963ca61e06c61b8b2465ff7d',
-          gpgKey:
-            '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwRRQgq/FOV/rats/YBQB+bg7L8Z/uIY9OE9uWEy\nl18NwQvnxPDRQSFhXT4gmgSbPhCpKKLz4uACggRPQ48w/iZFzVViMzBlY2Iw\nOWY0ZjEzZmYxNzIxYjBjZGUgPHVzZXItYjMwZWNiMDlmNGYxM2ZmMTcyMWIw\nY2RlQGIzMGVjYjA5ZjRmMTNmZjE3MjFiMGNkZS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQ+GFfDyTprSUDFQgKBBYAAgECGQECmwMCHgEWIQSrLYVqNCwc\nOgNIraH4YV8PJOmtJQAAjz8BAL2A/ZSVyXqGnQL9e0wlQWMv5RAauVen/sSc\n7ksmTR5CAP9Ou1EUsVAxp82g4stNlmLLxCz+4qYz1Xhe6wckJ5IZF85TBGiK\nQMASBSuBBAAKAgMExA577OmWJP1MOCwofghOiX6RVWzZzkdjrt9cJcpzeDkI\n/8ScaOnQqbwoCmqhOYr0SvdsoRwS+Uw2KIPmy70DFAMBCAfCdwQYEwgAKgWC\naIpAwAmQ+GFfDyTprSUCmwwWIQSrLYVqNCwcOgNIraH4YV8PJOmtJQAAFDgB\nAI7jc6fOBSQPuzWjtswmQPC2K5pk71OoiCNDBW7dixWYAPikuVv70uWB0FA+\nvcg6kUCMCu3PG57kN1cKXrQZnQ8F\n=DJaC\n-----END PGP PUBLIC KEY BLOCK-----\n',
+          gpgKey: USER_GPG_PUB,
         },
       }),
     );
@@ -109,8 +115,7 @@ describe('MPC Finalize', () => {
         {
           from: 'user',
           to: 'bitgo',
-          publicShare:
-            'b50eef93f764af40da7561d302bed1e14707fb73633f60e267b3d4b25fb9a94a56e56301b217ebdf27e6e8e1dcdfcb5de5e9c2fda6aba998b754c8baaba2ebe2',
+          publicShare: USER_PUBLIC_SHARE,
           privateShare:
             '-----BEGIN PGP MESSAGE-----\\n\\nwX4DUQ8XhGVGcTISAgME7esXhNAua6Lnt20cXHNncRBbQo1YwQ57h6F9GU7i\\nCpPDSLz2ZhaPjVnO6QXZhKdUBzSg+K97P4sy7c93piaajDAq4yJgNpkh7VD2\\nCWJVERBSTCW/oZdrxrxoX6EoTqiD5fK5Tm8fETU3wyfsnzNHHMTSsQH/TBbT\\nS9Mul9CtNAuJFHmDHGsjxQS9DjeJHtshyIEV65FQ/KK0tkG6No4cMzcpsUtL\\nOGM7qmike/aXUH025PAu3VO5WfMFY9BHvZyp/MR3yjQXQSZD2pUSWyok61ry\\nakmCN5qsULe6oj1AhZt3AYHzDO4iJa9bnfcuYipDo7g0KBQYiz2St06SaVgm\\nlH85PyGF6G4Mn6tqCwv5cs22+y5oiJzVwK42fA9cMZJJHZnaFg==\\n=NeDG\\n-----END PGP MESSAGE-----\\n',
           privateShareProof:
@@ -239,8 +244,7 @@ describe('MPC Finalize', () => {
     const result = await agent.post('/api/tnear/mpc/key/finalize').send({
       source: 'user',
       coin: 'tnear',
-      encryptedDataKey:
-        '1,2,3,0,120,222,140,157,217,111,195,208,47,200,213,217,82,189,16,171,207,16,138,46,228,224,190,138,63,132,239,80,164,8,124,105,140,1,27,61,180,40,45,94,243,196,95,71,146,240,249,140,231,178,0,0,0,126,48,124,6,9,42,134,72,134,247,13,1,7,6,160,111,48,109,2,1,0,48,104,6,9,42,134,72,134,247,13,1,7,1,48,30,6,9,96,134,72,1,101,3,4,1,46,48,17,4,12,115,239,175,219,100,1,209,88,93,117,98,167,2,1,16,128,59,21,22,232,220,65,90,225,157,209,67,125,11,176,151,84,9,229,154,164,67,17,135,158,106,222,220,93,124,231,14,167,59,236,161,55,34,249,62,170,252,0,170,211,100,168,123,50,23,187,247,30,140,221,224,150,25,180,142,14',
+      encryptedDataKey: ENCRYPTED_DATA_KEY,
       encryptedData:
         '{"iv":"YhMumA0FhhN1jbFODNsYZw==","v":1,"iter":10000,"ks":256,"ts":64,"mode":"ccm","adata":"","cipher":"aes","salt":"ViawevIgxJ0=","ct":"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"}',
       counterPartyKeyShare: {
@@ -321,5 +325,178 @@ describe('MPC Finalize', () => {
     result.body.should.have.property('counterpartyKeyShare');
     result.body.counterpartyKeyShare.should.have.property('from', 'user');
     result.body.counterpartyKeyShare.should.have.property('to', 'backup');
+  });
+
+  it('should successfully finalize MPC key generation for backup source', async () => {
+    /**
+     * The finalize handler decrypts a blob (encryptedData) that was saved during Phase 1 (initialize).
+     * That blob contains the party's own GPG keys and their private share (i=2 for backup).
+     * We need decrypt() to return backup-party material so the handler uses i=2, not i=1,
+     * and builds signing material with userYShare instead of backupYShare.
+     */
+    sinon.stub(BitGoAPI.prototype, 'decrypt').returns(
+      JSON.stringify({
+        sourceGpgPub:
+          '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwS6KHj/od9lIxin+1KK7XlZ3Hzs5QKkVmc12ZW1\nvCCTnAju/HZ0s1XV6CRhdrTw6d9MTxG58viqn2Nl7j5Buiq5zVUwODgwNWI1\nZTU4NGI4YmRhMmYyNWJmOTEgPHVzZXItMDg4MDViNWU1ODRiOGJkYTJmMjVi\nZjkxQDA4ODA1YjVlNTg0YjhiZGEyZjI1YmY5MS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQFvKwNF9M/BIDFQgKBBYAAgECGQECmwMCHgEWIQRyXP44VjLq\nqZqNDT4W8rA0X0z8EgAA8w0BANXiDaOm560leVWjji1QZzigjRyJ/sMhsUBG\ncXRNGpOdAQD0VWVgbXmPiqXOzk9Aqwo4iuxiMpoSjcOGjelJhtiI685TBGiK\nQMASBSuBBAAKAgMEfASPaxeQfF8fbxj+IxA1IvBNUTVnfdavndamohiBY208\nfiyFttYfh6aTww6QqlWzqPXY9kU3/+PkgIhDI/Za2AMBCAfCeAQYEwgAKgWC\naIpAwAmQFvKwNF9M/BICmwwWIQRyXP44VjLqqZqNDT4W8rA0X0z8EgAAov8B\nAM92AiJU5QupKoVPSmNyaHoVSUC1zaFqUub2huTY0lliAQCWhmA0x9ZDWlCs\nB3oLcs3H7MksK2f2DcOkRnTpmEyMLg==\n=4fY3\n-----END PGP PUBLIC KEY BLOCK-----\n',
+        sourceGpgPrv:
+          '-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nxXQEaIpAwBMFK4EEAAoCAwS6KHj/od9lIxin+1KK7XlZ3Hzs5QKkVmc12ZW1\nvCCTnAju/HZ0s1XV6CRhdrTw6d9MTxG58viqn2Nl7j5Buiq5AAD9GmW3NYNI\nP/pRBf7v8AaIJIZRjJfRPj6N4KaxBMb0sxEDpc1VMDg4MDViNWU1ODRiOGJk\nYTJmMjViZjkxIDx1c2VyLTA4ODA1YjVlNTg0YjhiZGEyZjI1YmY5MUAwODgw\nNWI1ZTU4NGI4YmRhMmYyNWJmOTEuY29tPsKMBBATCAA+BYJoikDABAsJBwgJ\nkBbysDRfTPwSAxUICgQWAAIBAhkBApsDAh4BFiEEclz+OFYy6qmajQ0+FvKw\nNF9M/BIAAPMNAQDU4g2jpuetJXlVo44tUGc4oI0cif7DIbFARnF0TRqTnQEA\n9FVlYG15j4qlzs5PQKsKOIrsYjKaEo3Dho3pSYbYiOvXeARoikDAEgUrgQQA\nCgIDBHwEj2sXkHxfH28Y/iMQNSLwTVE1Z33Wr53WpqIYgWNtPH4shbbWH4em\nk8MOkKpVs6j12PZFN//j5ICIQyP2WtgDAQgHAAD/TdWMgW2d+bFLCj4uI0V4\nyxqJkVB4OeqBKEjT7UMBTxMSwngEGBMIACoFgmiKQAAJkBbysDRfTPwSApsMFiEE\nclz+OFYy6qmajQ0+FvKwNF9M/BIAABOQAQCTa1D5fApCe4tFWdXqbPLwHYr7\nNFHJ5LV7eqM3/qJGtAEAulv+H1J7W0RiqlW0L0eTQlwPGGg8HXl3DYLxz/qp\nM0A=\n=Xyqq\n-----END PGP PRIVATE KEY BLOCK-----\n',
+        sourcePrivateShare: {
+          i: 2,
+          t: 2,
+          n: 3,
+          y: '73e4be925f7eedaea4c108b88745ab6c908ddc8071482691a19adc4e3589c39c',
+          seed: '3df4eb85345f19e872026ff56b7b0a1d119d5477cb50d0cbee2bf33c3c868db9',
+          chaincode: '56e56301b217ebdf27e6e8e1dcdfcb5de5e9c2fda6aba998b754c8baaba2ebe2',
+        },
+        counterPartyKeyShare: {
+          from: 'backup',
+          to: 'user',
+          publicShare:
+            '73e4be925f7eedaea4c108b88745ab6c908ddc8071482691a19adc4e3589c39c3df4eb85345f19e872026ff56b7b0a1d119d5477cb50d0cbee2bf33c3c868db9',
+          privateShare:
+            '3e3de1036d07e779451494097d1700ba9554ab384be1a83fd03bbe2ab670e50456e56301b217ebdf27e6e8e1dcdfcb5de5e9c2fda6aba998b754c8baaba2ebe2',
+          privateShareProof:
+            '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwS6KHj/od9lIxin+1KK7XlZ3Hzs5QKkVmc12ZW1\nvCCTnAju/HZ0s1XV6CRhdrTw6d9MTxG58viqn2Nl7j5Buiq5zVUwODgwNWI1\nZTU4NGI4YmRhMmYyNWJmOTEgPHVzZXItMDg4MDViNWU1ODRiOGJkYTJmMjVi\nZjkxQDA4ODA1YjVlNTg0YjhiZGEyZjI1YmY5MS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQFvKwNF9M/BIDFQgKBBYAAgECGQECmwMCHgEWIQRyXP44VjLq\nqZqNDT4W8rA0X0z8EgAA8w0BANXiDaOm560leVWjji1QZzigjRyJ/sMhsUBG\ncXRNGpOdAQD0VWVgbXmPiqXOzk9Aqwo4iuxiMpoSjcOGjelJhtiI685TBGiK\nQMASBSuBBAAKAgMEfASPaxeQfF8fbxj+IxA1IvBNUTVnfdavndamohiBY208\nfiyFttYfh6aTww6QqlWzqPXY9kU3/+PkgIhDI/Za2AMBCAfCeAQYEwgAKgWC\naIpAwAmQFvKwNF9M/BICmwwWIQRyXP44VjLqqZqNDT4W8rA0X0z8EgAAov8B\nAM92AiJU5QupKoVPSmNyaHoVSUC1zaFqUub2huTY0lliAQCWhmA0x9ZDWlCs\nB3oLcs3H7MksK2f2DcOkRnTpmEyMLg==\n=4fY3\n-----END PGP PUBLIC KEY BLOCK-----\n',
+          vssProof: '1ae52e48306e1f40937be076f409fd788a2dac611c0e1bf9e1c1d344473c10ab',
+          gpgKey:
+            '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwS6KHj/od9lIxin+1KK7XlZ3Hzs5QKkVmc12ZW1\nvCCTnAju/HZ0s1XV6CRhdrTw6d9MTxG58viqn2Nl7j5Buiq5zVUwODgwNWI1\nZTU4NGI4YmRhMmYyNWJmOTEgPHVzZXItMDg4MDViNWU1ODRiOGJkYTJmMjVi\nZjkxQDA4ODA1YjVlNTg0YjhiZGEyZjI1YmY5MS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQFvKwNF9M/BIDFQgKBBYAAgECGQECmwMCHgEWIQRyXP44VjLq\nqZqNDT4W8rA0X0z8EgAA8w0BANXiDaOm560leVWjji1QZzigjRyJ/sMhsUBG\ncXRNGpOdAQD0VWVgbXmPiqXOzk9Aqwo4iuxiMpoSjcOGjelJhtiI685TBGiK\nQMASBSuBBAAKAgMEfASPaxeQfF8fbxj+IxA1IvBNUTVnfdavndamohiBY208\nfiyFttYfh6aTww6QqlWzqPXY9kU3/+PkgIhDI/Za2AMBCAfCeAQYEwgAKgWC\naIpAwAmQFvKwNF9M/BICmwwWIQRyXP44VjLqqZqNDT4W8rA0X0z8EgAAov8B\nAM92AiJU5QupKoVPSmNyaHoVSUC1zaFqUub2huTY0lliAQCWhmA0x9ZDWlCs\nB3oLcs3H7MksK2f2DcOkRnTpmEyMLg==\n=4fY3\n-----END PGP PUBLIC KEY BLOCK-----\n',
+        },
+      }),
+    );
+
+    /** Key provider decrypts the AWS KMS-wrapped data key, which is then used to AES-decrypt encryptedData above */
+    nock(keyProviderUrl).post('/decryptDataKey').reply(200, {
+      plaintextKey:
+        '115,23,145,49,185,59,87,165,87,53,233,8,177,59,137,233,118,9,5,73,119,147,55,122,141,249,161,156,19,13,224,101',
+    });
+    /** Key provider stores the combined signing material after a successful finalize */
+    nock(keyProviderUrl).post('/key').reply(200, {
+      pub: '821273e7e8ad33fd73d4b924bc83322b5a57027b3db9005355153c57d0512a9e97398fa3ac5f3f0cc6d2fe82c8d8b12c85e8ff572b212aa41ba384201552c9e0',
+      source: 'backup',
+      coin: 'tnear',
+      type: 'tss',
+    });
+
+    /**
+     * BitGo's keychain holds all 4 cross-party shares produced during DKG:
+     *   user→bitgo, backup→bitgo (shares sent to bitgo)
+     *   bitgo→user, bitgo→backup (shares bitgo sends back, encrypted to each party's GPG key)
+     * The handler searches this list for the share addressed `to: source` to get bitgo's private share for backup.
+     * commonKeychain here must match pShare.y + pShare.chaincode from eddsaKeyCombine below — the handler
+     * throws if they don't match.
+     */
+    const mockBitgoKeyChain = {
+      id: '688a40c546bf78887fd5880e255b5963',
+      source: 'bitgo',
+      type: 'tss',
+      commonKeychain:
+        '821273e7e8ad33fd73d4b924bc83322b5a57027b3db9005355153c57d0512a9e97398fa3ac5f3f0cc6d2fe82c8d8b12c85e8ff572b212aa41ba384201552c9e0',
+      verifiedVssProof: true,
+      isBitGo: true,
+      isTrust: false,
+      hsmType: 'institutional',
+      keyShares: [
+        {
+          from: 'user',
+          to: 'bitgo',
+          publicShare: USER_PUBLIC_SHARE,
+          privateShare: '-----BEGIN PGP MESSAGE-----\\n\\nencrypted\\n-----END PGP MESSAGE-----\\n',
+          vssProof: '03c8d98bece0c8aae81c59ca77cd3ea76a58bf7d963ca61e06c61b8b2465ff7d',
+          gpgKey:
+            '-----BEGIN PGP PUBLIC KEY BLOCK-----\\n\\nxk8EaIpAwBMFK4EEAAoCAwRRQgq/FOV/rats/YBQB+bg7L8Z/uIY9OE9uWEy\\nl18NwQvnxPDRQSFhXT4gmgSbPhCpKKLz4uACggRPQ48w/iZFzVViMzBlY2Iw\\nOWY0ZjEzZmYxNzIxYjBjZGUgPHVzZXItYjMwZWNiMDlmNGYxM2ZmMTcyMWIw\\nY2RlQGIzMGVjYjA5ZjRmMTNmZjE3MjFiMGNkZS5jb20+wowEEBMIAD4FgmiK\\nQMAECwkHCAmQ+GFfDyTprSUDFQgKBBYAAgECGQECmwMCHgEWIQSrLYVqNCwc\\nOgNIraH4YV8PJOmtJQAAjz8BAL2A/ZSVyXqGnQL9e0wlQWMv5RAauVen/sSc\\n7ksmTR5CAP9Ou1EUsVAxp82g4stNlmLLxCz+4qYz1Xhe6wckJ5IZF85TBGiK\\nQMASBSuBBAAKAgMExA577OmWJP1MOCwofghOiX6RVWzZzkdjrt9cJcpzeDkI\\n/8ScaOnQqbwoCmqhOYr0SvdsoRwS+Uw2KIPmy70DFAMBCAfCdwQYEwgAKgWC\\naIpAwAmQ+GFfDyTprSUCmwwWIQSrLYVqNCwcOgNIraH4YV8PJOmtJQAAFDgB\\nAI7jc6fOBSQPuzWjtswmQPC2K5pk71OoiCNDBW7dixWYAPikuVv70uWB0FA+\\nvcg6kUCMCu3PG57kN1cKXrQZnQ8F\\n=DJaC\\n-----END PGP PUBLIC KEY BLOCK-----\\n',
+        },
+        {
+          from: 'backup',
+          to: 'bitgo',
+          publicShare:
+            '73e4be925f7eedaea4c108b88745ab6c908ddc8071482691a19adc4e3589c39c3df4eb85345f19e872026ff56b7b0a1d119d5477cb50d0cbee2bf33c3c868db9',
+          privateShare: '-----BEGIN PGP MESSAGE-----\\n\\nencrypted\\n-----END PGP MESSAGE-----\\n',
+          vssProof: '1ae52e48306e1f40937be076f409fd788a2dac611c0e1bf9e1c1d344473c10ab',
+          gpgKey:
+            '-----BEGIN PGP PUBLIC KEY BLOCK-----\\n\\nxk8EaIpAwBMFK4EEAAoCAwS6KHj/od9lIxin+1KK7XlZ3Hzs5QKkVmc12ZW1\\nvCCTnAju/HZ0s1XV6CRhdrTw6d9MTxG58viqn2Nl7j5Buiq5zVUwODgwNWI1\\nZTU4NGI4YmRhMmYyNWJmOTEgPHVzZXItMDg4MDViNWU1ODRiOGJkYTJmMjVi\\nZjkxQDA4ODA1YjVlNTg0YjhiZGEyZjI1YmY5MS5jb20+wowEEBMIAD4FgmiK\\nQMAECwkHCAmQFvKwNF9M/BIDFQgKBBYAAgECGQECmwMCHgEWIQRyXP44VjLq\\nqZqNDT4W8rA0X0z8EgAA8w0BANXiDaOm560leVWjji1QZzigjRyJ/sMhsUBG\\ncXRNGpOdAQD0VWVgbXmPiqXOzk9Aqwo4iuxiMpoSjcOGjelJhtiI685TBGiK\\nQMASBSuBBAAKAgMEfASPaxeQfF8fbxj+IxA1IvBNUTVnfdavndamohiBY208\\nfiyFttYfh6aTww6QqlWzqPXY9kU3/+PkgIhDI/Za2AMBCAfCeAQYEwgAKgWC\\naIpAwAmQFvKwNF9M/BICmwwWIQRyXP44VjLqqZqNDT4W8rA0X0z8EgAAov8B\\nAM92AiJU5QupKoVPSmNyaHoVSUC1zaFqUub2huTY0lliAQCWhmA0x9ZDWlCs\\nB3oLcs3H7MksK2f2DcOkRnTpmEyMLg==\\n=4fY3\\n-----END PGP PUBLIC KEY BLOCK-----\\n',
+        },
+        {
+          from: 'bitgo',
+          to: 'user',
+          publicShare:
+            'fe0ebc26269181aba6d1b4242b27e2bf1d63bad039e3b9f24655b87dcdba3059025f411cc5e839452ce9a5ab807ddbb18e61e7e1b924b03f7622c8292d295045',
+          privateShare: '-----BEGIN PGP MESSAGE-----\\n\\nencrypted\\n-----END PGP MESSAGE-----\\n',
+          vssProof: 'd53019317f974b4178c7a817e2918b9b362bd30e8bf783c1abaf332636430b37',
+          paillierPublicKey: 'mock-paillier-key',
+        },
+        {
+          from: 'bitgo',
+          to: 'backup',
+          publicShare:
+            'fe0ebc26269181aba6d1b4242b27e2bf1d63bad039e3b9f24655b87dcdba3059025f411cc5e839452ce9a5ab807ddbb18e61e7e1b924b03f7622c8292d295045',
+          privateShare: '-----BEGIN PGP MESSAGE-----\\n\\nencrypted\\n-----END PGP MESSAGE-----\\n',
+          vssProof: 'd53019317f974b4178c7a817e2918b9b362bd30e8bf783c1abaf332636430b37',
+          paillierPublicKey: 'mock-paillier-key',
+        },
+      ],
+      walletHSMGPGPublicKeySigs: 'mock-sigs',
+    };
+
+    /**
+     * gpgDecrypt unwraps each party's private share using the source's GPG private key.
+     * The returned hex is the raw private share bytes — first 64 chars are `u` (the secret scalar),
+     * last 64 are the chaincode. The actual value matters for the key combination math
+     * but we stub eddsaKeyCombine below so the content here is irrelevant.
+     */
+    sinon
+      .stub(utils, 'gpgDecrypt')
+      .resolves(
+        'b6d1289794c112f9ec89caf59c6b7c43022f47cc824aaac7d9faacb73ef5ed0c025f411cc5e839452ce9a5ab807ddbb18e61e7e1b924b03f7622c8292d295045',
+      );
+    /** verifyWalletSignatures checks that key shares were signed by the real BitGo HSM — not meaningful in unit tests */
+    sinon.stub(utils, 'verifyWalletSignatures').resolves();
+    /**
+     * eddsaKeyCombine runs the actual threshold math to produce the combined key.
+     * pShare.y + pShare.chaincode must equal bitgoKeyChain.commonKeychain —
+     * that's the check the handler makes at line 107 of eddsaMPCWalletGenerationFinalize.ts.
+     */
+    sinon.stub(utils, 'eddsaKeyCombine').resolves({
+      pShare: {
+        i: 0,
+        t: 0,
+        n: 0,
+        y: '821273e7e8ad33fd73d4b924bc83322b5a57027b3db9005355153c57d0512a9e97398fa3ac5f3f0cc6d2fe82c8d8b12c85e8ff572b212aa41ba',
+        u: '',
+        prefix: '',
+        chaincode: '384201552c9e0',
+      },
+      jShares: {},
+    });
+
+    const result = await agent.post('/api/tnear/mpc/key/finalize').send({
+      source: 'backup',
+      coin: 'tnear',
+      encryptedDataKey: ENCRYPTED_DATA_KEY,
+      encryptedData:
+        '{"iv":"YhMumA0FhhN1jbFODNsYZw==","v":1,"iter":10000,"ks":256,"ts":64,"mode":"ccm","adata":"","cipher":"aes","salt":"ViawevIgxJ0=","ct":"backup-encrypted-data"}',
+      counterPartyKeyShare: {
+        from: 'user',
+        to: 'backup',
+        publicShare: USER_PUBLIC_SHARE,
+        privateShare:
+          '-----BEGIN PGP MESSAGE-----\n\nwX4D4jHNt3TUV5gSAgMEaH3hH7qYQ8+gaC19SH5DO+dwQzg4HDrm8n2KNtkz\nmdG+CTPBpR04V0wTAiv+ajbjNOUcVpoFHpXVQeNUawsQ/DB4WtWIgs0UB3mM\n7Y+9BbPEYDMPHe3PbEmg3oeQIxUfj1I5AqSBW7Op3heaSKMbrEXSsQGfvWTY\nK4a7GqupPanySINEvYkUEKC+wz/iK1MefQTHdcG45d7p/PlAVrhmQQbZYKmG\nO4MMfuHagvdqdAR5+EqnRf6lih1ED+Mr7JKr/VANt3rtrXr6MmoF+SAy8e7I\nW+F4xTUoza/42hJ503ilJS+LbSWk3UTLBLa26ffYiohHF4dZQrAWW7wzpRbp\nCdcgi0WLez7Jq8gDBvlAbkocpS8ZYB3q/yUS9GIT/5Ea8sg+dw==\n=kmpU\n-----END PGP MESSAGE-----\n',
+        privateShareProof: USER_GPG_PUB,
+        vssProof: '03c8d98bece0c8aae81c59ca77cd3ea76a58bf7d963ca61e06c61b8b2465ff7d',
+        gpgKey: USER_GPG_PUB,
+      },
+      bitgoKeyChain: mockBitgoKeyChain,
+      counterPartyGpgPub: USER_GPG_PUB,
+    });
+
+    result.should.have.property('statusCode', 200);
+    result.body.should.have.property('combinedKey');
+    result.body.should.have.property('source', 'backup');
+    result.body.should.have.property(
+      'commonKeychain',
+      '821273e7e8ad33fd73d4b924bc83322b5a57027b3db9005355153c57d0512a9e97398fa3ac5f3f0cc6d2fe82c8d8b12c85e8ff572b212aa41ba384201552c9e0',
+    );
+    result.body.should.have.property('counterpartyKeyShare');
+    result.body.counterpartyKeyShare.should.have.property('from', 'backup');
+    result.body.counterpartyKeyShare.should.have.property('to', 'user');
   });
 });
