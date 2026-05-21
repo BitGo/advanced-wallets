@@ -23,7 +23,8 @@ describe('Eddsa Signing Handler', () => {
   let reqId: IRequestTracer;
   const bitgoApiUrl = Environments.local.uri;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
-  const coin = 'tbtc';
+  /** Solana uses EdDSA */
+  const coin = 'tsol';
   const walletId = 'test-wallet-id';
 
   before(() => {
