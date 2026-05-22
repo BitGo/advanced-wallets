@@ -2,15 +2,11 @@
 name: Release to GHCR
 
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
-    inputs:
-      commit_sha:
-        description: 'Git commit SHA to build and deploy'
-        required: true
-        type: string
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: write # Needed to create new releases
@@ -18,77 +14,17 @@ permissions:
   id-token: write # Needed to create an ephemeral cross-repo token
 
 jobs:
-  get-context:
-    name: Generate release context
+  release:
+    name: Release
     runs-on: ubuntu-latest
+    # Expose semantic-release outputs so downstream jobs can gate on and read the version
     outputs:
-      new-version: ${{ steps.compute-context.outputs.new-version }}
-      current-version: ${{ steps.compute-context.outputs.current-version }}
-      version-changed: ${{ steps.compute-context.outputs.version-changed }}
+      new-release-published: ${{ steps.release.outputs.new_release_published }}
+      new-release-version: ${{ steps.release.outputs.new_release_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.sha }}
-          fetch-depth: 0 # Fetch all history for git describe to work
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Compute the context for this release
-        id: compute-context
-        run: |
-          current_version=$(cat package.json | jq -r .version)
-
-          # Check if the version in package.json is using semantic versioning
-          if [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Current version is a valid semantic version: $current_version"
-          else
-            echo "Current version format is not a standard semantic version: $current_version"
-            exit 1
-          fi
-
-          echo "current-version=$current_version" >> "$GITHUB_OUTPUT"
-
-          # Check if the version in package.json was changed in the last commit
-          previous_commit=$(git rev-parse HEAD~1)
-          previous_version=$(git show $previous_commit:package.json 2>/dev/null | jq -r .version || echo "")
-
-          echo "Previous version: $previous_version"
-          echo "Current version: $current_version"
-
-          if [ "$current_version" != "$previous_version" ] && [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Version changed from $previous_version to $current_version in the last commit"
-            echo "version-changed=true" >> $GITHUB_OUTPUT
-            echo "new-version=$current_version" >> $GITHUB_OUTPUT
-          elif [ -n "${{ github.event.inputs.commit_sha }}" ] && [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Workflow was manually triggered, trying to publish $current_version"
-            echo "version-changed=true" >> $GITHUB_OUTPUT
-            echo "new-version=$current_version" >> $GITHUB_OUTPUT
-          else
-            echo "Version unchanged or not following semantic versioning format"
-            echo "version-changed=false" >> $GITHUB_OUTPUT
-            echo "new-version=$current_version" >> $GITHUB_OUTPUT
-          fi
-
-  create-release:
-    name: Create GitHub release
-    needs: get-context
-    if: ${{ needs.get-context.outputs.version-changed == 'true' }}
-    runs-on: ubuntu-latest
-    outputs:
-      release-id: ${{ steps.create-release.outputs.id }}
-      release-url: ${{ steps.create-release.outputs.html_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.sha }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -99,45 +35,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate release notes
-        id: generate-notes
-        run: |
-          # Generate release notes using the existing .releaserc.json configuration
-          notes=$(npx semantic-release --dry-run --no-ci --plugins @semantic-release/release-notes-generator 2>/dev/null | grep -A 1000 "Release note for version" | tail -n +2)
-
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$notes" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Create release
-        id: create-release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const release = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: `v${process.env.VERSION}`,
-              name: `v${process.env.VERSION}`,
-              body: process.env.RELEASE_NOTES,
-              draft: false,
-              prerelease: false
-            });
-            return release.data;
+      - name: Release
+        id: release
+        run: npx semantic-release
         env:
-          VERSION: ${{ needs.get-context.outputs.new-version }}
-          RELEASE_NOTES: ${{ steps.generate-notes.outputs.notes }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report skipped release
+        if: steps.release.outputs.new_release_published != 'true'
+        run: echo "No releasable commits found — skipping Docker build"
 
   trivy-scan:
     name: Security - Trivy Scan
-    needs: [get-context]
-    if: ${{ needs.get-context.outputs.version-changed == 'true' }}
+    needs: release
+    if: ${{ needs.release.outputs.new-release-published == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -160,14 +75,12 @@ jobs:
 
   build-and-push:
     name: Build and push image to GHCR
-    needs: [get-context, create-release, trivy-scan]
-    if: ${{ needs.get-context.outputs.version-changed == 'true' }}
+    needs: [release, trivy-scan]
+    if: ${{ needs.release.outputs.new-release-published == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.commit_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -185,10 +98,10 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/bitgo/advanced-wallets:${{ needs.get-context.outputs.new-version }}
+            ghcr.io/bitgo/advanced-wallets:${{ needs.release.outputs.new-release-version }}
             ghcr.io/bitgo/advanced-wallets:latest
           build-args: |
-            BUILD_VERSION=${{ needs.get-context.outputs.new-version }}
+            BUILD_VERSION=${{ needs.release.outputs.new-release-version }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
             VCS_REF=${{ github.sha }}
           cache-from: type=gha

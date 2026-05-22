@@ -1,6 +1,6 @@
 {
   "name": "@bitgo/advanced-wallets",
-  "version": "3.0.0",
+  "version": "0.0.0-semantically-released",
   "description": "Advanced Wallets - On-Premises Key Management with BitGo Express",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -151,6 +151,7 @@
     "lodash": "^4.18.0"
   },
   "devDependencies": {
+    "@semantic-release/github": "^10.0.0",
     "@api-ts/openapi-generator": "^5.7.0",
     "@commitlint/cli": "^19.8.1",
     "@semantic-release/commit-analyzer": "^11.1.0",
