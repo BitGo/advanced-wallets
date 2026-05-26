@@ -180,6 +180,7 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | ------------------------------ | ---------------------------------- | ------- | -------- |
 | `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on                  | `3080`  | ❌       |
 | `KEY_PROVIDER_URL`             | URL to your key provider API implementation | -       | ✅       |
+| `SIGNING_MODE`                 | Delegates key generation and signing to key provider (`local` or `external`) | `local` | ❌       |
 
 > **Note:** The `KEY_PROVIDER_URL` points to your implementation of the key provider API interface. You must implement this interface to connect your KMS/HSM. See [Prerequisites](#prerequisites) for the specification and examples.
 

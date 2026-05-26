@@ -17,7 +17,7 @@ info:
     ## Implementation Requirements
 
     Your implementation must:
-    - Expose all four endpoints defined in this specification
+    - Expose all endpoints defined in this specification
     - Support the request/response schemas defined in this specification
     - Integrate with your chosen KMS/HSM provider backend
     - Handle encryption/decryption operations securely
@@ -138,6 +138,146 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: 'Entry with pub MIGeMA0GCSqGSIb3DQEBAQUAA4... and source user not found in database'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sign:
+    post:
+      tags:
+        - Key Management
+      summary: Sign a transaction or message
+      description: |
+        Sign data using a private key stored in your KMS/HSM provider. This is only applicable to Multisig wallets.
+
+        **Request:**
+        - `pub`: Public key identifier
+        - `source`: Key source (`user` or `backup`)
+        - `signablePayload`: Data to sign (format varies by coin)
+        - `algorithm`: `ecdsa` or `eddsa`
+
+        **Response:**
+        - `signature`: Signed output (format varies by coin)
+      operationId: signTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignRequest'
+            examples:
+              btcPsbt:
+                summary: Sign BTC PSBT (UTXO)
+                value:
+                  pub: 'xpub1234567890abcdefABCDEF...'
+                  source: 'user'
+                  signablePayload: '70736274ff...'
+                  algorithm: 'ecdsa'
+              ethOperationHash:
+                summary: Sign ETH operation hash (account-based)
+                value:
+                  pub: 'xpub9876543210zyxwvuZYXWVU...'
+                  source: 'user'
+                  signablePayload: '0x8a3f7c9e...'
+                  algorithm: 'ecdsa'
+      responses:
+        '200':
+          description: Transaction or message signed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignResponse'
+              examples:
+                btcSigned:
+                  summary: Signed BTC transaction
+                  value:
+                    signature: '020000...'
+                ethSigned:
+                  summary: Signed ETH operation (r, s, v format)
+                  value:
+                    signature: '0x1a10d7ee...'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Private key not found for the given pub and source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Entry with pub xpub1234567890abcdefABCDEF... and source user not found in database'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /key/generate:
+    post:
+      tags:
+        - Key Management
+      summary: Generate a key pair
+      description: |
+        Generate a new key pair in your KMS/HSM provider for multisig wallets.
+
+        **Request:**
+        - `coin`: Coin identifier (e.g., "tbtc", "hteth")
+        - `source`: Key source (`user` or `backup`)
+        - `type`: Key type (`independent` or `tss`)
+
+        **Response:**
+        - `pub`: Public key (format varies by coin)
+        - `coin`: Coin identifier
+        - `source`: Key source
+        - `type`: Key type
+      operationId: generateKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateKeyRequest'
+            examples:
+              btcUserKey:
+                summary: Generate BTC user key
+                value:
+                  coin: 'tbtc'
+                  source: 'user'
+                  type: 'independent'
+              ethBackupKey:
+                summary: Generate ETH backup key
+                value:
+                  coin: 'hteth'
+                  source: 'backup'
+                  type: 'independent'
+      responses:
+        '200':
+          description: Key pair generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateKeyResponse'
+              examples:
+                btcKey:
+                  summary: BTC key generated
+                  value:
+                    pub: 'xpub1234567890abcdefABCDEF...'
+                    coin: 'tbtc'
+                    source: 'user'
+                    type: 'independent'
+                ethKey:
+                  summary: ETH key generated
+                  value:
+                    pub: 'xpub9876543210zyxwvuZYXWVU...'
+                    coin: 'hteth'
+                    source: 'backup'
+                    type: 'independent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Duplicate key - entry with same pub, source, and coin already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: 'Key with pub xpub1234567890abcdefABCDEF... and source user already exists for coin tbtc'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -343,6 +483,96 @@ components:
         pub:
           type: string
           description: The public key
+        source:
+          $ref: '#/components/schemas/KeySource'
+        type:
+          $ref: '#/components/schemas/KeyType'
+
+    SigningAlgorithm:
+      type: string
+      enum:
+        - ecdsa
+        - eddsa
+      description: |
+        The signing algorithm to use:
+        - `ecdsa`: Elliptic Curve Digital Signature Algorithm
+        - `eddsa`: Edwards-curve Digital Signature Algorithm
+
+    SignRequest:
+      type: object
+      required:
+        - pub
+        - source
+        - signablePayload
+        - algorithm
+      properties:
+        pub:
+          type: string
+          description: The public key identifying which private key to use for signing
+          minLength: 1
+          example: 'xpub9876543210zyxwvuZYXWVU...'
+        source:
+          $ref: '#/components/schemas/KeySource'
+        signablePayload:
+          type: string
+          description: |
+            The data to be signed. Format depends on coin type:
+            - **UTXO coins** (BTC, LTC): Unsigned PSBT hex (e.g., '70736274ff01007d02000000...')
+            - **Account-based coins** (ETH, Polygon): Operation hash with 0x prefix (e.g., '0x8a3f7c9e2b4d1a6f...')
+          minLength: 1
+        algorithm:
+          $ref: '#/components/schemas/SigningAlgorithm'
+
+    SignResponse:
+      type: object
+      required:
+        - signature
+      properties:
+        signature:
+          type: string
+          description: |
+            The signature. Format depends on coin type:
+            - **UTXO coins**: Signed PSBT hex or final transaction hex
+            - **Account-based coins**: Ethereum-format signature `0x{r}{s}{v}` (65 bytes, 130 hex chars + prefix)
+            - **EdDSA coins**: EdDSA signature in hex format
+          example: '0x1a10d7eecc7f7ad9c627218639d56a36ebd723767c974bff1cd70aa1a4c288a15cdb8cdb9ae01243b2b6353bf3a2a1aa412d7d0a1435dfbecd3156acd22d229a1b'
+
+    GenerateKeyRequest:
+      type: object
+      required:
+        - coin
+        - source
+        - type
+      properties:
+        coin:
+          type: string
+          description: The coin/blockchain type (e.g., "tbtc", "hteth")
+          minLength: 1
+          example: 'hteth'
+        source:
+          $ref: '#/components/schemas/KeySource'
+        type:
+          $ref: '#/components/schemas/KeyType'
+
+    GenerateKeyResponse:
+      type: object
+      required:
+        - pub
+        - coin
+        - source
+        - type
+      properties:
+        pub:
+          type: string
+          description: |
+            The generated public key. Format depends on coin type:
+            - **UTXO/Account-based coins**: Extended public key in BIP32 format (xpub...)
+            - **EdDSA coins**: Base58-encoded public key or extended public key format
+          example: 'xpub9876543210zyxwvuZYXWVU...'
+        coin:
+          type: string
+          description: The coin type
+          example: 'hteth'
         source:
           $ref: '#/components/schemas/KeySource'
         type:
