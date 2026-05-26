@@ -14,6 +14,8 @@ export enum KeySource {
   BITGO = 'bitgo',
 }
 
+export type UserOrBackupKey = KeySource.USER | KeySource.BACKUP;
+
 export enum AppMode {
   ADVANCED_WALLET_MANAGER = 'advanced-wallet-manager',
   MASTER_EXPRESS = 'master-express',

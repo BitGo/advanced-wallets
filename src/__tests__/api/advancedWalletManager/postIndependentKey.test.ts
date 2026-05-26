@@ -132,6 +132,12 @@ describe('postIndependentKey — external signing mode', () => {
     keychains: () => ({ create: sinon.stub().returns({ pub: 'xpub...', prv: 'xprv...' }) }),
   } as unknown as BaseCoin;
 
+  const unsupportedExternalCoinStub = {
+    getFamily: () => CoinFamily.XRP,
+    getFullName: () => 'Test XRP',
+    keychains: () => ({ create: sinon.stub().returns({ pub: 'xpub...', prv: 'xprv...' }) }),
+  } as unknown as BaseCoin;
+
   before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
@@ -190,8 +196,26 @@ describe('postIndependentKey — external signing mode', () => {
     createSpy.called.should.equal(false);
   });
 
-  it('should fall through to local path for non-UTXO coin in external mode', async () => {
+  it('should call POST /key/generate for ETH coin and not call POST /key', async () => {
     coinStub = sinon.stub(coinFactory, 'getCoin').resolves(nonUtxoCoinStub);
+    const externalKeyGeneratorNock = nock(keyProviderUrl)
+      .post('/key/generate', { coin: 'hteth', source: 'user', type: 'independent' })
+      .reply(200, { ...mockGenerateKeyResponse, coin: 'hteth' });
+    const localKeyGeneratorNock = nock(keyProviderUrl).post('/key').reply(200, {});
+
+    const response = await agent
+      .post(`/api/hteth/key/independent`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    response.status.should.equal(200);
+    response.body.should.have.property('pub', mockGenerateKeyResponse.pub);
+    externalKeyGeneratorNock.done();
+    localKeyGeneratorNock.isDone().should.equal(false);
+  });
+
+  it('should fall through to local path for unsupported external coin in external mode', async () => {
+    coinStub = sinon.stub(coinFactory, 'getCoin').resolves(unsupportedExternalCoinStub);
     const externalKeyGeneratorNock = nock(keyProviderUrl).post('/key/generate').reply(200, {});
     nock(keyProviderUrl).post('/key').reply(200, mockGenerateKeyResponse);
 

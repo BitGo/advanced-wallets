@@ -181,11 +181,9 @@ describe('signMultisigTransaction — external signing mode', () => {
     getFullName: () => 'Test Bitcoin',
   } as unknown as BaseCoin;
 
-  coinStub = sinon.stub(coinFactory, 'getCoin').resolves(utxoCoinStub);
-
-  const nonUtxoCoinStub = {
-    getFamily: () => CoinFamily.ETH,
-    getFullName: () => 'Test Ethereum',
+  const unsupportedCoinStub = {
+    getFamily: () => CoinFamily.XRP,
+    getFullName: () => 'Test XRP',
   } as unknown as BaseCoin;
 
   before(() => {
@@ -231,8 +229,8 @@ describe('signMultisigTransaction — external signing mode', () => {
     getKeyNock.isDone().should.equal(false);
   });
 
-  it('should fall through to local path for non-UTXO coin in external mode', async () => {
-    coinStub = sinon.stub(coinFactory, 'getCoin').resolves(nonUtxoCoinStub);
+  it('should fall through to local path for unsupported coin in external mode', async () => {
+    coinStub = sinon.stub(coinFactory, 'getCoin').resolves(unsupportedCoinStub);
 
     const signNock = nock(keyProviderUrl).post('/sign').reply(200, {});
     nock(keyProviderUrl).get(`/key/${userPub}`).query({ source: 'user' }).reply(200, {
@@ -243,7 +241,7 @@ describe('signMultisigTransaction — external signing mode', () => {
     });
 
     await agent
-      .post(`/api/hteth/multisig/sign`)
+      .post(`/api/hxrp/multisig/sign`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ source: 'user', pub: userPub, txPrebuild: { txHex } });
 
@@ -260,5 +258,131 @@ describe('signMultisigTransaction — external signing mode', () => {
       .send({ source: 'bitgo', pub: userPub, txPrebuild: { txHex } });
 
     response.status.should.equal(500);
+  });
+
+  describe('ETH external signing', () => {
+    const mockOperationHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+    const mockSignature =
+      '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12';
+    const mockExpireTime = 1735689600;
+
+    const ethCoinStub = {
+      getFamily: () => CoinFamily.ETH,
+      getFullName: () => 'Test Ethereum',
+      getDefaultExpireTime: sinon.stub().returns(mockExpireTime),
+      getOperationSha3ForExecuteAndConfirm: sinon.stub().returns(mockOperationHash),
+    } as unknown as BaseCoin;
+
+    const txPrebuild = {
+      recipients: [{ amount: '10000', address: '0xe9cbfdf9e02f4ee37ec81683a4be934b4eecc295' }],
+      nextContractSequenceId: 5,
+      gasLimit: 200000,
+      eip1559: { maxPriorityFeePerGas: '599413988', maxFeePerGas: '23556954878' },
+      isBatch: false,
+    };
+
+    it('should call POST /sign with operationHash and return halfSigned', async () => {
+      coinStub = sinon.stub(coinFactory, 'getCoin').resolves(ethCoinStub);
+
+      const signNock = nock(keyProviderUrl)
+        .post('/sign', {
+          pub: userPub,
+          source: 'user',
+          signablePayload: mockOperationHash,
+          algorithm: 'ecdsa',
+        })
+        .reply(200, { signature: mockSignature });
+
+      const getKeyNock = nock(keyProviderUrl).get(`/key/${userPub}`).reply(200, {});
+
+      const response = await agent
+        .post(`/api/hteth/multisig/sign`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ source: 'user', pub: userPub, txPrebuild });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('halfSigned');
+      response.body.halfSigned.should.have.property('recipients');
+      response.body.halfSigned.should.have.property('expireTime', mockExpireTime);
+      response.body.halfSigned.should.have.property(
+        'contractSequenceId',
+        txPrebuild.nextContractSequenceId,
+      );
+      response.body.halfSigned.should.have.property('operationHash', mockOperationHash);
+      response.body.halfSigned.should.have.property('signature', mockSignature);
+      response.body.halfSigned.should.have.property('gasLimit', txPrebuild.gasLimit);
+      response.body.halfSigned.should.have.property('eip1559');
+      response.body.halfSigned.should.have.property('isBatch', txPrebuild.isBatch);
+
+      signNock.done();
+
+      /** Validate that the signing was done outside of the app: External Mode */
+      getKeyNock.isDone().should.equal(false);
+    });
+
+    it('should return error when recipients missing from txPrebuild', async () => {
+      coinStub = sinon.stub(coinFactory, 'getCoin').resolves(ethCoinStub);
+      const { recipients: __, ...txPrebuildWithoutRecipients } = txPrebuild;
+
+      const response = await agent
+        .post(`/api/hteth/multisig/sign`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ source: 'user', pub: userPub, txPrebuild: txPrebuildWithoutRecipients });
+
+      response.status.should.equal(500);
+      response.body.details.should.match(/recipients, nextContractSequenceId/);
+    });
+
+    it('should successfully sign when nextContractSequenceId is 0', async () => {
+      coinStub = sinon.stub(coinFactory, 'getCoin').resolves(ethCoinStub);
+
+      const txPrebuildWithZeroSequenceId = {
+        ...txPrebuild,
+        nextContractSequenceId: 0,
+      };
+
+      const signNock = nock(keyProviderUrl)
+        .post('/sign', {
+          pub: userPub,
+          source: 'user',
+          signablePayload: mockOperationHash,
+          algorithm: 'ecdsa',
+        })
+        .reply(200, { signature: mockSignature });
+
+      const getKeyNock = nock(keyProviderUrl).get(`/key/${userPub}`).reply(200, {});
+
+      const response = await agent
+        .post(`/api/hteth/multisig/sign`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ source: 'user', pub: userPub, txPrebuild: txPrebuildWithZeroSequenceId });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('halfSigned');
+      response.body.halfSigned.should.have.property('contractSequenceId', 0);
+
+      signNock.done();
+      getKeyNock.isDone().should.equal(false);
+    });
+
+    it('should return error when keyProvider sign fails', async () => {
+      coinStub = sinon.stub(coinFactory, 'getCoin').resolves(ethCoinStub);
+
+      nock(keyProviderUrl)
+        .post('/sign', {
+          pub: userPub,
+          source: 'user',
+          signablePayload: mockOperationHash,
+          algorithm: 'ecdsa',
+        })
+        .reply(500, { error: 'KMS unavailable' });
+
+      const response = await agent
+        .post(`/api/hteth/multisig/sign`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ source: 'user', pub: userPub, txPrebuild });
+
+      response.status.should.equal(500);
+    });
   });
 });

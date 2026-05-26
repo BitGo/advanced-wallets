@@ -6,7 +6,7 @@ import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import { KeyProviderClient } from '../../keyProviderClient/keyProviderClient';
 import { GenerateDataKeyResponse } from '../../keyProviderClient/types/dataKey';
 import { AdvancedWalletManagerConfig, KeySource, SigningMode } from '../../../shared/types';
-import { isUtxoCoin } from '../../../shared/coinUtils';
+import { isEthLikeCoin, isUtxoCoin } from '../../../shared/coinUtils';
 
 export function buildBackupKmsConfig(
   cfg: AdvancedWalletManagerConfig,
@@ -150,8 +150,7 @@ export function isExternalSigningEnabledForCoin(
   config: AdvancedWalletManagerConfig,
   coin: BaseCoin,
 ): boolean {
-  /** Support ETH after COIN-108 */
-  return isExternalSigningModeEnabled(config) && isUtxoCoin(coin);
+  return isExternalSigningModeEnabled(config) && (isUtxoCoin(coin) || isEthLikeCoin(coin));
 }
 
 export function isNonBitgoKeySource(source: string): source is KeySource.USER | KeySource.BACKUP {
