@@ -16,6 +16,7 @@ import { createEddsaCustomSigningFunctions } from './eddsa';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import coinFactory from '../../shared/coinFactory';
 import { getWalletPubs } from './utils/utils';
+import { isUtxoCoin } from '../../shared/coinUtils';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -150,7 +151,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       ...params,
       // Convert memo string to Memo object if present
       memo: params.memo ? ({ type: 'text', value: params.memo } as Memo) : undefined,
-      txFormat: 'psbt-lite',
+      ...(isUtxoCoin(baseCoin) && { txFormat: 'psbt-lite' }),
     };
 
     // First build the transaction with bitgo
