@@ -1,0 +1,7 @@
+services:
+  integration-tests:
+    build:
+      context: .
+      dockerfile: integration-tests.Dockerfile
+    environment:
+      - NODE_ENV=test
