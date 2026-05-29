@@ -10,13 +10,7 @@ import { Environments } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
-
-class BitGoAPITestHarness extends BitGoAPI {
-  static clearConstantsCache(): void {
-    BitGoAPI._constants = {};
-    BitGoAPI._constantsExpire = {};
-  }
-}
+import { BitGoAPITestHarness } from './testUtils';
 
 function mockWalletResponse(id: string, coinName: string, overrides: Record<string, unknown> = {}) {
   return {

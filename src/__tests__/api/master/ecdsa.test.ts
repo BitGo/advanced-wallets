@@ -12,16 +12,10 @@ import {
   TxRequest,
   Wallet,
 } from '@bitgo-beta/sdk-core';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../masterBitgoExpress/handlers/ecdsa';
-import { BitGoAPI } from '@bitgo-beta/sdk-api';
-
-class BitGoAPITestHarness extends BitGoAPI {
-  static clearConstantsCache(): void {
-    BitGoAPI._constants = {};
-    BitGoAPI._constantsExpire = {};
-  }
-}
+import { BitGoAPITestHarness } from './testUtils';
 
 describe('Ecdsa Signing Handler', () => {
   let bitgo: BitGoAPI;

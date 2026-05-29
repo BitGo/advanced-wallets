@@ -10,35 +10,20 @@ import {
   openpgpUtils,
   SignatureShareRecord,
   SignatureShareType,
-  Wallet,
 } from '@bitgo-beta/sdk-core';
-import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import * as utxolib from '@bitgo-beta/utxo-lib';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import { Tsol } from '@bitgo-beta/sdk-coin-sol';
 import assert from 'assert';
-
-class BitGoAPITestHarness extends BitGoAPI {
-  static clearConstantsCache(): void {
-    BitGoAPI._constants = {};
-    BitGoAPI._constantsExpire = {};
-  }
-}
+import { BitGoAPITestHarness } from './testUtils';
 
 const testWalletId = 'test-wallet-id';
 const testBitgoApiUrl = Environments.test.uri;
 const tssTxRequestId = 'test-tx-request-id';
 
-function mockMultisigPrebuildResponse(walletIdParam: string) {
-  return {
-    txHex: 'prebuilt-tx-hex',
-    txInfo: {
-      nP2SHInputs: 1,
-      nSegwitInputs: 0,
-      nOutputs: 2,
-    },
-    walletId: walletIdParam,
-  };
-}
+const TBTC_PREBUILD_PSBT_HEX = utxolib.bitgo
+  .createPsbtForNetwork({ network: utxolib.networks.testnet })
+  .toHex();
 
 function buildPendingEdDsaTxRequest(walletIdParam: string) {
   return {
@@ -404,9 +389,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         .matchHeader('any', () => true)
         .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
-      const prebuildStub = sinon
-        .stub(Wallet.prototype, 'prebuildTransaction')
-        .resolves(mockMultisigPrebuildResponse(walletId));
+      const prebuildBuildNock = nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+        .reply(200, {
+          txHex: TBTC_PREBUILD_PSBT_HEX,
+          txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        });
+      nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
       const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
@@ -459,7 +448,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       response.body.should.have.property('status', 'signed');
 
       walletGetNock.done();
-      sinon.assert.calledOnce(prebuildStub);
+      prebuildBuildNock.done();
       sinon.assert.calledOnce(verifyStub);
       keychainGetNock.done();
       signNock.done();
@@ -493,9 +482,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         .matchHeader('any', () => true)
         .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
-      sinon
-        .stub(Wallet.prototype, 'prebuildTransaction')
-        .resolves(mockMultisigPrebuildResponse(walletId));
+      nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+        .reply(200, {
+          txHex: TBTC_PREBUILD_PSBT_HEX,
+          txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        });
+      nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
       sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
@@ -559,9 +552,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         .matchHeader('any', () => true)
         .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
-      sinon
-        .stub(Wallet.prototype, 'prebuildTransaction')
-        .resolves(mockMultisigPrebuildResponse(walletId));
+      nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+        .reply(200, {
+          txHex: TBTC_PREBUILD_PSBT_HEX,
+          txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        });
+      nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
       sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
@@ -625,9 +622,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         .matchHeader('any', () => true)
         .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
-      const prebuildStub = sinon
-        .stub(Wallet.prototype, 'prebuildTransaction')
-        .resolves(mockMultisigPrebuildResponse(walletId));
+      const prebuildBuildNock = nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+        .reply(200, {
+          txHex: TBTC_PREBUILD_PSBT_HEX,
+          txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        });
+      nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
       const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
@@ -676,7 +677,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       response.body.should.have.property('status', 'signed');
 
       walletGetNock.done();
-      sinon.assert.calledOnce(prebuildStub);
+      prebuildBuildNock.done();
       sinon.assert.calledOnce(verifyStub);
       keychainGetNock.done();
       signNock.done();
@@ -1061,9 +1062,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         pub: 'xpub_user',
       });
 
-    const prebuildStub = sinon
-      .stub(Wallet.prototype, 'prebuildTransaction')
-      .resolves(mockMultisigPrebuildResponse(walletId));
+    const prebuildBuildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+      .reply(200, {
+        txHex: TBTC_PREBUILD_PSBT_HEX,
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      });
+    nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
     // Mock verifyTransaction to return false
     const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(false);
@@ -1086,7 +1091,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
-    sinon.assert.calledOnce(prebuildStub);
+    prebuildBuildNock.done();
     sinon.assert.calledOnce(verifyStub);
   });
 
@@ -1110,9 +1115,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         pub: 'xpub_user',
       });
 
-    const prebuildStub = sinon
-      .stub(Wallet.prototype, 'prebuildTransaction')
-      .resolves(mockMultisigPrebuildResponse(walletId));
+    const prebuildBuildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+      .reply(200, {
+        txHex: TBTC_PREBUILD_PSBT_HEX,
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      });
+    nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
     // Mock verifyTransaction to throw an error
     const verifyStub = sinon
@@ -1137,7 +1146,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
-    sinon.assert.calledOnce(prebuildStub);
+    prebuildBuildNock.done();
     sinon.assert.calledOnce(verifyStub);
   });
 
@@ -1172,9 +1181,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       .matchHeader('any', () => true)
       .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
 
-    const prebuildStub = sinon
-      .stub(Wallet.prototype, 'prebuildTransaction')
-      .resolves(mockMultisigPrebuildResponse(walletId));
+    const prebuildBuildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+      .reply(200, {
+        txHex: TBTC_PREBUILD_PSBT_HEX,
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      });
+    nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
     const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
@@ -1207,7 +1220,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
 
     walletGetNock.done();
     keychainGetNock.done();
-    sinon.assert.calledOnce(prebuildStub);
+    prebuildBuildNock.done();
     sinon.assert.calledOnce(verifyStub);
     signNock.done();
   });
@@ -1321,9 +1334,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
         pub: 'xpub_bitgo',
       });
 
-    const prebuildStub = sinon
-      .stub(Wallet.prototype, 'prebuildTransaction')
-      .resolves(mockMultisigPrebuildResponse(walletId));
+    const prebuildBuildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+      .reply(200, {
+        txHex: TBTC_PREBUILD_PSBT_HEX,
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      });
+    nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
 
     const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
@@ -1361,7 +1378,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     keychainGetNock.done();
     backupKeychainGetNock.done();
     bitgoKeychainGetNock.done();
-    sinon.assert.calledOnce(prebuildStub);
+    prebuildBuildNock.done();
     sinon.assert.calledOnce(verifyStub);
     signNock.done();
     submitNock.done();

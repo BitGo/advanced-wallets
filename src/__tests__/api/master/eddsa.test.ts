@@ -13,13 +13,7 @@ import {
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { AdvancedWalletManagerClient as AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 import { handleEddsaSigning } from '../../../masterBitgoExpress/handlers/eddsa';
-
-class BitGoAPITestHarness extends BitGoAPI {
-  static clearConstantsCache(): void {
-    BitGoAPI._constants = {};
-    BitGoAPI._constantsExpire = {};
-  }
-}
+import { BitGoAPITestHarness } from './testUtils';
 
 describe('Eddsa Signing Handler', () => {
   let bitgo: BitGoBase;
