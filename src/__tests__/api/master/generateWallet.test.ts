@@ -11,14 +11,12 @@ import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 
-/**
- * This test suite demonstrates how to mock the BitGo SDK's fetchConstants method
- * instead of using nock to intercept HTTP requests to the constants endpoint.
- *
- * By using sinon to stub the fetchConstants method directly, we make the tests more
- * focused on behavior rather than implementation details, and less brittle to changes
- * in how the constants are fetched.
- */
+class BitGoAPITestHarness extends BitGoAPI {
+  static clearConstantsCache(): void {
+    BitGoAPI._constants = {};
+    BitGoAPI._constantsExpire = {};
+  }
+}
 
 function mockWalletResponse(id: string, coinName: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -110,6 +108,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   afterEach(() => {
     nock.cleanAll();
     sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
   it('should generate an onchain wallet with separate backup AWM (separate-HSM mode)', async () => {
@@ -352,6 +351,12 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const backupAwmUrl = 'http://backup-awm.invalid';
 
     sinon.restore();
+    // Register before new BitGoAPI() so the constructor's background fetchConstants() hits the nock;
+    // use persist() since the background fetch and the handler may both call the endpoint
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v1/client/constants')
+      .reply(200, { constants: { mpc: { bitgoPublicKey: 'test-bitgo-public-key' } } });
     const backupBitgo = new BitGoAPI({ env: 'test' });
     const configWithBackup: MasterExpressConfig = {
       appMode: AppMode.MASTER_EXPRESS,
@@ -377,12 +382,6 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
 
     const app = expressApp(configWithBackup);
     const backupAgent = request.agent(app);
-
-    sinon.stub(backupBitgo, 'fetchConstants').resolves({
-      mpc: {
-        bitgoPublicKey: 'test-bitgo-public-key',
-      },
-    });
 
     // User init goes to primary AWM
     const userInitNock = nock(advancedWalletManagerUrl)
@@ -667,12 +666,10 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   });
 
   it('should generate a TSS MPC v1 wallet by calling the advanced wallet manager service', async () => {
-    // Mock fetchConstants instead of using nock for URL mocking
-    sinon.stub(bitgo, 'fetchConstants').resolves({
-      mpc: {
-        bitgoPublicKey: 'test-bitgo-public-key',
-      },
-    });
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v1/client/constants')
+      .reply(200, { constants: { mpc: { bitgoPublicKey: 'test-bitgo-public-key' } } });
 
     const userInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
@@ -991,7 +988,6 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         multisigType: 'tss',
       });
 
-    // No need to check constantsNock since we're using sinon stub
     userInitNock.done();
     backupInitNock.done();
     bitgoAddKeychainNock.done();
@@ -1007,6 +1003,12 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const backupAwmUrl = 'http://backup-awm.invalid';
 
     sinon.restore();
+    // Register before new BitGoAPI() so the constructor's background fetchConstants() hits the nock;
+    // use persist() since the background fetch and the handler may both call the endpoint
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v1/client/constants')
+      .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: 'test-bitgo-public-key' } } });
     const backupBitgo = new BitGoAPI({ env: 'test' });
     const configWithBackup: MasterExpressConfig = {
       appMode: AppMode.MASTER_EXPRESS,
@@ -1032,12 +1034,6 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
 
     const app = expressApp(configWithBackup);
     const backupAgent = request.agent(app);
-
-    sinon.stub(backupBitgo, 'fetchConstants').resolves({
-      mpc: {
-        bitgoMPCv2PublicKey: 'test-bitgo-public-key',
-      },
-    });
 
     // Init: user goes to primary AWM, backup goes to backup AWM
     const userInitNock = nock(advancedWalletManagerUrl)
@@ -1641,12 +1637,11 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   });
 
   it('should generate a TSS MPC v2 wallet by calling the advanced wallet manager service', async () => {
-    // Mock fetchConstants instead of using nock for URL mocking
-    sinon.stub(bitgo, 'fetchConstants').resolves({
-      mpc: {
-        bitgoMPCv2PublicKey: 'test-bitgo-public-key',
-      },
-    });
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v1/client/constants')
+      .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: 'test-bitgo-public-key' } } });
+
     // init round
     const userInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${ecdsaCoin}/mpcv2/initialize`, {
@@ -2287,7 +2282,6 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       type: 'advanced',
     });
 
-    // No need to check constantsNock since we're using sinon stub
     userInitNock.done();
     backupInitNock.done();
     userRound1Nock.done();

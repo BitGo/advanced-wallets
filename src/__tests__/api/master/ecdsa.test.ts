@@ -2,7 +2,6 @@ import 'should';
 import nock from 'nock';
 import * as sinon from 'sinon';
 import {
-  EcdsaMPCv2Utils,
   Environments,
   IRequestTracer,
   openpgpUtils,
@@ -16,7 +15,13 @@ import {
 import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../masterBitgoExpress/handlers/ecdsa';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { readKey } from 'openpgp';
+
+class BitGoAPITestHarness extends BitGoAPI {
+  static clearConstantsCache(): void {
+    BitGoAPI._constants = {};
+    BitGoAPI._constantsExpire = {};
+  }
+}
 
 describe('Ecdsa Signing Handler', () => {
   let bitgo: BitGoAPI;
@@ -57,6 +62,7 @@ describe('Ecdsa Signing Handler', () => {
   afterEach(() => {
     nock.cleanAll();
     sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
   after(() => {
@@ -84,8 +90,19 @@ describe('Ecdsa Signing Handler', () => {
     const userPubKey = 'test-user-pub-key';
 
     const bitgoGpgKey = await openpgpUtils.generateGPGKeyPair('secp256k1');
-    const pgpKey = await readKey({ armoredKey: bitgoGpgKey.publicKey });
-    sinon.stub(EcdsaMPCv2Utils.prototype, 'getBitgoMpcv2PublicGpgKey').resolves(pgpKey);
+    const bitgoEd25519Key = await openpgpUtils.generateGPGKeyPair('ed25519');
+
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v1/client/constants')
+      .reply(200, {
+        constants: {
+          mpc: {
+            bitgoMPCv2PublicKey: bitgoGpgKey.publicKey,
+            bitgoPublicKey: bitgoEd25519Key.publicKey,
+          },
+        },
+      });
 
     // Mock sendSignatureShareV2 calls for each round
     const round1SignatureShare: SignatureShareRecord = {
