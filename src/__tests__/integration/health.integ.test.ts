@@ -3,9 +3,9 @@ import * as http from 'http';
 import { app as awmApp } from '../../advancedWalletManagerApp';
 import { app as mbeApp } from '../../masterBitGoExpressApp';
 import { AppMode, TlsMode, SigningMode } from '../../shared/types';
-import { listen, close } from './helpers/servers';
+import { listen, close, LOCALHOST } from './helpers/servers';
 
-describe('integration — health checks', () => {
+describe('Integration Test — health checks', () => {
   let awmServer: http.Server;
   let mbeServer: http.Server;
   let awmPort: number;
@@ -18,10 +18,10 @@ describe('integration — health checks', () => {
         tlsMode: TlsMode.DISABLED,
         signingMode: SigningMode.LOCAL,
         port: 0,
-        bind: '127.0.0.1',
+        bind: LOCALHOST,
         timeout: 30000,
         httpLoggerFile: '',
-        keyProviderUrl: 'http://127.0.0.1:3082',
+        keyProviderUrl: `http://${LOCALHOST}:3082`,
       }),
     );
     awmPort = await listen(awmServer);
@@ -31,12 +31,12 @@ describe('integration — health checks', () => {
         appMode: AppMode.MASTER_EXPRESS,
         tlsMode: TlsMode.DISABLED,
         port: 0,
-        bind: '127.0.0.1',
+        bind: LOCALHOST,
         timeout: 30000,
         httpLoggerFile: '',
         env: 'test',
         disableEnvCheck: true,
-        advancedWalletManagerUrl: `http://127.0.0.1:${awmPort}`,
+        advancedWalletManagerUrl: `http://${LOCALHOST}:${awmPort}`,
         awmServerCertAllowSelfSigned: true,
       }),
     );
@@ -49,12 +49,14 @@ describe('integration — health checks', () => {
   });
 
   it('AWM /ping returns 200', async () => {
-    const res = await fetch(`http://127.0.0.1:${awmPort}/ping`, { method: 'POST' });
+    const res = await fetch(`http://${LOCALHOST}:${awmPort}/ping`, { method: 'POST' });
     res.status.should.equal(200);
   });
 
   it('MBE /advancedwallet/ping returns 200', async () => {
-    const res = await fetch(`http://127.0.0.1:${mbePort}/advancedwallet/ping`, { method: 'POST' });
+    const res = await fetch(`http://${LOCALHOST}:${mbePort}/advancedwallet/ping`, {
+      method: 'POST',
+    });
     res.status.should.equal(200);
   });
 });

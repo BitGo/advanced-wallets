@@ -1,0 +1,10 @@
+{
+  "id": "bitgo-key-id",
+  "pub": "xpub_bitgo",
+  "keyType": "independent",
+  "source": "bitgo",
+  "type": "independent",
+  "isBitGo": true,
+  "isTrust": false,
+  "hsmType": "institutional"
+}
