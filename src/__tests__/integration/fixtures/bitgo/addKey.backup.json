@@ -1,0 +1,7 @@
+{
+  "id": "backup-key-id",
+  "pub": "xpub_backup",
+  "keyType": "independent",
+  "source": "backup",
+  "type": "independent"
+}
