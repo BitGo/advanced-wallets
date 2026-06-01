@@ -6,16 +6,17 @@ import {
   IRequestTracer,
   openpgpUtils,
   RequestTracer,
-  SignatureShareRecord,
-  SignatureShareType,
-  TransactionState,
   TxRequest,
   Wallet,
 } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
 import { signAndSendEcdsaMPCv2FromTxRequest } from '../../../masterBitgoExpress/handlers/ecdsa';
-import { BitGoAPITestHarness } from './testUtils';
+import {
+  BitGoAPITestHarness,
+  buildEcdsaMpcv2TxRequest,
+  nockEcdsaMpcv2SigningFlow,
+} from './testUtils';
 
 describe('Ecdsa Signing Handler', () => {
   let bitgo: BitGoAPI;
@@ -65,22 +66,8 @@ describe('Ecdsa Signing Handler', () => {
   });
 
   it('should successfully sign an ECDSA MPCv2 transaction', async () => {
-    const txRequest: TxRequest = {
-      txRequestId: 'test-tx-request-id',
-      apiVersion: 'full',
-      enterpriseId: 'test-enterprise-id',
-      transactions: [],
-      state: 'pendingUserSignature',
-      walletId: 'test-wallet-id',
-      walletType: 'hot',
-      version: 2,
-      date: new Date().toISOString(),
-      userId: 'test-user-id',
-      intent: {},
-      policiesChecked: true,
-      unsignedTxs: [],
-      latest: true,
-    };
+    const txRequestData = buildEcdsaMpcv2TxRequest('pendingUserSignature');
+    const txRequest = txRequestData as TxRequest;
     const userPubKey = 'test-user-pub-key';
 
     const bitgoGpgKey = await openpgpUtils.generateGPGKeyPair('secp256k1');
@@ -98,145 +85,15 @@ describe('Ecdsa Signing Handler', () => {
         },
       });
 
-    // Mock sendSignatureShareV2 calls for each round
-    const round1SignatureShare: SignatureShareRecord = {
-      from: SignatureShareType.USER,
-      to: SignatureShareType.BITGO,
-      share: JSON.stringify({
-        type: 'round1Input',
-        data: {
-          msg1: {
-            from: 1,
-            message: 'round1-message',
-          },
-        },
-      }),
-    };
-
-    const round1TxRequest: TxRequest = {
-      ...txRequest,
-      transactions: [
-        {
-          unsignedTx: {
-            derivationPath: 'm/0',
-            signableHex: 'testMessage',
-            serializedTxHex: 'testMessage',
-          },
-          signatureShares: [round1SignatureShare],
-          state: 'pendingSignature' as TransactionState,
-        },
-      ],
-    };
-
-    const sendSignatureShareV2Round1Nock = nock(bitgoApiUrl)
-      .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/sign`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        ...round1TxRequest,
-      });
-
-    const round2SignatureShare: SignatureShareRecord = {
-      from: SignatureShareType.USER,
-      to: SignatureShareType.BITGO,
-      share: JSON.stringify({
-        type: 'round2Input',
-        data: {
-          msg2: {
-            from: 1,
-            to: 3,
-            encryptedMessage: 'round2-encrypted-message',
-            signature: 'round2-signature',
-          },
-          msg3: {
-            from: 1,
-            to: 3,
-            encryptedMessage: 'round3-encrypted-message',
-            signature: 'round3-signature',
-          },
-        },
-      }),
-    };
-
-    const round2TxRequest: TxRequest = {
-      ...round1TxRequest,
-      transactions: [
-        {
-          ...round1TxRequest.transactions![0],
-          signatureShares: [round1SignatureShare, round2SignatureShare],
-        },
-      ],
-    };
-
-    const sendSignatureShareV2Round2Nock = nock(bitgoApiUrl)
-      .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/sign`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        ...round2TxRequest,
-      });
-
-    const round3SignatureShare: SignatureShareRecord = {
-      from: SignatureShareType.USER,
-      to: SignatureShareType.BITGO,
-      share: JSON.stringify({
-        type: 'round3Input',
-        data: {
-          msg4: {
-            from: 1,
-            message: 'round4-message',
-            signature: 'round4-signature',
-            signatureR: 'round4-signature-r',
-          },
-        },
-      }),
-    };
-
-    const sendSignatureShareV2Round3Nock = nock(bitgoApiUrl)
-      .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/sign`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        ...round2TxRequest,
-        transactions: [
-          {
-            ...round2TxRequest.transactions![0],
-            signatureShares: [round1SignatureShare, round2SignatureShare, round3SignatureShare],
-          },
-        ],
-      });
-
-    // Mock sendTxRequest call
-    const sendTxRequestNock = nock(bitgoApiUrl)
-      .post(`/api/v2/wallet/${walletId}/txrequests/test-tx-request-id/transactions/0/send`)
-      .matchHeader('any', () => true)
-      .reply(200, {
-        ...txRequest,
-        state: 'signed',
-      });
-
-    // Mock MPCv2 Round 1 signing
-    const signMpcV2Round1NockAwm = nock(advancedWalletManagerUrl)
-      .post(`/api/${coin}/mpc/sign/mpcv2round1`)
-      .reply(200, {
-        signatureShareRound1: round1SignatureShare,
-        userGpgPubKey: bitgoGpgKey.publicKey,
-        encryptedRound1Session: 'encrypted-round1-session',
-        encryptedUserGpgPrvKey: 'encrypted-user-gpg-prv-key',
-        encryptedDataKey: 'test-encrypted-data-key',
-      });
-
-    // Mock MPCv2 Round 2 signing
-    const signMpcV2Round2NockAwm = nock(advancedWalletManagerUrl)
-      .post(`/api/${coin}/mpc/sign/mpcv2round2`)
-      .reply(200, {
-        signatureShareRound2: round2SignatureShare,
-        encryptedRound2Session: 'encrypted-round2-session',
-      });
-
-    // Mock MPCv2 Round 3 signing
-    const signMpcV2Round3NockAwm = nock(advancedWalletManagerUrl)
-      .post(`/api/${coin}/mpc/sign/mpcv2round3`)
-      .reply(200, {
-        signatureShareRound3: round3SignatureShare,
-      });
+    const sendResponse = { ...txRequestData, state: 'signed' };
+    const nocks = nockEcdsaMpcv2SigningFlow({
+      coin,
+      bitgoApiUrl,
+      advancedWalletManagerUrl,
+      sendResponse,
+      walletId,
+      userGpgPubKey: bitgoGpgKey.publicKey,
+    });
 
     const result = await signAndSendEcdsaMPCv2FromTxRequest(
       bitgo,
@@ -248,17 +105,14 @@ describe('Ecdsa Signing Handler', () => {
       reqId,
     );
 
-    result.should.eql({
-      ...txRequest,
-      state: 'signed',
-    });
+    result.should.eql(sendResponse);
 
-    sendSignatureShareV2Round1Nock.done();
-    sendSignatureShareV2Round2Nock.done();
-    sendSignatureShareV2Round3Nock.done();
-    sendTxRequestNock.done();
-    signMpcV2Round1NockAwm.done();
-    signMpcV2Round2NockAwm.done();
-    signMpcV2Round3NockAwm.done();
+    nocks.round1SignNock.done();
+    nocks.round2SignNock.done();
+    nocks.round3SignNock.done();
+    nocks.sendTxNock.done();
+    nocks.awmRound1Nock.done();
+    nocks.awmRound2Nock.done();
+    nocks.awmRound3Nock.done();
   });
 });
