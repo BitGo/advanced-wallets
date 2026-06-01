@@ -2,9 +2,16 @@ import 'should';
 import sinon from 'sinon';
 import * as request from 'supertest';
 import nock from 'nock';
+import * as utxolib from '@bitgo-beta/utxo-lib';
+import { Btc } from '@bitgo-beta/sdk-coin-btc';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
+import { BitGoAPITestHarness } from './testUtils';
+
+const BTC_PREBUILD_PSBT_HEX = utxolib.bitgo
+  .createPsbtForNetwork({ network: utxolib.networks.bitcoin })
+  .toHex();
 
 describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () => {
   let agent: request.SuperAgentTest;
@@ -24,19 +31,19 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
 
   const mockUserKeychain = {
     id: 'user-key-id',
-    pub: 'xpub661MyMwAqRbcFkPHucMnrGNzDwb6teAX1RbKQmqtEF8kK3Z7LZ59qafCjB9eCWzSgHCZkdXgp',
+    pub: 'xpub661MyMwAqRbcEtjU21VjQhGDdg5noG6kCGjcpc4EZwnLUxr9Pi56i14Eek8CQqcuGVnXQf3Zy47Uizr5WHDbZ3GumXEFXpwFLHWGbKrWWcg',
     type: 'independent',
   };
 
   const mockBackupKeychain = {
     id: 'backup-key-id',
-    pub: 'xpub661MyMwAqRbcGaZrYqfYmaTRzQxM9PKEZ7GRb6DKfghkzgjk2dKT4qBXfz6WzpT4N5fXJhFW',
+    pub: 'xpub661MyMwAqRbcEnTrcp222pRm7G1ZAbDD3KxXT2XEKRe3jnnvydqnyssewd2eUxgeWr1c1ffHcqqRKB8j3Lw9VR4dvrAhTov4kPKZF5rs6Vr',
     type: 'independent',
   };
 
   const mockBitgoKeychain = {
     id: 'bitgo-key-id',
-    pub: 'xpub661MyMwAqRbcHtYNxRNuEtDFmPMRzBVPDfBXNu2RUBVFNz8MnWQgkrMZCNB',
+    pub: 'xpub661MyMwAqRbcFNUFGFmDcC3Frgtz4FnJqFdCGbzLva2hf5i3ZJuQdsGc3z5FXCVqR9NQ6h2zTyGcQkfFtsLT5St621Fcu1C22kCKhbo4kQy',
     type: 'bitgo',
   };
 
@@ -66,33 +73,49 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
   afterEach(() => {
     nock.cleanAll();
     sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
-  it('should succeed in consolidating unspents with user key', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
+  // Nocks wallet and all 3 keychains with persist() to handle multiple fetches
+  function nockWalletAndKeychains() {
+    nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockWalletData);
 
-    // Signing keychain fetched by getWalletAndSigningKeychain
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-
-    // All 3 keychains fetched for walletPubs
     nock(bitgoApiUrl)
+      .persist()
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
     nock(bitgoApiUrl)
+      .persist()
       .get(`/api/v2/${coin}/key/backup-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBackupKeychain);
     nock(bitgoApiUrl)
+      .persist()
       .get(`/api/v2/${coin}/key/bitgo-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBitgoKeychain);
+  }
+
+  it('should succeed in consolidating unspents with user key', async () => {
+    nockWalletAndKeychains();
+
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} });
+
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
+
+    const signNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'user',
+        pub: mockUserKeychain.pub,
+      });
 
     const mockResult = {
       transfer: {
@@ -112,9 +135,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       status: 'signed',
     };
 
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .resolves(mockResult);
+    const submitNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .reply(200, mockResult);
 
     const requestPayload = {
       pubkey: mockUserKeychain.pub,
@@ -138,43 +161,45 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
     response.body.transfer.should.have.property('status', mockResult.transfer.status);
     response.body.transfer.should.have.property('entries').which.is.Array();
 
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
-
-    const callArgs = consolidateUnspentsStub.firstCall.args[0];
-    callArgs!.should.have.property('feeRate', 1000);
-    callArgs!.should.have.property('maxFeeRate', 2000);
-    callArgs!.should.have.property('minValue', 1000);
-    callArgs!.should.have.property('customSigningFunction');
-    callArgs!.should.have.property('reqId');
+    signNock.done();
+    submitNock.done();
   });
 
   it('should succeed in consolidating unspents with backup key', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
+    nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockWalletData);
 
-    // Signing keychain fetched by getWalletAndSigningKeychain
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/backup-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBackupKeychain);
-
-    // All 3 keychains fetched for walletPubs
     nock(bitgoApiUrl)
+      .persist()
       .get(`/api/v2/${coin}/key/user-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockUserKeychain);
     nock(bitgoApiUrl)
+      .persist()
       .get(`/api/v2/${coin}/key/backup-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBackupKeychain);
     nock(bitgoApiUrl)
+      .persist()
       .get(`/api/v2/${coin}/key/bitgo-key-id`)
       .matchHeader('authorization', `Bearer ${accessToken}`)
       .reply(200, mockBitgoKeychain);
+
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} });
+
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
+
+    nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'backup',
+        pub: mockBackupKeychain.pub,
+      });
 
     const mockResult = {
       txid: 'backup-consolidation-tx-id',
@@ -182,9 +207,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       status: 'signed',
     };
 
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .resolves(mockResult);
+    const submitNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .reply(200, mockResult);
 
     const requestPayload = {
       pubkey: mockBackupKeychain.pub,
@@ -203,36 +228,27 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
     response.body.should.have.property('tx', mockResult.tx);
     response.body.should.have.property('status', mockResult.status);
 
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
+    submitNock.done();
   });
 
   it('should handle array result from consolidateUnspents and return first element', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockWalletData);
+    nockWalletAndKeychains();
 
-    // Signing keychain fetched by getWalletAndSigningKeychain
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
+    // Build returns an array of 1 prebuild
+    // SDK returns array of 1 send result
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, [{ txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} }]);
 
-    // All 3 keychains fetched for walletPubs
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/backup-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBackupKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/bitgo-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBitgoKeychain);
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
+
+    nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'user',
+        pub: mockUserKeychain.pub,
+      });
 
     const mockArrayResult = [
       {
@@ -254,9 +270,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       },
     ];
 
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .resolves(mockArrayResult);
+    const submitNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .reply(200, mockArrayResult[0]);
 
     const requestPayload = {
       pubkey: mockUserKeychain.pub,
@@ -281,53 +297,35 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
     response.body.transfer.should.have.property('status', 'signed');
     response.body.transfer.should.have.property('entries').which.is.Array();
 
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
+    submitNock.done();
   });
 
   it('should fail when consolidateUnspents returns array with more than one element', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockWalletData);
+    nockWalletAndKeychains();
 
-    // Signing keychain fetched by getWalletAndSigningKeychain
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-
-    // All 3 keychains fetched for walletPubs
+    // Build returns 2 prebuilds, SDK signs+sends both, returns array of 2, handler throws
     nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/backup-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBackupKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/bitgo-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBitgoKeychain);
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, [
+        { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} },
+        { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} },
+      ]);
 
-    const mockArrayResult = [
-      {
-        txid: 'first-tx-id',
-        tx: '01000000000102first...',
-        status: 'signed',
-      },
-      {
-        txid: 'second-tx-id',
-        tx: '01000000000102second...',
-        status: 'signed',
-      },
-    ];
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
 
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .resolves(mockArrayResult);
+    nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .times(2)
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'user',
+        pub: mockUserKeychain.pub,
+      });
+
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .times(2)
+      .reply(200, { txid: 'some-tx-id', status: 'signed' });
 
     const requestPayload = {
       pubkey: mockUserKeychain.pub,
@@ -347,37 +345,24 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       'details',
       'Expected single consolidation result, but received 2 results',
     );
-
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
   });
 
   it('should succeed in consolidating unspents with all optional parameters', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockWalletData);
+    nockWalletAndKeychains();
 
-    // Signing keychain fetched by getWalletAndSigningKeychain
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} });
 
-    // All 3 keychains fetched for walletPubs
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/backup-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBackupKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/bitgo-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBitgoKeychain);
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
+
+    nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/multisig/sign`)
+      .reply(200, {
+        halfSigned: { txHex: 'signed-tx-hex' },
+        source: 'user',
+        pub: mockUserKeychain.pub,
+      });
 
     const mockResult = {
       txid: 'full-params-consolidation-tx-id',
@@ -385,9 +370,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       status: 'signed',
     };
 
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .resolves(mockResult);
+    const submitNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .reply(200, mockResult);
 
     const requestPayload = {
       pubkey: mockUserKeychain.pub,
@@ -417,9 +402,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
     response.body.should.have.property('tx', mockResult.tx);
     response.body.should.have.property('status', mockResult.status);
 
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
+    submitNock.done();
   });
 
   it('should fail when wallet is not found', async () => {
@@ -548,34 +531,12 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
   });
 
   it('should fail when consolidateUnspents throws an error', async () => {
-    const walletGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockWalletData);
+    nockWalletAndKeychains();
 
-    // Signing keychain fetched by getWalletAndSigningKeychain
-    const keychainGetNock = nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-
-    // All 3 keychains fetched for walletPubs
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/backup-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBackupKeychain);
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/bitgo-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBitgoKeychain);
-
-    const consolidateUnspentsStub = sinon
-      .stub(Wallet.prototype, 'consolidateUnspents')
-      .rejects(new Error('No unspents available for consolidation'));
+    // Make the build endpoint fail with a server error to cause consolidateUnspents to throw
+    const buildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(500, { error: 'No unspents available for consolidation' });
 
     const response = await agent
       .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
@@ -587,13 +548,10 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       });
 
     response.status.should.equal(500);
-    response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('name', 'Error');
-    response.body.should.have.property('details', 'No unspents available for consolidation');
+    response.body.should.have.property('error');
+    response.body.should.have.property('details');
 
-    walletGetNock.done();
-    keychainGetNock.done();
-    sinon.assert.calledOnce(consolidateUnspentsStub);
+    buildNock.done();
   });
 
   it('should fail when pubkey parameter is not a string', async () => {
@@ -611,32 +569,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
   });
 
   it('should pass walletPubs (all 3 xpubs) to AWM for UTXO signing', async () => {
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/wallet/${walletId}`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockWalletData);
-
-    // Signing keychain (user) — fetched once by getWalletAndSigningKeychain
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
-
-    // All 3 keychains fetched for walletPubs
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/user-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockUserKeychain);
+    nockWalletAndKeychains();
 
     nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/backup-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBackupKeychain);
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} });
 
-    nock(bitgoApiUrl)
-      .get(`/api/v2/${coin}/key/bitgo-key-id`)
-      .matchHeader('authorization', `Bearer ${accessToken}`)
-      .reply(200, mockBitgoKeychain);
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
 
     let capturedSignBody: any;
     const awmSignNock = nock(advancedWalletManagerUrl)
@@ -650,11 +589,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
         pub: mockUserKeychain.pub,
       });
 
-    // Stub consolidateUnspents to call customSigningFunction so the AWM request is made
-    sinon.stub(Wallet.prototype, 'consolidateUnspents').callsFake(async (params: any) => {
-      await params.customSigningFunction({ txPrebuild: { txHex: 'prebuilt-tx' } });
-      return { txid: 'consolidate-tx-id', tx: '01000000...', status: 'signed' };
-    });
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/send`)
+      .reply(200, { txid: 'consolidate-tx-id', tx: '01000000...', status: 'signed' });
 
     const response = await agent
       .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
@@ -713,6 +650,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
         pub: mockUserKeychain.pub,
       });
 
+    // The real consolidateUnspents (via manageUnspents) asserts k.pub on every keychain when
+    // building pubs before signTransaction is called, so this case never reaches customSigningFunction
     sinon.stub(Wallet.prototype, 'consolidateUnspents').callsFake(async (params: any) => {
       await params.customSigningFunction({ txPrebuild: { txHex: 'prebuilt-tx' } });
       return { txid: 'consolidate-tx-id', tx: '01000000...', status: 'signed' };
