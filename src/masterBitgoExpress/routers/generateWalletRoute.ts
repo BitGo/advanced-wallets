@@ -265,14 +265,18 @@ const BitgoKeychainType = t.intersection([
   }),
 ]);
 
+const GenerateWalletResponseCodec = t.type({
+  wallet: WalletType,
+  userKeychain: UserKeychainType,
+  backupKeychain: UserKeychainType,
+  bitgoKeychain: BitgoKeychainType,
+  responseType: t.string,
+});
+
+export type GenerateWalletResponseBody = t.TypeOf<typeof GenerateWalletResponseCodec>;
+
 const GenerateWalletResponse: HttpResponse = {
-  200: t.type({
-    wallet: WalletType,
-    userKeychain: UserKeychainType,
-    backupKeychain: UserKeychainType,
-    bitgoKeychain: BitgoKeychainType,
-    responseType: t.string,
-  }),
+  200: GenerateWalletResponseCodec,
   ...ErrorResponses,
 };
 

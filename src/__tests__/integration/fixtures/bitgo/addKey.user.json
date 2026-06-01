@@ -1,0 +1,7 @@
+{
+  "id": "user-key-id",
+  "pub": "xpub_user",
+  "keyType": "independent",
+  "source": "user",
+  "type": "independent"
+}
