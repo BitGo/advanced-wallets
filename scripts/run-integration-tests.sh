@@ -4,6 +4,6 @@ set -e
 
 echo "Running integration tests..."
 
-trap 'docker-compose -f docker-compose.integ.yml down' EXIT
+trap 'docker compose -f docker-compose.integ.yml down' EXIT
 
-docker-compose -f docker-compose.integ.yml up --build --abort-on-container-exit
+docker compose -f docker-compose.integ.yml up --build --abort-on-container-exit

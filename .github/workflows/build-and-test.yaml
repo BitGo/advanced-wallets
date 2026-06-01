@@ -135,6 +135,17 @@ jobs:
           branch: ${{ github.head_ref || github.ref_name }}
           project: BitGo/advanced-wallets
 
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Integration Test (Docker)
+        run: npm run docker:test:integration
+
   test:
     name: Test
     runs-on: ubuntu-latest
