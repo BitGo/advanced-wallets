@@ -1,12 +1,59 @@
 {
   "transfer": {
+    "entries": [
+      {
+        "address": "tb1qdgj9n5nw33k2qk26mxu7j5hv30dapz6fewscd4jd87euyjxyp04qgphg92",
+        "wallet": "test-wallet-id",
+        "value": -100000,
+        "valueString": "-100000"
+      },
+      {
+        "address": "tb1qdgj9n5nw33k2qk26mxu7j5hv30dapz6fewscd4jd87euyjxyp04qgphg92",
+        "value": 10000,
+        "valueString": "10000",
+        "isChange": false,
+        "isPayGo": false
+      }
+    ],
     "id": "test-transfer-id",
     "coin": "tbtc",
+    "wallet": "test-wallet-id",
+    "walletType": "advanced",
+    "enterprise": "test-enterprise",
     "txid": "test-tx-id",
-    "state": "signed",
+    "txidType": "transactionHash",
+    "height": 999999999,
+    "heightId": "999999999-test-transfer-id",
+    "date": "2025-01-01T00:00:00.000Z",
+    "type": "send",
     "value": -10202,
     "valueString": "-10202",
-    "entries": []
+    "intendedValueString": "-10202",
+    "baseValue": -10000,
+    "baseValueString": "-10000",
+    "baseValueWithoutFees": -10000,
+    "baseValueWithoutFeesString": "-10000",
+    "feeString": "202",
+    "payGoFee": 0,
+    "payGoFeeString": "0",
+    "state": "signed",
+    "instant": false,
+    "isReward": false,
+    "isUnlock": false,
+    "isFee": false,
+    "senderInformationVerified": false,
+    "tags": ["test-wallet-id", "test-enterprise"],
+    "history": [
+      { "date": "2025-01-01T00:00:00.000Z", "action": "signed" },
+      { "date": "2025-01-01T00:00:00.000Z", "action": "created" }
+    ],
+    "signedDate": "2025-01-01T00:00:00.000Z",
+    "vSize": 201,
+    "coinSpecific": { "rbf": true, "rbfAcc": false },
+    "buildParams": { "txFormat": "psbt-lite" },
+    "metadata": [],
+    "signedTime": "2025-01-01T00:00:00.000Z",
+    "createdTime": "2025-01-01T00:00:00.000Z"
   },
   "txid": "test-tx-id",
   "tx": "01000000000101030a0000",
