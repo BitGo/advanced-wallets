@@ -17,6 +17,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    environment: prod
     # Expose semantic-release outputs so downstream jobs can gate on and read the version
     outputs:
       new-release-published: ${{ steps.release.outputs.new_release_published }}
