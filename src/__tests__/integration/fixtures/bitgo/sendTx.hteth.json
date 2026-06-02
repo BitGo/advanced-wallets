@@ -1,0 +1,14 @@
+{
+  "transfer": {
+    "id": "test-transfer-id",
+    "coin": "hteth",
+    "txid": "0xtest-eth-tx-id",
+    "state": "signed",
+    "value": -100000000000000,
+    "valueString": "-100000000000000",
+    "entries": []
+  },
+  "txid": "0xtest-eth-tx-id",
+  "tx": "0x",
+  "status": "signed"
+}

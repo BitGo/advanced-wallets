@@ -1,0 +1,19 @@
+{
+  "id": "test-wallet-id",
+  "coin": "tbtc",
+  "type": "advanced",
+  "multisigType": "onchain",
+  "keys": ["user-key-id", "backup-key-id", "bitgo-key-id"],
+  "isCold": true,
+  "m": 2,
+  "n": 3,
+  "enterprise": "test-enterprise",
+  "label": "test-wallet",
+  "balance": 0,
+  "balanceString": "0",
+  "confirmedBalanceString": "0",
+  "spendableBalanceString": "0",
+  "deleted": false,
+  "approvalsRequired": 1,
+  "coinSpecific": {}
+}
