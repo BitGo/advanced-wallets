@@ -1,0 +1,14 @@
+{
+  "transfer": {
+    "id": "test-transfer-id",
+    "coin": "tbtc",
+    "txid": "test-tx-id",
+    "state": "signed",
+    "value": -10202,
+    "valueString": "-10202",
+    "entries": []
+  },
+  "txid": "test-tx-id",
+  "tx": "01000000000101030a0000",
+  "status": "signed"
+}

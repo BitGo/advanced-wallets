@@ -17,8 +17,26 @@ export interface MockBitgoServer {
 
 const FIXTURES_DIR = path.resolve(__dirname, '../fixtures/bitgo');
 
-function loadFixture(name: string): unknown {
+function loadFixture(name: string): Record<string, unknown> {
   return require(`${FIXTURES_DIR}/${name}.json`);
+}
+
+type SendManyFixtureMethod = 'getWallet' | 'prebuildTx' | 'sendTx';
+type SupportedCoin = 'hteth' | 'tbtc';
+type CoinToFixtures<C extends SupportedCoin> = {
+  [K in SendManyFixtureMethod]: `${K}.${C}`;
+};
+
+/** Registry — add a new coin here to support it across all sendMany integ test routes */
+const COIN_FIXTURES: { [C in SupportedCoin]: CoinToFixtures<C> } = {
+  hteth: { getWallet: 'getWallet.hteth', prebuildTx: 'prebuildTx.hteth', sendTx: 'sendTx.hteth' },
+  tbtc: { getWallet: 'getWallet.tbtc', prebuildTx: 'prebuildTx.tbtc', sendTx: 'sendTx.tbtc' },
+};
+
+function coinFixtures(coin: string): CoinToFixtures<SupportedCoin> {
+  const fixtures = COIN_FIXTURES[coin as SupportedCoin];
+  if (!fixtures) throw new Error(`No fixtures registered for coin: ${coin}`);
+  return fixtures;
 }
 
 export async function startMockBitgoServer(): Promise<MockBitgoServer> {
@@ -43,15 +61,50 @@ export async function startMockBitgoServer(): Promise<MockBitgoServer> {
     const source = req.body?.source;
     const fixtureName =
       source === 'user' ? 'addKey.user' : source === 'backup' ? 'addKey.backup' : 'addKey.bitgo';
-    const fixture = loadFixture(fixtureName) as Record<string, unknown>;
+    const fixture = loadFixture(fixtureName);
     return res.json({ ...fixture, coin });
   });
 
   /** Create wallet */
   app.post('/api/v2/:coin/wallet/add', (req, res) => {
     const { coin } = req.params;
-    const fixture = loadFixture('createWallet') as Record<string, unknown>;
+    const fixture = loadFixture('createWallet');
     res.json({ ...fixture, coin });
+  });
+
+  /** Get wallet — coin-specific fixture */
+  app.get('/api/v2/:coin/wallet/:walletId', (req, res) => {
+    const { coin } = req.params;
+    const fixture = loadFixture(coinFixtures(coin).getWallet);
+    res.json({ ...fixture, coin });
+  });
+
+  /** Get keychain — matched by keyId */
+  app.get('/api/v2/:coin/key/:keyId', (req, res) => {
+    const { keyId, coin } = req.params;
+    const fixtureName =
+      keyId === 'user-key-id'
+        ? 'getKeychain.user'
+        : keyId === 'backup-key-id'
+        ? 'getKeychain.backup'
+        : 'getKeychain.bitgo';
+    const fixture = loadFixture(fixtureName);
+    res.json({ ...fixture, coin });
+  });
+
+  /** Block height for fee estimation */
+  app.get('/api/v2/:coin/public/block/latest', (_req, res) => {
+    res.json(loadFixture('blockLatest'));
+  });
+
+  /** Transaction prebuild — coin-specific fixture */
+  app.post('/api/v2/:coin/wallet/:walletId/tx/build', (req, res) => {
+    res.json(loadFixture(coinFixtures(req.params.coin).prebuildTx));
+  });
+
+  /** Transaction submit — coin-specific fixture */
+  app.post('/api/v2/:coin/wallet/:walletId/tx/send', (req, res) => {
+    res.json(loadFixture(coinFixtures(req.params.coin).sendTx));
   });
 
   const server = http.createServer(app);
