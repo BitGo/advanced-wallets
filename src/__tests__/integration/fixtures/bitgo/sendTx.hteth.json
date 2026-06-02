@@ -1,12 +1,52 @@
 {
   "transfer": {
+    "entries": [
+      {
+        "address": "0xe01866e64418db20a2831e41eb11eca2a77245a3",
+        "value": 100000000000000,
+        "valueString": "100000000000000",
+        "isChange": false,
+        "isPayGo": false
+      }
+    ],
     "id": "test-transfer-id",
     "coin": "hteth",
+    "wallet": "test-wallet-id",
+    "walletType": "advanced",
+    "enterprise": "test-enterprise",
     "txid": "0xtest-eth-tx-id",
-    "state": "signed",
+    "txidType": "transactionHash",
+    "height": 999999999,
+    "heightId": "999999999-test-transfer-id",
+    "date": "2025-01-01T00:00:00.000Z",
+    "type": "send",
     "value": -100000000000000,
     "valueString": "-100000000000000",
-    "entries": []
+    "intendedValueString": "-100000000000000",
+    "baseValue": -100000000000000,
+    "baseValueString": "-100000000000000",
+    "baseValueWithoutFees": -100000000000000,
+    "baseValueWithoutFeesString": "-100000000000000",
+    "feeString": "21000",
+    "payGoFee": 0,
+    "payGoFeeString": "0",
+    "state": "signed",
+    "instant": false,
+    "isReward": false,
+    "isUnlock": false,
+    "isFee": false,
+    "senderInformationVerified": false,
+    "tags": ["test-wallet-id", "test-enterprise"],
+    "history": [
+      { "date": "2025-01-01T00:00:00.000Z", "action": "signed" },
+      { "date": "2025-01-01T00:00:00.000Z", "action": "created" }
+    ],
+    "signedDate": "2025-01-01T00:00:00.000Z",
+    "coinSpecific": {},
+    "buildParams": {},
+    "metadata": [],
+    "signedTime": "2025-01-01T00:00:00.000Z",
+    "createdTime": "2025-01-01T00:00:00.000Z"
   },
   "txid": "0xtest-eth-tx-id",
   "tx": "0x",
