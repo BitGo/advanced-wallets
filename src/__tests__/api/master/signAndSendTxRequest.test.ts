@@ -57,7 +57,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
   });
 
   function nockWalletAndSigningKeychain(coinName: string) {
-    nock(bitgoApiUrl)
+    const walletNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coinName}/wallet/${walletId}`)
       .matchHeader('any', () => true)
       .reply(200, {
@@ -68,7 +68,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
         coin: coinName,
       });
 
-    nock(bitgoApiUrl)
+    const keychainNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coinName}/key/user-key-id`)
       .matchHeader('any', () => true)
       .reply(200, {
@@ -77,11 +77,13 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
         commonKeychain: 'common-keychain-123',
         source: 'user',
       });
+
+    return { walletNock, keychainNock };
   }
 
   describe('ECDSA MPCv2 Sign and Send:', () => {
     it('should successfully sign and send ECDSA MPCv2 transaction with user key', async () => {
-      nockWalletAndSigningKeychain(coin);
+      const { walletNock, keychainNock } = nockWalletAndSigningKeychain(coin);
 
       const getTxRequestNock = nock(bitgoApiUrl)
         .get(`/api/v2/wallet/${walletId}/txrequests`)
@@ -117,6 +119,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
       response.body.should.have.property('txid', 'test-tx-id');
       response.body.should.have.property('tx', 'signed-transaction-hex');
 
+      walletNock.done();
+      keychainNock.done();
       getTxRequestNock.done();
       nocks.round1SignNock.done();
       nocks.round2SignNock.done();
@@ -128,7 +132,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
     });
 
     it('should handle pending approval response', async () => {
-      nockWalletAndSigningKeychain(coin);
+      const { walletNock, keychainNock } = nockWalletAndSigningKeychain(coin);
 
       const getTxRequestNock = nock(bitgoApiUrl)
         .get(`/api/v2/wallet/${walletId}/txrequests`)
@@ -168,8 +172,16 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
       response.body.should.have.property('txRequest');
       response.body.pendingApproval.should.have.property('id', 'pending-approval-id');
 
+      walletNock.done();
+      keychainNock.done();
       getTxRequestNock.done();
+      nocks.round1SignNock.done();
+      nocks.round2SignNock.done();
+      nocks.round3SignNock.done();
       nocks.sendTxNock.done();
+      nocks.awmRound1Nock.done();
+      nocks.awmRound2Nock.done();
+      nocks.awmRound3Nock.done();
       pendingApprovalNock.done();
     });
   });
@@ -219,7 +231,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
         ],
       };
 
-      nockWalletAndSigningKeychain(eddsaCoin);
+      const { walletNock, keychainNock } = nockWalletAndSigningKeychain(eddsaCoin);
 
       // pickBitgoPubGpgKeyForSigning resolves the BitGo GPG key from the keychain hsmType
       nock(bitgoApiUrl)
@@ -305,6 +317,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
       response.body.should.have.property('txid', 'test-tx-id');
       response.body.should.have.property('tx', 'signed-transaction-hex');
 
+      walletNock.done();
+      keychainNock.done();
       handlerGetTxRequestNock.done();
       exchangeCommitmentsNock.done();
       offerRShareNock.done();
