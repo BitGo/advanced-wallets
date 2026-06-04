@@ -1,12 +1,10 @@
 import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
+import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import sinon from 'sinon';
-import * as middleware from '../../../shared/middleware';
-import { BitGoRequest } from '../../../types/request';
-import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import { BitGoAPITestHarness } from './testUtils';
 
 describe('MBE mpcv2 recovery', () => {
   let agent: request.SuperAgentTest;
@@ -15,14 +13,9 @@ describe('MBE mpcv2 recovery', () => {
   const cosmosLikeCoin = 'tsei';
   const accessToken = 'test-token';
 
-  let bitgo: BitGoAPI;
-
   before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
-
-    // Create a BitGo instance that we'll use for stubbing
-    bitgo = new BitGoAPI({ env: 'test' });
 
     const config: MasterExpressConfig = {
       appMode: AppMode.MASTER_EXPRESS,
@@ -40,19 +33,14 @@ describe('MBE mpcv2 recovery', () => {
       recoveryMode: true,
     };
 
-    // Setup middleware stubs before creating app
-    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
-      (req as BitGoRequest<MasterExpressConfig>).bitgo = bitgo;
-      (req as BitGoRequest<MasterExpressConfig>).config = config;
-      next();
-    });
-
     const app = expressApp(config);
     agent = request.agent(app);
   });
 
   afterEach(() => {
     nock.cleanAll();
+    sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
   it('should recover a HETH (an eth-like) wallet by calling the advanced wallet manager service', async () => {

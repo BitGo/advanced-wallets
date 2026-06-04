@@ -1,18 +1,13 @@
 import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
+import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import sinon from 'sinon';
-import * as middleware from '../../../shared/middleware';
-import * as masterMiddleware from '../../../masterBitgoExpress/middleware/middleware';
-import { BitGoRequest } from '../../../types/request';
-import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
+import { BitGoAPITestHarness } from './testUtils';
 
 describe('Non Recovery Tests', () => {
   let agent: request.SuperAgentTest;
-  let mockBitgo: BitGoAPI;
   const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
   const accessToken = 'test-token';
   const config: MasterExpressConfig = {
@@ -31,21 +26,10 @@ describe('Non Recovery Tests', () => {
     recoveryMode: false,
   };
 
-  beforeEach(() => {
+  before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    // Create mock BitGo instance with base functionality
-    mockBitgo = new BitGoAPI({ env: 'test' });
-
-    // Setup middleware stubs before creating app
-    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
-      (req as BitGoRequest<MasterExpressConfig>).bitgo = mockBitgo;
-      (req as BitGoRequest<MasterExpressConfig>).config = config;
-      next();
-    });
-
-    // Create app after middleware is stubbed
     const app = expressApp(config);
     agent = request.agent(app);
   });
@@ -53,23 +37,10 @@ describe('Non Recovery Tests', () => {
   afterEach(() => {
     nock.cleanAll();
     sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
   describe('Recovery', () => {
-    const coin = 'tbtc';
-
-    beforeEach(() => {
-      sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
-          config,
-          coin,
-        );
-        next();
-        return undefined;
-      });
-    });
-
     it('should fail to run mbe recovery if not in recovery mode', async () => {
       const coin = 'tbtc';
       const userPub = 'xpub_user';
