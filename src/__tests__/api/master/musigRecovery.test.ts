@@ -1,12 +1,12 @@
 import 'should';
 import sinon from 'sinon';
 
-import { AbstractEthLikeNewCoins } from '@bitgo-beta/abstract-eth';
 import nock from 'nock';
 import * as request from 'supertest';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { data as ethRecoveryData } from '../../mocks/ethRecoveryMusigMockData';
+import { BitGoAPITestHarness } from './testUtils';
 
 describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
   let agent: request.SuperAgentTest;
@@ -41,23 +41,51 @@ describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
   afterEach(() => {
     nock.cleanAll();
     sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
   it('should get the tx hex for broadcasting from eve on musig recovery ', async () => {
-    // sdk call mock on mbe
-    const recoverStub = sinon
-      .stub(AbstractEthLikeNewCoins.prototype, 'recover')
-      .resolves(ethRecoveryData.unsignedSweepPrebuildTx);
+    const backupKeyAddress = '0x30edc88a77598833f58947638b2ac3d5713d9845';
+    const apiKey = 'etherscan-api-token';
+    const etherscanBase = 'https://api.etherscan.io';
+    const chainid = '560048';
 
-    // the call to eve.recoverWallet(...)
-    // that contains the calls to sdk.signTransaction
+    // Etherscan calls to get the nonce, balance, and sequence ID for the backup key and wallet contract
+    const txlistNock = nock(etherscanBase)
+      .get(
+        `/v2/api?chainid=${chainid}&module=account&action=txlist&address=${backupKeyAddress}&apikey=${apiKey}`,
+      )
+      .twice()
+      .reply(200, { result: [] });
+
+    const backupBalanceNock = nock(etherscanBase)
+      .get(
+        `/v2/api?chainid=${chainid}&module=account&action=balance&address=${backupKeyAddress}&apikey=${apiKey}`,
+      )
+      .reply(200, { result: '10000000000000000' });
+
+    const walletBalanceNock = nock(etherscanBase)
+      .get(
+        `/v2/api?chainid=${chainid}&module=account&action=balance&address=${ethRecoveryData.walletContractAddress}&apikey=${apiKey}`,
+      )
+      .reply(200, { result: '1000000000000000000' });
+
+    const sequenceIdNock = nock(etherscanBase)
+      .get(
+        `/v2/api?chainid=${chainid}&module=proxy&action=eth_call&to=${ethRecoveryData.walletContractAddress}&data=a0b7967b&tag=latest&apikey=${apiKey}`,
+      )
+      .reply(200, {
+        result: '0x0000000000000000000000000000000000000000000000000000000000000001',
+      });
+
     const eveRecoverWalletNock = nock(advancedWalletManagerUrl)
-      .post(`/api/${coin}/multisig/recovery`, {
-        userPub: ethRecoveryData.userKey,
-        backupPub: ethRecoveryData.backupKey,
-        unsignedSweepPrebuildTx: ethRecoveryData.unsignedSweepPrebuildTx,
-        coinSpecificParams: undefined,
-        walletContractAddress: ethRecoveryData.walletContractAddress,
+      .post(`/api/${coin}/multisig/recovery`, (body) => {
+        return (
+          body.userPub === ethRecoveryData.userKey &&
+          body.backupPub === ethRecoveryData.backupKey &&
+          body.walletContractAddress === ethRecoveryData.walletContractAddress &&
+          body.unsignedSweepPrebuildTx !== undefined
+        );
       })
       .reply(200, {
         txHex: ethRecoveryData.txHexFullSigned,
@@ -74,13 +102,16 @@ describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
           walletContractAddress: ethRecoveryData.walletContractAddress,
           bitgoPub: '',
         },
-        apiKey: 'etherscan-api-token',
+        apiKey,
         recoveryDestinationAddress: ethRecoveryData.recoveryDestinationAddress,
       });
 
     response.status.should.equal(200);
     response.body.should.have.property('txHex', ethRecoveryData.txHexFullSigned);
-    sinon.assert.calledOnce(recoverStub);
+    txlistNock.isDone().should.be.true();
+    backupBalanceNock.isDone().should.be.true();
+    walletBalanceNock.isDone().should.be.true();
+    sequenceIdNock.isDone().should.be.true();
     eveRecoverWalletNock.done();
   });
 

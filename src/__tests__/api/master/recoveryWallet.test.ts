@@ -1,16 +1,10 @@
 import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
+import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import sinon from 'sinon';
-import * as middleware from '../../../shared/middleware';
-import * as masterMiddleware from '../../../masterBitgoExpress/middleware/middleware';
-import { BitGoRequest } from '../../../types/request';
-import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { AdvancedWalletManagerClient } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
-import { CoinFamily } from '@bitgo-beta/statics';
-import coinFactory from '../../../shared/coinFactory';
+import { BitGoAPITestHarness } from './testUtils';
 
 describe('Recovery Tests', () => {
   let agent: request.SuperAgentTest;
@@ -32,20 +26,10 @@ describe('Recovery Tests', () => {
     recoveryMode: true,
   };
 
-  beforeEach(() => {
+  before(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    const bitgo = new BitGoAPI({ env: 'test' });
-
-    // Setup middleware stubs before creating app
-    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
-      (req as BitGoRequest<MasterExpressConfig>).bitgo = bitgo;
-      (req as BitGoRequest<MasterExpressConfig>).config = config;
-      next();
-    });
-
-    // Create app after middleware is stubbed
     const app = expressApp(config);
     agent = request.agent(app);
   });
@@ -53,75 +37,77 @@ describe('Recovery Tests', () => {
   afterEach(() => {
     nock.cleanAll();
     sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
   });
 
   describe('UTXO coin recovery', () => {
-    let mockRecover: sinon.SinonStub;
-    let mockIsValidPub: sinon.SinonStub;
-    let mockRecoverResponse: any;
     const coin = 'tbtc';
+    const userPub =
+      'xpub661MyMwAqRbcEtjU21VjQhGDdg5noG6kCGjcpc4EZwnLUxr9Pi56i14Eek8CQqcuGVnXQf3Zy47Uizr5WHDbZ3GumXEFXpwFLHWGbKrWWcg';
+    const backupPub =
+      'xpub661MyMwAqRbcEnTrcp222pRm7G1ZAbDD3KxXT2XEKRe3jnnvydqnyssewd2eUxgeWr1c1ffHcqqRKB8j3Lw9VR4dvrAhTov4kPKZF5rs6Vr';
+    const bitgoPub =
+      'xpub661MyMwAqRbcFNUFGFmDcC3Frgtz4FnJqFdCGbzLva2hf5i3ZJuQdsGc3z5FXCVqR9NQ6h2zTyGcQkfFtsLT5St621Fcu1C22kCKhbo4kQy';
 
-    beforeEach(() => {
-      // Setup mock response for UTXO recovery
-      mockRecoverResponse = {
-        txHex:
-          '0100000001edd7a583fef5aabf265e6dca24452581a3cca2671a1fa6b4e404bccb6ff4c83b0000000000ffffffff01780f0000000000002200202120dcf53e62a4cc9d3843993aa2258bd14fbf911a4ea4cf4f3ac840f417027900000000',
-        txInfo: {
-          unspents: [
-            {
-              id: '3bc8f46fcbbc04e4b4a61f1a67a2cca381254524ca6d5e26bfaaf5fe83a5d7ed:0',
-              address: 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu',
-              value: 4000,
-              chain: 20,
-              index: 0,
-              valueString: '4000',
-            },
-          ],
-        },
-        feeInfo: {},
-        coin: 'tbtc',
-      };
-
-      // Create mock methods
-      mockRecover = sinon.stub().resolves(mockRecoverResponse);
-      mockIsValidPub = sinon.stub().returns(true);
-      const mockCoin = {
-        recover: mockRecover,
-        isValidPub: mockIsValidPub,
-        getFamily: sinon.stub().returns(CoinFamily.BTC),
-      };
-      // coinStub.withArgs(coin).returns(mockCoin);
-      sinon
-        .stub(coinFactory, 'getCoin')
-        .withArgs(coin)
-        .returns(mockCoin as any);
-
-      // Setup coin middleware
-      sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).params = { coin };
-        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
-          config,
-          coin,
-        );
-        next();
-        return undefined;
-      });
-    });
+    const addrWithFunds = 'tb1qs5efv9zqhrc4sne7zphmsxea3cg9m262v6phsqn5dfdwed8ykx4s4wj67d';
 
     it('should recover a UTXO wallet by calling the advanced wallet manager service', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
+      const blockchairBase = 'https://api.blockchair.com';
 
-      // Mock the advanced wallet manager recovery call
+      const balanceNock = nock(blockchairBase)
+        .get(`/bitcoin/testnet/dashboards/address/${addrWithFunds}?key=key`)
+        .reply(200, {
+          data: { [addrWithFunds]: { address: { transaction_count: 1, balance: 4000 } } },
+        });
+
+      const unspentsNock = nock(blockchairBase)
+        .get(`/bitcoin/testnet/dashboards/addresses/${addrWithFunds}?key=key`)
+        .reply(200, {
+          data: {
+            utxo: [
+              {
+                transaction_hash:
+                  '3bc8f46fcbbc04e4b4a61f1a67a2cca381254524ca6d5e26bfaaf5fe83a5d7ed',
+                index: 0,
+                recipient: addrWithFunds,
+                value: 4000,
+                block_id: 100,
+                spending_transaction_hash: null,
+                spending_index: null,
+                address: addrWithFunds,
+              },
+            ],
+          },
+        });
+
+      // All other address lookups return empty (persistent regex fallback).
+      // Handles all chains at index 0 with no balance, plus chain-20 index 1.
+      nock(blockchairBase)
+        .persist()
+        .get(/\/bitcoin\/testnet\/dashboards\/address\/[^?]+\?key=key/)
+        .reply(function (uri) {
+          const match = uri.match(/\/dashboards\/address\/([^?]+)\?/);
+          const addr = match ? decodeURIComponent(match[1]) : 'unknown';
+          return [200, { data: { [addr]: { address: { transaction_count: 0, balance: 0 } } } }];
+        });
+
+      // mempool.space fee rate (called when feeRate param is undefined)
+      const feeNock = nock('https://mempool.space')
+        .get('/api/v1/fees/recommended')
+        .reply(200, { fastestFee: 20, halfHourFee: 10, hourFee: 5 });
+
+      // The real SDK builds a dynamic PSBT; body matcher
       const recoveryNock = nock(advancedWalletManagerUrl)
-        .post(`/api/${coin}/multisig/recovery`, {
-          userPub,
-          backupPub,
-          bitgoPub,
-          unsignedSweepPrebuildTx: mockRecoverResponse,
-          walletContractAddress: '',
+        .post(`/api/${coin}/multisig/recovery`, (body) => {
+          return (
+            body.userPub === userPub &&
+            body.backupPub === backupPub &&
+            body.bitgoPub === bitgoPub &&
+            body.walletContractAddress === '' &&
+            body.unsignedSweepPrebuildTx !== undefined &&
+            body.unsignedSweepPrebuildTx.txHex !== undefined
+          );
         })
         .reply(200, {
           txHex:
@@ -154,31 +140,13 @@ describe('Recovery Tests', () => {
         '01000000000101edd7a583fef5aabf265e6dca24452581a3cca2671a1fa6b4e404bccb6ff4c83b0000000000ffffffff01780f0000000000002200202120dcf53e62a4cc9d3843993aa2258bd14fbf911a4ea4cf4f3ac840f41702790400473044022043a9256810ef47ce36a092305c0b1ef675bce53e46418eea8cacbf1643e541d90220450766e048b841dac658d0a2ba992628bfe131dff078c3a574cadf67b4946647014730440220360045a15e459ed44aa3e52b86dd6a16dddaf319821f4dcc15627686f377edd102205cb3d5feab1a773c518d43422801e01dd1bc586bb09f6a9ed23a1fc0cfeeb5310169522103a1c425fd9b169e6ab5ed3de596acb777ccae0cda3d91256238b5e739a3f14aae210222a76697605c890dc4365132f9ae0d351952a1aad7eecf78d9923766dbe74a1e21033b21c0758ffbd446204914fa1d1c5921e9f82c2671dac89737666aa9375973e953ae00000000',
       );
 
-      // Verify SDK coin method calls
-      // coinStub.calledWith(coin).should.be.true();
-      mockIsValidPub.calledWith(userPub).should.be.true();
-      mockIsValidPub.calledWith(backupPub).should.be.true();
-      mockRecover
-        .calledWith({
-          userKey: userPub,
-          backupKey: backupPub,
-          bitgoKey: bitgoPub,
-          recoveryDestination: recoveryDestination,
-          apiKey: 'key',
-          ignoreAddressTypes: [],
-          scan: 1,
-          feeRate: undefined,
-        })
-        .should.be.true();
-
-      // Verify advanced wallet manager call
+      balanceNock.isDone().should.be.true();
+      unspentsNock.isDone().should.be.true();
+      feeNock.isDone().should.be.true();
       recoveryNock.done();
     });
 
     it('should reject incorrect EVM parameters for a UTXO coin', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
       const response = await agent
@@ -211,9 +179,6 @@ describe('Recovery Tests', () => {
     });
 
     it('should reject incorrect Solana parameters for a UTXO coin', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
       const response = await agent
@@ -248,9 +213,6 @@ describe('Recovery Tests', () => {
     });
 
     it('should reject using legacy coinSpecificParams format', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
 
       const response = await agent
@@ -281,52 +243,74 @@ describe('Recovery Tests', () => {
   });
 
   describe('EVM coin recovery', () => {
-    // Setup mocks for ETH
     const ethCoinId = 'hteth';
 
-    beforeEach(() => {
-      const mockRecover = sinon.stub().resolves({ txHex: 'eth-signed-tx-hex' });
-      const mockIsValidPub = sinon.stub().returns(true);
-      sinon
-        .stub(coinFactory, 'getCoin')
-        .withArgs(ethCoinId)
-        .returns({
-          /** Mock the recover() method on EVM coins */
-          recover: mockRecover,
-          isValidPub: mockIsValidPub,
-          getFamily: sinon.stub().returns(CoinFamily.ETH),
-        } as any);
-
-      sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).params = { coin: ethCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
-          config,
-          ethCoinId,
-        );
-        next();
-        return undefined;
-      });
-    });
+    const ethUserPub =
+      'xpub661MyMwAqRbcFigezGWEYSbCPVuaUmvnp1u7iEpH9YsKU6uYQtPANvudjgAo82QRHXsUieMqKeB1xEj89VUKU1ugtmyAZ3xzNEbHPexxgKK';
+    const ethBackupPub =
+      'xpub661MyMwAqRbcGbCirzmQsUJT2eidt9tFLw2m77w6FiKco6TKu49CP3GkHF88xGCpvqkP93SYMAarfyWAn8UWevQtNT6pDo8xH7xmf6GqK6e';
 
     it('should recover an EVM wallet by calling the advanced wallet manager service', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = '0x1234567890123456789012345678901234567890';
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
+      const backupKeyAddress = '0x30edc88a77598833f58947638b2ac3d5713d9845';
+      const etherscanBase = 'https://api.etherscan.io';
+      const chainid = '560048'; // Holesky testnet (hteth)
+      const apiKey = 'key';
 
+      // Etherscan txlist for backup key nonce (called twice: recoverEthLike + formatForOfflineVault)
+      const txlistNock = nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=account&action=txlist&address=${backupKeyAddress}&apikey=${apiKey}`,
+        )
+        .twice()
+        .reply(200, { result: [] });
+
+      const backupBalanceNock = nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=account&action=balance&address=${backupKeyAddress}&apikey=${apiKey}`,
+        )
+        .reply(200, { result: '10000000000000000' });
+
+      const walletBalanceNock = nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=account&action=balance&address=${walletContractAddress}&apikey=${apiKey}`,
+        )
+        .reply(200, { result: '1000000000000000000' });
+
+      const sequenceIdNock = nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=proxy&action=eth_call&to=${walletContractAddress}&data=a0b7967b&tag=latest&apikey=${apiKey}`,
+        )
+        .reply(200, {
+          result: '0x0000000000000000000000000000000000000000000000000000000000000001',
+        });
+
+      // The real SDK builds a dynamic unsignedSweepPrebuildTx; body matcher
       const recoveryNock = nock(advancedWalletManagerUrl)
-        .post(`/api/${ethCoinId}/multisig/recovery`)
+        .post(`/api/${ethCoinId}/multisig/recovery`, (body) => {
+          return (
+            body.userPub === ethUserPub &&
+            body.backupPub === ethBackupPub &&
+            body.walletContractAddress === walletContractAddress &&
+            body.unsignedSweepPrebuildTx !== undefined
+          );
+        })
         .reply(200, { txHex: 'eth-signed-tx-hex' });
 
       const response = await agent
         .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          multiSigRecoveryParams: { userPub, backupPub, bitgoPub, walletContractAddress },
+          multiSigRecoveryParams: {
+            userPub: ethUserPub,
+            backupPub: ethBackupPub,
+            bitgoPub: '',
+            walletContractAddress,
+          },
           recoveryDestinationAddress: recoveryDestination,
           coin: ethCoinId,
-          apiKey: 'key',
+          apiKey,
           coinSpecificParams: {
             evmRecoveryOptions: {},
           },
@@ -334,13 +318,14 @@ describe('Recovery Tests', () => {
 
       response.status.should.equal(200);
       response.body.should.have.property('txHex', 'eth-signed-tx-hex');
+      txlistNock.isDone().should.be.true();
+      backupBalanceNock.isDone().should.be.true();
+      walletBalanceNock.isDone().should.be.true();
+      sequenceIdNock.isDone().should.be.true();
       recoveryNock.done();
     });
 
     it('should reject incorrect UTXO parameters for an ETH coin', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = '0x1234567890123456789012345678901234567890';
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
 
@@ -349,9 +334,9 @@ describe('Recovery Tests', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
-            userPub,
-            backupPub,
-            bitgoPub,
+            userPub: ethUserPub,
+            backupPub: ethBackupPub,
+            bitgoPub: '',
             walletContractAddress,
           },
           recoveryDestinationAddress: recoveryDestination,
@@ -374,9 +359,6 @@ describe('Recovery Tests', () => {
     });
 
     it('should reject incorrect Solana parameters for an ETH coin', async () => {
-      const userPub = 'xpub_user';
-      const backupPub = 'xpub_backup';
-      const bitgoPub = 'xpub_bitgo';
       const recoveryDestination = '0x1234567890123456789012345678901234567890';
       const walletContractAddress = '0x0987654321098765432109876543210987654321';
 
@@ -385,9 +367,9 @@ describe('Recovery Tests', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           multiSigRecoveryParams: {
-            userPub,
-            backupPub,
-            bitgoPub,
+            userPub: ethUserPub,
+            backupPub: ethBackupPub,
+            bitgoPub: '',
             walletContractAddress,
           },
           recoveryDestinationAddress: recoveryDestination,
@@ -416,23 +398,6 @@ describe('Recovery Tests', () => {
     // Setup mocks for Solana
     const solCoinId = 'tsol';
     const solExplorerUrl = 'https://api.devnet.solana.com';
-
-    beforeEach(() => {
-      // Setup coin middleware for Solana coin
-      sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).params = { coin: solCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
-          config,
-          solCoinId,
-        );
-        next();
-        return undefined;
-      });
-    });
-
-    afterEach(() => {
-      nock.cleanAll();
-    });
 
     it('should sign a solana recovery successfully', async () => {
       const solAccountBalanceNock = nock(solExplorerUrl)
@@ -562,23 +527,6 @@ describe('Recovery Tests', () => {
     // Setup mocks for Sui
     const suiCoinId = 'tsui';
     const suiExplorerUrl = 'https://fullnode.testnet.sui.io';
-
-    beforeEach(() => {
-      // Setup coin middleware for Sui coin
-      sinon.stub(masterMiddleware, 'validateMasterExpressConfig').callsFake((req, res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).params = { coin: suiCoinId };
-        (req as BitGoRequest<MasterExpressConfig>).awmUserClient = new AdvancedWalletManagerClient(
-          config,
-          suiCoinId,
-        );
-        next();
-        return undefined;
-      });
-    });
-
-    afterEach(() => {
-      nock.cleanAll();
-    });
 
     it('should sign a sui recovery successfully', async () => {
       const suiAccountBalanceNock = nock(suiExplorerUrl)
