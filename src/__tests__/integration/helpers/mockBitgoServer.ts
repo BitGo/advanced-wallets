@@ -25,7 +25,7 @@ type SendManyFixtureMethod = 'getWallet' | 'prebuildTx' | 'sendTx';
 type SupportedCoin = 'hteth' | 'tbtc';
 type CoinToFixtures<C extends SupportedCoin> = {
   [K in SendManyFixtureMethod]: `${K}.${C}`;
-} & { acceleratePrebuildTx: string };
+} & { acceleratePrebuildTx: `prebuildTx.accelerate.${C}` | `prebuildTx.${C}` };
 
 /** Registry — add a new coin here to support it across all sendMany integ test routes */
 const COIN_FIXTURES: { [C in SupportedCoin]: CoinToFixtures<C> } = {

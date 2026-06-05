@@ -62,8 +62,12 @@ describe('Accelerate: EXTERNAL signing', () => {
     services.keyProvider.calls.filter((c) => c.path === '/sign').should.have.length(1);
     services.keyProvider.calls.filter((c) => c.path === '/key').should.have.length(0);
 
-    /** BitGo must receive tx/build, block/latest, and tx/send */
-    services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build')).should.have.length(1);
+    /** BitGo must receive tx/build with the correct cpfpTxIds, block/latest, and tx/send */
+    const buildCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build'));
+    buildCalls.should.have.length(1);
+    const buildBody = buildCalls[0].body as { cpfpTxIds?: string[] };
+    buildBody.should.have.property('cpfpTxIds').which.deepEqual([CPFP_TX_ID]);
+
     services.bitgo.calls
       .filter((c) => c.path.endsWith('/public/block/latest'))
       .should.have.length(1);
@@ -127,7 +131,12 @@ describe('Accelerate: LOCAL signing', () => {
     services.keyProvider.calls.filter((c) => c.path === '/sign').should.have.length(0);
     services.keyProvider.calls.filter((c) => c.path.startsWith('/key/')).length.should.be.above(0);
 
-    services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build')).should.have.length(1);
+    /** BitGo must receive tx/build with the correct cpfpTxIds, block/latest, and tx/send */
+    const buildCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build'));
+    buildCalls.should.have.length(1);
+    const buildBody = buildCalls[0].body as { cpfpTxIds?: string[] };
+    buildBody.should.have.property('cpfpTxIds').which.deepEqual([CPFP_TX_ID]);
+
     services.bitgo.calls
       .filter((c) => c.path.endsWith('/public/block/latest'))
       .should.have.length(1);
