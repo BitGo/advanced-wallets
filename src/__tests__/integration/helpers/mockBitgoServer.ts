@@ -25,12 +25,22 @@ type SendManyFixtureMethod = 'getWallet' | 'prebuildTx' | 'sendTx';
 type SupportedCoin = 'hteth' | 'tbtc';
 type CoinToFixtures<C extends SupportedCoin> = {
   [K in SendManyFixtureMethod]: `${K}.${C}`;
-};
+} & { acceleratePrebuildTx: string };
 
 /** Registry — add a new coin here to support it across all sendMany integ test routes */
 const COIN_FIXTURES: { [C in SupportedCoin]: CoinToFixtures<C> } = {
-  hteth: { getWallet: 'getWallet.hteth', prebuildTx: 'prebuildTx.hteth', sendTx: 'sendTx.hteth' },
-  tbtc: { getWallet: 'getWallet.tbtc', prebuildTx: 'prebuildTx.tbtc', sendTx: 'sendTx.tbtc' },
+  hteth: {
+    getWallet: 'getWallet.hteth',
+    prebuildTx: 'prebuildTx.hteth',
+    sendTx: 'sendTx.hteth',
+    acceleratePrebuildTx: 'prebuildTx.hteth', // CPFP/RBF not applicable to EVM; reuses standard prebuild
+  },
+  tbtc: {
+    getWallet: 'getWallet.tbtc',
+    prebuildTx: 'prebuildTx.tbtc',
+    sendTx: 'sendTx.tbtc',
+    acceleratePrebuildTx: 'prebuildTx.accelerate.tbtc',
+  },
 };
 
 function coinFixtures(coin: string): CoinToFixtures<SupportedCoin> {
@@ -99,7 +109,12 @@ export async function startMockBitgoServer(): Promise<MockBitgoServer> {
 
   /** Transaction prebuild — coin-specific fixture */
   app.post('/api/v2/:coin/wallet/:walletId/tx/build', (req, res) => {
-    res.json(loadFixture(coinFixtures(req.params.coin).prebuildTx));
+    const { coin } = req.params;
+    const isAccelerate = req.body?.cpfpTxIds?.length || req.body?.rbfTxIds?.length;
+    const fixtureName = isAccelerate
+      ? coinFixtures(coin).acceleratePrebuildTx
+      : coinFixtures(coin).prebuildTx;
+    res.json(loadFixture(fixtureName));
   });
 
   /** Transaction submit — coin-specific fixture */
