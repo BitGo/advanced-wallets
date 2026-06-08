@@ -5,7 +5,7 @@ import { SigningMode } from '../../shared/types';
 
 /**
  * Deterministic test keypair derived from Buffer.alloc(64, 0x42) — a public, reproducible seed.
- * Not a secret. Never funded. Matches getKeychain.user.json and prebuildTx.accelerate.tbtc.json.
+ * Not a secret. Never funded. Matches getKeychain.user.json and prebuildTx.consolidate.tbtc.json.
  */
 const USER_XPUB =
   'xpub661MyMwAqRbcEvJQx6spkkHLRgtjxmVdyDSvbDt2m9NFpbkHdcu5WJsHHHqFxNATbNHnhMWJiwckoMqF75EpcNhU9xeVM4oDS7urM3os4BH';
@@ -13,14 +13,13 @@ const USER_XPRV =
   'xprv9s21ZrQH143K2SDwr5LpPcLbsf4FZJmnbzXKnqURCoqGwoR965apxWYoS2DKu2ivcMTB9uTK6XhZDEPfTeNXGf7mmACuMN6cFS5ttmrpZ3i';
 
 const WALLET_ID = 'test-wallet-id';
-const CPFP_TX_ID = 'b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26';
 
-const accelerateRequestBody = {
+const consolidateRequestBody = {
   pubkey: USER_XPUB,
   source: 'user' as const,
-  cpfpTxIds: [CPFP_TX_ID],
-  cpfpFeeRate: 50,
-  maxFee: 10000,
+  feeRate: 1000,
+  maxFeeRate: 2000,
+  minValue: 1000,
 };
 
 interface TransferEntry {
@@ -29,17 +28,18 @@ interface TransferEntry {
   isChange?: boolean;
 }
 
-interface AccelerateResponse {
+interface ConsolidateResponse {
   txid: string;
   tx: string;
   status: string;
   transfer: {
     txid: string;
+    status: string;
     entries: TransferEntry[];
   };
 }
 
-describe('Accelerate: EXTERNAL signing', () => {
+describe('Consolidate unspents: EXTERNAL signing', () => {
   let services: IntegServices;
 
   before(async () => {
@@ -55,18 +55,18 @@ describe('Accelerate: EXTERNAL signing', () => {
     services.bitgo.calls.length = 0;
   });
 
-  it('accelerates a tbtc transaction via CPFP using external key provider', async () => {
+  it('consolidates tbtc unspents via external key provider', async () => {
     const res = await fetch(
-      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/${WALLET_ID}/accelerate`,
+      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/${WALLET_ID}/consolidateunspents`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
-        body: JSON.stringify(accelerateRequestBody),
+        body: JSON.stringify(consolidateRequestBody),
       },
     );
 
     res.status.should.equal(200);
-    const body = (await res.json()) as AccelerateResponse;
+    const body = (await res.json()) as ConsolidateResponse;
     body.should.have.property('txid', 'test-tx-id');
     body.should.have.property('tx', '01000000000101030a0000');
     body.should.have.property('status', 'signed');
@@ -76,7 +76,7 @@ describe('Accelerate: EXTERNAL signing', () => {
     /**
      * In external mode, AWM delegates signing to the key provider.
      * POST /sign must be called — not POST /key (no local key retrieval for signing).
-     * The signablePayload for BTC is a PSBT hex.
+     * The signablePayload for BTC is a PSBT hex (starts with PSBT magic bytes 70736274ff).
      */
     const signCalls = services.keyProvider.calls.filter((c) => c.path === '/sign');
     signCalls.should.have.length(1);
@@ -86,30 +86,34 @@ describe('Accelerate: EXTERNAL signing', () => {
     services.keyProvider.calls.filter((c) => c.path === '/key').should.have.length(0);
 
     /**
-     * BitGo must receive tx/build with the correct cpfpTxIds, block/latest, and tx/send.
-     * cpfpTxIds and txHex both survive the TxSendBody whitelist and appear in tx/send.
+     * BitGo must receive consolidateUnspents (not tx/build) with the consolidation params,
+     * then tx/send with type: 'consolidate'. tx/build is only used by sendMany and accelerate.
      */
-    const buildCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build'));
-    buildCalls.should.have.length(1);
-    const buildBody = buildCalls[0].body as { cpfpTxIds?: string[] };
-    buildBody.should.have.property('cpfpTxIds').which.deepEqual([CPFP_TX_ID]);
-
-    services.bitgo.calls
-      .filter((c) => c.path.endsWith('/public/block/latest'))
-      .should.have.length(1);
+    const consolidateCalls = services.bitgo.calls.filter((c) =>
+      c.path.endsWith('/consolidateUnspents'),
+    );
+    consolidateCalls.should.have.length(1);
+    const consolidateBody = consolidateCalls[0].body as {
+      feeRate?: number;
+      maxFeeRate?: number;
+      minValue?: number;
+      txFormat?: string;
+    };
+    consolidateBody.should.have.property('feeRate', 1000);
+    consolidateBody.should.have.property('maxFeeRate', 2000);
+    consolidateBody.should.have.property('minValue', 1000);
+    consolidateBody.should.have.property('txFormat', 'psbt-lite');
 
     const sendCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/send'));
     sendCalls.should.have.length(1);
-    const sendBody = sendCalls[0].body as {
-      cpfpTxIds?: string[];
-      txHex?: string;
-    };
-    sendBody.should.have.property('cpfpTxIds').which.deepEqual([CPFP_TX_ID]);
-    sendBody.txHex!.should.startWith('70736274ff');
+    const sendBody = sendCalls[0].body as { type?: string };
+    sendBody.should.have.property('type', 'consolidate');
+
+    services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build')).should.have.length(0);
   });
 });
 
-describe('Accelerate: LOCAL signing', () => {
+describe('Consolidate unspents: LOCAL signing', () => {
   let services: IntegServices;
 
   before(async () => {
@@ -118,7 +122,7 @@ describe('Accelerate: LOCAL signing', () => {
     /**
      * Seed the mock key provider with a known xprv so AWM can retrieve it
      * via GET /key/:pub and sign the PSBT locally. The xpub must match
-     * getKeychain.user.json and prebuildTx.accelerate.tbtc.json.
+     * getKeychain.user.json and the bip32Derivation in prebuildTx.consolidate.tbtc.json.
      */
     await fetch(`http://127.0.0.1:${services.keyProvider.port}/key`, {
       method: 'POST',
@@ -142,18 +146,18 @@ describe('Accelerate: LOCAL signing', () => {
     services.bitgo.calls.length = 0;
   });
 
-  it('accelerates a tbtc transaction via CPFP using locally stored xprv', async () => {
+  it('consolidates tbtc unspents using locally stored xprv', async () => {
     const res = await fetch(
-      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/${WALLET_ID}/accelerate`,
+      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/${WALLET_ID}/consolidateunspents`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
-        body: JSON.stringify(accelerateRequestBody),
+        body: JSON.stringify(consolidateRequestBody),
       },
     );
 
     res.status.should.equal(200);
-    const body = (await res.json()) as AccelerateResponse;
+    const body = (await res.json()) as ConsolidateResponse;
     body.should.have.property('txid', 'test-tx-id');
     body.should.have.property('tx', '01000000000101030a0000');
     body.should.have.property('status', 'signed');
@@ -168,25 +172,29 @@ describe('Accelerate: LOCAL signing', () => {
     services.keyProvider.calls.filter((c) => c.path.startsWith('/key/')).length.should.be.above(0);
 
     /**
-     * BitGo must receive tx/build with the correct cpfpTxIds, block/latest, and tx/send.
-     * cpfpTxIds and txHex both survive the TxSendBody whitelist and appear in tx/send.
+     * BitGo must receive consolidateUnspents (not tx/build) with the consolidation params,
+     * then tx/send with type: 'consolidate'.
      */
-    const buildCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build'));
-    buildCalls.should.have.length(1);
-    const buildBody = buildCalls[0].body as { cpfpTxIds?: string[] };
-    buildBody.should.have.property('cpfpTxIds').which.deepEqual([CPFP_TX_ID]);
-
-    services.bitgo.calls
-      .filter((c) => c.path.endsWith('/public/block/latest'))
-      .should.have.length(1);
+    const consolidateCalls = services.bitgo.calls.filter((c) =>
+      c.path.endsWith('/consolidateUnspents'),
+    );
+    consolidateCalls.should.have.length(1);
+    const consolidateBody = consolidateCalls[0].body as {
+      feeRate?: number;
+      maxFeeRate?: number;
+      minValue?: number;
+      txFormat?: string;
+    };
+    consolidateBody.should.have.property('feeRate', 1000);
+    consolidateBody.should.have.property('maxFeeRate', 2000);
+    consolidateBody.should.have.property('minValue', 1000);
+    consolidateBody.should.have.property('txFormat', 'psbt-lite');
 
     const sendCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/send'));
     sendCalls.should.have.length(1);
-    const sendBody = sendCalls[0].body as {
-      cpfpTxIds?: string[];
-      txHex?: string;
-    };
-    sendBody.should.have.property('cpfpTxIds').which.deepEqual([CPFP_TX_ID]);
-    sendBody.txHex!.should.startWith('70736274ff');
+    const sendBody = sendCalls[0].body as { type?: string };
+    sendBody.should.have.property('type', 'consolidate');
+
+    services.bitgo.calls.filter((c) => c.path.endsWith('/tx/build')).should.have.length(0);
   });
 });
