@@ -216,4 +216,7 @@ export function validateMasterExpressConfig(config: MasterExpressConfig) {
       throw new Error('AWM_SERVER_CA_CERT_PATH is required when TLS mode is MTLS');
     }
   }
+  if (config.asyncModeConfig.enabled && !config.asyncModeConfig.awmAsyncUrl) {
+    throw new Error('AWM_ASYNC_URL is required when ASYNC_MODE is true');
+  }
 }

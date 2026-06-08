@@ -3,6 +3,7 @@ import * as http from 'http';
 import { app as awmApp } from '../../advancedWalletManagerApp';
 import { app as mbeApp } from '../../masterBitGoExpressApp';
 import { AppMode, TlsMode, SigningMode } from '../../shared/types';
+import { DEFAULT_ASYNC_MODE_CONFIG } from '../api/master/testUtils';
 import { listen, close, LOCALHOST } from './helpers/servers';
 
 describe('Integration Test — health checks', () => {
@@ -38,6 +39,7 @@ describe('Integration Test — health checks', () => {
         disableEnvCheck: true,
         advancedWalletManagerUrl: `http://${LOCALHOST}:${awmPort}`,
         awmServerCertAllowSelfSigned: true,
+        asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
       }),
     );
     mbePort = await listen(mbeServer);

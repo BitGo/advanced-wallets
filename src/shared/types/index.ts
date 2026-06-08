@@ -69,6 +69,14 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   signingMode: SigningMode;
 }
 
+export interface AsyncModeConfig {
+  enabled: boolean;
+  awmAsyncUrl: string;
+  pollIntervalInMs: number;
+  jobTtlInSeconds: number;
+  jobTtlMpcInSeconds: number;
+}
+
 // Master Express mode specific configuration
 export interface MasterExpressConfig extends BaseConfig {
   appMode: AppMode.MASTER_EXPRESS;
@@ -104,6 +112,7 @@ export interface MasterExpressConfig extends BaseConfig {
   mtlsAllowedClientFingerprints?: string[];
   clientCertAllowSelfSigned?: boolean;
   recoveryMode?: boolean;
+  asyncModeConfig: AsyncModeConfig;
 }
 
 // Union type for the configuration

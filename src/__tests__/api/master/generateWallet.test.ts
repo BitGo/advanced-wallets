@@ -10,7 +10,7 @@ import { Environments } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
-import { BitGoAPITestHarness } from './testUtils';
+import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
 function mockWalletResponse(id: string, coinName: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -86,6 +86,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     // Setup middleware stubs before creating app
@@ -125,6 +126,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
@@ -366,6 +368,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
@@ -1018,6 +1021,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {

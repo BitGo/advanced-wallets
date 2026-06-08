@@ -1,6 +1,15 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { SignatureShareRecord, SignatureShareType } from '@bitgo-beta/sdk-core';
 import nock from 'nock';
+import { AsyncModeConfig } from '../../../shared/types';
+
+export const DEFAULT_ASYNC_MODE_CONFIG: AsyncModeConfig = {
+  enabled: false,
+  awmAsyncUrl: '',
+  pollIntervalInMs: 30000,
+  jobTtlInSeconds: 3600,
+  jobTtlMpcInSeconds: 7200,
+};
 
 export class BitGoAPITestHarness extends BitGoAPI {
   static clearConstantsCache(): void {
