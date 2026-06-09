@@ -1,8 +1,6 @@
-import * as superagent from 'superagent';
 import { AdvancedWalletManagerConfig, isMasterExpressConfig, TlsMode } from '../../shared/types';
 import { PostKeyResponseSchema, PostKeyParams, PostKeyResponse } from './types/postKey';
 import { GetKeyResponseSchema, GetKeyParams, GetKeyResponse } from './types/getKey';
-
 import {
   DecryptDataKeyResponseSchema,
   DecryptDataKeyParams,
@@ -20,18 +18,11 @@ import {
 } from './types/generateKey';
 import { SignResponseSchema, SignParams, SignResponse } from './types/sign';
 import https from 'https';
-import { BadRequestError, ConflictError, NotFoundError } from '../../shared/errors';
 import { URL } from 'url';
-
 import logger from '../../shared/logger';
+import { BaseHttpClient } from '../../shared/httpClient';
 
-type QueryArg = Parameters<superagent.Request['query']>[0];
-type BodyArg = Parameters<superagent.Request['send']>[0];
-
-export class KeyProviderClient {
-  private readonly url: string;
-  private readonly agent?: https.Agent;
-
+export class KeyProviderClient extends BaseHttpClient {
   constructor(cfg: AdvancedWalletManagerConfig) {
     if (isMasterExpressConfig(cfg)) {
       logger.error('key provider client cannot be initialized in master express mode');
@@ -47,10 +38,12 @@ export class KeyProviderClient {
     }
 
     const urlObj = new URL(cfg.keyProviderUrl);
+    let agent: https.Agent | undefined;
+
     if (cfg.tlsMode === TlsMode.MTLS) {
       urlObj.protocol = 'https:';
       if (cfg.keyProviderServerCaCert || cfg.keyProviderServerCertAllowSelfSigned) {
-        this.agent = new https.Agent({
+        agent = new https.Agent({
           ca: cfg.keyProviderServerCaCert,
           cert: cfg.keyProviderClientTlsCert,
           key: cfg.keyProviderClientTlsKey,
@@ -61,51 +54,7 @@ export class KeyProviderClient {
       urlObj.protocol = 'http:';
     }
 
-    this.url = urlObj.toString().replace(/\/$/, '');
-  }
-
-  private errorHandler(error: superagent.ResponseError, errorLog: string): never {
-    logger.error(errorLog, error);
-
-    if (['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'ETIMEDOUT'].includes((error as any).code)) {
-      throw error;
-    }
-
-    switch (error.status) {
-      case 400:
-        throw new BadRequestError(error.response?.body.message);
-      case 404:
-        throw new NotFoundError(error.response?.body.message);
-      case 409:
-        throw new ConflictError(error.response?.body.message);
-      case 500:
-        throw new Error(error.response?.body.message);
-      default:
-        throw new Error(
-          `key provider returned unexpected response.${error.status ? ` ${error.status}` : ''}${
-            error.response?.body.message ? `: ${error.response?.body.message}` : ''
-          }`,
-        );
-    }
-  }
-
-  private async call<M extends 'get' | 'post'>(
-    method: M,
-    url: string,
-    options: { errorContext: string } & (M extends 'get'
-      ? { query?: QueryArg }
-      : { body?: BodyArg }),
-  ): Promise<superagent.Response> {
-    try {
-      let req =
-        method === 'get'
-          ? superagent.get(url).query((options as unknown as { query?: QueryArg }).query ?? {})
-          : superagent.post(url).send((options as unknown as { body?: BodyArg }).body);
-      if (this.agent) req = req.agent(this.agent);
-      return await req;
-    } catch (error: any) {
-      this.errorHandler(error, options.errorContext);
-    }
+    super(urlObj.toString(), cfg.timeout, agent);
   }
 
   async postKey(params: PostKeyParams): Promise<PostKeyResponse> {
@@ -115,10 +64,7 @@ export class KeyProviderClient {
       params.source,
     );
 
-    const response = await this.call('post', `${this.url}/key`, {
-      body: params,
-      errorContext: 'Error posting key to key provider',
-    });
+    const response = await this.call('post', `${this.url}/key`, { body: params });
 
     try {
       PostKeyResponseSchema.parse(response.body);
@@ -144,7 +90,6 @@ export class KeyProviderClient {
 
     const response = await this.call('get', `${this.url}/key/${params.pub}`, {
       query: { source: params.source },
-      errorContext: 'Error getting key from key provider',
     });
 
     try {
@@ -168,10 +113,7 @@ export class KeyProviderClient {
       params.source,
     );
 
-    const response = await this.call('post', `${this.url}/key/generate`, {
-      body: params,
-      errorContext: 'Error generating key via key provider',
-    });
+    const response = await this.call('post', `${this.url}/key/generate`, { body: params });
 
     try {
       GenerateKeyResponseSchema.parse(response.body);
@@ -190,10 +132,7 @@ export class KeyProviderClient {
   async sign(params: SignParams): Promise<SignResponse> {
     logger.info('Signing via key provider with pub: %s and source: %s', params.pub, params.source);
 
-    const response = await this.call('post', `${this.url}/sign`, {
-      body: params,
-      errorContext: 'Error signing via key provider',
-    });
+    const response = await this.call('post', `${this.url}/sign`, { body: params });
 
     try {
       SignResponseSchema.parse(response.body);
@@ -212,10 +151,7 @@ export class KeyProviderClient {
   async generateDataKey(params: GenerateDataKeyParams): Promise<GenerateDataKeyResponse> {
     logger.info('Generating data key from key provider with type: %s', params.keyType);
 
-    const response = await this.call('post', `${this.url}/generateDataKey`, {
-      body: params,
-      errorContext: 'Error generating data key from key provider',
-    });
+    const response = await this.call('post', `${this.url}/generateDataKey`, { body: params });
 
     try {
       GenerateDataKeyResponseSchema.parse(response.body);
@@ -235,10 +171,7 @@ export class KeyProviderClient {
   }
 
   async decryptDataKey(params: DecryptDataKeyParams): Promise<DecryptDataKeyResponse> {
-    const response = await this.call('post', `${this.url}/decryptDataKey`, {
-      body: params,
-      errorContext: 'Error decrypting data key from key provider',
-    });
+    const response = await this.call('post', `${this.url}/decryptDataKey`, { body: params });
 
     try {
       DecryptDataKeyResponseSchema.parse(response.body);
