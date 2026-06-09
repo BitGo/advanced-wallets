@@ -60,6 +60,11 @@ describe('Configuration', () => {
     delete process.env.AWM_BACKUP_CLIENT_TLS_CERT_PATH;
     delete process.env.AWM_BACKUP_CLIENT_TLS_KEY;
     delete process.env.AWM_BACKUP_CLIENT_TLS_CERT;
+    delete process.env.ASYNC_MODE;
+    delete process.env.AWM_ASYNC_URL;
+    delete process.env.MBE_POLL_INTERVAL_MS;
+    delete process.env.MBE_JOB_TTL_S;
+    delete process.env.MBE_JOB_TTL_MPC_S;
   });
 
   after(() => {
@@ -649,6 +654,88 @@ describe('Configuration', () => {
         (cfg.awmBackupClientTlsKey === undefined).should.be.true();
         (cfg.awmBackupClientTlsCert === undefined).should.be.true();
       }
+    });
+
+    it('should default asyncModeConfig to disabled with default values', () => {
+      process.env.TLS_MODE = 'disabled';
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.asyncModeConfig.enabled.should.be.false();
+        cfg.asyncModeConfig.awmAsyncUrl.should.equal('');
+        cfg.asyncModeConfig.pollIntervalInMs.should.equal(30000);
+        cfg.asyncModeConfig.jobTtlInSeconds.should.equal(3600);
+        cfg.asyncModeConfig.jobTtlMpcInSeconds.should.equal(7200);
+      }
+    });
+
+    it('should load asyncModeConfig from env vars when ASYNC_MODE is true', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.MBE_POLL_INTERVAL_MS = '5000';
+      process.env.MBE_JOB_TTL_S = '1800';
+      process.env.MBE_JOB_TTL_MPC_S = '3600';
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.asyncModeConfig.enabled.should.be.true();
+        cfg.asyncModeConfig.awmAsyncUrl.should.equal('http://awm-async:8080');
+        cfg.asyncModeConfig.pollIntervalInMs.should.equal(5000);
+        cfg.asyncModeConfig.jobTtlInSeconds.should.equal(1800);
+        cfg.asyncModeConfig.jobTtlMpcInSeconds.should.equal(3600);
+      }
+    });
+
+    it('should use default numeric values when async mode numeric env vars are not set', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      const cfg = initConfig();
+      isMasterExpressConfig(cfg).should.be.true();
+      if (isMasterExpressConfig(cfg)) {
+        cfg.asyncModeConfig.pollIntervalInMs.should.equal(30000);
+        cfg.asyncModeConfig.jobTtlInSeconds.should.equal(3600);
+        cfg.asyncModeConfig.jobTtlMpcInSeconds.should.equal(7200);
+      }
+    });
+
+    it('should throw when ASYNC_MODE is true but AWM_ASYNC_URL is missing', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      (() => initConfig()).should.throw('AWM_ASYNC_URL is required when ASYNC_MODE is true');
+    });
+
+    it('should allow missing ADVANCED_WALLET_MANAGER_URL when ASYNC_MODE is true', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      delete process.env.ADVANCED_WALLET_MANAGER_URL;
+      (() => initConfig()).should.not.throw();
+    });
+
+    it('should throw when MBE_POLL_INTERVAL_MS is negative', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.MBE_POLL_INTERVAL_MS = '-1';
+      (() => initConfig()).should.throw('MBE_POLL_INTERVAL_MS must be a positive number, got -1');
+    });
+
+    it('should throw when MBE_JOB_TTL_S is negative', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.MBE_JOB_TTL_S = '-1';
+      (() => initConfig()).should.throw('MBE_JOB_TTL_S must be a positive number, got -1');
+    });
+
+    it('should throw when MBE_JOB_TTL_MPC_S is negative', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.ASYNC_MODE = 'true';
+      process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.MBE_JOB_TTL_MPC_S = '-1';
+      (() => initConfig()).should.throw('MBE_JOB_TTL_MPC_S must be a positive number, got -1');
     });
   });
 });

@@ -11,6 +11,7 @@ import {
   DEFAULT_ECDSA_MPCV2_TX_REQUEST_ID,
   DEFAULT_ECDSA_MPCV2_WALLET_ID,
   nockEcdsaMpcv2SigningFlow,
+  DEFAULT_ASYNC_MODE_CONFIG,
 } from './testUtils';
 
 const walletId = DEFAULT_ECDSA_MPCV2_WALLET_ID;
@@ -40,6 +41,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
       awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);

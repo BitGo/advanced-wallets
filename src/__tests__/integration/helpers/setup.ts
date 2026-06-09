@@ -2,6 +2,7 @@ import * as http from 'http';
 import { app as awmApp } from '../../../advancedWalletManagerApp';
 import { app as mbeApp } from '../../../masterBitGoExpressApp';
 import { AppMode, TlsMode, SigningMode } from '../../../shared/types';
+import { DEFAULT_ASYNC_MODE_CONFIG } from '../../api/master/testUtils';
 import { listen, close, LOCALHOST } from './servers';
 import { startMockKeyProviderServer, MockKeyProviderServer } from './mockKeyProviderServer';
 import { startMockBitgoServer, MockBitgoServer } from './mockBitgoServer';
@@ -50,6 +51,7 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
       advancedWalletManagerUrl: `http://${LOCALHOST}:${awmPort}`,
       awmServerCertAllowSelfSigned: true,
       customRootUri: `http://${LOCALHOST}:${bitgo.port}`,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     }),
   );
   const mbePort = await listen(mbeServer);

@@ -7,7 +7,7 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments } from '@bitgo-beta/sdk-core';
 import { Hteth } from '@bitgo-beta/sdk-coin-eth';
 import * as transactionRequests from '../../../masterBitgoExpress/handlers/transactionRequests';
-import { BitGoAPITestHarness } from './testUtils';
+import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
 describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
   let agent: request.SuperAgentTest;
@@ -61,6 +61,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidate', () => {
       awmServerCaCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);

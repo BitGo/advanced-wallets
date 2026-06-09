@@ -10,7 +10,11 @@ import * as utxolib from '@bitgo-beta/utxo-lib';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import { Tsol } from '@bitgo-beta/sdk-coin-sol';
 import assert from 'assert';
-import { BitGoAPITestHarness, nockEcdsaMpcv2SendManySigningFlow } from './testUtils';
+import {
+  BitGoAPITestHarness,
+  DEFAULT_ASYNC_MODE_CONFIG,
+  nockEcdsaMpcv2SendManySigningFlow,
+} from './testUtils';
 
 const testWalletId = 'test-wallet-id';
 const testBitgoApiUrl = Environments.test.uri;
@@ -129,6 +133,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       awmServerCaCert: 'dummy-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);
@@ -812,6 +817,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       authVersion: 2,
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     try {

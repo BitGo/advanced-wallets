@@ -4,7 +4,7 @@ import nock from 'nock';
 import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { BitGoAPITestHarness } from './testUtils';
+import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
 describe('MBE mpcv2 recovery', () => {
   let agent: request.SuperAgentTest;
@@ -31,6 +31,7 @@ describe('MBE mpcv2 recovery', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);

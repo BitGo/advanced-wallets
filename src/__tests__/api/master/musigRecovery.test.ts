@@ -6,7 +6,7 @@ import * as request from 'supertest';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { data as ethRecoveryData } from '../../mocks/ethRecoveryMusigMockData';
-import { BitGoAPITestHarness } from './testUtils';
+import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
 describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
   let agent: request.SuperAgentTest;
@@ -32,6 +32,7 @@ describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);

@@ -7,7 +7,7 @@ import { Btc } from '@bitgo-beta/sdk-coin-btc';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
-import { BitGoAPITestHarness } from './testUtils';
+import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
 const BTC_PREBUILD_PSBT_HEX = utxolib.bitgo
   .createPsbtForNetwork({ network: utxolib.networks.bitcoin })
@@ -64,6 +64,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       awmServerCaCert: 'test-cert',
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
+      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);

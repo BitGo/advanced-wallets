@@ -4,7 +4,7 @@ import nock from 'nock';
 import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { BitGoAPITestHarness } from './testUtils';
+import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
 describe('Non Recovery Tests', () => {
   let agent: request.SuperAgentTest;
@@ -24,6 +24,7 @@ describe('Non Recovery Tests', () => {
     httpLoggerFile: '',
     clientCertAllowSelfSigned: true,
     recoveryMode: false,
+    asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
   };
 
   before(() => {

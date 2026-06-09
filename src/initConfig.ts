@@ -3,6 +3,7 @@ import {
   Config,
   AdvancedWalletManagerConfig,
   MasterExpressConfig,
+  AsyncModeConfig,
   TlsMode,
   SigningMode,
   AppMode,
@@ -331,6 +332,13 @@ const defaultMasterExpressConfig: MasterExpressConfig = {
   awmServerCaCertPath: '', // Will be overridden by environment variable
   tlsMode: TlsMode.MTLS,
   clientCertAllowSelfSigned: false,
+  asyncModeConfig: {
+    enabled: false,
+    awmAsyncUrl: '',
+    pollIntervalInMs: 30000,
+    jobTtlInSeconds: 3600,
+    jobTtlMpcInSeconds: 7200,
+  },
 };
 
 function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): string {
@@ -342,7 +350,30 @@ function determineProtocol(url: string, tlsMode: TlsMode, isBitGo = false): stri
   return `${protocol}://${url}`;
 }
 
+function parsePositiveInt(envVar: string, defaultValue: number): number {
+  const value = Number(readEnvVar(envVar)) || defaultValue;
+  if (value < 0) {
+    throw new Error(`${envVar} must be a positive number, got ${value}`);
+  }
+  return value;
+}
+
+function readAsyncModeConfig(isAsyncMode: boolean): AsyncModeConfig {
+  const awmAsyncUrl = readEnvVar('AWM_ASYNC_URL') ?? '';
+  if (isAsyncMode && !awmAsyncUrl) {
+    throw new Error('AWM_ASYNC_URL is required when ASYNC_MODE is true');
+  }
+  return {
+    awmAsyncUrl,
+    enabled: isAsyncMode,
+    pollIntervalInMs: parsePositiveInt('MBE_POLL_INTERVAL_MS', 30000),
+    jobTtlInSeconds: parsePositiveInt('MBE_JOB_TTL_S', 3600),
+    jobTtlMpcInSeconds: parsePositiveInt('MBE_JOB_TTL_MPC_S', 7200),
+  };
+}
+
 function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
+  const isAsyncMode = readEnvVar('ASYNC_MODE') === 'true';
   const advancedWalletManagerUrl = readEnvVar('ADVANCED_WALLET_MANAGER_URL');
   const advancedWalletManagerBackupUrl = readEnvVar('ADVANCED_WALLET_MANAGER_BACKUP_URL');
   const awmServerCaCertPath = readEnvVar('AWM_SERVER_CA_CERT_PATH');
@@ -350,7 +381,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
   const awmServerCertAllowSelfSigned = readEnvVar('AWM_SERVER_CERT_ALLOW_SELF_SIGNED') === 'true';
   const tlsMode = determineTlsMode();
 
-  if (!advancedWalletManagerUrl) {
+  if (!isAsyncMode && !advancedWalletManagerUrl) {
     throw new Error(
       'ADVANCED_WALLET_MANAGER_URL environment variable is required and cannot be empty',
     );
@@ -407,6 +438,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     clientCertAllowSelfSigned,
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
+    asyncModeConfig: readAsyncModeConfig(isAsyncMode),
   };
 }
 
@@ -459,6 +491,7 @@ function mergeMasterExpressConfigs(
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
+    asyncModeConfig: get('asyncModeConfig'),
   };
 }
 

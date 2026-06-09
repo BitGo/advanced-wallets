@@ -1,5 +1,6 @@
 import 'should';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
+import { DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 import {
   createAwmClient,
   createAwmBackupClient,
@@ -19,6 +20,7 @@ describe('AWM Backup Client', () => {
     awmServerCaCert: 'dummy-cert',
     tlsMode: TlsMode.DISABLED,
     clientCertAllowSelfSigned: true,
+    asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
   };
 
   describe('createAwmBackupClient', () => {
