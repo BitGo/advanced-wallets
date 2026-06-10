@@ -16,10 +16,12 @@ export interface IntegServices {
 
 export interface StartServicesOptions {
   signingMode?: SigningMode;
+  recoveryMode?: boolean;
 }
 
 export async function startServices(opts: StartServicesOptions = {}): Promise<IntegServices> {
   const signingMode = opts.signingMode ?? SigningMode.LOCAL;
+  const recoveryMode = opts.recoveryMode ?? false;
 
   const keyProvider = await startMockKeyProviderServer();
   const bitgo = await startMockBitgoServer();
@@ -34,6 +36,7 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
       timeout: 30000,
       httpLoggerFile: '',
       keyProviderUrl: `http://${LOCALHOST}:${keyProvider.port}`,
+      recoveryMode,
     }),
   );
   const awmPort = await listen(awmServer);
@@ -52,6 +55,7 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
       awmServerCertAllowSelfSigned: true,
       customRootUri: `http://${LOCALHOST}:${bitgo.port}`,
       asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
+      recoveryMode,
     }),
   );
   const mbePort = await listen(mbeServer);
