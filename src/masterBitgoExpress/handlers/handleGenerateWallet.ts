@@ -14,6 +14,8 @@ import { orchestrateEcdsaKeyGen } from './ecdsa';
 import { orchestrateEddsaKeyGen } from './eddsa';
 import coinFactory from '../../shared/coinFactory';
 import { BadRequestError } from '../../shared/errors';
+import { KeySource } from '../../shared/types';
+import { submitJobViaBridgeClient } from './utils/asyncUtils';
 
 /**
  * Request handler for generating an advanced wallet.
@@ -40,6 +42,16 @@ export async function handleGenerateWallet(
 async function handleGenerateOnChainWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
+  const asyncResult = await submitJobViaBridgeClient(req, {
+    path: `/api/${req.params.coin}/key/independent`,
+    body: req.decoded,
+    sources: [KeySource.USER, KeySource.BACKUP],
+    operationType: 'multisig_keygen',
+  });
+  if (asyncResult) {
+    return asyncResult;
+  }
+
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
 
@@ -144,6 +156,10 @@ async function handleGenerateOnChainWallet(
 async function handleGenerateMpcWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
+  if (req.config.asyncModeConfig.enabled) {
+    throw new BadRequestError('Async mode is not yet supported for TSS wallet generation');
+  }
+
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
   const awmClient = req.awmUserClient;
@@ -227,6 +243,10 @@ async function handleGenerateMpcWallet(
 async function handleGenerateEvmKeyRingWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.generate', 'post'>,
 ) {
+  if (req.config.asyncModeConfig.enabled) {
+    throw new BadRequestError('Async mode is not yet supported for EVM keyring wallet generation');
+  }
+
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
   if (!baseCoin.isEVM()) {

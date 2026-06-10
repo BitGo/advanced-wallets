@@ -1,7 +1,7 @@
 import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-http';
-
 import * as t from 'io-ts';
 import { ErrorResponses } from '../../shared/errors';
+import { ASYNC_JOB_SUBMITTED_STATUS } from '../handlers/utils/asyncUtils';
 
 const WalletType = t.intersection([
   t.type({
@@ -275,8 +275,14 @@ const GenerateWalletResponseCodec = t.type({
 
 export type GenerateWalletResponseBody = t.TypeOf<typeof GenerateWalletResponseCodec>;
 
+export const AsyncJobResponseCodec = t.type({
+  jobId: t.string,
+  status: t.literal(ASYNC_JOB_SUBMITTED_STATUS),
+});
+
 const GenerateWalletResponse: HttpResponse = {
   200: GenerateWalletResponseCodec,
+  202: AsyncJobResponseCodec,
   ...ErrorResponses,
 };
 

@@ -1,4 +1,5 @@
 import 'should';
+import assert from 'assert';
 import { startServices, IntegServices } from './helpers/setup';
 import { LOCALHOST } from './helpers/servers';
 import { SigningMode } from '../../shared/types';
@@ -116,5 +117,54 @@ describe('Generate wallet: EXTERNAL signing', () => {
     /** and 1 wallet add */
     const walletAddCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/wallet/add'));
     walletAddCalls.should.have.length(1);
+  });
+});
+
+describe('Generate wallet: ASYNC mode', () => {
+  let services: IntegServices;
+
+  before(async () => {
+    services = await startServices({ asyncMode: true });
+  });
+
+  after(async () => {
+    await services.teardown();
+  });
+
+  beforeEach(() => {
+    assert(services.bridge, 'bridge must be defined in async mode');
+    services.bridge.calls.length = 0;
+    services.bitgo.calls.length = 0;
+    services.keyProvider.calls.length = 0;
+  });
+
+  it('submits onchain wallet generation to bridge and returns 202 with jobId', async () => {
+    const res = await fetch(
+      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/generate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        body: JSON.stringify({
+          enterprise: 'test-enterprise',
+          label: 'test-wallet',
+          multisigType: 'onchain',
+        }),
+      },
+    );
+
+    res.status.should.equal(202);
+    const body = await res.json();
+    body.should.have.property('jobId', 'test-job-id');
+    body.should.have.property('status', 'pending');
+
+    /** Bridge received exactly 1 submit call */
+    assert(services.bridge, 'bridge must be defined in async mode');
+    services.bridge.calls.should.have.length(1);
+    services.bridge.calls[0].path.should.equal('/api/tbtc/key/independent');
+
+    /** AWM and BitGo were never called — bridge owns the full job */
+    services.keyProvider.calls.should.have.length(0);
+    services.bitgo.calls.filter((c) => c.path.endsWith('/key')).should.have.length(0);
+    services.bitgo.calls.filter((c) => c.path.endsWith('/wallet/add')).should.have.length(0);
   });
 });
