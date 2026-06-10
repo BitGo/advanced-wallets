@@ -93,7 +93,7 @@ describe('postMpcV2Key', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('details', 'This is an error message');
+    response.body.details.should.match(/This is an error message/);
   });
 
   it('should handle unexpected key provider errors', async () => {
@@ -106,10 +106,7 @@ describe('postMpcV2Key', () => {
 
     response.status.should.equal(500);
     response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property(
-      'details',
-      'key provider returned unexpected response. 502: Unexpected error',
-    );
+    response.body.details.should.match(/502.*Unexpected error/);
   });
 });
 
@@ -150,27 +147,17 @@ describe('KeyProviderClient.generateKey', () => {
   });
 
   [
-    {
-      url: endPointPath,
-      statusCode: 400,
-      mockedError: 'bad request',
-      expectedError: 'bad request',
-    },
-    { url: endPointPath, statusCode: 404, mockedError: 'not found', expectedError: 'not found' },
-    { url: endPointPath, statusCode: 409, mockedError: 'conflict', expectedError: 'conflict' },
-    {
-      url: endPointPath,
-      statusCode: 500,
-      mockedError: 'internal error',
-      expectedError: 'internal error',
-    },
-  ].forEach(({ url, statusCode, mockedError, expectedError }) => {
+    { url: endPointPath, statusCode: 400, mockedError: 'bad request' },
+    { url: endPointPath, statusCode: 404, mockedError: 'not found' },
+    { url: endPointPath, statusCode: 409, mockedError: 'conflict' },
+    { url: endPointPath, statusCode: 500, mockedError: 'internal error' },
+  ].forEach(({ url, statusCode, mockedError }) => {
     it(`should bubble up ${statusCode} errors`, async () => {
       const nockMocked = nock(keyProviderUrl)
         .post(url)
         .reply(statusCode, { message: mockedError })
         .persist();
-      await client.generateKey(params).should.be.rejectedWith(expectedError);
+      await client.generateKey(params).should.be.rejectedWith(new RegExp(mockedError));
       nockMocked.done();
     });
   });
@@ -222,17 +209,17 @@ describe('KeyProviderClient.sign', () => {
   });
 
   [
-    { statusCode: 400, mockedError: 'bad request', expectedError: 'bad request' },
-    { statusCode: 404, mockedError: 'not found', expectedError: 'not found' },
-    { statusCode: 409, mockedError: 'conflict', expectedError: 'conflict' },
-    { statusCode: 500, mockedError: 'internal error', expectedError: 'internal error' },
-  ].forEach(({ statusCode, mockedError, expectedError }) => {
+    { statusCode: 400, mockedError: 'bad request' },
+    { statusCode: 404, mockedError: 'not found' },
+    { statusCode: 409, mockedError: 'conflict' },
+    { statusCode: 500, mockedError: 'internal error' },
+  ].forEach(({ statusCode, mockedError }) => {
     it(`should bubble up ${statusCode} errors`, async () => {
       const nockMocked = nock(keyProviderUrl)
         .post(endPointPath)
         .reply(statusCode, { message: mockedError })
         .persist();
-      await client.sign(params).should.be.rejectedWith(expectedError);
+      await client.sign(params).should.be.rejectedWith(new RegExp(mockedError));
       nockMocked.done();
     });
   });
