@@ -66,16 +66,10 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
 
   let bitgo: BitGoAPI;
 
-  before(() => {
-    nock.disableNetConnect();
-    nock.enableNetConnect('127.0.0.1');
-
-    // Create a BitGo instance that we'll use for stubbing
-    bitgo = new BitGoAPI({ env: 'test' });
-
-    const config: MasterExpressConfig = {
+  function makeConfig(overrides: Partial<MasterExpressConfig> = {}): MasterExpressConfig {
+    return {
       appMode: AppMode.MASTER_EXPRESS,
-      port: 0, // Let OS assign a free port
+      port: 0,
       bind: 'localhost',
       timeout: 60000,
       httpLoggerFile: '',
@@ -87,7 +81,17 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
+      ...overrides,
     };
+  }
+
+  before(() => {
+    nock.disableNetConnect();
+    nock.enableNetConnect('127.0.0.1');
+
+    bitgo = new BitGoAPI({ env: 'test' });
+
+    const config = makeConfig();
 
     // Setup middleware stubs before creating app
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
@@ -109,25 +113,9 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   it('should generate an onchain wallet with separate backup AWM (separate-HSM mode)', async () => {
     const backupAwmUrl = 'http://backup-awm.invalid';
 
-    // Override middleware to inject a separate backup client
     sinon.restore();
     const backupBitgo = new BitGoAPI({ env: 'test' });
-    const configWithBackup: MasterExpressConfig = {
-      appMode: AppMode.MASTER_EXPRESS,
-      port: 0,
-      bind: 'localhost',
-      timeout: 60000,
-      httpLoggerFile: '',
-      env: 'test',
-      disableEnvCheck: true,
-      authVersion: 2,
-      advancedWalletManagerUrl: advancedWalletManagerUrl,
-      advancedWalletManagerBackupUrl: backupAwmUrl,
-      awmServerCaCert: 'dummy-cert',
-      tlsMode: TlsMode.DISABLED,
-      clientCertAllowSelfSigned: true,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
-    };
+    const configWithBackup = makeConfig({ advancedWalletManagerBackupUrl: backupAwmUrl });
 
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
       (req as BitGoRequest<MasterExpressConfig>).bitgo = backupBitgo;
@@ -354,22 +342,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .get('/api/v1/client/constants')
       .reply(200, { constants: { mpc: { bitgoPublicKey: 'test-bitgo-public-key' } } });
     const backupBitgo = new BitGoAPI({ env: 'test' });
-    const configWithBackup: MasterExpressConfig = {
-      appMode: AppMode.MASTER_EXPRESS,
-      port: 0,
-      bind: 'localhost',
-      timeout: 60000,
-      httpLoggerFile: '',
-      env: 'test',
-      disableEnvCheck: true,
-      authVersion: 2,
-      advancedWalletManagerUrl: advancedWalletManagerUrl,
-      advancedWalletManagerBackupUrl: backupAwmUrl,
-      awmServerCaCert: 'dummy-cert',
-      tlsMode: TlsMode.DISABLED,
-      clientCertAllowSelfSigned: true,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
-    };
+    const configWithBackup = makeConfig({ advancedWalletManagerBackupUrl: backupAwmUrl });
 
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
       (req as BitGoRequest<MasterExpressConfig>).bitgo = backupBitgo;
@@ -1007,22 +980,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .get('/api/v1/client/constants')
       .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: 'test-bitgo-public-key' } } });
     const backupBitgo = new BitGoAPI({ env: 'test' });
-    const configWithBackup: MasterExpressConfig = {
-      appMode: AppMode.MASTER_EXPRESS,
-      port: 0,
-      bind: 'localhost',
-      timeout: 60000,
-      httpLoggerFile: '',
-      env: 'test',
-      disableEnvCheck: true,
-      authVersion: 2,
-      advancedWalletManagerUrl: advancedWalletManagerUrl,
-      advancedWalletManagerBackupUrl: backupAwmUrl,
-      awmServerCaCert: 'dummy-cert',
-      tlsMode: TlsMode.DISABLED,
-      clientCertAllowSelfSigned: true,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
-    };
+    const configWithBackup = makeConfig({ advancedWalletManagerBackupUrl: backupAwmUrl });
 
     sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
       (req as BitGoRequest<MasterExpressConfig>).bitgo = backupBitgo;
@@ -2418,6 +2376,44 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     userKeyNock.done();
     backupKeyNock.done();
     bitgoKeyNock.done();
+  });
+
+  it('should return 202 with jobId when async mode is enabled for onchain wallet', async () => {
+    const bridgeUrl = 'http://bridge.invalid';
+    const jobId = 'test-job-id-123';
+
+    sinon.restore();
+    const asyncBitgo = new BitGoAPI({ env: 'test' });
+    const asyncConfig = makeConfig({
+      asyncModeConfig: {
+        enabled: true,
+        awmAsyncUrl: bridgeUrl,
+        pollIntervalInMs: 30000,
+        jobTtlInSeconds: 3600,
+        jobTtlMpcInSeconds: 7200,
+      },
+    });
+
+    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
+      (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
+      (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
+      next();
+    });
+
+    const asyncApp = expressApp(asyncConfig);
+    const asyncAgent = request.agent(asyncApp);
+
+    const bridgeNock = nock(bridgeUrl).post(`/api/${coin}/key/independent`).reply(202, { jobId });
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ label: 'test_wallet', enterprise: 'test_enterprise', multisigType: 'onchain' });
+
+    response.status.should.equal(202);
+    response.body.should.have.property('jobId', jobId);
+    response.body.should.have.property('status', 'pending');
+    bridgeNock.done();
   });
 
   it('should fail when evmKeyRingReferenceWalletId is provided for a non-EVM coin', async () => {

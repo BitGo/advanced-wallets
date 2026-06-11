@@ -65,11 +65,14 @@ export const ConsolidateUnspentsRequest = {
   targetAddress: optional(t.string),
 };
 
+export const ConsolidateUnspentsResponseCodec = t.type({
+  tx: t.string,
+  txid: t.string,
+});
+export type ConsolidateUnspentsResponseBody = t.TypeOf<typeof ConsolidateUnspentsResponseCodec>;
+
 export const ConsolidateUnspentsResponse: HttpResponse = {
-  200: t.type({
-    tx: t.string,
-    txid: t.string,
-  }),
+  200: ConsolidateUnspentsResponseCodec,
   ...ErrorResponses,
 };
 

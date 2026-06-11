@@ -6,17 +6,20 @@ import { DEFAULT_ASYNC_MODE_CONFIG } from '../../api/master/testUtils';
 import { listen, close, LOCALHOST } from './servers';
 import { startMockKeyProviderServer, MockKeyProviderServer } from './mockKeyProviderServer';
 import { startMockBitgoServer, MockBitgoServer } from './mockBitgoServer';
+import { startMockBridgeServer, MockBridgeServer } from './mockBridgeServer';
 
 export interface IntegServices {
   mbePort: number;
   keyProvider: MockKeyProviderServer;
   bitgo: MockBitgoServer;
+  bridge?: MockBridgeServer;
   teardown(): Promise<void>;
 }
 
 export interface StartServicesOptions {
   signingMode?: SigningMode;
   recoveryMode?: boolean;
+  asyncMode?: boolean;
 }
 
 export async function startServices(opts: StartServicesOptions = {}): Promise<IntegServices> {
@@ -25,6 +28,7 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
 
   const keyProvider = await startMockKeyProviderServer();
   const bitgo = await startMockBitgoServer();
+  const bridge = opts.asyncMode ? await startMockBridgeServer() : undefined;
 
   const awmServer = http.createServer(
     awmApp({
@@ -54,8 +58,16 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
       advancedWalletManagerUrl: `http://${LOCALHOST}:${awmPort}`,
       awmServerCertAllowSelfSigned: true,
       customRootUri: `http://${LOCALHOST}:${bitgo.port}`,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
       recoveryMode,
+      asyncModeConfig: bridge
+        ? {
+            enabled: true,
+            awmAsyncUrl: `http://${LOCALHOST}:${bridge.port}`,
+            pollIntervalInMs: 30000,
+            jobTtlInSeconds: 3600,
+            jobTtlMpcInSeconds: 7200,
+          }
+        : DEFAULT_ASYNC_MODE_CONFIG,
     }),
   );
   const mbePort = await listen(mbeServer);
@@ -64,11 +76,13 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
     mbePort,
     keyProvider,
     bitgo,
+    bridge,
     async teardown() {
       await close(mbeServer);
       await close(awmServer);
       await keyProvider.close();
       await bitgo.close();
+      if (bridge) await bridge.close();
     },
   };
 }

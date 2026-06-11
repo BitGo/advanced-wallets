@@ -37,6 +37,15 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
   return express.json({ limit: '20mb' })(req, res, next);
 }
 
+/**
+ * TODO: union with other handler response types as they are async-ified (WCN-887 through WCN-893)
+ */
+type MasterBitGoAPIHandlerResponses = Awaited<ReturnType<typeof handleGenerateWallet>>;
+
+function toApiResponse(result: MasterBitGoAPIHandlerResponses) {
+  return 'jobId' in result ? Response.accepted(result) : Response.ok(result);
+}
+
 // API Specification
 export const MasterBitGoExpressApiSpec = apiSpec({
   'v1.wallet.generate': {
@@ -75,7 +84,7 @@ export type MasterApiSpecRouteHandler<
 export type MasterApiSpecRouteRequest<
   ApiName extends keyof MasterApiSpec,
   Method extends keyof MasterApiSpec[ApiName] & HttpMethod,
-> = BitGoRequest & Parameters<MasterApiSpecRouteHandler<ApiName, Method>>[0];
+> = BitGoRequest<MasterExpressConfig> & Parameters<MasterApiSpecRouteHandler<ApiName, Method>>[0];
 
 export type GenericMasterApiSpecRouteRequest = MasterApiSpecRouteRequest<any, any>;
 
@@ -97,7 +106,7 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleGenerateWallet(typedReq);
-      return Response.ok(result);
+      return toApiResponse(result);
     }),
   ]);
 

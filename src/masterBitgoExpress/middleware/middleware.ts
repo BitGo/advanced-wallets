@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { isMasterExpressConfig } from '../../shared/types';
 import { createAwmClient, createAwmBackupClient } from '../clients/advancedWalletManagerClient';
+import { OsoBridgeClient } from '../clients/bridgeClient';
 import { BitGoRequest } from '../../types/request';
 
 /**
@@ -39,6 +40,13 @@ export function validateMasterExpressConfig(req: Request, res: Response, next: N
       error: 'Failed to initialize backup advanced wallet manager client.',
       details: err.message,
     });
+  }
+
+  if (bitgoReq.config.asyncModeConfig.enabled) {
+    bitgoReq.bridgeClient = new OsoBridgeClient(
+      bitgoReq.config.asyncModeConfig.awmAsyncUrl,
+      bitgoReq.config.timeout,
+    );
   }
 
   next();
