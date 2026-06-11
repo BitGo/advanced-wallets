@@ -17,6 +17,9 @@ on:
 jobs:
   claude-code:
     name: Invoke Claude Code AI assistant
+    if: |
+      github.event.comment.author_association == 'OWNER' ||
+      github.event.comment.author_association == 'MEMBER'
     uses: BitGo/github-ai-assistant/.github/workflows/claude.yaml@v1
     with:
       code_review_prompt_path: .github/prompts/code-review.md
