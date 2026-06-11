@@ -2403,7 +2403,11 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const asyncApp = expressApp(asyncConfig);
     const asyncAgent = request.agent(asyncApp);
 
-    const bridgeNock = nock(bridgeUrl).post(`/api/${coin}/key/independent`).reply(202, { jobId });
+    const bridgeNock = nock(bridgeUrl)
+      .post(`/api/${coin}/key/independent`)
+      .matchHeader('X-OSO-Source', 'user,backup')
+      .matchHeader('X-OSO-Operation', 'multisig_keygen')
+      .reply(202, { jobId });
 
     const response = await asyncAgent
       .post(`/api/v1/${coin}/advancedwallet/generate`)
@@ -2430,6 +2434,83 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     response.status.should.equal(400);
     response.body.details.should.containEql(
       'EVM keyring wallet generation is not supported for coin tbtc',
+    );
+  });
+
+  it('should fail when async mode is enabled for TSS wallet generation', async () => {
+    const bridgeUrl = 'http://bridge.invalid';
+    sinon.restore();
+    const asyncBitgo = new BitGoAPI({ env: 'test' });
+    const asyncConfig = makeConfig({
+      asyncModeConfig: {
+        enabled: true,
+        awmAsyncUrl: bridgeUrl,
+        pollIntervalInMs: 30000,
+        jobTtlInSeconds: 3600,
+        jobTtlMpcInSeconds: 7200,
+      },
+    });
+
+    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
+      (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
+      (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
+      next();
+    });
+
+    const asyncApp = expressApp(asyncConfig);
+    const asyncAgent = request.agent(asyncApp);
+
+    const response = await asyncAgent
+      .post(`/api/v1/${eddsaCoin}/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'tss',
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql(
+      'Async mode is not yet supported for TSS wallet generation',
+    );
+  });
+
+  it('should fail when async mode is enabled for EVM keyring wallet generation', async () => {
+    const bridgeUrl = 'http://bridge.invalid';
+    sinon.restore();
+    const asyncBitgo = new BitGoAPI({ env: 'test' });
+    const asyncConfig = makeConfig({
+      asyncModeConfig: {
+        enabled: true,
+        awmAsyncUrl: bridgeUrl,
+        pollIntervalInMs: 30000,
+        jobTtlInSeconds: 3600,
+        jobTtlMpcInSeconds: 7200,
+      },
+    });
+
+    sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
+      (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
+      (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
+      next();
+    });
+
+    const asyncApp = expressApp(asyncConfig);
+    const asyncAgent = request.agent(asyncApp);
+
+    const response = await asyncAgent
+      .post(`/api/v1/eth/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'onchain',
+        evmKeyRingReferenceWalletId: '59cd72485007a239fb00282ed480da1f',
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql(
+      'Async mode is not yet supported for EVM keyring wallet generation',
     );
   });
 });
