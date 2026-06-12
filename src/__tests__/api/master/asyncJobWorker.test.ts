@@ -21,7 +21,7 @@ const POLL_INTERVAL_MS = 1000;
 function makeUserKeychain() {
   return {
     id: 'user-key-id',
-    pub: 'xpub_user',
+    pub: 'xpub661MyMwAqRbcEvJQx6spkkHLRgtjxmVdyDSvbDt2m9NFpbkHdcu5WJsHHHqFxNATbNHnhMWJiwckoMqF75EpcNhU9xeVM4oDS7urM3os4BH',
     encryptedPrv: 'encrypted-user-prv',
     type: 'independent' as const,
     source: 'user' as const,
@@ -32,7 +32,7 @@ function makeUserKeychain() {
 function makeBackupKeychain() {
   return {
     id: 'backup-key-id',
-    pub: 'xpub_backup',
+    pub: 'xpub661MyMwAqRbcFnihegj1Mo2ePZoMQyLbBYpW7gDXZ7qzqxF3FBAkNAP8Gki8Mxx2BVLjN3RRa75pt5apD2g3ewXPrCfdssAJ7VupXqucLsb',
     encryptedPrv: 'encrypted-backup-prv',
     type: 'independent' as const,
     source: 'backup' as const,
@@ -215,9 +215,13 @@ describe('asyncJobWorker', () => {
         .query({ status: 'awaiting_bitgo' })
         .reply(200, { jobs: [job1, job2] });
 
-      nockBitgoKeychainRegistration({ pub: 'xpub_user', source: 'user', keyId: 'user-key-id' });
       nockBitgoKeychainRegistration({
-        pub: 'xpub_backup',
+        pub: makeUserKeychain().pub,
+        source: 'user',
+        keyId: 'user-key-id',
+      });
+      nockBitgoKeychainRegistration({
+        pub: makeBackupKeychain().pub,
         source: 'backup',
         keyId: 'backup-key-id',
       });
@@ -225,9 +229,13 @@ describe('asyncJobWorker', () => {
       nockWalletAdd('wallet-1');
       nockUpdateJobComplete('job-1', 'wallet-1');
 
-      nockBitgoKeychainRegistration({ pub: 'xpub_user', source: 'user', keyId: 'user-key-id' });
       nockBitgoKeychainRegistration({
-        pub: 'xpub_backup',
+        pub: makeUserKeychain().pub,
+        source: 'user',
+        keyId: 'user-key-id',
+      });
+      nockBitgoKeychainRegistration({
+        pub: makeBackupKeychain().pub,
         source: 'backup',
         keyId: 'backup-key-id',
       });
@@ -254,9 +262,13 @@ describe('asyncJobWorker', () => {
 
       nockUpdateJobFailed('job-bad');
 
-      nockBitgoKeychainRegistration({ pub: 'xpub_user', source: 'user', keyId: 'user-key-id' });
       nockBitgoKeychainRegistration({
-        pub: 'xpub_backup',
+        pub: makeUserKeychain().pub,
+        source: 'user',
+        keyId: 'user-key-id',
+      });
+      nockBitgoKeychainRegistration({
+        pub: makeBackupKeychain().pub,
         source: 'backup',
         keyId: 'backup-key-id',
       });
@@ -289,12 +301,12 @@ describe('asyncJobWorker', () => {
       const walletId = 'new-wallet-id';
 
       const userKeyNock = nockBitgoKeychainRegistration({
-        pub: 'xpub_user',
+        pub: makeUserKeychain().pub,
         source: 'user',
         keyId: 'user-key-id',
       });
       const backupKeyNock = nockBitgoKeychainRegistration({
-        pub: 'xpub_backup',
+        pub: makeBackupKeychain().pub,
         source: 'backup',
         keyId: 'backup-key-id',
       });
@@ -367,9 +379,13 @@ describe('asyncJobWorker', () => {
       });
       const walletId = 'ent-wallet-id';
 
-      nockBitgoKeychainRegistration({ pub: 'xpub_user', source: 'user', keyId: 'user-key-id' });
       nockBitgoKeychainRegistration({
-        pub: 'xpub_backup',
+        pub: makeUserKeychain().pub,
+        source: 'user',
+        keyId: 'user-key-id',
+      });
+      nockBitgoKeychainRegistration({
+        pub: makeBackupKeychain().pub,
         source: 'backup',
         keyId: 'backup-key-id',
       });

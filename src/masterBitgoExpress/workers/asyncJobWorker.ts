@@ -1,4 +1,3 @@
-import { CreateBitGoOptions, SupplementGenerateWalletOptions } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { OsoBridgeClient } from '../clients/bridgeClient';
 import { AwmResponseSchema, BridgeJobResponse } from '../clients/bridgeClient.types';
@@ -6,12 +5,10 @@ import {
   IndependentKeychainResponseSchema,
   type IndependentKeychainResponse,
 } from '../clients/advancedWalletManagerClient';
-import {
-  getBaseWalletParams,
-  registerKeychainsAndCreateWallet,
-} from '../handlers/utils/walletCreationUtils';
+import coinFactory from '../../shared/coinFactory';
 import { MasterExpressConfig } from '../../shared/types';
 import logger from '../../shared/logger';
+import { createOnchainKeyGenCallbackForPreGeneratedKeychains } from '../handlers/walletGenerationCallbacks';
 
 const ASYNC_OPERATIONS_TO_HANDLERS: Partial<
   Record<
@@ -116,31 +113,26 @@ export async function handleKeyGenerationOperation(
   const backupKeychain = parseKeychainFromAwmResponse(job.awmBackupResponse, 'awmBackupResponse');
   const { jobId, coin, version } = job;
 
-  const requestBody = (job.request?.body ?? {}) as unknown as SupplementGenerateWalletOptions &
-    Pick<CreateBitGoOptions, 'isDistributedCustody'>;
-
-  const walletParams: SupplementGenerateWalletOptions = {
-    ...requestBody,
-    ...getBaseWalletParams('onchain'),
-  };
-
-  const result = await registerKeychainsAndCreateWallet({
-    bitgo,
-    walletParams,
-    userKeychain,
-    backupKeychain,
-    coin,
-    isDistributedCustody: requestBody.isDistributedCustody,
+  const baseCoin = await coinFactory.getCoin(coin, bitgo);
+  const result = await baseCoin.wallets().generateWallet({
+    ...(job.request?.body ?? {}),
+    type: 'advanced',
+    multisigType: 'onchain',
+    createKeychainCallback: createOnchainKeyGenCallbackForPreGeneratedKeychains({
+      user: userKeychain,
+      backup: backupKeychain,
+    }),
   });
 
   logger.info(`${logPrefix} job ${jobId} created wallet - updating job status to complete`);
+  const walletId = result.wallet.toJSON().id;
 
   await bridge.updateJob({
     jobId,
     version,
     status: 'complete',
-    result: { walletId: result.wallet.id() },
+    result: { walletId },
   });
 
-  logger.info(`${logPrefix} job ${jobId} complete, walletId ${result.wallet.id()}`);
+  logger.info(`${logPrefix} job ${jobId} complete, walletId ${walletId}`);
 }
