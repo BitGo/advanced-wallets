@@ -40,7 +40,7 @@ function makeAwaitingBitgoJob(overrides: Partial<BridgeJobResponse> = {}): Bridg
       status: 200,
       body: {
         id: 'user-key-id',
-        pub: 'xpub_user',
+        pub: 'xpub661MyMwAqRbcEvJQx6spkkHLRgtjxmVdyDSvbDt2m9NFpbkHdcu5WJsHHHqFxNATbNHnhMWJiwckoMqF75EpcNhU9xeVM4oDS7urM3os4BH',
         type: 'independent',
         source: 'user',
         coin: COIN,
@@ -50,7 +50,7 @@ function makeAwaitingBitgoJob(overrides: Partial<BridgeJobResponse> = {}): Bridg
       status: 200,
       body: {
         id: 'backup-key-id',
-        pub: 'xpub_backup',
+        pub: 'xpub661MyMwAqRbcFnihegj1Mo2ePZoMQyLbBYpW7gDXZ7qzqxF3FBAkNAP8Gki8Mxx2BVLjN3RRa75pt5apD2g3ewXPrCfdssAJ7VupXqucLsb',
         type: 'independent',
         source: 'backup',
         coin: COIN,
@@ -80,7 +80,7 @@ describe('asyncJobWorker: end-to-end polling', () => {
     services.bridge.calls.length = 0;
   });
 
-  it('picks up an awaiting_bitgo keygen job, registers keychains, creates wallet, and PATCHes complete', async () => {
+  it('picks up an awaiting_bitgo keygen job, creates wallet, and PATCHes complete', async () => {
     const jobId = 'integ-job-123';
     assert(services.bridge, 'bridge service should be defined');
     services.bridge.setPendingJobs([makeAwaitingBitgoJob()]);

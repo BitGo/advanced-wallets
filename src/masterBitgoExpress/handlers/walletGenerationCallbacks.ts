@@ -1,6 +1,9 @@
 import { CreateKeychainCallback } from '@bitgo-beta/sdk-core';
 import { KeySource } from '../../shared/types';
-import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
+import {
+  AdvancedWalletManagerClient,
+  IndependentKeychainResponse,
+} from '../clients/advancedWalletManagerClient';
 
 export function createOnchainKeyGenCallback(
   awmUserClient: AdvancedWalletManagerClient,
@@ -18,5 +21,22 @@ export function createOnchainKeyGenCallback(
 
     const keychain = await client.createIndependentKeychain({ source, coin, type: 'independent' });
     return keychain as { pub: string; type: 'independent'; source: typeof source };
+  };
+}
+
+export function createOnchainKeyGenCallbackForPreGeneratedKeychains(
+  preGeneratedKeychains: Record<KeySource.USER | KeySource.BACKUP, IndependentKeychainResponse>,
+): CreateKeychainCallback {
+  return async ({ source, coin: _ }) => {
+    if (!(source in preGeneratedKeychains)) {
+      throw new Error(`${source} keychain not available for onchain key generation`);
+    }
+
+    const keychain = preGeneratedKeychains[source];
+    return {
+      source,
+      pub: keychain.pub,
+      type: 'independent',
+    };
   };
 }
