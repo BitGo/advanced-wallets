@@ -13,6 +13,7 @@ import { BadRequestError } from '../../shared/errors';
 import { KeySource } from '../../shared/types';
 import { submitJobViaBridgeClient } from './utils/asyncUtils';
 import { createOnchainKeyGenCallback } from './walletGenerationCallbacks';
+import { getBaseWalletParams } from './utils/walletCreationUtils';
 
 /**
  * Request handler for generating an advanced wallet.
@@ -63,7 +64,6 @@ async function handleGenerateOnChainWallet(
     multisigType: 'onchain',
     createKeychainCallback,
   });
-
   return { ...result, wallet: result.wallet.toJSON() };
 }
 
@@ -97,12 +97,8 @@ async function handleGenerateMpcWallet(
 
   const walletParams: SupplementGenerateWalletOptions = {
     ...req.decoded,
-    label: label,
-    m: 2,
-    n: 3,
-    keys: [],
-    type: 'advanced',
-    multisigType: 'tss',
+    label,
+    ...getBaseWalletParams('tss'),
   };
 
   if (!_.isUndefined(enterprise)) {

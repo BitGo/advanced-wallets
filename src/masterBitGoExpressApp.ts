@@ -16,6 +16,7 @@ import {
 } from './shared/appUtils';
 import logger from './shared/logger';
 import { setupRoutes } from './masterBitgoExpress/routers/masterBitGoExpress';
+import { startAsyncJobWorker } from './masterBitgoExpress/workers/asyncJobWorker';
 
 /**
  * Create a startup function which will be run upon server initialization
@@ -142,5 +143,9 @@ export async function init(): Promise<void> {
     server.listen(ipc, startup(cfg, baseUri));
   } else {
     server.listen(port, bind, startup(cfg, baseUri));
+  }
+
+  if (cfg.asyncModeConfig.enabled) {
+    startAsyncJobWorker(cfg);
   }
 }

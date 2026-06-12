@@ -363,6 +363,9 @@ function readAsyncModeConfig(isAsyncMode: boolean): AsyncModeConfig {
   if (isAsyncMode && !awmAsyncUrl) {
     throw new Error('AWM_ASYNC_URL is required when ASYNC_MODE is true');
   }
+  if (isAsyncMode && !readEnvVar('BITGO_ACCESS_TOKEN')) {
+    throw new Error('BITGO_ACCESS_TOKEN is required when ASYNC_MODE is true');
+  }
   return {
     awmAsyncUrl,
     enabled: isAsyncMode,
@@ -439,6 +442,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     clientCertAllowSelfSigned,
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
     asyncModeConfig: readAsyncModeConfig(isAsyncMode),
+    bitgoAccessToken: readEnvVar('BITGO_ACCESS_TOKEN'),
   };
 }
 
@@ -492,6 +496,7 @@ function mergeMasterExpressConfigs(
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
     asyncModeConfig: get('asyncModeConfig'),
+    bitgoAccessToken: get('bitgoAccessToken'),
   };
 }
 

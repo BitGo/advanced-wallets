@@ -25,6 +25,10 @@ describe('OsoBridgeClient', () => {
     client = new OsoBridgeClient(BASE_URL, TIMEOUT);
   });
 
+  after(() => {
+    nock.enableNetConnect();
+  });
+
   afterEach(() => nock.cleanAll());
 
   describe('constructor', () => {

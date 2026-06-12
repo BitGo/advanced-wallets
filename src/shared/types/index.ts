@@ -113,6 +113,7 @@ export interface MasterExpressConfig extends BaseConfig {
   clientCertAllowSelfSigned?: boolean;
   recoveryMode?: boolean;
   asyncModeConfig: AsyncModeConfig;
+  bitgoAccessToken?: string;
 }
 
 // Union type for the configuration

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import assert from 'assert';
 import https from 'https';
 import superagent from 'superagent';
@@ -71,14 +72,16 @@ interface CreateIndependentKeychainParams {
   seed?: string;
 }
 
-export interface IndependentKeychainResponse {
-  id: string;
-  pub: string;
-  encryptedPrv?: string;
-  type: 'independent';
-  source: 'user' | 'backup' | 'bitgo';
-  coin: string;
-}
+export const IndependentKeychainResponseSchema = z.object({
+  id: z.string(),
+  pub: z.string(),
+  encryptedPrv: z.string().optional(),
+  type: z.literal('independent'),
+  source: z.enum(['user', 'backup', 'bitgo']),
+  coin: z.string(),
+});
+
+export type IndependentKeychainResponse = z.infer<typeof IndependentKeychainResponseSchema>;
 
 interface SignMultisigOptions {
   txPrebuild: TransactionPrebuild;
