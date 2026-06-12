@@ -77,8 +77,8 @@ export class KeyProviderClient extends BaseHttpClient {
       );
     }
 
-    const { pub, coin, source } = response.body;
-    return { pub, coin, source } as PostKeyResponse;
+    const { pub, coin, source, type } = response.body;
+    return { pub, coin, source, type } as PostKeyResponse;
   }
 
   async getKey(params: GetKeyParams): Promise<GetKeyResponse> {

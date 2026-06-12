@@ -64,6 +64,12 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   const ecdsaCoin = 'hteth';
   const accessToken = 'test-token';
 
+  // Valid BIP32 extended public keys required by the SDK's isValidPub check
+  const validUserPub =
+    'xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8';
+  const validBackupPub =
+    'xpub661MyMwAqRbcGczjuMoRm6dXaLDEhW1u34gKenbeYqAix21mdUKJyuyu5F1rzYGVxyL6tmgBUAEPrEz92mBXjByMRiJdba9wpnN37RLLAXa';
+
   let bitgo: BitGoAPI;
 
   function makeConfig(overrides: Partial<MasterExpressConfig> = {}): MasterExpressConfig {
@@ -132,7 +138,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         source: 'user',
       })
       .reply(200, {
-        pub: 'xpub_user',
+        pub: validUserPub,
         source: 'user',
         type: 'independent',
       });
@@ -143,33 +149,37 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         source: 'backup',
       })
       .reply(200, {
-        pub: 'xpub_backup',
+        pub: validBackupPub,
         source: 'backup',
         type: 'independent',
       });
 
     const bitgoAddUserKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/key`, {
-        pub: 'xpub_user',
+        pub: validUserPub,
         keyType: 'independent',
         source: 'user',
       })
       .matchHeader('any', () => true)
-      .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+      .reply(200, { id: 'user-key-id', pub: validUserPub, source: 'user', type: 'independent' });
 
     const bitgoAddBackupKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/key`, {
-        pub: 'xpub_backup',
+        pub: validBackupPub,
         keyType: 'independent',
         source: 'backup',
       })
       .matchHeader('any', () => true)
-      .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+      .reply(200, {
+        id: 'backup-key-id',
+        pub: validBackupPub,
+        source: 'backup',
+        type: 'independent',
+      });
 
     const bitgoAddBitGoKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/key`, {
         source: 'bitgo',
-        keyType: 'independent',
         enterprise: 'test_enterprise',
       })
       .reply(200, {
@@ -223,7 +233,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         source: 'user',
       })
       .reply(200, {
-        pub: 'xpub_user',
+        pub: validUserPub,
         source: 'user',
         type: 'independent',
       });
@@ -233,33 +243,37 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         source: 'backup',
       })
       .reply(200, {
-        pub: 'xpub_backup',
+        pub: validBackupPub,
         source: 'backup',
         type: 'independent',
       });
 
     const bitgoAddUserKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/key`, {
-        pub: 'xpub_user',
+        pub: validUserPub,
         keyType: 'independent',
         source: 'user',
       })
       .matchHeader('any', () => true)
-      .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+      .reply(200, { id: 'user-key-id', pub: validUserPub, source: 'user', type: 'independent' });
 
     const bitgoAddBackupKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/key`, {
-        pub: 'xpub_backup',
+        pub: validBackupPub,
         keyType: 'independent',
         source: 'backup',
       })
       .matchHeader('any', () => true)
-      .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+      .reply(200, {
+        id: 'backup-key-id',
+        pub: validBackupPub,
+        source: 'backup',
+        type: 'independent',
+      });
 
     const bitgoAddBitGoKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${coin}/key`, {
         source: 'bitgo',
-        keyType: 'independent',
         enterprise: 'test_enterprise',
       })
       .reply(200, {
@@ -276,8 +290,6 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${coin}/wallet/add`, {
         label: 'test_wallet',
         enterprise: 'test_enterprise',
-        multisigType: 'onchain',
-        coin: coin,
         m: 2,
         n: 3,
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
@@ -319,8 +331,8 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       multisigType: 'onchain',
       type: 'advanced',
     });
-    response.body.should.have.propertyByPath('userKeychain', 'pub').eql('xpub_user');
-    response.body.should.have.propertyByPath('backupKeychain', 'pub').eql('xpub_backup');
+    response.body.should.have.propertyByPath('userKeychain', 'pub').eql(validUserPub);
+    response.body.should.have.propertyByPath('backupKeychain', 'pub').eql(validBackupPub);
     response.body.should.have.propertyByPath('bitgoKeychain', 'pub').eql('xpub_bitgo');
 
     userKeychainNock.done();
