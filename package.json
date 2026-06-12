@@ -33,7 +33,7 @@
     "@bitgo-beta/abstract-cosmos": "1.0.1-beta.1741",
     "@bitgo-beta/abstract-eth": "1.0.2-beta.2004",
     "@bitgo-beta/abstract-utxo": "1.1.1-beta.2007",
-    "@bitgo-beta/sdk-api": "1.10.1-beta.1812",
+    "@bitgo-beta/sdk-api": "1.10.1-beta.1816",
     "@bitgo-beta/sdk-coin-ada": "2.3.14-beta.1758",
     "@bitgo-beta/sdk-coin-algo": "2.8.9-beta.238",
     "@bitgo-beta/sdk-coin-apt": "1.0.1-beta.1200",
@@ -101,7 +101,7 @@
     "@bitgo-beta/sdk-coin-zec": "1.1.1-beta.1984",
     "@bitgo-beta/sdk-coin-zeta": "1.0.1-beta.1675",
     "@bitgo-beta/sdk-coin-zketh": "1.0.1-beta.1540",
-    "@bitgo-beta/sdk-core": "8.2.1-beta.1815",
+    "@bitgo-beta/sdk-core": "8.2.1-beta.1820",
     "@bitgo-beta/sdk-lib-mpc": "8.2.0-beta.1770",
     "@bitgo-beta/statics": "15.1.1-beta.1782",
     "@bitgo/wasm-miniscript": "2.0.0-beta.7",
@@ -122,7 +122,7 @@
     "zod": "^3.25.48"
   },
   "overrides": {
-    "@bitgo-beta/sdk-core": "8.2.1-beta.1815",
+    "@bitgo-beta/sdk-core": "8.2.1-beta.1820",
     "@bitgo-beta/statics": "15.1.1-beta.1782",
     "elliptic": "^6.6.1",
     "expo": "^48.0.0",

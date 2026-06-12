@@ -59,7 +59,7 @@ async function handleGenerateOnChainWallet(
 
   const result = await baseCoin.wallets().generateWallet({
     ...req.decoded,
-    type: 'advanced' as 'cold',
+    type: 'advanced',
     multisigType: 'onchain',
     createKeychainCallback,
   });
