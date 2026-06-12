@@ -20,7 +20,16 @@ export const JobStatusSchema = z.enum([
 ]);
 export type JobStatus = z.infer<typeof JobStatusSchema>;
 
+export const AwmResponseSchema = z.object({
+  status: z.number(),
+  body: z.record(z.unknown()),
+  error: z.string().optional(),
+});
+export type AwmResponse = z.infer<typeof AwmResponseSchema>;
+
 const unknownOptional = z.unknown().optional();
+
+const bridgeTimestampSchema = z.union([z.number(), z.string()]);
 
 export const SubmitResponseSchema = z.object({
   jobId: z.string(),
@@ -33,15 +42,24 @@ export const BridgeJobResponseSchema = z.object({
   version: z.number(),
   coin: z.string(),
   operationType: OperationTypeSchema,
-  awmResponse: unknownOptional,
-  awmBackupResponse: unknownOptional,
+  request: z
+    .object({
+      endpoint: z.string().optional(),
+      method: z.string().optional(),
+      body: z.record(z.unknown()).optional(),
+      headers: z.record(z.string()).optional(),
+    })
+    .optional(),
+  awmResponse: AwmResponseSchema.optional(),
+  awmBackupResponse: AwmResponseSchema.optional(),
   result: unknownOptional,
   error: z.string().optional(),
   currentRound: z.number().optional(),
   totalRounds: z.number().optional(),
   sessionState: unknownOptional,
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  createdAt: bridgeTimestampSchema,
+  updatedAt: bridgeTimestampSchema,
+  ttl: z.number().optional(),
 });
 export type BridgeJobResponse = z.infer<typeof BridgeJobResponseSchema>;
 

@@ -673,6 +673,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       process.env.ASYNC_MODE = 'true';
       process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.BITGO_ACCESS_TOKEN = 'test-token';
       process.env.MBE_POLL_INTERVAL_MS = '5000';
       process.env.MBE_JOB_TTL_S = '1800';
       process.env.MBE_JOB_TTL_MPC_S = '3600';
@@ -691,6 +692,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       process.env.ASYNC_MODE = 'true';
       process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.BITGO_ACCESS_TOKEN = 'test-token';
       const cfg = initConfig();
       isMasterExpressConfig(cfg).should.be.true();
       if (isMasterExpressConfig(cfg)) {
@@ -710,6 +712,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       process.env.ASYNC_MODE = 'true';
       process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.BITGO_ACCESS_TOKEN = 'test-token';
       delete process.env.ADVANCED_WALLET_MANAGER_URL;
       (() => initConfig()).should.not.throw();
     });
@@ -718,6 +721,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       process.env.ASYNC_MODE = 'true';
       process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.BITGO_ACCESS_TOKEN = 'test-token';
       process.env.MBE_POLL_INTERVAL_MS = '-1';
       (() => initConfig()).should.throw('MBE_POLL_INTERVAL_MS must be a positive number, got -1');
     });
@@ -726,6 +730,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       process.env.ASYNC_MODE = 'true';
       process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.BITGO_ACCESS_TOKEN = 'test-token';
       process.env.MBE_JOB_TTL_S = '-1';
       (() => initConfig()).should.throw('MBE_JOB_TTL_S must be a positive number, got -1');
     });
@@ -734,6 +739,7 @@ describe('Configuration', () => {
       process.env.TLS_MODE = 'disabled';
       process.env.ASYNC_MODE = 'true';
       process.env.AWM_ASYNC_URL = 'http://awm-async:8080';
+      process.env.BITGO_ACCESS_TOKEN = 'test-token';
       process.env.MBE_JOB_TTL_MPC_S = '-1';
       (() => initConfig()).should.throw('MBE_JOB_TTL_MPC_S must be a positive number, got -1');
     });
