@@ -28,6 +28,8 @@ import { SendManyRoute } from './sendManyRoute';
 import { ConsolidateRoute } from './consolidateRoute';
 import { ConsolidateUnspentsRoute } from './consolidateUnspentsRoute';
 import { SignAndSendMpcRoute } from './signAndSendMpcRoute';
+import { JobPollRoute } from './jobPollRoute';
+import { handleGetJob } from '../handlers/handleGetJob';
 
 export type ScriptType2Of3 = utxolib.bitgo.outputScripts.ScriptType2Of3;
 
@@ -71,6 +73,9 @@ export const MasterBitGoExpressApiSpec = apiSpec({
   },
   'v1.wallet.consolidateunspents': {
     post: ConsolidateUnspentsRoute,
+  },
+  'v1.wallet.getJob': {
+    get: JobPollRoute,
   },
 });
 
@@ -162,6 +167,14 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleSignAndSendTxRequest(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+
+  router.get('v1.wallet.getJob', [
+    responseHandler<MasterExpressConfig>(async (req: express.Request) => {
+      const typedReq = req as GenericMasterApiSpecRouteRequest;
+      const result = await handleGetJob(typedReq);
       return Response.ok(result);
     }),
   ]);

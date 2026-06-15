@@ -56,9 +56,14 @@ function makeAwaitingBitgoJob(overrides: Partial<BridgeJobResponse> = {}): Bridg
         coin: COIN,
       },
     },
-    request: { body: { label: 'integ-test-wallet', enterprise: 'test-enterprise' } },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    request: {
+      endpoint: `/api/${COIN}/key/independent`,
+      method: 'POST',
+      body: { label: 'integ-test-wallet', enterprise: 'test-enterprise' },
+    },
+    createdAt: 1717977600,
+    updatedAt: 1717977600,
+    ttl: 3600,
     ...overrides,
   };
 }

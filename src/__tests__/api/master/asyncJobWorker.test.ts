@@ -53,9 +53,14 @@ function makeJob(overrides: Partial<BridgeJobResponse> = {}): BridgeJobResponse 
     operationType: 'multisig_keygen',
     awmResponse: awmOk({ ...makeUserKeychain() }),
     awmBackupResponse: awmOk({ ...makeBackupKeychain() }),
-    request: { body: { label: 'test-wallet', enterprise: 'test-enterprise' } },
-    createdAt: '2026-06-10T00:00:00.000Z',
-    updatedAt: '2026-06-10T00:00:00.000Z',
+    request: {
+      endpoint: `/api/${COIN}/key/independent`,
+      method: 'POST',
+      body: { label: 'test-wallet', enterprise: 'test-enterprise' },
+    },
+    createdAt: 1717977600,
+    updatedAt: 1717977600,
+    ttl: 3600,
     ...overrides,
   };
 }
@@ -375,7 +380,11 @@ describe('asyncJobWorker', () => {
 
     it('uses enterprise from request body when provided', async () => {
       const job = makeJob({
-        request: { body: { label: 'ent-wallet', enterprise: 'my-enterprise' } },
+        request: {
+          endpoint: `/api/${COIN}/key/independent`,
+          method: 'POST',
+          body: { label: 'ent-wallet', enterprise: 'my-enterprise' },
+        },
       });
       const walletId = 'ent-wallet-id';
 

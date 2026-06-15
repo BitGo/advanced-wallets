@@ -1,6 +1,7 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { SignatureShareRecord, SignatureShareType } from '@bitgo-beta/sdk-core';
 import nock from 'nock';
+import { BridgeJobResponse } from '../../../masterBitgoExpress/clients/bridgeClient.types';
 import { AsyncModeConfig } from '../../../shared/types';
 
 export const DEFAULT_ASYNC_MODE_CONFIG: AsyncModeConfig = {
@@ -10,6 +11,24 @@ export const DEFAULT_ASYNC_MODE_CONFIG: AsyncModeConfig = {
   jobTtlInSeconds: 3600,
   jobTtlMpcInSeconds: 7200,
 };
+
+export function makeBridgeJob(
+  overrides: Partial<BridgeJobResponse> = {},
+  jobId = 'job-123',
+): BridgeJobResponse {
+  return {
+    jobId,
+    status: 'awaiting_bitgo',
+    coin: 'tbtc',
+    operationType: 'multisig_keygen',
+    request: { endpoint: '/api/tbtc/key/independent', method: 'POST', body: {} },
+    version: 1,
+    createdAt: 1717880400,
+    updatedAt: 1717880400,
+    ttl: 3600,
+    ...overrides,
+  };
+}
 
 export class BitGoAPITestHarness extends BitGoAPI {
   static clearConstantsCache(): void {
