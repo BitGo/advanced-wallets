@@ -28,6 +28,7 @@ type CoinToFixtures<C extends SupportedCoin> = {
 } & {
   acceleratePrebuildTx: `prebuildTx.accelerate.${C}` | `prebuildTx.${C}`;
   consolidatePrebuildTx: `prebuildTx.consolidate.${C}` | `prebuildTx.${C}`;
+  consolidateAccountBuildTx?: `consolidateAccount.${C}`;
 };
 
 /** Registry — add a new coin here to support it across all sendMany integ test routes */
@@ -38,6 +39,7 @@ const COIN_FIXTURES: { [C in SupportedCoin]: CoinToFixtures<C> } = {
     sendTx: 'sendTx.hteth',
     acceleratePrebuildTx: 'prebuildTx.hteth', // CPFP/RBF not applicable to EVM; reuses standard prebuild
     consolidatePrebuildTx: 'prebuildTx.hteth', // consolidateUnspents not applicable to EVM; reuses standard prebuild
+    consolidateAccountBuildTx: 'consolidateAccount.hteth',
   },
   tbtc: {
     getWallet: 'getWallet.tbtc',
@@ -45,6 +47,7 @@ const COIN_FIXTURES: { [C in SupportedCoin]: CoinToFixtures<C> } = {
     sendTx: 'sendTx.tbtc',
     acceleratePrebuildTx: 'prebuildTx.accelerate.tbtc',
     consolidatePrebuildTx: 'prebuildTx.consolidate.tbtc',
+    // consolidateAccountBuildTx omitted; UTXO coins use consolidateUnspents
   },
 };
 
@@ -125,6 +128,17 @@ export async function startMockBitgoServer(): Promise<MockBitgoServer> {
   /** Consolidate unspents prebuild — coin-specific PSBT-lite fixture */
   app.post('/api/v2/:coin/wallet/:walletId/consolidateUnspents', (req, res) => {
     res.json(loadFixture(coinFixtures(req.params.coin).consolidatePrebuildTx));
+  });
+
+  /** Account consolidation build — returns array of unsigned builds */
+  app.post('/api/v2/:coin/wallet/:walletId/consolidateAccount/build', (req, res) => {
+    const fixtureName = coinFixtures(req.params.coin).consolidateAccountBuildTx;
+    if (!fixtureName) {
+      return res
+        .status(404)
+        .json({ error: `consolidateAccount/build not supported for ${req.params.coin}` });
+    }
+    res.json([loadFixture(fixtureName)]);
   });
 
   /** Transaction submit — coin-specific fixture */

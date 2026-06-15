@@ -87,7 +87,10 @@ export async function handleConsolidate(
               )
             : await wallet.sendAccountConsolidation({
                 ...consolidationParams,
-                prebuildTx: unsignedBuild,
+                prebuildTx: {
+                  ...unsignedBuild,
+                  buildParams: { recipients: unsignedBuild.recipients ?? [] },
+                },
                 customSigningFunction: makeCustomSigningFunction({
                   awmClient,
                   source: params.source,
