@@ -15,11 +15,25 @@ on:
     types: [created, edited]
 
 jobs:
+  check-author:
+    name: Check commenter is org member
+    runs-on: ubuntu-latest
+    outputs:
+      allowed: ${{ steps.check.outputs.allowed }}
+    steps:
+      - id: check
+        run: |
+          ASSOC="${{ github.event.comment.author_association }}"
+          if [[ "$ASSOC" == "OWNER" || "$ASSOC" == "MEMBER" ]]; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   claude-code:
     name: Invoke Claude Code AI assistant
-    if: |
-      github.event.comment.author_association == 'OWNER' ||
-      github.event.comment.author_association == 'MEMBER'
+    needs: check-author
+    if: needs.check-author.outputs.allowed == 'true'
     uses: BitGo/github-ai-assistant/.github/workflows/claude.yaml@v1
     with:
       code_review_prompt_path: .github/prompts/code-review.md
