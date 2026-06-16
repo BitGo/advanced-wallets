@@ -2,14 +2,64 @@
   "openapi": "3.0.3",
   "info": {
     "title": "@bitgo/master-bitgo-express",
-    "version": "2.0.0",
+    "version": "0.0.0-semantically-released",
     "description": "Advanced Wallets - On-Premises Key Management with BitGo Express"
   },
   "paths": {
+    "/advancedwallet/ping": {
+      "post": {
+        "summary": "Advanced Wallets - Ping",
+        "description": "Test your connection to the Master Bitgo Express (MBE) server.",
+        "operationId": "advancedwallet.mbe.ping",
+        "tags": [
+          "Advanced Wallets"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PingResponseType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advancedwallet/version": {
+      "get": {
+        "summary": "Advanced Wallets - Check Version",
+        "description": "Check your version of the Master Bitgo Express (MBE) server.",
+        "operationId": "advancedwallet.mbe.version",
+        "tags": [
+          "Advanced Wallets"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponseType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/{coin}/advancedwallet/{walletId}/accelerate": {
       "post": {
-        "summary": "Accelerate unconfirmed transactions on UTXO-based blockchains.",
-        "description": "Supports Child-Pays-For-Parent (CPFP) and Replace-By-Fee (RBF) acceleration methods.",
+        "summary": "Advanced Wallets - Accelerate Transaction",
+        "description": "Send a new transaction to accelerate the targeted unconfirmed transaction either by using Child-Pays-For-Parent (CPFP) or Replace-By-Fee (RBF).\n\nRetrieves the private key from key provider using the provided public key, then signs and broadcasts the transaction.\n\nUse this endpoint only with advanced wallets. For other wallet types, use [Accelerate Transaction](https://developers.bitgo.com/reference/expresswalletacceleratetx).",
+        "operationId": "advancedwallet.accelerate.tx",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "walletId",
@@ -33,7 +83,6 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "Request type for the transaction acceleration endpoint. Used to accelerate unconfirmed transactions on UTXO-based blockchains using CPFP or RBF.",
                 "properties": {
                   "pubkey": {
                     "type": "string",
@@ -99,28 +148,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AccelerateResponseCodec"
+                    }
+                  ],
                   "description": "Successful acceleration response.",
                   "example": {
                     "txid": "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
                     "tx": "01000000000101edd7a5d948a6c79f273ce686a6a8f2e96ed8c2583b5e77b866aa2a1b3426fbed0100000000ffffffff02102700000000000017a914192f23283c2a9e6c5d11562db0eb5d4eb47f460287b9bc2c000000000017a9145c139b242ab3701f321d2399d3a11b028b3b361e870247304402206ac9477fece38d96688c6c3719cb27396c0563ead0567457e7e884b406b6da8802201992d1cfa1b55a67ce8acb482e9957812487d2555f5f54fb0286ecd3095d78e4012103c92564575197c4d6e3d9792280e7548b3ba52a432101c62de2186c4e2fa7fc580000000000"
-                  },
-                  "properties": {
-                    "txid": {
-                      "type": "string",
-                      "description": "The transaction ID (hash) of the acceleration transaction. This can be used to track the transaction on a block explorer.",
-                      "example": "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
-                    },
-                    "tx": {
-                      "type": "string",
-                      "description": "The full signed transaction in hexadecimal format. This transaction can be broadcast to the network.",
-                      "example": "01000000000101edd7a5d948a6c79f273ce686a6a8f2e96ed8c2583b5e77b866aa2a1b3426fbed0100000000ffffffff02102700000000000017a914192f23283c2a9e6c5d11562db0eb5d4eb47f460287b9bc2c000000000017a9145c139b242ab3701f321d2399d3a11b028b3b361e870247304402206ac9477fece38d96688c6c3719cb27396c0563ead0567457e7e884b406b6da8802201992d1cfa1b55a67ce8acb482e9957812487d2555f5f54fb0286ecd3095d78e4012103c92564575197c4d6e3d9792280e7548b3ba52a432101c62de2186c4e2fa7fc580000000000"
-                    }
-                  },
-                  "required": [
-                    "txid",
-                    "tx"
-                  ]
+                  }
                 }
               }
             }
@@ -190,8 +227,12 @@
     },
     "/api/v1/{coin}/advancedwallet/{walletId}/consolidate": {
       "post": {
-        "summary": "Build, sign, and send a consolidation transaction for an account-based asset all in 1 call.",
-        "description": "For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.",
+        "summary": "Advanced Wallets - Consolidate Account",
+        "description": "Build, sign, and send a consolidation transaction, all in one call. For account-based assets, consolidating the balances in the receive addresses to the base address maximizes the spendable balance of a wallet.\n\nRetrieves the private key from key provider using the provided public key or common keychain, then signs and broadcasts the transaction.\n\nUse this endpoint only with advanced wallets. For other wallet types, use [Consolidate account (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateaccount).",
+        "operationId": "advancedwallet.consolidate",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "walletId",
@@ -329,8 +370,12 @@
     },
     "/api/v1/{coin}/advancedwallet/{walletId}/consolidateunspents": {
       "post": {
-        "summary": "Build and send a transaction to consolidate unspents in a wallet.",
-        "description": "Consolidating unspents is only for UTXO-based assets.",
+        "summary": "Advanced Wallets - Consolidate Unspents",
+        "description": "Builds, signs, and sends a transaction to consolidate unspents all in 1 call. Consolidating unspents is only for UTXO-based assets.\n\nRetrieves the private key from key provider using the provided public key, then signs and broadcasts the transaction.\n\nUse this endpoint only with advanced wallets. For other wallet types, use [Consolidate unspents (simple)](https://developers.bitgo.com/reference/expresswalletconsolidateunspents).",
+        "operationId": "advancedwallet.consolidate.unspents",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "walletId",
@@ -448,19 +493,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "tx": {
-                      "type": "string"
-                    },
-                    "txid": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "tx",
-                    "txid"
-                  ]
+                  "$ref": "#/components/schemas/ConsolidateUnspentsResponseCodec"
                 }
               }
             }
@@ -530,6 +563,12 @@
     },
     "/api/v1/{coin}/advancedwallet/{walletId}/sendMany": {
       "post": {
+        "summary": "Advanced Wallets - Send to Many",
+        "description": "Send coins or tokens to one or more recipients. You can use this endpoint to schedule outgoing transactions in bulk, lowering your aggregate amount of blockchain fees.\n\nRetrieves the private key from key provider using the provided public key, then signs and broadcasts the transaction.\n\nWorks with both multisignature and MPC wallets.\n\nWorks with most BitGo-supported assets, but currently unavailable for: ALGO, ARBETH, AVAXC, CELO, CELO:CUSD, CSPR, DOT, EOS, HTETH:BGERCH, NEAR, OPETH, STX, TON, TRX, TRX:USDC, XLM, XRP, XTZ\n\nUse this endpoint only with advanced wallets. For other wallet types, use [Send to many](https://developers.bitgo.com/reference/expresswalletsendmany).",
+        "operationId": "advancedwallet.sendmany",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "walletId",
@@ -573,7 +612,7 @@
                       "transfertoken",
                       "trustline"
                     ],
-                    "description": "Required for transactions from MPC wallets."
+                    "description": "Required for transactions from MPC wallets. Defaults to 'transfer' for TSS wallets if not provided."
                   },
                   "recipients": {
                     "type": "array",
@@ -823,8 +862,12 @@
     },
     "/api/v1/{coin}/advancedwallet/{walletId}/txrequest/{txRequestId}/signAndSend": {
       "post": {
-        "summary": "Sign a TxRequest and Broadcast it (MPC wallets only)",
-        "description": "This is usually needed after resolving a pending approval for a MPC wallet",
+        "summary": "Advanced Wallets - Sign and Send MPC Transaction",
+        "description": "Sign and send a MPC transaction.\n\nRetrieves the private key from key provider using the provided common keychain, then signs and broadcasts the transaction.\n\nUse this endpoint only with advanced wallets. For other wallet types, use [Sign MPC transaction](https://developers.bitgo.com/reference/expresswalletsigntxtss).",
+        "operationId": "advancedwallet.sign.tx.tss",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "walletId",
@@ -952,8 +995,12 @@
     },
     "/api/v1/{coin}/advancedwallet/generate": {
       "post": {
-        "summary": "Generates a new advanced wallet.",
-        "description": "The wallet creation process involves several steps that happen automatically:\n1. User Keychain Creation: Creates the user keychain in the advanced wallet manager and encrypts it with the respective key provider.\n2. Backup Keychain Creation: Creates the backup keychain in the advanced wallet manager and encrypts it with the respective key provider.\n3. Keychain Upload: Uploads the user/backup public keys to BitGo.\n4. BitGo Key Creation: Creates the BitGo key on the BitGo service.\n5. Wallet Creation: Creates the wallet on BitGo with the 3 keys.",
+        "summary": "Advanced Wallets - Generate Wallet",
+        "description": "Create a new advanced wallet. Calling this endpoint does the following:\n1. Generates user keychain in isolated AWM, then sends to key provider (encrypts private key, stores public key mapping).\n2. Generates backup keychain in isolated AWM, then sends to key provider (encrypts private key, stores public key mapping).\n3. Uploads the user and backup public keys to BitGo.\n4. Creates the BitGo key on the BitGo service.\n5. Creates the wallet on BitGo with the 3 keys.",
+        "operationId": "advancedwallet.generate",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "coin",
@@ -1006,6 +1053,12 @@
                     "example": 1,
                     "minimum": 0,
                     "maximum": 3
+                  },
+                  "evmKeyRingReferenceWalletId": {
+                    "type": "string",
+                    "description": "Reference wallet ID for EVM keyring wallets",
+                    "example": "59cd72485007a239fb00282ed480da1f",
+                    "pattern": "^[0-9a-f]{32}$"
                   }
                 },
                 "required": [
@@ -1023,31 +1076,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "wallet": {
-                      "$ref": "#/components/schemas/WalletType"
-                    },
-                    "userKeychain": {
-                      "$ref": "#/components/schemas/UserKeychainType"
-                    },
-                    "backupKeychain": {
-                      "$ref": "#/components/schemas/UserKeychainType"
-                    },
-                    "bitgoKeychain": {
-                      "$ref": "#/components/schemas/BitgoKeychainType"
-                    },
-                    "responseType": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "wallet",
-                    "userKeychain",
-                    "backupKeychain",
-                    "bitgoKeychain",
-                    "responseType"
-                  ]
+                  "$ref": "#/components/schemas/GenerateWalletResponseCodec"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponseCodec"
                 }
               }
             }
@@ -1117,8 +1156,12 @@
     },
     "/api/v1/{coin}/advancedwallet/recovery": {
       "post": {
-        "summary": "Recover funds from an existing wallet using user and backup keys.",
-        "description": "This endpoint allows for both standard multisig and TSS wallet recovery.",
+        "summary": "Advanced Wallets - Recover Assets",
+        "description": "Recover assets from an advanced wallet with a balance only in the base address. Works for both multisignature and MPC recoveries.\n\nRetrieves the private keys from key provider using the provided public keys or common keychain, then signs and returns the broadcastable transaction hex.\n\nNote: This endpoint only works when AWM and MBE are running in recovery mode.\n\nTo recover assets from an advanced wallet with balances in multiple receive addresses, use [Advanced Wallets - Consolidate and Recover Assets](https://developers.bitgo.com/reference/advancedwalletconsolidaterecovery).\n\nUse this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).",
+        "operationId": "advancedwallet.recovery",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "coin",
@@ -1134,7 +1177,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig and TSS wallets.",
+                "description": "Request type for the wallet recovery endpoint. Used to recover funds from both standard multisig and TSS wallets. Recover funds from an advanced wallet by building a transaction with user and backup keys.",
                 "properties": {
                   "isTssRecovery": {
                     "type": "boolean",
@@ -1389,20 +1432,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/RecoveryWalletResponseCodec"
+                    }
+                  ],
                   "description": "Successful recovery response.",
                   "example": {
                     "txHex": "01000000000101edd7a5d948a6c79f273ce686a6a8f2e96ed8c2583b5e77b866aa2a1b3426fbed0100000000ffffffff02102700000000000017a914192f23283c2a9e6c5d11562db0eb5d4eb47f460287b9bc2c000000000017a9145c139b242ab3701f321d2399d3a11b028b3b361e870247304402206ac9477fece38d96688c6c3719cb27396c0563ead0567457e7e884b406b6da8802201992d1cfa1b55a67ce8acb482e9957812487d2555f5f54fb0286ecd3095d78e4012103c92564575197c4d6e3d9792280e7548b3ba52a432101c62de2186c4e2fa7fc580000000000"
-                  },
-                  "properties": {
-                    "txHex": {
-                      "type": "string",
-                      "description": "The full signed transaction in hexadecimal format. This transaction can be broadcast to the network to complete the recovery."
-                    }
-                  },
-                  "required": [
-                    "txHex"
-                  ]
+                  }
                 }
               }
             }
@@ -1472,8 +1510,12 @@
     },
     "/api/v1/{coin}/advancedwallet/recoveryconsolidations": {
       "post": {
-        "summary": "Consolidate funds from multiple addresses in a wallet and sign with user & backup keys in a recovery situation.",
-        "description": "Used for both standard multisig wallets and TSS wallets to consolidate funds from various addresses.",
+        "summary": "Advanced Wallets - Consolidate and Recover Assets",
+        "description": "Recover assets from an advanced wallet with a balance in multiple receive addresses. Build, sign, and send a consolidation and recovery, all in one call. Sign using your user and backup keys. Works for both multisignature and MPC recoveries.\n\nRetrieves the private keys from key provider using the provided public keys or common keychain, then signs and returns the broadcastable transaction hex.\n\nNote: This endpoint only works when AWM and MBE are running in recovery mode.\n\nTo recover assets from an advanced wallet with a balance only in the base address, use [Advanced Wallets - Recover Assets](https://developers.bitgo.com/reference/advancedwalletrecovery).\n\nUse this endpoint only with advanced wallets. For other wallet types, use the [Wallet Recovery Wizard](https://developers.bitgo.com/docs/wallets-recover#/).",
+        "operationId": "advancedwallet.consolidate.recovery",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [
           {
             "name": "coin",
@@ -1647,16 +1689,90 @@
         }
       }
     },
-    "/ping": {
-      "post": {
-        "parameters": [],
+    "/api/v1/advancedwallet/job/{jobId}": {
+      "get": {
+        "summary": "Fetch job status for a given job ID.",
+        "operationId": "advancedwallet.getJob",
+        "tags": [
+          "Advanced Wallets"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PingResponseType"
+                  "$ref": "#/components/schemas/MbeJobPollResponseCodec"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1666,6 +1782,12 @@
     },
     "/ping/advancedWalletManager": {
       "post": {
+        "summary": "Advanced Wallets - Ping Advanced Wallet Manager",
+        "description": "Test your connection between the Advanced Wallet Manager (AWM) and the Master Bitgo Express (MBE) servers.",
+        "operationId": "advancedwallet.mbe.awm.ping",
+        "tags": [
+          "Advanced Wallets"
+        ],
         "parameters": [],
         "responses": {
           "200": {
@@ -1714,82 +1836,10 @@
           }
         }
       }
-    },
-    "/version": {
-      "get": {
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VersionResponseType"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/version/advancedWalletManager": {
-      "get": {
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VersionResponseType"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "details"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
     "schemas": {
-      "VersionResponseType": {
-        "title": "VersionResponseType",
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "version",
-          "name"
-        ]
-      },
       "PingResponseType": {
         "title": "PingResponseType",
         "type": "object",
@@ -1822,6 +1872,137 @@
         "required": [
           "error",
           "details"
+        ]
+      },
+      "MbeJobPollResponseCodec": {
+        "title": "MbeJobPollResponseCodec",
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MbeJobPollStatusCodec"
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "error": {
+            "type": "string"
+          },
+          "round": {
+            "type": "number"
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "jobId",
+          "status"
+        ]
+      },
+      "MbeJobPollStatusCodec": {
+        "title": "MbeJobPollStatusCodec",
+        "type": "string",
+        "enum": [
+          "awaiting_client",
+          "awaiting_bitgo",
+          "complete",
+          "failed"
+        ]
+      },
+      "ConsolidateUnspentsResponseCodec": {
+        "title": "ConsolidateUnspentsResponseCodec",
+        "type": "object",
+        "properties": {
+          "tx": {
+            "type": "string"
+          },
+          "txid": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tx",
+          "txid"
+        ]
+      },
+      "AccelerateResponseCodec": {
+        "title": "AccelerateResponseCodec",
+        "type": "object",
+        "properties": {
+          "txid": {
+            "type": "string"
+          },
+          "tx": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "txid",
+          "tx"
+        ]
+      },
+      "RecoveryWalletResponseCodec": {
+        "title": "RecoveryWalletResponseCodec",
+        "type": "object",
+        "description": "Response type for the wallet recovery endpoint. Returns the signed recovery transaction that can be broadcast to the network",
+        "properties": {
+          "txHex": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "txHex"
+        ]
+      },
+      "AsyncJobResponseCodec": {
+        "title": "AsyncJobResponseCodec",
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending"
+            ]
+          }
+        },
+        "required": [
+          "jobId",
+          "status"
+        ]
+      },
+      "GenerateWalletResponseCodec": {
+        "title": "GenerateWalletResponseCodec",
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "$ref": "#/components/schemas/WalletType"
+          },
+          "userKeychain": {
+            "$ref": "#/components/schemas/UserKeychainType"
+          },
+          "backupKeychain": {
+            "$ref": "#/components/schemas/UserKeychainType"
+          },
+          "bitgoKeychain": {
+            "$ref": "#/components/schemas/BitgoKeychainType"
+          },
+          "responseType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "wallet",
+          "userKeychain",
+          "backupKeychain",
+          "bitgoKeychain",
+          "responseType"
         ]
       },
       "WalletType": {
@@ -2234,6 +2415,22 @@
           "isBitGo",
           "isTrust",
           "hsmType"
+        ]
+      },
+      "VersionResponseType": {
+        "title": "VersionResponseType",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "name"
         ]
       }
     }
