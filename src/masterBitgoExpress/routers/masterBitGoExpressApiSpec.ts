@@ -42,7 +42,9 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
 /**
  * TODO: union with other handler response types as they are async-ified (WCN-887 through WCN-893)
  */
-type MasterBitGoAPIHandlerResponses = Awaited<ReturnType<typeof handleGenerateWallet>>;
+type MasterBitGoAPIHandlerResponses =
+  | Awaited<ReturnType<typeof handleGenerateWallet>>
+  | Awaited<ReturnType<typeof handleSendMany>>;
 
 function toApiResponse(result: MasterBitGoAPIHandlerResponses) {
   return 'jobId' in result ? Response.accepted(result) : Response.ok(result);
@@ -119,7 +121,7 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleSendMany(typedReq);
-      return Response.ok(result);
+      return toApiResponse(result);
     }),
   ]);
 

@@ -1,4 +1,5 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import { RequestTracer, SendManyOptions, SignedTransaction, Wallet } from '@bitgo-beta/sdk-core';
 import { OsoBridgeClient } from '../clients/bridgeClient';
 import { AwmResponseSchema, BridgeJobResponse } from '../clients/bridgeClient.types';
 import {
@@ -9,6 +10,12 @@ import coinFactory from '../../shared/coinFactory';
 import { MasterExpressConfig } from '../../shared/types';
 import logger from '../../shared/logger';
 import { createOnchainKeyGenCallbackForPreGeneratedKeychains } from '../handlers/walletGenerationCallbacks';
+import {
+  parseMultisigSignJobContext,
+  parseSignedMultisigTransaction,
+  WpSubmitKind,
+} from '../handlers/utils/multisigSignUtils';
+import { submitSignedMultisigToWp } from '../handlers/utils/multisigSubmitUtils';
 
 const ASYNC_OPERATIONS_TO_HANDLERS: Partial<
   Record<
@@ -17,12 +24,26 @@ const ASYNC_OPERATIONS_TO_HANDLERS: Partial<
   >
 > = {
   multisig_keygen: handleKeyGenerationOperation,
+  multisig_sign: handleMultisigSignOperation,
 };
 
-function parseKeychainFromAwmResponse(
+const WP_SUBMIT_HANDLERS: Record<
+  WpSubmitKind,
+  (
+    wallet: Wallet,
+    signedTx: SignedTransaction,
+    wpSubmitParams: Record<string, unknown>,
+    reqId: RequestTracer,
+  ) => Promise<Record<string, unknown>>
+> = {
+  sendMany: (wallet, signedTx, wpSubmitParams, reqId) =>
+    submitSignedMultisigToWp(wallet, signedTx, wpSubmitParams as SendManyOptions, reqId),
+};
+
+function parseAwmResponseBody(
   awmResponse: BridgeJobResponse['awmResponse'],
-  field: 'awmResponse' | 'awmBackupResponse',
-): IndependentKeychainResponse {
+  field: string,
+): Record<string, unknown> {
   if (awmResponse === undefined) {
     throw new Error(`job missing ${field}`);
   }
@@ -34,7 +55,20 @@ function parseKeychainFromAwmResponse(
   if (r.status >= 400 || r.error) {
     throw new Error(r.error ?? `AWM ${field} returned status ${r.status}`);
   }
-  return IndependentKeychainResponseSchema.parse(r.body);
+  return r.body;
+}
+
+function parseKeychainFromAwmResponse(
+  awmResponse: BridgeJobResponse['awmResponse'],
+  field: 'awmResponse' | 'awmBackupResponse',
+): IndependentKeychainResponse {
+  return IndependentKeychainResponseSchema.parse(parseAwmResponseBody(awmResponse, field));
+}
+
+function parseSignedTxFromAwmResponse(
+  awmResponse: BridgeJobResponse['awmResponse'],
+): SignedTransaction {
+  return parseSignedMultisigTransaction(parseAwmResponseBody(awmResponse, 'awmResponse'));
 }
 
 export function startAsyncJobWorker(cfg: MasterExpressConfig): () => void {
@@ -135,4 +169,33 @@ export async function handleKeyGenerationOperation(
   });
 
   logger.info(`${logPrefix} job ${jobId} complete, walletId ${walletId}`);
+}
+
+export async function handleMultisigSignOperation(
+  job: BridgeJobResponse,
+  bridge: OsoBridgeClient,
+  bitgo: BitGoAPI,
+): Promise<void> {
+  const logPrefix = '[asyncJobWorker:handleMultisigSignOperation]';
+  const signedTx = parseSignedTxFromAwmResponse(job.awmResponse);
+  const { walletId, wpSubmitKind, wpSubmitParams } = parseMultisigSignJobContext(job.request?.body);
+  const submitHandler = WP_SUBMIT_HANDLERS[wpSubmitKind];
+  const { jobId, coin, version } = job;
+  const reqId = new RequestTracer();
+
+  const baseCoin = await coinFactory.getCoin(coin, bitgo);
+  const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
+
+  logger.info(`${logPrefix} submitting job ${jobId}  to wallet platform`);
+  const result = await submitHandler(wallet, signedTx, wpSubmitParams, reqId);
+
+  logger.info(`${logPrefix} job ${jobId} submitted transaction - updating job status to complete`);
+  await bridge.updateJob({
+    jobId,
+    version,
+    status: 'complete',
+    result,
+  });
+
+  logger.info(`${logPrefix} job ${jobId} complete`);
 }
