@@ -1,0 +1,15 @@
+{
+  "consolidateId": "consolidate-1",
+  "coin": "hteth",
+  "recipients": [
+    {
+      "address": "0xe01866e64418db20a2831e41eb11eca2a77245a3",
+      "amount": "50000000000000"
+    }
+  ],
+  "nextContractSequenceId": 2,
+  "expireTime": 1893456000,
+  "gasPrice": 20000000000,
+  "gasLimit": 500000,
+  "isBatch": false
+}
