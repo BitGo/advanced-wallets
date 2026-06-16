@@ -14,12 +14,17 @@ export interface MockBridgeServer {
   calls: MockBridgeCall[];
   /** Load jobs that GET /jobs?status=awaiting_bitgo will return on the next poll (one-shot). */
   setPendingJobs(jobs: BridgeJobResponse[]): void;
+  /** Register a job returned by GET /job/:jobId. */
+  setJob(job: BridgeJobResponse): void;
+  /** Remove all registered jobs (for test isolation). */
+  clearJobs(): void;
   close(): Promise<void>;
 }
 
 export async function startMockBridgeServer(): Promise<MockBridgeServer> {
   const calls: MockBridgeCall[] = [];
   let pendingJobs: BridgeJobResponse[] = [];
+  const jobsById = new Map<string, BridgeJobResponse>();
 
   const app = express();
   app.use(express.json());
@@ -34,6 +39,16 @@ export async function startMockBridgeServer(): Promise<MockBridgeServer> {
     const jobs = pendingJobs;
     pendingJobs = [];
     res.json({ jobs });
+  });
+
+  /** MBE poll handler fetches individual job status */
+  app.get('/job/:jobId', (req, res) => {
+    const job = jobsById.get(req.params.jobId);
+    if (!job) {
+      res.status(404).json({ message: 'job not found' });
+      return;
+    }
+    res.json(job);
   });
 
   app.patch('/job/:jobId', (_req, res) => {
@@ -53,6 +68,12 @@ export async function startMockBridgeServer(): Promise<MockBridgeServer> {
     calls,
     setPendingJobs(jobs: BridgeJobResponse[]) {
       pendingJobs = jobs;
+    },
+    setJob(job: BridgeJobResponse) {
+      jobsById.set(job.jobId, job);
+    },
+    clearJobs() {
+      jobsById.clear();
     },
     close: () => close(server),
   };

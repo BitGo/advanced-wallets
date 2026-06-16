@@ -1,7 +1,7 @@
 import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-http';
 import * as t from 'io-ts';
 import { ErrorResponses } from '../../shared/errors';
-import { ASYNC_JOB_SUBMITTED_STATUS } from '../handlers/utils/asyncUtils';
+import { ASYNC_JOB_SUBMITTED_STATUS } from '../clients/bridgeClient.types';
 
 const WalletType = t.intersection([
   t.type({

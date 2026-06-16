@@ -1,10 +1,12 @@
-import { SubmitParams } from '../../clients/bridgeClient.types';
+import {
+  AsyncJobResponse,
+  ASYNC_JOB_SUBMITTED_STATUS,
+  SubmitParams,
+} from '../../clients/bridgeClient.types';
 import { BitGoRequest } from '../../../types/request';
 import { MasterExpressConfig } from '../../../shared/types';
 
-export const ASYNC_JOB_SUBMITTED_STATUS = 'pending' as const;
-export type AsyncJobSubmittedStatus = typeof ASYNC_JOB_SUBMITTED_STATUS;
-export type AsyncJobResponse = { jobId: string; status: AsyncJobSubmittedStatus };
+export type { AsyncJobResponse } from '../../clients/bridgeClient.types';
 
 /**
  * Submits a signing or keygen job to the bridge and returns { jobId, status: 'pending' }.

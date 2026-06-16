@@ -13,8 +13,14 @@ const mockJob: BridgeJobResponse = {
   version: 1,
   coin: 'tbtc',
   operationType: 'multisig_sign',
-  createdAt: '2026-06-09T00:00:00.000Z',
-  updatedAt: '2026-06-09T00:00:00.000Z',
+  request: {
+    endpoint: '/api/tbtc/multisig/sign',
+    method: 'POST',
+    body: {},
+  },
+  createdAt: 1717880400,
+  updatedAt: 1717880400,
+  ttl: 3600,
 };
 
 describe('OsoBridgeClient', () => {
