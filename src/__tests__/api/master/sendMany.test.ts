@@ -3,8 +3,11 @@ import sinon from 'sinon';
 
 import * as request from 'supertest';
 import nock from 'nock';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
-import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
+import { AppMode, KeySource, MasterExpressConfig, TlsMode } from '../../../shared/types';
+import * as middleware from '../../../shared/middleware';
+import { BitGoRequest } from '../../../types/request';
 import { Environments, openpgpUtils } from '@bitgo-beta/sdk-core';
 import * as utxolib from '@bitgo-beta/utxo-lib';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
@@ -470,6 +473,169 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       keychainGetNock.done();
       signNock.done();
       submitNock.done();
+    });
+
+    it('should return 202 with jobId when async mode is enabled for onchain multisig sendMany', async () => {
+      const bridgeUrl = 'http://bridge.invalid';
+      const jobId = 'test-job-id-123';
+
+      const asyncBitgo = new BitGoAPI({ env: 'test' });
+      const asyncConfig: MasterExpressConfig = {
+        appMode: AppMode.MASTER_EXPRESS,
+        port: 0,
+        bind: 'localhost',
+        timeout: 60000,
+        httpLoggerFile: '',
+        env: 'test',
+        disableEnvCheck: true,
+        authVersion: 2,
+        advancedWalletManagerUrl: advancedWalletManagerUrl,
+        awmServerCaCert: 'dummy-cert',
+        tlsMode: TlsMode.DISABLED,
+        clientCertAllowSelfSigned: true,
+        asyncModeConfig: {
+          enabled: true,
+          awmAsyncUrl: bridgeUrl,
+          pollIntervalInMs: 30000,
+          jobTtlInSeconds: 3600,
+          jobTtlMpcInSeconds: 7200,
+        },
+      };
+
+      sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
+        (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
+        (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
+        next();
+      });
+
+      const asyncApp = expressApp(asyncConfig);
+      const asyncAgent = request.agent(asyncApp);
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'advanced',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'onchain',
+        });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .times(2)
+        .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/backup-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'backup-key-id', pub: 'xpub_backup' });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${coin}/key/bitgo-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'bitgo-key-id', pub: 'xpub_bitgo' });
+
+      nock(bitgoApiUrl)
+        .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+        .reply(200, {
+          txHex: TBTC_PREBUILD_PSBT_HEX,
+          txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+        });
+      nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
+
+      sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
+
+      const bridgeNock = nock(bridgeUrl)
+        .post(`/api/${coin}/multisig/sign`)
+        .matchHeader('X-OSO-Source', KeySource.USER)
+        .matchHeader('X-OSO-Operation', 'multisig_sign')
+        .reply(202, { jobId });
+
+      const awmSignNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${coin}/multisig/sign`)
+        .reply(500, { error: 'should not reach AWM in async mode' });
+
+      const response = await asyncAgent
+        .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [{ address: 'tb1qtest1', amount: '100000' }],
+          source: 'user',
+          pubkey: 'xpub_user',
+        });
+
+      response.status.should.equal(202);
+      response.body.should.have.property('jobId', jobId);
+      response.body.should.have.property('status', 'pending');
+      bridgeNock.done();
+      awmSignNock.isDone().should.be.false();
+    });
+
+    it('should fail when async mode is enabled for TSS sendMany', async () => {
+      const bridgeUrl = 'http://bridge.invalid';
+      const tssCoin = 'tsol';
+
+      sinon.restore();
+      const asyncBitgo = new BitGoAPI({ env: 'test' });
+      const asyncConfig: MasterExpressConfig = {
+        appMode: AppMode.MASTER_EXPRESS,
+        port: 0,
+        bind: 'localhost',
+        timeout: 60000,
+        httpLoggerFile: '',
+        env: 'test',
+        disableEnvCheck: true,
+        authVersion: 2,
+        advancedWalletManagerUrl: advancedWalletManagerUrl,
+        awmServerCaCert: 'dummy-cert',
+        tlsMode: TlsMode.DISABLED,
+        clientCertAllowSelfSigned: true,
+        asyncModeConfig: {
+          enabled: true,
+          awmAsyncUrl: bridgeUrl,
+          pollIntervalInMs: 30000,
+          jobTtlInSeconds: 3600,
+          jobTtlMpcInSeconds: 7200,
+        },
+      };
+
+      sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
+        (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
+        (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
+        next();
+      });
+
+      const asyncApp = expressApp(asyncConfig);
+      const asyncAgent = request.agent(asyncApp);
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${tssCoin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'advanced',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'tss',
+        });
+
+      nock(bitgoApiUrl)
+        .get(`/api/v2/${tssCoin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, { id: 'user-key-id', pub: 'xpub_user' });
+
+      const response = await asyncAgent
+        .post(`/api/v1/${tssCoin}/advancedwallet/${walletId}/sendMany`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          recipients: [{ address: 'test-address', amount: '100000' }],
+          source: 'user',
+          pubkey: 'xpub_user',
+        });
+
+      response.status.should.equal(400);
+      response.body.details.should.containEql('Async mode is not yet supported for TSS sendMany');
     });
   });
 

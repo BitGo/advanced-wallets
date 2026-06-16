@@ -3,9 +3,7 @@ import {
   PrebuildTransactionOptions,
   Memo,
   KeyIndices,
-  Wallet,
   SendManyOptions,
-  PrebuildTransactionResult,
   Keychain,
 } from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
@@ -17,6 +15,8 @@ import { BadRequestError, NotFoundError } from '../../shared/errors';
 import coinFactory from '../../shared/coinFactory';
 import { getWalletPubs } from './utils/utils';
 import { isUtxoCoin } from '../../shared/coinUtils';
+import { buildMultisigSignBody, submitMultisigSignJob } from './utils/multisigSignUtils';
+import { submitSignedMultisigToWp } from './utils/multisigSubmitUtils';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -107,6 +107,10 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
   }
   const isTss = wallet.multisigType() === 'tss';
 
+  if (isTss && req.config.asyncModeConfig.enabled) {
+    throw new BadRequestError('Async mode is not yet supported for TSS sendMany');
+  }
+
   if (isTss) {
     if (!params.commonKeychain) {
       throw new BadRequestError(`commonKeychain must be provided for TSS ${params.source} signing`);
@@ -183,57 +187,31 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
 
     const walletPubs = await getWalletPubs({ baseCoin, wallet });
 
-    return signAndSendMultisig(
-      wallet,
-      req.decoded.source,
-      txPrebuilt,
-      prebuildParams,
-      awmClient,
+    const signBody = buildMultisigSignBody({
+      source: req.decoded.source,
       signingKeychain,
-      reqId,
+      txPrebuilt,
       walletPubs,
-    );
+    });
+
+    /** When run in async mode, submit the job via the bridge client. Fall back to sync-mode, otherwise */
+    const asyncResult = await submitMultisigSignJob(req, req.params.coin, signBody, {
+      walletId: req.params.walletId,
+      wpSubmitKind: 'sendMany',
+      wpSubmitParams: prebuildParams,
+    });
+    if (asyncResult) {
+      return asyncResult;
+    }
+
+    logger.info(`Signing with ${req.decoded.source} keychain, pub: ${signBody.pub}`);
+    logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
+
+    const signedTx = await awmClient.signMultisig(signBody);
+    return submitSignedMultisigToWp(wallet, signedTx, prebuildParams, reqId);
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to send many: %s', err.message);
     throw err;
   }
-}
-
-export async function signAndSendMultisig(
-  wallet: Wallet,
-  source: 'user' | 'backup',
-  txPrebuilt: PrebuildTransactionResult,
-  params: SendManyOptions,
-  awmClient: AdvancedWalletManagerClient,
-  signingKeychain: Keychain,
-  reqId: RequestTracer,
-  walletPubs?: string[],
-) {
-  if (!signingKeychain.pub) {
-    throw new BadRequestError(`Signing keychain pub not found for ${source}`);
-  }
-  logger.info(`Signing with ${source} keychain, pub: ${signingKeychain.pub}`);
-  logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
-
-  // Then sign it using the advanced wallet manager client
-  const signedTx = await awmClient.signMultisig({
-    source,
-    walletPubs,
-    txPrebuild: txPrebuilt,
-    pub: signingKeychain.pub,
-  });
-
-  // Get extra prebuild parameters
-  const extraParams = await wallet.baseCoin.getExtraPrebuildParams({
-    ...params,
-    wallet,
-  });
-
-  // Combine the signed transaction with extra parameters
-  const finalTxParams = { ...signedTx, ...extraParams };
-
-  // Submit the half signed transaction
-  const result = (await wallet.submitTransaction(finalTxParams, reqId)) as any;
-  return result;
 }

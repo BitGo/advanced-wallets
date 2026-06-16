@@ -9,6 +9,7 @@ import {
   startAsyncJobWorker,
   processPendingJobs,
   handleKeyGenerationOperation,
+  handleMultisigSignOperation,
 } from '../../../masterBitgoExpress/workers/asyncJobWorker';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
@@ -135,6 +136,61 @@ function nockUpdateJobComplete(jobId: string, walletId: string) {
       `/job/${jobId}`,
       (body) => body.status === 'complete' && body.result?.walletId === walletId,
     )
+    .reply(204);
+}
+
+function makeSignJob(overrides: Partial<BridgeJobResponse> = {}): BridgeJobResponse {
+  return {
+    jobId: 'job-sign-123',
+    status: 'awaiting_bitgo',
+    version: 1,
+    coin: COIN,
+    operationType: 'multisig_sign',
+    awmResponse: awmOk({ txHex: 'signed-tx-hex' }),
+    request: {
+      endpoint: `/api/${COIN}/multisig/sign`,
+      method: 'POST',
+      body: {
+        source: 'user',
+        pub: 'xpub_user',
+        txPrebuild: { txHex: '70736274ff' },
+        walletId: 'test-wallet-id',
+        wpSubmitKind: 'sendMany',
+        wpSubmitParams: {
+          recipients: [{ address: 'tb1qtest1', amount: '100000' }],
+          source: 'user',
+        },
+      },
+    },
+    createdAt: 1717977600,
+    updatedAt: 1717977600,
+    ttl: 3600,
+    ...overrides,
+  };
+}
+
+function nockWalletGet(walletId: string) {
+  return nock(BITGO_API_URL)
+    .get(`/api/v2/${COIN}/wallet/${walletId}`)
+    .matchHeader('any', () => true)
+    .reply(200, {
+      id: walletId,
+      type: 'advanced',
+      keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+      multisigType: 'onchain',
+    });
+}
+
+function nockTxSend(walletId: string, txid: string) {
+  return nock(BITGO_API_URL)
+    .post(`/api/v2/${COIN}/wallet/${walletId}/tx/send`)
+    .matchHeader('any', () => true)
+    .reply(200, { txid, status: 'signed' });
+}
+
+function nockUpdateSignJobComplete(jobId: string, txid: string) {
+  return nock(BRIDGE_URL)
+    .patch(`/job/${jobId}`, (body) => body.status === 'complete' && body.result?.txid === txid)
     .reply(204);
 }
 
@@ -287,7 +343,7 @@ describe('asyncJobWorker', () => {
     });
 
     it('skips jobs with unknown operationType', async () => {
-      const job = makeJob({ operationType: 'multisig_sign' });
+      const job = makeJob({ operationType: 'mpc_sign' });
 
       const n = nock(BRIDGE_URL)
         .get('/jobs')
@@ -413,6 +469,67 @@ describe('asyncJobWorker', () => {
       await handleKeyGenerationOperation(job, bridge, bitgo);
 
       nock.pendingMocks().should.have.length(0);
+    });
+  });
+
+  describe('handleMultisigSignOperation()', () => {
+    it('submits signed tx to WP and PATCHes job complete', async () => {
+      const job = makeSignJob();
+      const walletId = 'test-wallet-id';
+      const txid = 'test-tx-id';
+
+      const walletGetNock = nockWalletGet(walletId);
+      const sendNock = nockTxSend(walletId, txid);
+      const updateNock = nockUpdateSignJobComplete(job.jobId, txid);
+
+      await handleMultisigSignOperation(job, bridge, bitgo);
+
+      walletGetNock.done();
+      sendNock.done();
+      updateNock.done();
+    });
+
+    it('throws when awmResponse is missing', async () => {
+      const job = makeSignJob({ awmResponse: undefined });
+
+      await handleMultisigSignOperation(job, bridge, bitgo).should.be.rejected();
+    });
+
+    it('throws when awmResponse.body is not a valid signed transaction', async () => {
+      const job = makeSignJob({
+        awmResponse: { status: 200, body: { bad: 'shape' } },
+      });
+
+      await handleMultisigSignOperation(job, bridge, bitgo).should.be.rejectedWith(
+        /expected txHex or halfSigned/,
+      );
+    });
+
+    it('throws when request.body is missing walletId', async () => {
+      const job = makeSignJob({
+        request: {
+          endpoint: `/api/${COIN}/multisig/sign`,
+          method: 'POST',
+          body: { wpSubmitKind: 'sendMany', wpSubmitParams: { recipients: [] } },
+        },
+      });
+
+      await handleMultisigSignOperation(job, bridge, bitgo).should.be.rejectedWith(
+        /missing walletId/,
+      );
+    });
+
+    it('throws when WP tx submit fails', async () => {
+      const job = makeSignJob();
+      const walletId = 'test-wallet-id';
+
+      nockWalletGet(walletId);
+      nock(BITGO_API_URL)
+        .post(`/api/v2/${COIN}/wallet/${walletId}/tx/send`)
+        .matchHeader('any', () => true)
+        .reply(500, { message: 'submit failed' });
+
+      await handleMultisigSignOperation(job, bridge, bitgo).should.be.rejected();
     });
   });
 });

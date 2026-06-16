@@ -1,6 +1,7 @@
 import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-http';
 import * as t from 'io-ts';
 import { ErrorResponses } from '../../shared/errors';
+import { AsyncJobResponseCodec } from './generateWalletRoute';
 
 export const SendManyRequest = {
   /**
@@ -204,6 +205,7 @@ export const SendManyRequest = {
 
 export const SendManyResponse: HttpResponse = {
   200: t.any,
+  202: AsyncJobResponseCodec,
   ...ErrorResponses,
 };
 
