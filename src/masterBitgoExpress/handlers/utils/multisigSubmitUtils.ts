@@ -45,4 +45,15 @@ export const WP_SUBMIT_HANDLERS: Record<
       ...signedTx,
       ..._.pick(wpSubmitParams, wallet.prebuildWhitelistedParams()),
     })),
+
+  /**
+   * Same submit shape as SDK manageUnspents for routeName === 'consolidate'
+   * https://github.com/BitGo/BitGoJS/blob/master/modules/sdk-core/src/bitgo/wallet/wallet.ts
+   */
+  consolidateUnspents: (args) =>
+    submitSignedTxToWp(args, ({ signedTx, wpSubmitParams }) => ({
+      ...signedTx,
+      ..._.pick(wpSubmitParams, ['comment', 'otp', 'bulk']),
+      type: 'consolidate',
+    })),
 };

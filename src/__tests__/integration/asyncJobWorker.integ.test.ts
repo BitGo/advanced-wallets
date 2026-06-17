@@ -2,6 +2,7 @@ import 'should';
 import assert from 'assert';
 import { startServices, IntegServices } from './helpers/setup';
 import { BridgeJobResponse } from '../../masterBitgoExpress/clients/bridgeClient.types';
+import { WpSubmitKind } from '../../masterBitgoExpress/handlers/utils/multisigSignUtils';
 import { MockBridgeServer } from './helpers/mockBridgeServer';
 
 const COIN = 'tbtc';
@@ -74,49 +75,37 @@ function makeAwaitingBitgoJob(overrides: Partial<BridgeJobResponse> = {}): Bridg
   };
 }
 
-function makeAwaitingBitgoSignJob(overrides: Partial<BridgeJobResponse> = {}): BridgeJobResponse {
-  return {
-    jobId: JOB_ID,
-    status: 'awaiting_bitgo',
-    version: 1,
-    coin: COIN,
-    operationType: 'multisig_sign',
-    awmResponse: {
-      status: 200,
-      body: { txHex: 'signed-tx-hex' },
-    },
-    request: {
-      endpoint: `/api/${COIN}/multisig/sign`,
-      method: 'POST',
-      body: {
-        source: 'user',
-        pub: USER_XPUB,
-        txPrebuild: {
-          txHex: '70736274ff',
-          txInfo: { nP2SHInputs: 0, nSegwitInputs: 1, nOutputs: 1 },
-        },
-        walletId: WALLET_ID,
-        wpSubmitKind: 'sendMany',
-        wpSubmitParams: {
-          recipients: [
-            {
-              address: 'tb1qdgj9n5nw33k2qk26mxu7j5hv30dapz6fewscd4jd87euyjxyp04qgphg92',
-              amount: '10000',
-            },
-          ],
-          source: 'user',
-          txFormat: 'psbt-lite',
-        },
+const INTEG_WP_SUBMIT_PARAMS: Record<WpSubmitKind, Record<string, unknown>> = {
+  sendMany: {
+    recipients: [
+      {
+        address: 'tb1qdgj9n5nw33k2qk26mxu7j5hv30dapz6fewscd4jd87euyjxyp04qgphg92',
+        amount: '10000',
       },
-    },
-    createdAt: 1717977600,
-    updatedAt: 1717977600,
-    ttl: 3600,
-    ...overrides,
-  };
-}
+    ],
+    source: 'user',
+    txFormat: 'psbt-lite',
+  },
+  accelerate: {
+    pubkey: USER_XPUB,
+    source: 'user',
+    cpfpTxIds: [CPFP_TX_ID],
+    cpfpFeeRate: 50,
+    maxFee: 10000,
+    recipients: [],
+    txFormat: 'psbt-lite',
+  },
+  consolidateUnspents: {
+    pubkey: USER_XPUB,
+    source: 'user',
+    feeRate: 1000,
+    minValue: 1000,
+    txFormat: 'psbt-lite',
+  },
+};
 
-function makeAwaitingBitgoAccelerateJob(
+function makeAwaitingBitgoMultisigSignJob(
+  wpSubmitKind: WpSubmitKind,
   overrides: Partial<BridgeJobResponse> = {},
 ): BridgeJobResponse {
   return {
@@ -140,16 +129,8 @@ function makeAwaitingBitgoAccelerateJob(
           txInfo: { nP2SHInputs: 0, nSegwitInputs: 1, nOutputs: 1 },
         },
         walletId: WALLET_ID,
-        wpSubmitKind: 'accelerate',
-        wpSubmitParams: {
-          pubkey: USER_XPUB,
-          source: 'user',
-          cpfpTxIds: [CPFP_TX_ID],
-          cpfpFeeRate: 50,
-          maxFee: 10000,
-          recipients: [],
-          txFormat: 'psbt-lite',
-        },
+        wpSubmitKind,
+        wpSubmitParams: INTEG_WP_SUBMIT_PARAMS[wpSubmitKind],
       },
     },
     createdAt: 1717977600,
@@ -220,7 +201,7 @@ describe('asyncJobWorker: end-to-end polling', () => {
 
   it('picks up an awaiting_bitgo multisig_sign job, submits to WP, and PATCHes complete', async () => {
     assert(services.bridge, 'bridge service should be defined');
-    services.bridge.setPendingJobs([makeAwaitingBitgoSignJob()]);
+    services.bridge.setPendingJobs([makeAwaitingBitgoMultisigSignJob('sendMany')]);
 
     await waitForJobCompletion(services.bridge, JOB_ID, 5000);
 
@@ -244,7 +225,7 @@ describe('asyncJobWorker: end-to-end polling', () => {
   it('PATCHes multisig_sign job failed when awmResponse.body is not a valid signed transaction', async () => {
     assert(services.bridge, 'bridge service should be defined');
     services.bridge.setPendingJobs([
-      makeAwaitingBitgoSignJob({
+      makeAwaitingBitgoMultisigSignJob('sendMany', {
         awmResponse: { status: 200, body: { bad: 'shape' } },
       }),
     ]);
@@ -263,7 +244,7 @@ describe('asyncJobWorker: end-to-end polling', () => {
 
   it('picks up an awaiting_bitgo accelerate job, submits cpfp params to WP, and PATCHes complete', async () => {
     assert(services.bridge, 'bridge service should be defined');
-    services.bridge.setPendingJobs([makeAwaitingBitgoAccelerateJob()]);
+    services.bridge.setPendingJobs([makeAwaitingBitgoMultisigSignJob('accelerate')]);
 
     await waitForJobCompletion(services.bridge, JOB_ID, 5000);
 
@@ -288,10 +269,37 @@ describe('asyncJobWorker: end-to-end polling', () => {
     patchBody.result.should.have.property('txid', 'test-tx-id');
   });
 
+  it('picks up an awaiting_bitgo consolidateUnspents job, submits type consolidate to WP, and PATCHes complete', async () => {
+    assert(services.bridge, 'bridge service should be defined');
+    services.bridge.setPendingJobs([makeAwaitingBitgoMultisigSignJob('consolidateUnspents')]);
+
+    await waitForJobCompletion(services.bridge, JOB_ID, 5000);
+
+    const walletGetCalls = services.bitgo.calls.filter(
+      (c) => c.method === 'GET' && c.path.endsWith(`/wallet/${WALLET_ID}`),
+    );
+    walletGetCalls.should.have.length(1);
+
+    const sendCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/send'));
+    sendCalls.should.have.length(1);
+    const sendBody = sendCalls[0].body as { type?: string; txHex?: string };
+    sendBody.should.have.property('type', 'consolidate');
+    assert(sendBody.txHex, 'sendBody.txHex is undefined');
+    sendBody.txHex.should.equal('signed-tx-hex');
+
+    const patchCall = services.bridge.calls.find(
+      (c) => c.method === 'PATCH' && c.path === `/job/${JOB_ID}`,
+    );
+    assert(patchCall !== undefined, `expected PATCH /job/${JOB_ID} to be called`);
+    const patchBody = patchCall.body as { status: string; result: { txid: string } };
+    patchBody.status.should.equal('complete');
+    patchBody.result.should.have.property('txid', 'test-tx-id');
+  });
+
   it('PATCHes multisig_sign job failed when request.body is missing walletId', async () => {
     assert(services.bridge, 'bridge service should be defined');
     services.bridge.setPendingJobs([
-      makeAwaitingBitgoSignJob({
+      makeAwaitingBitgoMultisigSignJob('sendMany', {
         request: {
           endpoint: `/api/${COIN}/multisig/sign`,
           method: 'POST',

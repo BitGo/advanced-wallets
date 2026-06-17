@@ -624,6 +624,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
     (capturedJobBody.wpSubmitParams as Record<string, unknown>).should.have
       .property('cpfpTxIds')
       .which.deepEqual(cpfpTxIds);
+    (capturedJobBody.wpSubmitParams as Record<string, unknown>).should.not.have.property('reqId');
 
     bridgeNock.done();
     awmSignNock.isDone().should.be.false();

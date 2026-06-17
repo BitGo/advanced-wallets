@@ -45,6 +45,8 @@ async function handleAccelerateAsync(params: {
     throw new BadRequestError('Transaction prebuild failed local validation');
   }
 
+  const { reqId: _reqId, ...wpSubmitParams } = params.accelerationParams;
+
   return orThrow(
     await submitMultisigSignJob(
       params.req,
@@ -58,7 +60,7 @@ async function handleAccelerateAsync(params: {
       {
         walletId: params.walletId,
         wpSubmitKind: 'accelerate',
-        wpSubmitParams: params.accelerationParams,
+        wpSubmitParams,
       },
     ),
     'async accelerate job submission failed',

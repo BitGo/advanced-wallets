@@ -5,9 +5,14 @@ import nock from 'nock';
 import * as utxolib from '@bitgo-beta/utxo-lib';
 import { Btc } from '@bitgo-beta/sdk-coin-btc';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
-import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
-import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
+import {
+  ASYNC_TEST_BRIDGE_URL,
+  BitGoAPITestHarness,
+  makeMasterExpressTestConfig,
+  nockAsyncMultisigSignJob,
+} from './testUtils';
+import assert from 'assert';
 
 const BTC_PREBUILD_PSBT_HEX = utxolib.bitgo
   .createPsbtForNetwork({ network: utxolib.networks.bitcoin })
@@ -51,24 +56,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    const config: MasterExpressConfig = {
-      appMode: AppMode.MASTER_EXPRESS,
-      port: 0,
-      bind: 'localhost',
-      timeout: 30000,
-      httpLoggerFile: '',
-      env: 'test',
-      disableEnvCheck: true,
-      authVersion: 2,
-      advancedWalletManagerUrl: advancedWalletManagerUrl,
-      awmServerCaCert: 'test-cert',
-      tlsMode: TlsMode.DISABLED,
-      clientCertAllowSelfSigned: true,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
-    };
-
-    const app = expressApp(config);
-    agent = request.agent(app);
+    const config = makeMasterExpressTestConfig(advancedWalletManagerUrl);
+    agent = request.agent(expressApp(config));
   });
 
   afterEach(() => {
@@ -339,11 +328,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
       .set('Authorization', `Bearer ${accessToken}`)
       .send(requestPayload);
 
-    response.status.should.equal(500);
-    response.body.should.have.property('error', 'Internal Server Error');
-    response.body.should.have.property('name', 'Error');
-    response.body.should.have.property(
-      'details',
+    response.status.should.equal(400);
+    response.body.error.should.equal('BadRequestError');
+    response.body.details.should.containEql(
       'Expected single consolidation result, but received 2 results',
     );
   });
@@ -670,5 +657,169 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/consolidateunspents', () =
     response.status.should.equal(200);
     awmSignNock.done();
     capturedSignBody.should.not.have.property('walletPubs');
+  });
+
+  it('should return 202 with jobId when async mode is enabled for onchain multisig consolidateUnspents', async () => {
+    const jobId = 'test-consolidate-unspents-job-id';
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nockWalletAndKeychains();
+
+    let capturedBuildBody: Record<string, unknown> | undefined;
+    const buildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`, (body) => {
+        capturedBuildBody = body;
+        return true;
+      })
+      .reply(200, { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} });
+
+    sinon.stub(Btc.prototype, 'verifyTransaction').resolves(true);
+
+    let capturedJobBody: Record<string, unknown> | undefined;
+    const { bridgeNock, awmSignNock } = nockAsyncMultisigSignJob({
+      coin,
+      advancedWalletManagerUrl,
+      jobId,
+      captureJobBody: (body) => {
+        capturedJobBody = body;
+      },
+    });
+
+    const requestPayload = {
+      pubkey: mockUserKeychain.pub,
+      source: 'user' as const,
+      feeRate: 1000,
+      maxFeeRate: 2000,
+      minValue: 1000,
+    };
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(requestPayload);
+
+    response.status.should.equal(202);
+    response.body.should.have.property('jobId', jobId);
+    response.body.should.have.property('status', 'pending');
+
+    assert(capturedBuildBody, 'capturedBuildBody is undefined');
+    capturedBuildBody.should.have.property('feeRate', 1000);
+    capturedBuildBody.should.have.property('maxFeeRate', 2000);
+    capturedBuildBody.should.have.property('minValue', 1000);
+    capturedBuildBody.should.have.property('txFormat', 'psbt-lite');
+
+    assert(capturedJobBody, 'capturedJobBody is undefined');
+    capturedJobBody.should.have.property('wpSubmitKind', 'consolidateUnspents');
+    (capturedJobBody.wpSubmitParams as Record<string, unknown>).should.have.property(
+      'feeRate',
+      1000,
+    );
+    (capturedJobBody.wpSubmitParams as Record<string, unknown>).should.have.property(
+      'txFormat',
+      'psbt-lite',
+    );
+    (capturedJobBody.wpSubmitParams as Record<string, unknown>).should.not.have.property('reqId');
+    (capturedJobBody.walletPubs as string[]).should.deepEqual([
+      mockUserKeychain.pub,
+      mockBackupKeychain.pub,
+      mockBitgoKeychain.pub,
+    ]);
+
+    buildNock.done();
+    bridgeNock.done();
+    awmSignNock.isDone().should.be.false();
+  });
+
+  it('should fail when async mode is enabled with bulk consolidateUnspents', async () => {
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nockWalletAndKeychains();
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        feeRate: 1000,
+        bulk: true,
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql('Async mode does not support bulk consolidateUnspents');
+  });
+
+  it('should fail when async consolidateUnspents prebuild returns more than one result', async () => {
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nockWalletAndKeychains();
+
+    const buildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, [
+        { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} },
+        { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} },
+      ]);
+
+    const bridgeNock = nock(ASYNC_TEST_BRIDGE_URL)
+      .post(`/api/${coin}/multisig/sign`)
+      .reply(202, { jobId: 'should-not-reach-bridge' });
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        feeRate: 1000,
+      });
+
+    response.status.should.equal(400);
+    response.body.error.should.equal('BadRequestError');
+    response.body.details.should.containEql(
+      'Expected single consolidation result, but received 2 results',
+    );
+
+    buildNock.done();
+    bridgeNock.isDone().should.be.false();
+  });
+
+  it('should fail when async transaction verification returns false', async () => {
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nockWalletAndKeychains();
+
+    const buildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/consolidateUnspents`)
+      .reply(200, { txHex: BTC_PREBUILD_PSBT_HEX, txInfo: {} });
+
+    const verifyStub = sinon.stub(Btc.prototype, 'verifyTransaction').resolves(false);
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/consolidateunspents`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        feeRate: 1000,
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql('Transaction prebuild failed local validation');
+
+    buildNock.done();
+    sinon.assert.calledOnce(verifyStub);
   });
 });
