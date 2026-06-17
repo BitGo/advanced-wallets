@@ -2,7 +2,13 @@ import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { SignatureShareRecord, SignatureShareType } from '@bitgo-beta/sdk-core';
 import nock from 'nock';
 import { BridgeJobResponse } from '../../../masterBitgoExpress/clients/bridgeClient.types';
-import { AsyncModeConfig } from '../../../shared/types';
+import {
+  AppMode,
+  AsyncModeConfig,
+  KeySource,
+  MasterExpressConfig,
+  TlsMode,
+} from '../../../shared/types';
 
 export const DEFAULT_ASYNC_MODE_CONFIG: AsyncModeConfig = {
   enabled: false,
@@ -11,6 +17,65 @@ export const DEFAULT_ASYNC_MODE_CONFIG: AsyncModeConfig = {
   jobTtlInSeconds: 3600,
   jobTtlMpcInSeconds: 7200,
 };
+
+export const ASYNC_TEST_BRIDGE_URL = 'http://bridge.invalid';
+
+export function makeMasterExpressTestConfig(
+  advancedWalletManagerUrl: string,
+  options: { asyncEnabled?: boolean; overrides?: Partial<MasterExpressConfig> } = {},
+): MasterExpressConfig {
+  return {
+    appMode: AppMode.MASTER_EXPRESS,
+    port: 0,
+    bind: 'localhost',
+    timeout: 30000,
+    httpLoggerFile: '',
+    env: 'test',
+    disableEnvCheck: true,
+    authVersion: 2,
+    advancedWalletManagerUrl,
+    awmServerCaCert: 'test-cert',
+    tlsMode: TlsMode.DISABLED,
+    clientCertAllowSelfSigned: true,
+    asyncModeConfig: options.asyncEnabled
+      ? {
+          enabled: true,
+          awmAsyncUrl: ASYNC_TEST_BRIDGE_URL,
+          pollIntervalInMs: 30000,
+          jobTtlInSeconds: 3600,
+          jobTtlMpcInSeconds: 7200,
+        }
+      : DEFAULT_ASYNC_MODE_CONFIG,
+    ...options.overrides,
+  };
+}
+
+export function nockAsyncMultisigSignJob(options: {
+  coin: string;
+  advancedWalletManagerUrl: string;
+  jobId: string;
+  captureJobBody?: (body: Record<string, unknown>) => void;
+  bridgeUrl?: string;
+  source?: KeySource;
+}) {
+  const bridgeUrl = options.bridgeUrl ?? ASYNC_TEST_BRIDGE_URL;
+  const source = options.source ?? KeySource.USER;
+
+  const bridgeNock = nock(bridgeUrl)
+    .post(`/api/${options.coin}/multisig/sign`, (body) => {
+      options.captureJobBody?.(body);
+      return true;
+    })
+    .matchHeader('X-OSO-Source', source)
+    .matchHeader('X-OSO-Operation', 'multisig_sign')
+    .reply(202, { jobId: options.jobId });
+
+  const awmSignNock = nock(options.advancedWalletManagerUrl)
+    .post(`/api/${options.coin}/multisig/sign`)
+    .reply(500, { error: 'should not reach AWM in async mode' });
+
+  return { bridgeNock, awmSignNock };
+}
 
 export function makeBridgeJob(
   overrides: Partial<BridgeJobResponse> = {},

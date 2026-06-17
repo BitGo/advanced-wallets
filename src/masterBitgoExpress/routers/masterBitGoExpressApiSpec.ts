@@ -44,7 +44,8 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
  */
 type MasterBitGoAPIHandlerResponses =
   | Awaited<ReturnType<typeof handleGenerateWallet>>
-  | Awaited<ReturnType<typeof handleSendMany>>;
+  | Awaited<ReturnType<typeof handleSendMany>>
+  | Awaited<ReturnType<typeof handleAccelerate>>;
 
 function toApiResponse(result: MasterBitGoAPIHandlerResponses) {
   return 'jobId' in result ? Response.accepted(result) : Response.ok(result);
@@ -153,7 +154,7 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleAccelerate(typedReq);
-      return Response.ok(result);
+      return toApiResponse(result);
     }),
   ]);
 

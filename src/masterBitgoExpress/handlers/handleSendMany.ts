@@ -16,7 +16,7 @@ import coinFactory from '../../shared/coinFactory';
 import { getWalletPubs } from './utils/utils';
 import { isUtxoCoin } from '../../shared/coinUtils';
 import { buildMultisigSignBody, submitMultisigSignJob } from './utils/multisigSignUtils';
-import { submitSignedMultisigToWp } from './utils/multisigSubmitUtils';
+import { WP_SUBMIT_HANDLERS } from './utils/multisigSubmitUtils';
 
 /**
  * Defines the structure for a single recipient in a send-many transaction.
@@ -208,7 +208,12 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
 
     const signedTx = await awmClient.signMultisig(signBody);
-    return submitSignedMultisigToWp(wallet, signedTx, prebuildParams, reqId);
+    return WP_SUBMIT_HANDLERS.sendMany({
+      wallet,
+      signedTx,
+      wpSubmitParams: prebuildParams,
+      requestTracer: reqId,
+    });
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to send many: %s', err.message);

@@ -162,6 +162,16 @@
               }
             }
           },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncJobResponseCodec"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1939,6 +1949,25 @@
           "txid"
         ]
       },
+      "AsyncJobResponseCodec": {
+        "title": "AsyncJobResponseCodec",
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending"
+            ]
+          }
+        },
+        "required": [
+          "jobId",
+          "status"
+        ]
+      },
       "AccelerateResponseCodec": {
         "title": "AccelerateResponseCodec",
         "type": "object",
@@ -1966,25 +1995,6 @@
         },
         "required": [
           "txHex"
-        ]
-      },
-      "AsyncJobResponseCodec": {
-        "title": "AsyncJobResponseCodec",
-        "type": "object",
-        "properties": {
-          "jobId": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending"
-            ]
-          }
-        },
-        "required": [
-          "jobId",
-          "status"
         ]
       },
       "GenerateWalletResponseCodec": {
