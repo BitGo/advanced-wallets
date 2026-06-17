@@ -1,4 +1,12 @@
-import { RequestTracer, KeyIndices } from '@bitgo-beta/sdk-core';
+import {
+  AccelerateTransactionOptions,
+  BaseCoin,
+  Keychain,
+  PrebuildTransactionOptions,
+  RequestTracer,
+  KeyIndices,
+  Wallet,
+} from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
 import {
@@ -6,12 +14,62 @@ import {
   makeCustomSigningFunction,
   getWalletPubs,
 } from './utils/utils';
+import { isUtxoCoin } from '../../shared/coinUtils';
+import { BadRequestError } from '../../shared/errors';
+import { AsyncJobResponse } from '../clients/bridgeClient.types';
+import { buildMultisigSignBody, submitMultisigSignJob } from './utils/multisigSignUtils';
+import { orThrow } from '../../shared/utils';
+
+async function handleAccelerateAsync(params: {
+  req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>;
+  coin: string;
+  walletId: string;
+  baseCoin: BaseCoin;
+  wallet: Wallet;
+  signingKeychain: Keychain;
+  walletPubs: string[] | undefined;
+  accelerationParams: PrebuildTransactionOptions;
+  requestTracer: RequestTracer;
+}): Promise<AsyncJobResponse> {
+  const txPrebuilt = await params.wallet.prebuildTransaction(params.accelerationParams);
+
+  const verified = await params.baseCoin.verifyTransaction({
+    txParams: { ...params.accelerationParams },
+    txPrebuild: txPrebuilt,
+    wallet: params.wallet,
+    verification: {},
+    reqId: params.requestTracer,
+    walletType: params.wallet.multisigType(),
+  });
+  if (!verified) {
+    throw new BadRequestError('Transaction prebuild failed local validation');
+  }
+
+  return orThrow(
+    await submitMultisigSignJob(
+      params.req,
+      params.coin,
+      buildMultisigSignBody({
+        source: params.req.decoded.source,
+        signingKeychain: params.signingKeychain,
+        txPrebuilt,
+        walletPubs: params.walletPubs,
+      }),
+      {
+        walletId: params.walletId,
+        wpSubmitKind: 'accelerate',
+        wpSubmitParams: params.accelerationParams,
+      },
+    ),
+    'async accelerate job submission failed',
+  );
+}
 
 export async function handleAccelerate(
   req: MasterApiSpecRouteRequest<'v1.wallet.accelerate', 'post'>,
 ) {
   const awmClient = req.awmUserClient;
-  const reqId = new RequestTracer();
+  const requestTracer = new RequestTracer();
   const bitgo = req.bitgo;
   const params = req.decoded;
   const walletId = req.params.walletId;
@@ -22,14 +80,42 @@ export async function handleAccelerate(
     coin,
     walletId,
     params,
-    reqId,
+    reqId: requestTracer,
     KeyIndices,
   });
 
+  const isTss = wallet.multisigType() === 'tss';
+  if (isTss && req.config.asyncModeConfig.enabled) {
+    throw new BadRequestError('Async mode is not yet supported for TSS accelerate');
+  }
+
   const walletPubs = await getWalletPubs({ baseCoin, wallet });
 
+  const accelerationParams = {
+    ...params,
+    /**
+     * SDK validateAccelerationParams requires recipients to be [] when present (CPFP/RBF builds from tx ids, not recipients).
+     */
+    recipients: [] as AccelerateTransactionOptions['recipients'],
+    reqId: requestTracer,
+    ...(isUtxoCoin(baseCoin) && { txFormat: 'psbt-lite' }),
+  } satisfies PrebuildTransactionOptions;
+
   try {
-    // Create custom signing function that delegates to EBE
+    if (req.config.asyncModeConfig.enabled) {
+      return await handleAccelerateAsync({
+        req,
+        coin,
+        walletId,
+        baseCoin,
+        wallet,
+        signingKeychain,
+        walletPubs,
+        accelerationParams,
+        requestTracer,
+      });
+    }
+
     const customSigningFunction = makeCustomSigningFunction({
       awmClient,
       source: params.source,
@@ -37,18 +123,10 @@ export async function handleAccelerate(
       walletPubs,
     });
 
-    // Prepare acceleration parameters
-    const accelerationParams = {
-      ...params,
+    return wallet.accelerateTransaction({
+      ...accelerationParams,
       customSigningFunction,
-      reqId,
-      txFormat: 'psbt-lite',
-    };
-
-    // Accelerate transaction
-    const result = await wallet.accelerateTransaction(accelerationParams);
-
-    return result;
+    });
   } catch (error) {
     const err = error as Error;
     logger.error('Failed to accelerate transaction: %s', err.message);

@@ -5,7 +5,7 @@ import * as request from 'supertest';
 import nock from 'nock';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
-import { AppMode, KeySource, MasterExpressConfig, TlsMode } from '../../../shared/types';
+import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
 import { Environments, openpgpUtils } from '@bitgo-beta/sdk-core';
@@ -16,6 +16,8 @@ import assert from 'assert';
 import {
   BitGoAPITestHarness,
   DEFAULT_ASYNC_MODE_CONFIG,
+  makeMasterExpressTestConfig,
+  nockAsyncMultisigSignJob,
   nockEcdsaMpcv2SendManySigningFlow,
 } from './testUtils';
 
@@ -26,6 +28,16 @@ const tssTxRequestId = 'test-tx-request-id';
 const TBTC_PREBUILD_PSBT_HEX = utxolib.bitgo
   .createPsbtForNetwork({ network: utxolib.networks.testnet })
   .toHex();
+
+function stubPrepareBitGoWithConfig(asyncConfig: MasterExpressConfig): BitGoAPI {
+  const asyncBitgo = new BitGoAPI({ env: 'test' });
+  sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
+    (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
+    (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
+    next();
+  });
+  return asyncBitgo;
+}
 
 function buildPendingEdDsaTxRequest(walletIdParam: string) {
   return {
@@ -123,21 +135,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    const config: MasterExpressConfig = {
-      appMode: AppMode.MASTER_EXPRESS,
-      port: 0, // Let OS assign a free port
-      bind: 'localhost',
-      timeout: 60000,
-      httpLoggerFile: '',
-      env: 'test',
-      disableEnvCheck: true,
-      authVersion: 2,
-      advancedWalletManagerUrl: advancedWalletManagerUrl,
-      awmServerCaCert: 'dummy-cert',
-      tlsMode: TlsMode.DISABLED,
-      clientCertAllowSelfSigned: true,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
-    };
+    const config = makeMasterExpressTestConfig(advancedWalletManagerUrl);
 
     const app = expressApp(config);
     agent = request.agent(app);
@@ -476,40 +474,14 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     });
 
     it('should return 202 with jobId when async mode is enabled for onchain multisig sendMany', async () => {
-      const bridgeUrl = 'http://bridge.invalid';
       const jobId = 'test-job-id-123';
 
-      const asyncBitgo = new BitGoAPI({ env: 'test' });
-      const asyncConfig: MasterExpressConfig = {
-        appMode: AppMode.MASTER_EXPRESS,
-        port: 0,
-        bind: 'localhost',
-        timeout: 60000,
-        httpLoggerFile: '',
-        env: 'test',
-        disableEnvCheck: true,
-        authVersion: 2,
-        advancedWalletManagerUrl: advancedWalletManagerUrl,
-        awmServerCaCert: 'dummy-cert',
-        tlsMode: TlsMode.DISABLED,
-        clientCertAllowSelfSigned: true,
-        asyncModeConfig: {
-          enabled: true,
-          awmAsyncUrl: bridgeUrl,
-          pollIntervalInMs: 30000,
-          jobTtlInSeconds: 3600,
-          jobTtlMpcInSeconds: 7200,
-        },
-      };
-
-      sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
-        (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
-        next();
+      const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+        asyncEnabled: true,
       });
+      stubPrepareBitGoWithConfig(asyncConfig);
 
-      const asyncApp = expressApp(asyncConfig);
-      const asyncAgent = request.agent(asyncApp);
+      const asyncAgent = request.agent(expressApp(asyncConfig));
 
       nock(bitgoApiUrl)
         .get(`/api/v2/${coin}/wallet/${walletId}`)
@@ -547,15 +519,11 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
 
       sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
 
-      const bridgeNock = nock(bridgeUrl)
-        .post(`/api/${coin}/multisig/sign`)
-        .matchHeader('X-OSO-Source', KeySource.USER)
-        .matchHeader('X-OSO-Operation', 'multisig_sign')
-        .reply(202, { jobId });
-
-      const awmSignNock = nock(advancedWalletManagerUrl)
-        .post(`/api/${coin}/multisig/sign`)
-        .reply(500, { error: 'should not reach AWM in async mode' });
+      const { bridgeNock, awmSignNock } = nockAsyncMultisigSignJob({
+        coin,
+        advancedWalletManagerUrl,
+        jobId,
+      });
 
       const response = await asyncAgent
         .post(`/api/v1/${coin}/advancedwallet/${walletId}/sendMany`)
@@ -574,41 +542,15 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     });
 
     it('should fail when async mode is enabled for TSS sendMany', async () => {
-      const bridgeUrl = 'http://bridge.invalid';
       const tssCoin = 'tsol';
 
       sinon.restore();
-      const asyncBitgo = new BitGoAPI({ env: 'test' });
-      const asyncConfig: MasterExpressConfig = {
-        appMode: AppMode.MASTER_EXPRESS,
-        port: 0,
-        bind: 'localhost',
-        timeout: 60000,
-        httpLoggerFile: '',
-        env: 'test',
-        disableEnvCheck: true,
-        authVersion: 2,
-        advancedWalletManagerUrl: advancedWalletManagerUrl,
-        awmServerCaCert: 'dummy-cert',
-        tlsMode: TlsMode.DISABLED,
-        clientCertAllowSelfSigned: true,
-        asyncModeConfig: {
-          enabled: true,
-          awmAsyncUrl: bridgeUrl,
-          pollIntervalInMs: 30000,
-          jobTtlInSeconds: 3600,
-          jobTtlMpcInSeconds: 7200,
-        },
-      };
-
-      sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, _res, next) => {
-        (req as BitGoRequest<MasterExpressConfig>).bitgo = asyncBitgo;
-        (req as BitGoRequest<MasterExpressConfig>).config = asyncConfig;
-        next();
+      const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+        asyncEnabled: true,
       });
+      stubPrepareBitGoWithConfig(asyncConfig);
 
-      const asyncApp = expressApp(asyncConfig);
-      const asyncAgent = request.agent(asyncApp);
+      const asyncAgent = request.agent(expressApp(asyncConfig));
 
       nock(bitgoApiUrl)
         .get(`/api/v2/${tssCoin}/wallet/${walletId}`)

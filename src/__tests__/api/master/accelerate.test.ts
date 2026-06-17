@@ -5,9 +5,13 @@ import nock from 'nock';
 import * as utxolib from '@bitgo-beta/utxo-lib';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
-import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Environments, Wallet } from '@bitgo-beta/sdk-core';
-import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
+import {
+  BitGoAPITestHarness,
+  makeMasterExpressTestConfig,
+  nockAsyncMultisigSignJob,
+} from './testUtils';
+import assert from 'assert';
 
 const TBTC_PREBUILD_PSBT_HEX = utxolib.bitgo
   .createPsbtForNetwork({ network: utxolib.networks.testnet })
@@ -51,24 +55,8 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
 
-    const config: MasterExpressConfig = {
-      appMode: AppMode.MASTER_EXPRESS,
-      port: 0, // Let OS assign a free port
-      bind: 'localhost',
-      timeout: 30000,
-      httpLoggerFile: '',
-      env: 'test',
-      disableEnvCheck: true,
-      authVersion: 2,
-      advancedWalletManagerUrl: advancedWalletManagerUrl,
-      awmServerCaCert: 'test-cert',
-      tlsMode: TlsMode.DISABLED,
-      clientCertAllowSelfSigned: true,
-      asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
-    };
-
-    const app = expressApp(config);
-    agent = request.agent(app);
+    const config = makeMasterExpressTestConfig(advancedWalletManagerUrl);
+    agent = request.agent(expressApp(config));
   });
 
   afterEach(() => {
@@ -577,5 +565,138 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/accelerate', () => {
     response.status.should.equal(200);
     awmSignNock.done();
     capturedSignBody.should.not.have.property('walletPubs');
+  });
+
+  it('should return 202 with jobId when async mode is enabled for onchain multisig accelerate', async () => {
+    const jobId = 'test-accelerate-job-id';
+    const cpfpTxIds = ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'];
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nockWalletAndKeychains();
+
+    let capturedBuildBody: Record<string, unknown> | undefined;
+    nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`, (body) => {
+        capturedBuildBody = body;
+        return true;
+      })
+      .reply(200, {
+        txHex: TBTC_PREBUILD_PSBT_HEX,
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      });
+    nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
+    sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(true);
+
+    let capturedJobBody: Record<string, unknown> | undefined;
+    const { bridgeNock, awmSignNock } = nockAsyncMultisigSignJob({
+      coin,
+      advancedWalletManagerUrl,
+      jobId,
+      captureJobBody: (body) => {
+        capturedJobBody = body;
+      },
+    });
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user' as const,
+        cpfpTxIds,
+        cpfpFeeRate: 50,
+        maxFee: 10000,
+      });
+
+    response.status.should.equal(202);
+    response.body.should.have.property('jobId', jobId);
+    response.body.should.have.property('status', 'pending');
+
+    assert(capturedBuildBody, 'capturedBuildBody is undefined');
+    capturedBuildBody.should.have.property('cpfpTxIds').which.deepEqual(cpfpTxIds);
+    capturedBuildBody.should.have.property('recipients').which.deepEqual([]);
+
+    assert(capturedJobBody, 'capturedJobBody is undefined');
+    capturedJobBody.should.have.property('wpSubmitKind', 'accelerate');
+    (capturedJobBody.wpSubmitParams as Record<string, unknown>).should.have
+      .property('cpfpTxIds')
+      .which.deepEqual(cpfpTxIds);
+
+    bridgeNock.done();
+    awmSignNock.isDone().should.be.false();
+  });
+
+  it('should fail when async mode is enabled for TSS accelerate', async () => {
+    const tssCoin = 'tsol';
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${tssCoin}/wallet/${walletId}`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, {
+        id: walletId,
+        type: 'advanced',
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        multisigType: 'tss',
+      });
+
+    nock(bitgoApiUrl)
+      .get(`/api/v2/${tssCoin}/key/user-key-id`)
+      .matchHeader('authorization', `Bearer ${accessToken}`)
+      .reply(200, mockUserKeychain);
+
+    const response = await asyncAgent
+      .post(`/api/v1/${tssCoin}/advancedwallet/${walletId}/accelerate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        cpfpTxIds: ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'],
+        cpfpFeeRate: 50,
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql('Async mode is not yet supported for TSS accelerate');
+  });
+
+  it('should fail when async transaction verification returns false', async () => {
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+    });
+    const asyncAgent = request.agent(expressApp(asyncConfig));
+
+    nockWalletAndKeychains();
+
+    const buildNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/${walletId}/tx/build`)
+      .reply(200, {
+        txHex: TBTC_PREBUILD_PSBT_HEX,
+        txInfo: { nP2SHInputs: 1, nSegwitInputs: 0, nOutputs: 2 },
+      });
+    nock(bitgoApiUrl).get(`/api/v2/${coin}/public/block/latest`).reply(200, { height: 800000 });
+
+    const verifyStub = sinon.stub(Tbtc.prototype, 'verifyTransaction').resolves(false);
+
+    const response = await asyncAgent
+      .post(`/api/v1/${coin}/advancedwallet/${walletId}/accelerate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pubkey: mockUserKeychain.pub,
+        source: 'user',
+        cpfpTxIds: ['b8a828b98dbf32d9fd1875cbace9640ceb8c82626716b4a64203fdc79bb46d26'],
+        cpfpFeeRate: 50,
+      });
+
+    response.status.should.equal(400);
+    response.body.details.should.containEql('Transaction prebuild failed local validation');
+
+    buildNock.done();
+    sinon.assert.calledOnce(verifyStub);
   });
 });

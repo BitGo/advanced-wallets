@@ -1,5 +1,5 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { RequestTracer, SendManyOptions, SignedTransaction, Wallet } from '@bitgo-beta/sdk-core';
+import { RequestTracer, SignedTransaction } from '@bitgo-beta/sdk-core';
 import { OsoBridgeClient } from '../clients/bridgeClient';
 import { AwmResponseSchema, BridgeJobResponse } from '../clients/bridgeClient.types';
 import {
@@ -13,9 +13,8 @@ import { createOnchainKeyGenCallbackForPreGeneratedKeychains } from '../handlers
 import {
   parseMultisigSignJobContext,
   parseSignedMultisigTransaction,
-  WpSubmitKind,
 } from '../handlers/utils/multisigSignUtils';
-import { submitSignedMultisigToWp } from '../handlers/utils/multisigSubmitUtils';
+import { WP_SUBMIT_HANDLERS } from '../handlers/utils/multisigSubmitUtils';
 
 const ASYNC_OPERATIONS_TO_HANDLERS: Partial<
   Record<
@@ -25,19 +24,6 @@ const ASYNC_OPERATIONS_TO_HANDLERS: Partial<
 > = {
   multisig_keygen: handleKeyGenerationOperation,
   multisig_sign: handleMultisigSignOperation,
-};
-
-const WP_SUBMIT_HANDLERS: Record<
-  WpSubmitKind,
-  (
-    wallet: Wallet,
-    signedTx: SignedTransaction,
-    wpSubmitParams: Record<string, unknown>,
-    reqId: RequestTracer,
-  ) => Promise<Record<string, unknown>>
-> = {
-  sendMany: (wallet, signedTx, wpSubmitParams, reqId) =>
-    submitSignedMultisigToWp(wallet, signedTx, wpSubmitParams as SendManyOptions, reqId),
 };
 
 function parseAwmResponseBody(
@@ -181,13 +167,18 @@ export async function handleMultisigSignOperation(
   const { walletId, wpSubmitKind, wpSubmitParams } = parseMultisigSignJobContext(job.request?.body);
   const submitHandler = WP_SUBMIT_HANDLERS[wpSubmitKind];
   const { jobId, coin, version } = job;
-  const reqId = new RequestTracer();
+  const requestTracer = new RequestTracer();
 
   const baseCoin = await coinFactory.getCoin(coin, bitgo);
-  const wallet = await baseCoin.wallets().get({ id: walletId, reqId });
+  const wallet = await baseCoin.wallets().get({ id: walletId, reqId: requestTracer });
 
   logger.info(`${logPrefix} submitting job ${jobId}  to wallet platform`);
-  const result = await submitHandler(wallet, signedTx, wpSubmitParams, reqId);
+  const result = await submitHandler({
+    wallet,
+    signedTx,
+    wpSubmitParams,
+    requestTracer,
+  });
 
   logger.info(`${logPrefix} job ${jobId} submitted transaction - updating job status to complete`);
   await bridge.updateJob({
