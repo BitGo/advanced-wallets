@@ -222,6 +222,37 @@ function nockAccelerateTxSend(walletId: string, txid: string, cpfpTxId: string) 
     .reply(200, { txid, status: 'signed' });
 }
 
+function makeConsolidateUnspentsSignJob(
+  overrides: Partial<BridgeJobResponse> = {},
+): BridgeJobResponse {
+  return makeSignJob({
+    request: {
+      endpoint: `/api/${COIN}/multisig/sign`,
+      method: 'POST',
+      body: {
+        source: 'user',
+        pub: 'xpub_user',
+        txPrebuild: { txHex: '70736274ff' },
+        walletId: 'test-wallet-id',
+        wpSubmitKind: 'consolidateUnspents',
+        wpSubmitParams: { feeRate: 1000, minValue: 1000, txFormat: 'psbt-lite' },
+      },
+    },
+    ...overrides,
+  });
+}
+
+function nockConsolidateUnspentsTxSend(walletId: string, txid: string) {
+  return nock(BITGO_API_URL)
+    .post(`/api/v2/${COIN}/wallet/${walletId}/tx/send`, (body) => {
+      body.should.have.property('type', 'consolidate');
+      body.should.have.property('txHex', 'signed-tx-hex');
+      return true;
+    })
+    .matchHeader('any', () => true)
+    .reply(200, { txid, status: 'signed' });
+}
+
 function nockUpdateSignJobComplete(jobId: string, txid: string) {
   return nock(BRIDGE_URL)
     .patch(`/job/${jobId}`, (body) => body.status === 'complete' && body.result?.txid === txid)
@@ -531,6 +562,22 @@ describe('asyncJobWorker', () => {
 
       const walletGetNock = nockWalletGet(walletId);
       const sendNock = nockAccelerateTxSend(walletId, txid, cpfpTxId);
+      const updateNock = nockUpdateSignJobComplete(job.jobId, txid);
+
+      await handleMultisigSignOperation(job, bridge, bitgo);
+
+      walletGetNock.done();
+      sendNock.done();
+      updateNock.done();
+    });
+
+    it('submits signed consolidateUnspents tx to WP with type consolidate and PATCHes job complete', async () => {
+      const job = makeConsolidateUnspentsSignJob();
+      const walletId = 'test-wallet-id';
+      const txid = 'consolidate-unspents-tx-id';
+
+      const walletGetNock = nockWalletGet(walletId);
+      const sendNock = nockConsolidateUnspentsTxSend(walletId, txid);
       const updateNock = nockUpdateSignJobComplete(job.jobId, txid);
 
       await handleMultisigSignOperation(job, bridge, bitgo);

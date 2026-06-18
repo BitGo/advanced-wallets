@@ -210,6 +210,18 @@ describe('multisigSignUtils', () => {
       });
     });
 
+    it('parses consolidateUnspents wpSubmitKind', () => {
+      parseMultisigSignJobContext({
+        walletId: 'test-wallet-id',
+        wpSubmitKind: 'consolidateUnspents',
+        wpSubmitParams: { feeRate: 1000, minValue: 1000, txFormat: 'psbt-lite' },
+      }).should.eql({
+        walletId: 'test-wallet-id',
+        wpSubmitKind: 'consolidateUnspents',
+        wpSubmitParams: { feeRate: 1000, minValue: 1000, txFormat: 'psbt-lite' },
+      });
+    });
+
     it('throws when wpSubmitKind is missing or unsupported', () => {
       (() =>
         parseMultisigSignJobContext({
@@ -221,7 +233,7 @@ describe('multisigSignUtils', () => {
         parseMultisigSignJobContext({
           walletId: 'test-wallet-id',
           wpSubmitKind: 'consolidate',
-          wpSubmitParams: { recipients: [] },
+          wpSubmitParams: { feeRate: 1000 },
         })).should.throw(/unsupported wpSubmitKind: consolidate/);
     });
   });

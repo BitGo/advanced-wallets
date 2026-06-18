@@ -35,7 +35,7 @@ export function parseSignedMultisigTransaction(body: unknown): SignedTransaction
   return SignedMultisigTransactionSchema.parse(body) as SignedTransaction;
 }
 
-export const WP_SUBMIT_KINDS = ['sendMany', 'accelerate'] as const;
+export const WP_SUBMIT_KINDS = ['sendMany', 'accelerate', 'consolidateUnspents'] as const;
 export type WpSubmitKind = (typeof WP_SUBMIT_KINDS)[number];
 
 export function isWpSubmitKind(value: unknown): value is WpSubmitKind {

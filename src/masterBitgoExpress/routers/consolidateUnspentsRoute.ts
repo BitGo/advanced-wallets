@@ -1,6 +1,7 @@
 import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-http';
 import * as t from 'io-ts';
 import { ErrorResponses } from '../../shared/errors';
+import { AsyncJobResponseCodec } from './generateWalletRoute';
 
 export const ConsolidateUnspentsRequest = {
   /**
@@ -73,6 +74,7 @@ export type ConsolidateUnspentsResponseBody = t.TypeOf<typeof ConsolidateUnspent
 
 export const ConsolidateUnspentsResponse: HttpResponse = {
   200: ConsolidateUnspentsResponseCodec,
+  202: AsyncJobResponseCodec,
   ...ErrorResponses,
 };
 
