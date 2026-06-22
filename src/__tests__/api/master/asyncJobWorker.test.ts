@@ -10,6 +10,7 @@ import {
   processPendingJobs,
   handleKeyGenerationOperation,
   handleMultisigSignOperation,
+  handleMultisigRecoveryOperation,
 } from '../../../masterBitgoExpress/workers/asyncJobWorker';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
@@ -628,6 +629,52 @@ describe('asyncJobWorker', () => {
         .reply(500, { message: 'submit failed' });
 
       await handleMultisigSignOperation(job, bridge, bitgo).should.be.rejected();
+    });
+  });
+
+  describe('handleMultisigRecoveryOperation()', () => {
+    const recoveredTxHex = 'recovered-signed-tx-hex';
+
+    function makeRecoveryJob(overrides: Partial<BridgeJobResponse> = {}): BridgeJobResponse {
+      return makeSignJob({
+        jobId: 'job-recovery-123',
+        operationType: 'multisig_recovery',
+        awmResponse: awmOk({ txHex: recoveredTxHex }),
+        request: {
+          endpoint: `/api/${COIN}/multisig/recovery`,
+          method: 'POST',
+          body: { userPub: 'xpub_user', backupPub: 'xpub_backup', walletContractAddress: '' },
+        },
+        ...overrides,
+      });
+    }
+
+    it('PATCHes job complete with the signed recovery tx (no WP submit)', async () => {
+      const job = makeRecoveryJob();
+      const updateNock = nock(BRIDGE_URL)
+        .patch(
+          `/job/${job.jobId}`,
+          (body) => body.status === 'complete' && body.result?.txHex === recoveredTxHex,
+        )
+        .reply(204);
+
+      await handleMultisigRecoveryOperation(job, bridge, bitgo);
+
+      updateNock.done();
+    });
+
+    it('throws when awmResponse is missing', async () => {
+      const job = makeRecoveryJob({ awmResponse: undefined });
+
+      await handleMultisigRecoveryOperation(job, bridge, bitgo).should.be.rejected();
+    });
+
+    it('throws when awmResponse.body is not a valid signed transaction', async () => {
+      const job = makeRecoveryJob({ awmResponse: { status: 200, body: { bad: 'shape' } } });
+
+      await handleMultisigRecoveryOperation(job, bridge, bitgo).should.be.rejectedWith(
+        /expected txHex or halfSigned/,
+      );
     });
   });
 });

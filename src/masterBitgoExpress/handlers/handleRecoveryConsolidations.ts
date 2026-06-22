@@ -22,6 +22,9 @@ import type { Tao, Ttao } from '@bitgo-beta/sdk-coin-tao';
 import coinFactory from '../../shared/coinFactory';
 import { checkRecoveryMode } from './utils/utils';
 import { MasterExpressConfig } from '../../shared/types';
+import { BadRequestError } from '../../shared/errors';
+import { orThrow } from '../../shared/utils';
+import { submitMultisigRecoveryJob } from './utils/multisigRecoveryUtils';
 
 type RecoveryConsolidationParams =
   | ConsolidationRecoveryOptions
@@ -44,6 +47,13 @@ export async function handleRecoveryConsolidations(
   const awmClient = req.awmUserClient;
 
   const isMPC = req.decoded.multisigType === 'tss';
+  const asyncEnabled = req.config.asyncModeConfig.enabled;
+
+  if (isMPC && asyncEnabled) {
+    throw new BadRequestError(
+      'Async mode is not yet supported for TSS/MPC recovery consolidations',
+    );
+  }
 
   const { commonKeychain, apiKey = '' } = req.decoded;
   let { userPub, backupPub, bitgoPub } = req.decoded;
@@ -82,6 +92,24 @@ export async function handleRecoveryConsolidations(
   }
 
   logger.info(`Found ${txs.length} unsigned consolidation transactions`);
+
+  if (asyncEnabled) {
+    // Async mode supports a single recovery build only; multi-tx batches remain sync-only.
+    if (txs.length !== 1) {
+      throw new BadRequestError(
+        `Async mode supports a single consolidation recovery only, but built ${txs.length}`,
+      );
+    }
+    return orThrow(
+      await submitMultisigRecoveryJob(req, coin, {
+        userPub,
+        backupPub,
+        unsignedSweepPrebuildTx: txs[0] as RecoveryTransaction,
+        walletContractAddress: '',
+      }),
+      'async recovery consolidation job submission failed',
+    );
+  }
 
   const signedTxs = [];
   try {

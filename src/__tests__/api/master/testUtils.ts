@@ -77,6 +77,31 @@ export function nockAsyncMultisigSignJob(options: {
   return { bridgeNock, awmSignNock };
 }
 
+export function nockAsyncMultisigRecoveryJob(options: {
+  coin: string;
+  advancedWalletManagerUrl: string;
+  jobId: string;
+  captureJobBody?: (body: Record<string, unknown>) => void;
+  bridgeUrl?: string;
+}) {
+  const bridgeUrl = options.bridgeUrl ?? ASYNC_TEST_BRIDGE_URL;
+
+  const bridgeNock = nock(bridgeUrl)
+    .post(`/api/${options.coin}/multisig/recovery`, (body) => {
+      options.captureJobBody?.(body);
+      return true;
+    })
+    .matchHeader('X-OSO-Source', KeySource.USER)
+    .matchHeader('X-OSO-Operation', 'multisig_recovery')
+    .reply(202, { jobId: options.jobId });
+
+  const awmRecoveryNock = nock(options.advancedWalletManagerUrl)
+    .post(`/api/${options.coin}/multisig/recovery`)
+    .reply(500, { error: 'should not reach AWM in async mode' });
+
+  return { bridgeNock, awmRecoveryNock };
+}
+
 export function makeBridgeJob(
   overrides: Partial<BridgeJobResponse> = {},
   jobId = 'job-123',

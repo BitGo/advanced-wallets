@@ -90,17 +90,19 @@ interface SignMultisigOptions {
   walletPubs?: string[];
 }
 
-interface RecoveryMultisigOptions {
+export type RecoveryMultisigUnsignedSweepTx =
+  | RecoveryInfo
+  | OfflineVaultTxInfo
+  | UnsignedSweepTxMPCv2
+  | FormattedOfflineVaultTxInfo
+  | MPCTx
+  | RecoveryTransaction;
+
+export interface RecoveryMultisigOptions {
   userPub: string;
   backupPub: string;
   bitgoPub?: string;
-  unsignedSweepPrebuildTx:
-    | RecoveryInfo
-    | OfflineVaultTxInfo
-    | UnsignedSweepTxMPCv2
-    | FormattedOfflineVaultTxInfo
-    | MPCTx
-    | RecoveryTransaction;
+  unsignedSweepPrebuildTx: RecoveryMultisigUnsignedSweepTx;
   walletContractAddress: string;
   // When set, only sign with the specified key (user half-sign or backup full-sign).
   keyToSign?: 'user' | 'backup';

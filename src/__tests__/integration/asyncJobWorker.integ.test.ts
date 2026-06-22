@@ -104,6 +104,36 @@ const INTEG_WP_SUBMIT_PARAMS: Record<WpSubmitKind, Record<string, unknown>> = {
   },
 };
 
+function makeAwaitingBitgoMultisigRecoveryJob(
+  overrides: Partial<BridgeJobResponse> = {},
+): BridgeJobResponse {
+  return {
+    jobId: JOB_ID,
+    status: 'awaiting_bitgo',
+    version: 1,
+    coin: COIN,
+    operationType: 'multisig_recovery',
+    awmResponse: {
+      status: 200,
+      body: { txHex: 'recovered-tx-hex' },
+    },
+    request: {
+      endpoint: `/api/${COIN}/multisig/recovery`,
+      method: 'POST',
+      body: {
+        userPub: USER_XPUB,
+        backupPub: 'xpub_backup',
+        unsignedSweepPrebuildTx: { txHex: 'unsigned' },
+        walletContractAddress: '',
+      },
+    },
+    createdAt: 1717977600,
+    updatedAt: 1717977600,
+    ttl: 3600,
+    ...overrides,
+  };
+}
+
 function makeAwaitingBitgoMultisigSignJob(
   wpSubmitKind: WpSubmitKind,
   overrides: Partial<BridgeJobResponse> = {},
@@ -197,6 +227,24 @@ describe('asyncJobWorker: end-to-end polling', () => {
     );
     assert(patchCall !== undefined, `expected PATCH /job/${jobId} to be called`);
     (patchCall.body as { status: string }).status.should.equal('failed');
+  });
+
+  it('picks up an awaiting_bitgo multisig_recovery job and PATCHes complete with signed tx', async () => {
+    assert(services.bridge, 'bridge service should be defined');
+    services.bridge.setPendingJobs([makeAwaitingBitgoMultisigRecoveryJob()]);
+
+    await waitForJobCompletion(services.bridge, JOB_ID, 5000);
+
+    const sendCalls = services.bitgo.calls.filter((c) => c.path.endsWith('/tx/send'));
+    sendCalls.should.have.length(0);
+
+    const patchCall = services.bridge.calls.find(
+      (c) => c.method === 'PATCH' && c.path === `/job/${JOB_ID}`,
+    );
+    assert(patchCall !== undefined, `expected PATCH /job/${JOB_ID} to be called`);
+    const patchBody = patchCall.body as { status: string; result: { txHex: string } };
+    patchBody.status.should.equal('complete');
+    patchBody.result.should.have.property('txHex', 'recovered-tx-hex');
   });
 
   it('picks up an awaiting_bitgo multisig_sign job, submits to WP, and PATCHes complete', async () => {
