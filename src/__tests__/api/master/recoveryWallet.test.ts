@@ -4,7 +4,12 @@ import nock from 'nock';
 import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
+import {
+  BitGoAPITestHarness,
+  DEFAULT_ASYNC_MODE_CONFIG,
+  makeMasterExpressTestConfig,
+  nockAsyncMultisigRecoveryJob,
+} from './testUtils';
 
 describe('Recovery Tests', () => {
   let agent: request.SuperAgentTest;
@@ -613,6 +618,202 @@ describe('Recovery Tests', () => {
       suiInputCoinsNock.isDone().should.be.true();
       suiFeeEstimateNock.isDone().should.be.true();
       awmNock.isDone().should.be.true();
+    });
+  });
+
+  describe('Async mode', () => {
+    const jobId = 'recovery-job-id-123';
+    const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+      asyncEnabled: true,
+      overrides: { recoveryMode: true, disableEnvCheck: true },
+    });
+    let asyncAgent: request.SuperAgentTest;
+
+    before(() => {
+      asyncAgent = request.agent(expressApp(asyncConfig));
+    });
+
+    it('should return 202 + jobId for UTXO multisig recovery, submitting to the bridge not AWM', async () => {
+      const coin = 'tbtc';
+      const userPub =
+        'xpub661MyMwAqRbcEtjU21VjQhGDdg5noG6kCGjcpc4EZwnLUxr9Pi56i14Eek8CQqcuGVnXQf3Zy47Uizr5WHDbZ3GumXEFXpwFLHWGbKrWWcg';
+      const backupPub =
+        'xpub661MyMwAqRbcEnTrcp222pRm7G1ZAbDD3KxXT2XEKRe3jnnvydqnyssewd2eUxgeWr1c1ffHcqqRKB8j3Lw9VR4dvrAhTov4kPKZF5rs6Vr';
+      const bitgoPub =
+        'xpub661MyMwAqRbcFNUFGFmDcC3Frgtz4FnJqFdCGbzLva2hf5i3ZJuQdsGc3z5FXCVqR9NQ6h2zTyGcQkfFtsLT5St621Fcu1C22kCKhbo4kQy';
+      const addrWithFunds = 'tb1qs5efv9zqhrc4sne7zphmsxea3cg9m262v6phsqn5dfdwed8ykx4s4wj67d';
+      const recoveryDestination = 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu';
+      const blockchairBase = 'https://api.blockchair.com';
+
+      nock(blockchairBase)
+        .get(`/bitcoin/testnet/dashboards/address/${addrWithFunds}?key=key`)
+        .reply(200, {
+          data: { [addrWithFunds]: { address: { transaction_count: 1, balance: 4000 } } },
+        });
+      nock(blockchairBase)
+        .get(`/bitcoin/testnet/dashboards/addresses/${addrWithFunds}?key=key`)
+        .reply(200, {
+          data: {
+            utxo: [
+              {
+                transaction_hash:
+                  '3bc8f46fcbbc04e4b4a61f1a67a2cca381254524ca6d5e26bfaaf5fe83a5d7ed',
+                index: 0,
+                recipient: addrWithFunds,
+                value: 4000,
+                block_id: 100,
+                spending_transaction_hash: null,
+                spending_index: null,
+                address: addrWithFunds,
+              },
+            ],
+          },
+        });
+      nock(blockchairBase)
+        .persist()
+        .get(/\/bitcoin\/testnet\/dashboards\/address\/[^?]+\?key=key/)
+        .reply(function (uri) {
+          const match = uri.match(/\/dashboards\/address\/([^?]+)\?/);
+          const addr = match ? decodeURIComponent(match[1]) : 'unknown';
+          return [200, { data: { [addr]: { address: { transaction_count: 0, balance: 0 } } } }];
+        });
+      nock('https://mempool.space').get('/api/v1/fees/recommended').reply(200, {
+        fastestFee: 20,
+        halfHourFee: 10,
+        hourFee: 5,
+      });
+
+      let capturedBody: Record<string, unknown> | undefined;
+      const { bridgeNock, awmRecoveryNock } = nockAsyncMultisigRecoveryJob({
+        coin,
+        advancedWalletManagerUrl,
+        jobId,
+        captureJobBody: (body) => {
+          capturedBody = body;
+        },
+      });
+
+      const response = await asyncAgent
+        .post(`/api/v1/${coin}/advancedwallet/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          multiSigRecoveryParams: {
+            userPub,
+            backupPub,
+            bitgoPub,
+            walletContractAddress: '',
+          },
+          recoveryDestinationAddress: recoveryDestination,
+          coin,
+          apiKey: 'key',
+          coinSpecificParams: { utxoRecoveryOptions: { scan: 1 } },
+        });
+
+      response.status.should.equal(202);
+      response.body.should.have.property('jobId', jobId);
+      response.body.should.have.property('status', 'pending');
+      bridgeNock.done();
+      awmRecoveryNock.isDone().should.be.false();
+      const body = capturedBody as Record<string, unknown>;
+      body.should.have.property('userPub', userPub);
+      body.should.have.property('backupPub', backupPub);
+      body.should.have.property('bitgoPub', bitgoPub);
+      body.should.have.property('unsignedSweepPrebuildTx');
+    });
+
+    it('should return 202 + jobId for EVM multisig recovery, submitting to the bridge not AWM', async () => {
+      const ethCoinId = 'hteth';
+      const ethUserPub =
+        'xpub661MyMwAqRbcFigezGWEYSbCPVuaUmvnp1u7iEpH9YsKU6uYQtPANvudjgAo82QRHXsUieMqKeB1xEj89VUKU1ugtmyAZ3xzNEbHPexxgKK';
+      const ethBackupPub =
+        'xpub661MyMwAqRbcGbCirzmQsUJT2eidt9tFLw2m77w6FiKco6TKu49CP3GkHF88xGCpvqkP93SYMAarfyWAn8UWevQtNT6pDo8xH7xmf6GqK6e';
+      const recoveryDestination = '0x1234567890123456789012345678901234567890';
+      const walletContractAddress = '0x0987654321098765432109876543210987654321';
+      const backupKeyAddress = '0x30edc88a77598833f58947638b2ac3d5713d9845';
+      const etherscanBase = 'https://api.etherscan.io';
+      const chainid = '560048';
+      const apiKey = 'key';
+
+      nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=account&action=txlist&address=${backupKeyAddress}&apikey=${apiKey}`,
+        )
+        .twice()
+        .reply(200, { result: [] });
+      nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=account&action=balance&address=${backupKeyAddress}&apikey=${apiKey}`,
+        )
+        .reply(200, { result: '10000000000000000' });
+      nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=account&action=balance&address=${walletContractAddress}&apikey=${apiKey}`,
+        )
+        .reply(200, { result: '1000000000000000000' });
+      nock(etherscanBase)
+        .get(
+          `/v2/api?chainid=${chainid}&module=proxy&action=eth_call&to=${walletContractAddress}&data=a0b7967b&tag=latest&apikey=${apiKey}`,
+        )
+        .reply(200, {
+          result: '0x0000000000000000000000000000000000000000000000000000000000000001',
+        });
+
+      let capturedBody: Record<string, unknown> | undefined;
+      const { bridgeNock, awmRecoveryNock } = nockAsyncMultisigRecoveryJob({
+        coin: ethCoinId,
+        advancedWalletManagerUrl,
+        jobId,
+        captureJobBody: (body) => {
+          capturedBody = body;
+        },
+      });
+
+      const response = await asyncAgent
+        .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          multiSigRecoveryParams: {
+            userPub: ethUserPub,
+            backupPub: ethBackupPub,
+            bitgoPub: '',
+            walletContractAddress,
+          },
+          recoveryDestinationAddress: recoveryDestination,
+          coin: ethCoinId,
+          apiKey,
+          coinSpecificParams: { evmRecoveryOptions: {} },
+        });
+
+      response.status.should.equal(202);
+      response.body.should.have.property('jobId', jobId);
+      response.body.should.have.property('status', 'pending');
+      bridgeNock.done();
+      awmRecoveryNock.isDone().should.be.false();
+      const body = capturedBody as Record<string, unknown>;
+      body.should.have.property('userPub', ethUserPub);
+      body.should.have.property('backupPub', ethBackupPub);
+      body.should.have.property('unsignedSweepPrebuildTx');
+    });
+
+    it('should reject async mode for TSS recovery with a 400', async () => {
+      const response = await asyncAgent
+        .post(`/api/v1/tsol/advancedwallet/recovery`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          isTssRecovery: true,
+          tssRecoveryParams: {
+            commonKeychain:
+              'b6f5fb808f538a32735a89609e98fab75690a2c79b26f50a54c4cbf0fbca287138b733783f1590e12b4916ef0f6053b22044860117274bda44bd5d711855f174',
+          },
+          recoveryDestinationAddress: 'DpgugQVWnNbTQr6jqLvkHQVWa43WTGWb7jH5zeNGJjtA',
+          coinSpecificParams: { solanaRecoveryOptions: {} },
+        });
+
+      response.status.should.equal(400);
+      response.body.should.have.property('details');
+      response.body.details.should.containEql(
+        'Async mode is not yet supported for TSS/MPC recovery',
+      );
     });
   });
 });

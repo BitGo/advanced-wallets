@@ -1,6 +1,7 @@
 import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-http';
 import * as t from 'io-ts';
 import { ErrorResponses } from '../../shared/errors';
+import { AsyncJobResponseCodec } from './generateWalletRoute';
 
 /**
  * Request type for wallet recovery consolidations endpoint.
@@ -109,6 +110,7 @@ const RecoveryConsolidationsWalletResponse: HttpResponse = {
    * The exact structure depends on the coin and recovery type.
    */
   200: t.any, // Complex response structure varies by coin and recovery type
+  202: AsyncJobResponseCodec,
   ...ErrorResponses,
 };
 

@@ -5,7 +5,12 @@ import nock from 'nock';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { Trx } from '@bitgo-beta/sdk-coin-trx';
-import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
+import {
+  BitGoAPITestHarness,
+  DEFAULT_ASYNC_MODE_CONFIG,
+  makeMasterExpressTestConfig,
+  nockAsyncMultisigRecoveryJob,
+} from './testUtils';
 
 describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
   let agent: request.SuperAgentTest;
@@ -618,5 +623,116 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
 
     response.status.should.equal(400);
     response.body.should.have.property('error');
+  });
+
+  describe('Async mode', () => {
+    const jobId = 'recovery-consolidation-job-id-123';
+    let asyncAgent: request.SuperAgentTest;
+
+    before(() => {
+      const asyncConfig = makeMasterExpressTestConfig(advancedWalletManagerUrl, {
+        asyncEnabled: true,
+        overrides: { recoveryMode: true },
+      });
+      asyncAgent = request.agent(expressApp(asyncConfig));
+    });
+
+    it('should return 202 + jobId for a single-tx onchain consolidation recovery', async () => {
+      nock(solRpcBase)
+        .post('/', (b) => b.method === 'getBalance' && b.params[0] === solWalletAddress2)
+        .reply(200, { jsonrpc: '2.0', result: { context: { slot: 1 }, value: 1000000000 }, id: 1 });
+      nock(solRpcBase)
+        .post('/', (b) => b.method === 'getLatestBlockhash')
+        .reply(200, {
+          jsonrpc: '2.0',
+          result: {
+            context: { slot: 2792 },
+            value: {
+              blockhash: 'EkSnNWid2cvwEVnVx9aBqawnmiCNiDgp3gUdkDPTKN1N',
+              lastValidBlockHeight: 3090,
+            },
+          },
+          id: 1,
+        });
+      nock(solRpcBase)
+        .post('/', (b) => b.method === 'getAccountInfo' && b.params[0] === solDurableNoncePubKey)
+        .reply(200, solDurableNonceAccountInfo);
+      nock(solRpcBase)
+        .post('/', (b) => b.method === 'getFeeForMessage')
+        .reply(200, { jsonrpc: '2.0', result: { context: { slot: 1 }, value: 5000 }, id: 1 });
+
+      const { bridgeNock, awmRecoveryNock } = nockAsyncMultisigRecoveryJob({
+        coin: 'sol',
+        advancedWalletManagerUrl,
+        jobId,
+      });
+
+      const response = await asyncAgent
+        .post(`/api/v1/sol/advancedwallet/recoveryconsolidations`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          multisigType: 'onchain' as const,
+          userPub: solBitgoKey,
+          backupPub: solBitgoKey,
+          bitgoPub: solBitgoKey,
+          startingScanIndex: 2,
+          endingScanIndex: 3,
+          durableNonces: {
+            publicKeys: [solDurableNoncePubKey, solDurableNoncePubKey2, solDurableNoncePubKey3],
+            secretKey: solDurableNoncePrivKey,
+          },
+        });
+
+      response.status.should.equal(202);
+      response.body.should.have.property('jobId', jobId);
+      response.body.should.have.property('status', 'pending');
+      bridgeNock.done();
+      awmRecoveryNock.isDone().should.be.false();
+    });
+
+    it('should reject async mode when more than one consolidation tx is built', async () => {
+      const tronBalanceWithToken = {
+        data: [{ balance: 200_000_000, trc20: [{ [trxTokenContractAddress]: '1000000' }] }],
+      };
+      nock(tronBase).get(`/v1/accounts/${TRX_ADDR_1}`).reply(200, tronBalanceWithToken);
+      nock(tronBase).post('/wallet/triggersmartcontract').reply(200, { transaction: TRON_MOCK_TX });
+      nock(tronBase).get(`/v1/accounts/${TRX_ADDR_2}`).reply(200, tronBalanceWithToken);
+      nock(tronBase).post('/wallet/triggersmartcontract').reply(200, { transaction: TRON_MOCK_TX });
+
+      const response = await asyncAgent
+        .post(`/api/v1/trx/advancedwallet/recoveryconsolidations`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          multisigType: 'onchain' as const,
+          userPub: mockUserPub,
+          backupPub: mockBackupPub,
+          bitgoPub: mockBitgoPub,
+          tokenContractAddress: trxTokenContractAddress,
+          startingScanIndex: 1,
+          endingScanIndex: 3,
+        });
+
+      response.status.should.equal(400);
+      response.body.details.should.containEql(
+        'Async mode supports a single consolidation recovery only',
+      );
+    });
+
+    it('should reject async mode for MPC (tss) consolidation recovery', async () => {
+      const response = await asyncAgent
+        .post(`/api/v1/tsui/advancedwallet/recoveryconsolidations`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          multisigType: 'tss' as const,
+          commonKeychain: suiBitgoKey,
+          startingScanIndex: 1,
+          endingScanIndex: 2,
+        });
+
+      response.status.should.equal(400);
+      response.body.details.should.containEql(
+        'Async mode is not yet supported for TSS/MPC recovery consolidations',
+      );
+    });
   });
 });

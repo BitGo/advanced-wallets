@@ -1,5 +1,10 @@
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
-import { BaseCoin, MethodNotImplementedError, MPCRecoveryOptions } from '@bitgo-beta/sdk-core';
+import {
+  BaseCoin,
+  MethodNotImplementedError,
+  MPCRecoveryOptions,
+  SignedTransaction,
+} from '@bitgo-beta/sdk-core';
 import { AbstractEthLikeNewCoins } from '@bitgo-beta/abstract-eth';
 import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
 import { type SolRecoveryOptions } from '@bitgo-beta/sdk-coin-sol';
@@ -20,16 +25,21 @@ import {
   getReplayProtectionOptions,
 } from '../../shared/recoveryUtils';
 
-import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
+import {
+  AdvancedWalletManagerClient,
+  RecoveryMultisigUnsignedSweepTx,
+} from '../clients/advancedWalletManagerClient';
 import { MasterApiSpecRouteRequest, ScriptType2Of3 } from '../routers/masterBitGoExpressApiSpec';
 import { CoinSpecificParams, CoinSpecificParamsUnion } from '../routers/recoveryRoute';
 import { recoverEddsaWallets } from './recoveryEddsa';
 import { EnvironmentName, MasterExpressConfig } from '../../shared/types';
 import { recoverEcdsaMpcV2Params, recoverEcdsaMPCv2Wallets } from './recoveryEcdsa';
 import logger from '../../shared/logger';
-import { NotImplementedError, ValidationError } from '../../shared/errors';
+import { BadRequestError, NotImplementedError, ValidationError } from '../../shared/errors';
 import { CoinFamily } from '@bitgo-beta/statics';
 import { checkRecoveryMode } from './utils/utils';
+import { AsyncJobResponse } from '../clients/bridgeClient.types';
+import { MultisigRecoveryBody, submitMultisigRecoveryJob } from './utils/multisigRecoveryUtils';
 
 interface RecoveryParams {
   userKey: string;
@@ -43,7 +53,7 @@ interface AdvancedWalletManagerRecoveryParams {
   userPub: string;
   backupPub: string;
   apiKey: string;
-  unsignedSweepPrebuildTx: any; // TODO: type this properly once we have the SDK types
+  unsignedSweepPrebuildTx: RecoveryMultisigUnsignedSweepTx | undefined;
   coinSpecificParams?: CoinSpecificParamsUnion;
   walletContractAddress: string;
 }
@@ -102,35 +112,46 @@ function validateRecoveryParams(
   }
 }
 
+async function recoverMultisigOrSubmitJob(
+  req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
+  awmClient: AdvancedWalletManagerClient,
+  recoveryBody: MultisigRecoveryBody,
+): Promise<SignedTransaction | AsyncJobResponse> {
+  const asyncResult = await submitMultisigRecoveryJob(req, req.decoded.coin, recoveryBody);
+  if (asyncResult) {
+    return asyncResult;
+  }
+  return awmClient.recoveryMultisig(recoveryBody);
+}
+
 async function handleEthLikeRecovery(
+  req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  awmClient: any,
+  awmClient: AdvancedWalletManagerClient,
   params: AdvancedWalletManagerRecoveryParams,
   env: EnvironmentName,
 ) {
-  try {
-    const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
-    const unsignedSweepPrebuildTx = await (sdkCoin as AbstractEthLikeNewCoins).recover({
-      ...commonRecoveryParams,
-      gasPrice,
-      gasLimit,
-      eip1559: {
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-      },
-      replayProtectionOptions: getReplayProtectionOptions(env),
-      apiKey: params.apiKey,
-      isUnsignedSweep: true,
-    });
+  const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
+  const unsignedSweepPrebuildTx = await (sdkCoin as AbstractEthLikeNewCoins).recover({
+    ...commonRecoveryParams,
+    gasPrice,
+    gasLimit,
+    eip1559: {
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+    },
+    replayProtectionOptions: getReplayProtectionOptions(env),
+    apiKey: params.apiKey,
+    isUnsignedSweep: true,
+  });
 
-    return await awmClient.recoveryMultisig({
-      ...params,
-      unsignedSweepPrebuildTx,
-    });
-  } catch (err) {
-    throw err;
-  }
+  return recoverMultisigOrSubmitJob(req, awmClient, {
+    userPub: params.userPub,
+    backupPub: params.backupPub,
+    unsignedSweepPrebuildTx,
+    walletContractAddress: params.walletContractAddress,
+  });
 }
 
 async function handleEddsaRecovery(
@@ -194,10 +215,11 @@ export type UtxoCoinSpecificRecoveryParams = Pick<
 >;
 
 async function handleUtxoLikeRecovery(
+  req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
   sdkCoin: BaseCoin,
   awmClient: AdvancedWalletManagerClient,
   recoveryParams: UtxoCoinSpecificRecoveryParams,
-): Promise<{ txHex: string }> {
+): Promise<SignedTransaction | AsyncJobResponse> {
   const abstractUtxoCoin = sdkCoin as unknown as AbstractUtxoCoin;
   const recoverTx = await abstractUtxoCoin.recover(recoveryParams);
 
@@ -206,13 +228,13 @@ async function handleUtxoLikeRecovery(
     throw new MethodNotImplementedError(`Unknown transaction ${JSON.stringify(recoverTx)} created`);
   }
 
-  return (await awmClient.recoveryMultisig({
+  return recoverMultisigOrSubmitJob(req, awmClient, {
     userPub: recoveryParams.userKey,
     backupPub: recoveryParams.backupKey,
     bitgoPub: recoveryParams.bitgoKey,
     unsignedSweepPrebuildTx: recoverTx,
     walletContractAddress: '',
-  })) as { txHex: string };
+  });
 }
 
 export async function handleRecoveryWallet(
@@ -231,6 +253,9 @@ export async function handleRecoveryWallet(
 
   // Handle TSS recovery
   if (req.decoded.isTssRecovery) {
+    if (req.config.asyncModeConfig.enabled) {
+      throw new BadRequestError('Async mode is not yet supported for TSS/MPC recovery');
+    }
     assert(req.decoded.tssRecoveryParams, 'TSS recovery parameters are required');
 
     const { commonKeychain } = req.decoded.tssRecoveryParams;
@@ -331,6 +356,7 @@ export async function handleRecoveryWallet(
       throw new Error('Missing walletContract address');
     }
     return handleEthLikeRecovery(
+      req,
       sdkCoin,
       commonRecoveryParams,
       awmClient,
@@ -350,7 +376,7 @@ export async function handleRecoveryWallet(
   }
 
   if (isUtxoCoin(sdkCoin)) {
-    return handleUtxoLikeRecovery(sdkCoin, req.awmUserClient, {
+    return handleUtxoLikeRecovery(req, sdkCoin, req.awmUserClient, {
       userKey: userPub,
       backupKey: backupPub,
       bitgoKey: bitgoPub,

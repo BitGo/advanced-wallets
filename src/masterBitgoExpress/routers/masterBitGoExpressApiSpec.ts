@@ -39,17 +39,18 @@ export function parseBody(req: express.Request, res: express.Response, next: exp
   return express.json({ limit: '20mb' })(req, res, next);
 }
 
-/**
- * TODO: union with other handler response types as they are async-ified (WCN-887 through WCN-893)
- */
+/** Handler responses; async-capable handlers may also return an AsyncJobResponse. */
 type MasterBitGoAPIHandlerResponses =
   | Awaited<ReturnType<typeof handleGenerateWallet>>
   | Awaited<ReturnType<typeof handleSendMany>>
   | Awaited<ReturnType<typeof handleAccelerate>>
-  | Awaited<ReturnType<typeof handleConsolidateUnspents>>;
+  | Awaited<ReturnType<typeof handleConsolidateUnspents>>
+  | Awaited<ReturnType<typeof handleRecoveryWallet>>
+  | Awaited<ReturnType<typeof handleRecoveryConsolidations>>;
 
 function toApiResponse(result: MasterBitGoAPIHandlerResponses) {
-  return 'jobId' in result ? Response.accepted(result) : Response.ok(result);
+  const isAsyncJob = typeof result === 'object' && result !== null && 'jobId' in result;
+  return isAsyncJob ? Response.accepted(result) : Response.ok(result);
 }
 
 // API Specification
@@ -131,7 +132,7 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleRecoveryWallet(typedReq);
-      return Response.ok(result);
+      return toApiResponse(result);
     }),
   ]);
 
@@ -147,7 +148,7 @@ export function createMasterApiRouter(
     responseHandler<MasterExpressConfig>(async (req: express.Request) => {
       const typedReq = req as GenericMasterApiSpecRouteRequest;
       const result = await handleRecoveryConsolidations(typedReq);
-      return Response.ok(result);
+      return toApiResponse(result);
     }),
   ]);
 
