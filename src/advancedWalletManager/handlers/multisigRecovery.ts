@@ -1,14 +1,16 @@
-import { SignFinalOptions } from '@bitgo-beta/abstract-eth';
 import { AbstractUtxoCoin } from '@bitgo-beta/abstract-utxo';
 import {
+  BaseCoin,
   HalfSignedUtxoTransaction,
   MethodNotImplementedError,
   MPCType,
+  SignedTransaction,
   TransactionRecipient,
 } from '@bitgo-beta/sdk-core';
 import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
 import { AdvancedWalletManagerConfig, EnvironmentName } from '../../initConfig';
 import logger from '../../shared/logger';
+import { BadRequestError, BitgoApiResponseError } from '../../shared/errors';
 import { isEthLikeCoin, isFormattedOfflineVaultTxInfo, isUtxoCoin } from '../../shared/coinUtils';
 import {
   addEthLikeRecoveryExtras,
@@ -28,39 +30,69 @@ import { KeySource } from '../../shared/types';
 
 export async function recoveryMultisigTransaction(
   req: AwmApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
-): Promise<any> {
+): Promise<SignedTransaction> {
   checkRecoveryMode(req.config as AdvancedWalletManagerConfig);
 
-  const { userPub, backupPub, bitgoPub, unsignedSweepPrebuildTx, walletContractAddress, coin } =
-    req.decoded;
+  const {
+    userPub,
+    backupPub,
+    bitgoPub,
+    unsignedSweepPrebuildTx,
+    walletContractAddress,
+    coin,
+    keyToSign,
+    halfSignedTransaction,
+  } = req.decoded;
+
+  if (keyToSign === 'backup' && !halfSignedTransaction) {
+    throw new BadRequestError('halfSignedTransaction is required when keyToSign is "backup"');
+  }
 
   const bitgo = req.bitgo;
   const baseCoin = await coinFactory.getCoin(coin, bitgo);
 
   if (isExternalSigningEnabledForCoin(req.config, baseCoin)) {
+    // External signing operates on flat txHex strings. An EVM half-signed tx is a rich object
+    // (halfSigned.txHex nested), so reject backup signing with such a payload as misconfiguration
+    // rather than silently passing undefined into the key provider.
+    if (keyToSign === 'backup' && baseCoin.isEVM()) {
+      if (
+        !halfSignedTransaction ||
+        typeof (halfSignedTransaction as { txHex?: unknown }).txHex !== 'string'
+      ) {
+        throw new BadRequestError(
+          'External backup signing for EVM coins requires halfSignedTransaction.txHex (a flat half-signed tx)',
+        );
+      }
+    }
     const keyProvider = new KeyProviderClient(req.config);
     return recoverTransactionExternally({
       keyProvider,
       userPub,
       backupPub,
       unsignedTxHex: unsignedSweepPrebuildTx.txHex,
+      keyToSign,
+      halfSignedTxHex: halfSignedTransaction?.txHex,
     });
   }
 
-  //fetch prv and check that pub are valid
-  const userPrv = await retrieveKeyProviderPrvKey({
-    pub: userPub,
-    source: 'user',
-    cfg: req.config,
-  });
-  const backupPrv = await retrieveKeyProviderPrvKey({
-    pub: backupPub,
-    source: 'backup',
-    cfg: req.config,
-  });
+  // Fetch only the key(s) needed for this signing step.
+  const userPrv =
+    keyToSign === 'backup'
+      ? undefined
+      : await retrieveKeyProviderPrvKey({ pub: userPub, source: 'user', cfg: req.config });
+  const backupPrv =
+    keyToSign === 'user'
+      ? undefined
+      : await retrieveKeyProviderPrvKey({ pub: backupPub, source: 'backup', cfg: req.config });
 
-  if (!userPrv || !backupPrv) {
-    const errorMsg = `Error while recovery wallet, missing prv keys for user or backup on pub keys user=${userPub}, backup=${backupPub}`;
+  if (keyToSign !== 'backup' && !userPrv) {
+    const errorMsg = `Error during recovery: missing user prv key for pub=${userPub}`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+  if (keyToSign !== 'user' && !backupPrv) {
+    const errorMsg = `Error during recovery: missing backup prv key for pub=${backupPub}`;
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
@@ -76,13 +108,54 @@ export async function recoveryMultisigTransaction(
         DEFAULT_MUSIG_ETH_GAS_PARAMS;
 
       try {
+        if (keyToSign === 'backup') {
+          if (!isSignedEthLikeRecoveryTx(halfSignedTransaction)) {
+            throw new BadRequestError(
+              'halfSignedTransaction must be an EVM half-signed recovery tx when keyToSign is "backup"',
+            );
+          }
+          const halfSignedTx = halfSignedTransaction;
+          const { halfSigned } = halfSignedTx;
+          // Cast to BaseCoin for the loose SignTransactionOptions signature; the
+          // AbstractEthLikeNewCoins overload's stricter txPrebuild types don't fit recovery.
+          return await (baseCoin as BaseCoin).signTransaction({
+            isLastSignature: true,
+            prv: backupPrv!,
+            pubs,
+            keyList: walletKeys,
+            recipients: halfSignedTx.recipients ?? [],
+            expireTime: halfSigned?.expireTime,
+            signingKeyNonce: halfSigned?.backupKeyNonce,
+            gasPrice,
+            gasLimit,
+            txPrebuild: {
+              ...(halfSignedTx as Record<string, unknown>),
+              txHex: halfSigned?.txHex,
+              halfSigned,
+              recipients: halfSigned?.recipients ?? [],
+              gasPrice,
+              gasLimit,
+              eip1559: {
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+              },
+              replayProtectionOptions: getReplayProtectionOptions(
+                bitgo.env as EnvironmentName,
+                halfSignedTx?.replayProtectionOptions,
+              ),
+            },
+            walletContractAddress,
+            backupKeyNonce: halfSigned?.backupKeyNonce ?? 0,
+          });
+        }
+
         checkIfNoRecipients({
           recipients: unsignedSweepPrebuildTx.recipients,
           coin: req.decoded.coin,
         });
-        const halfSignedTxBase = await baseCoin.signTransaction({
+        const halfSignedTxBase = await (baseCoin as BaseCoin).signTransaction({
           isLastSignature: false,
-          prv: userPrv,
+          prv: userPrv!,
           pubs,
           keyList: walletKeys,
           recipients: unsignedSweepPrebuildTx.recipients ?? [],
@@ -122,10 +195,15 @@ export async function recoveryMultisigTransaction(
           replayProtectionOptions: unsignedSweepPrebuildTx.replayProtectionOptions,
         });
 
+        // User-only: return half-signed tx for the backup AWM to complete.
+        if (keyToSign === 'user') {
+          return halfSignedTx;
+        }
+
         const { halfSigned } = halfSignedTx;
-        const fullSignedTx = await baseCoin.signTransaction({
+        const fullSignedTx = await (baseCoin as BaseCoin).signTransaction({
           isLastSignature: true,
-          prv: backupPrv,
+          prv: backupPrv!,
           pubs,
           keyList: walletKeys,
           recipients: halfSignedTx.recipients ?? [],
@@ -134,7 +212,7 @@ export async function recoveryMultisigTransaction(
           gasPrice,
           gasLimit,
           txPrebuild: {
-            ...halfSignedTx,
+            ...(halfSignedTx as Record<string, unknown>),
             txHex: halfSigned?.txHex,
             halfSigned,
             recipients: halfSigned?.recipients ?? [],
@@ -148,7 +226,7 @@ export async function recoveryMultisigTransaction(
               bitgo.env as EnvironmentName,
               halfSignedTx?.replayProtectionOptions,
             ),
-          } as unknown as SignFinalOptions,
+          },
           walletContractAddress,
           backupKeyNonce: halfSigned?.backupKeyNonce ?? 0,
         });
@@ -164,13 +242,38 @@ export async function recoveryMultisigTransaction(
       throw new Error(errorMsg);
     }
   } else if (isUtxoCoin(baseCoin)) {
-    const utxoCoin = baseCoin as unknown as AbstractUtxoCoin;
-    if (!isFormattedOfflineVaultTxInfo(unsignedSweepPrebuildTx)) {
+    const utxoCoin = baseCoin as AbstractUtxoCoin;
+    if (keyToSign !== 'backup' && !isFormattedOfflineVaultTxInfo(unsignedSweepPrebuildTx)) {
       throw new MethodNotImplementedError('Unknown recovery transaction format');
-    } else if (!bitgoPub) {
+    }
+    if (!bitgoPub) {
       throw new Error('Unable to recover without bitgo public key');
     }
     try {
+      const walletPubs = [userPub, backupPub, bitgoPub] as [string, string, string];
+
+      if (keyToSign === 'backup') {
+        if (!isHalfSignedUtxoTransaction(halfSignedTransaction)) {
+          throw new BadRequestError(
+            'halfSignedTransaction must be a UTXO half-signed tx { txHex } when keyToSign is "backup"',
+          );
+        }
+        if (!unsignedSweepPrebuildTx.txInfo) {
+          throw new BadRequestError(
+            'unsignedSweepPrebuildTx.txInfo is required for backup-only UTXO recovery',
+          );
+        }
+        return await utxoCoin.signTransaction({
+          isLastSignature: true,
+          txPrebuild: {
+            txHex: halfSignedTransaction.txHex,
+            txInfo: unsignedSweepPrebuildTx.txInfo,
+          },
+          pubs: walletPubs,
+          prv: backupPrv!,
+        });
+      }
+
       const halfSigned = (await utxoCoin.signTransaction({
         isLastSignature: false,
         txPrebuild: {
@@ -178,20 +281,27 @@ export async function recoveryMultisigTransaction(
           txInfo: unsignedSweepPrebuildTx.txInfo,
         },
         allowNonSegwitSigningWithoutPrevTx: true,
-        pubs: [userPub, backupPub, bitgoPub],
-        prv: userPrv,
+        pubs: walletPubs,
+        prv: userPrv!,
       })) as HalfSignedUtxoTransaction;
+
+      // User-only: return half-signed tx for the backup AWM to complete.
+      if (keyToSign === 'user') {
+        return halfSigned;
+      }
+
       return await utxoCoin.signTransaction({
         isLastSignature: true,
         txPrebuild: {
           txHex: halfSigned.txHex,
           txInfo: unsignedSweepPrebuildTx.txInfo,
         },
-        pubs: [userPub, backupPub, bitgoPub],
-        prv: backupPrv,
+        pubs: walletPubs,
+        prv: backupPrv!,
       });
-    } catch (e) {
-      throw new Error('Something went wrong signing transaction');
+    } catch (error) {
+      logger.error('error while recovering UTXO recovery transaction:', error);
+      throw error;
     }
   } else {
     throw new MethodNotImplementedError('Unsupported coin type for recovery: ' + baseCoin);
@@ -203,16 +313,32 @@ async function recoverTransactionExternally({
   userPub,
   backupPub,
   unsignedTxHex,
+  keyToSign,
+  halfSignedTxHex,
 }: {
   keyProvider: KeyProviderClient;
   userPub: string;
   backupPub: string;
   unsignedTxHex: string;
+  keyToSign?: 'user' | 'backup';
+  halfSignedTxHex?: string;
 }): Promise<{ txHex: string }> {
-  const errorResponse = (error: any, keySource: string) => ({
-    status: error.status || 500,
-    message: error.message || `Failed to sign recovery transaction for source=${keySource}`,
-  });
+  if (keyToSign === 'backup') {
+    if (!halfSignedTxHex) {
+      throw new BadRequestError('halfSignedTxHex is required for backup-only external signing');
+    }
+    try {
+      const fullSignedRes = await keyProvider.sign({
+        pub: backupPub,
+        source: KeySource.BACKUP,
+        signablePayload: halfSignedTxHex,
+        algorithm: MPCType.ECDSA,
+      });
+      return { txHex: fullSignedRes.signature };
+    } catch (error: unknown) {
+      throw signingError(error, KeySource.BACKUP);
+    }
+  }
 
   /** User Key Signs */
   let halfSignedRes: SignResponse;
@@ -223,8 +349,13 @@ async function recoverTransactionExternally({
       signablePayload: unsignedTxHex,
       algorithm: MPCType.ECDSA,
     });
-  } catch (error: any) {
-    throw errorResponse(error, KeySource.USER);
+  } catch (error: unknown) {
+    throw signingError(error, KeySource.USER);
+  }
+
+  // User-only: return half-signed tx for the backup AWM to complete.
+  if (keyToSign === 'user') {
+    return { txHex: halfSignedRes.signature };
   }
 
   /** Backup Key Signs */
@@ -236,9 +367,25 @@ async function recoverTransactionExternally({
       algorithm: MPCType.ECDSA,
     });
     return { txHex: fullSignedRes.signature };
-  } catch (error: any) {
-    throw errorResponse(error, KeySource.BACKUP);
+  } catch (error: unknown) {
+    throw signingError(error, KeySource.BACKUP);
   }
+}
+
+// Wraps a key-provider signing failure so the response handler preserves upstream status/message.
+function signingError(error: unknown, keySource: KeySource): BitgoApiResponseError {
+  const status =
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    typeof (error as { status: unknown }).status === 'number'
+      ? (error as { status: number }).status
+      : 500;
+  const message =
+    error instanceof Error && error.message
+      ? error.message
+      : `Failed to sign recovery transaction for source=${keySource}`;
+  return new BitgoApiResponseError(message, status, { keySource });
 }
 
 function checkIfNoRecipients({
@@ -253,4 +400,27 @@ function checkIfNoRecipients({
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
+}
+
+// Runtime narrows for the coin-specific half-signed tx shapes (halfSignedTransaction is `any`).
+function isHalfSignedUtxoTransaction(value: unknown): value is HalfSignedUtxoTransaction {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as HalfSignedUtxoTransaction).txHex === 'string'
+  );
+}
+
+function isSignedEthLikeRecoveryTx(value: unknown): value is SignedEthLikeRecoveryTx {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const halfSigned = (value as { halfSigned?: unknown }).halfSigned;
+  // The backup path reads halfSigned.txHex and optionally expireTime/backupKeyNonce/recipients,
+  // so require halfSigned to be a non-null object with a string txHex.
+  return (
+    typeof halfSigned === 'object' &&
+    halfSigned !== null &&
+    typeof (halfSigned as { txHex?: unknown }).txHex === 'string'
+  );
 }

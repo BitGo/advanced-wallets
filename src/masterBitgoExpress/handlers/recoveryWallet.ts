@@ -25,10 +25,7 @@ import {
   getReplayProtectionOptions,
 } from '../../shared/recoveryUtils';
 
-import {
-  AdvancedWalletManagerClient,
-  RecoveryMultisigUnsignedSweepTx,
-} from '../clients/advancedWalletManagerClient';
+import { RecoveryMultisigUnsignedSweepTx } from '../clients/advancedWalletManagerClient';
 import { MasterApiSpecRouteRequest, ScriptType2Of3 } from '../routers/masterBitGoExpressApiSpec';
 import { CoinSpecificParams, CoinSpecificParamsUnion } from '../routers/recoveryRoute';
 import { recoverEddsaWallets } from './recoveryEddsa';
@@ -114,21 +111,34 @@ function validateRecoveryParams(
 
 async function recoverMultisigOrSubmitJob(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
-  awmClient: AdvancedWalletManagerClient,
   recoveryBody: MultisigRecoveryBody,
 ): Promise<SignedTransaction | AsyncJobResponse> {
+  const userClient = req.awmUserClient;
+  const backupClient = req.awmBackupClient;
+
+  // Split AWM stays sync: the OSO bridge can't sequence a user half-sign then backup full-sign.
+  if (userClient !== backupClient) {
+    const halfSignedTx = await userClient.recoveryMultisigUserHalfSign(recoveryBody);
+    return backupClient.recoveryMultisig({
+      ...recoveryBody,
+      keyToSign: 'backup',
+      halfSignedTransaction: halfSignedTx,
+    });
+  }
+
+  // Single-AWM: async submits one user-source job; falls through to sync when async is off.
   const asyncResult = await submitMultisigRecoveryJob(req, req.decoded.coin, recoveryBody);
   if (asyncResult) {
     return asyncResult;
   }
-  return awmClient.recoveryMultisig(recoveryBody);
+
+  return userClient.recoveryMultisig(recoveryBody);
 }
 
 async function handleEthLikeRecovery(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  awmClient: AdvancedWalletManagerClient,
   params: AdvancedWalletManagerRecoveryParams,
   env: EnvironmentName,
 ) {
@@ -146,7 +156,7 @@ async function handleEthLikeRecovery(
     isUnsignedSweep: true,
   });
 
-  return recoverMultisigOrSubmitJob(req, awmClient, {
+  return recoverMultisigOrSubmitJob(req, {
     userPub: params.userPub,
     backupPub: params.backupPub,
     unsignedSweepPrebuildTx,
@@ -158,7 +168,7 @@ async function handleEddsaRecovery(
   bitgo: BitGoAPI,
   sdkCoin: BaseCoin,
   commonRecoveryParams: RecoveryParams,
-  awmClient: AdvancedWalletManagerClient,
+  req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
   params: AdvancedWalletManagerRecoveryParams,
 ) {
   const { recoveryDestination, userKey } = commonRecoveryParams;
@@ -189,7 +199,7 @@ async function handleEddsaRecovery(
     }
     logger.info('Unsigned sweep tx: ', JSON.stringify(unsignedSweepPrebuildTx, null, 2));
 
-    return await awmClient.recoveryMPC({
+    return await req.awmUserClient.recoveryMPC({
       userPub: params.userPub,
       backupPub: params.backupPub,
       apiKey: params.apiKey,
@@ -217,7 +227,6 @@ export type UtxoCoinSpecificRecoveryParams = Pick<
 async function handleUtxoLikeRecovery(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
   sdkCoin: BaseCoin,
-  awmClient: AdvancedWalletManagerClient,
   recoveryParams: UtxoCoinSpecificRecoveryParams,
 ): Promise<SignedTransaction | AsyncJobResponse> {
   const abstractUtxoCoin = sdkCoin as unknown as AbstractUtxoCoin;
@@ -228,7 +237,7 @@ async function handleUtxoLikeRecovery(
     throw new MethodNotImplementedError(`Unknown transaction ${JSON.stringify(recoverTx)} created`);
   }
 
-  return recoverMultisigOrSubmitJob(req, awmClient, {
+  return recoverMultisigOrSubmitJob(req, {
     userPub: recoveryParams.userKey,
     backupPub: recoveryParams.backupKey,
     bitgoPub: recoveryParams.bitgoKey,
@@ -244,7 +253,6 @@ export async function handleRecoveryWallet(
 
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const awmClient = req.awmUserClient;
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;
 
   const sdkCoin = await coinFactory.getCoin(coin, bitgo);
@@ -274,7 +282,7 @@ export async function handleRecoveryWallet(
           recoveryDestination: recoveryDestinationAddress,
           apiKey: req.decoded.apiKey || '',
         },
-        awmClient,
+        req,
         {
           userPub: commonKeychain,
           backupPub: commonKeychain,
@@ -315,7 +323,7 @@ export async function handleRecoveryWallet(
         throw new NotImplementedError(`TSS recovery is not supported for coin: ${coin}.`);
       }
 
-      return recoverEcdsaMPCv2Wallets(bitgo, sdkCoin, awmClient, params);
+      return recoverEcdsaMPCv2Wallets(bitgo, sdkCoin, req.awmUserClient, params);
     } else {
       throw new ValidationError(
         `TSS recovery is not supported for coin ${coin}. ${coin} is neither eddsa nor ecdsa.`,
@@ -359,7 +367,6 @@ export async function handleRecoveryWallet(
       req,
       sdkCoin,
       commonRecoveryParams,
-      awmClient,
       {
         userPub,
         backupPub,
@@ -376,7 +383,7 @@ export async function handleRecoveryWallet(
   }
 
   if (isUtxoCoin(sdkCoin)) {
-    return handleUtxoLikeRecovery(req, sdkCoin, req.awmUserClient, {
+    return handleUtxoLikeRecovery(req, sdkCoin, {
       userKey: userPub,
       backupKey: backupPub,
       bitgoKey: bitgoPub,

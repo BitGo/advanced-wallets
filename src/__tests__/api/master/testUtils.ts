@@ -83,15 +83,17 @@ export function nockAsyncMultisigRecoveryJob(options: {
   jobId: string;
   captureJobBody?: (body: Record<string, unknown>) => void;
   bridgeUrl?: string;
+  sources?: KeySource[];
 }) {
   const bridgeUrl = options.bridgeUrl ?? ASYNC_TEST_BRIDGE_URL;
+  const sources = (options.sources ?? [KeySource.USER]).join(',');
 
   const bridgeNock = nock(bridgeUrl)
     .post(`/api/${options.coin}/multisig/recovery`, (body) => {
       options.captureJobBody?.(body);
       return true;
     })
-    .matchHeader('X-OSO-Source', KeySource.USER)
+    .matchHeader('X-OSO-Source', sources)
     .matchHeader('X-OSO-Operation', 'multisig_recovery')
     .reply(202, { jobId: options.jobId });
 
