@@ -38,7 +38,16 @@ jobs:
 
       - name: Release
         id: release
-        run: npx semantic-release
+        run: |
+          set -euo pipefail
+          npx semantic-release 2>&1 | tee /tmp/sr-output.txt
+          if grep -q "Published release" /tmp/sr-output.txt; then
+            VERSION=$(grep -oP '(?<=Published release )\S+' /tmp/sr-output.txt | head -1)
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+            echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
