@@ -1,7 +1,7 @@
 import { SignedTransaction } from '@bitgo-beta/sdk-core';
 import { AsyncJobResponse } from '../../clients/bridgeClient.types';
 import { RecoveryMultisigUnsignedSweepTx } from '../../clients/advancedWalletManagerClient';
-import { KeySource, MasterExpressConfig } from '../../../shared/types';
+import { KeySource, MasterExpressConfig, UserOrBackupKey } from '../../../shared/types';
 import { BitGoRequest } from '../../../types/request';
 import { submitJobViaBridgeClient } from './asyncUtils';
 import { parseSignedMultisigTransaction } from './multisigSignUtils';
@@ -20,11 +20,12 @@ export async function submitMultisigRecoveryJob(
   req: BitGoRequest<MasterExpressConfig>,
   coin: string,
   body: MultisigRecoveryBody,
+  sources: UserOrBackupKey[] = [KeySource.USER],
 ): Promise<AsyncJobResponse | null> {
   return submitJobViaBridgeClient(req, {
     path: `/api/${coin}/multisig/recovery`,
     body,
-    sources: [KeySource.USER],
+    sources,
     operationType: 'multisig_recovery',
   });
 }

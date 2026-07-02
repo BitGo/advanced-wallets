@@ -72,18 +72,22 @@ const RecoveryMultisigRequest = {
   bitgoPub: optional(t.string),
   unsignedSweepPrebuildTx: t.any,
   walletContractAddress: optional(t.string),
-  // When set, only sign with the specified key (user half-sign or backup full-sign).
-  // When omitted, the endpoint signs with both keys (default single-AWM behavior).
   keyToSign: optional(t.union([t.literal('user'), t.literal('backup')])),
-  // Required when keyToSign is 'backup': the half-signed transaction from the user-key phase.
+  // Required when keyToSign is 'backup'; shape varies by coin.
   halfSignedTransaction: optional(t.any),
 };
 
-// Response type for /multisig/recovery endpoint
+/** Top-level txHex — UTXO/external/full-signed EVM responses; UTXO `halfSignedTransaction` on backup. */
+export const RecoveryMultisigFlatTxHexCodec = t.type({ txHex: t.string });
+
+/** Nested halfSigned.txHex — EVM user half-sign responses and backup `halfSignedTransaction`. */
+export const RecoveryMultisigEthLikeHalfSignedCodec = t.type({
+  halfSigned: t.type({ txHex: t.string }),
+});
+
+// Coin/phase-specific extras (feeInfo, recipients, etc.) pass through unchecked.
 const RecoveryMultisigResponse: HttpResponse = {
-  200: t.type({
-    txHex: t.string,
-  }), // the full signed tx
+  200: t.union([RecoveryMultisigFlatTxHexCodec, RecoveryMultisigEthLikeHalfSignedCodec]),
   ...ErrorResponses,
 };
 
