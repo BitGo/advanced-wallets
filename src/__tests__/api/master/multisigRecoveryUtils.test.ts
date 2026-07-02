@@ -86,7 +86,7 @@ describe('multisigRecoveryUtils', () => {
       bridgeNock.done();
     });
 
-    it('submits with user,backup sources for split-AWM recovery', async () => {
+    it('accepts multiple sources when explicitly passed', async () => {
       const jobId = 'job-456';
       const bridgeNock = nock(bridgeUrl)
         .post(`/api/${coin}/multisig/recovery`, (body) => {

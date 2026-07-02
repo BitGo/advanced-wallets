@@ -115,9 +115,10 @@ async function recoverMultisigOrSubmitJob(
 ): Promise<SignedTransaction | AsyncJobResponse> {
   const userClient = req.awmUserClient;
   const backupClient = req.awmBackupClient;
+  const hasSeparateBackupAwm = userClient !== backupClient;
 
-  // Split AWM stays sync: the OSO bridge can't sequence a user half-sign then backup full-sign.
-  if (userClient !== backupClient) {
+  // Split AWM stays sync: the async bridge can't sequence a user half-sign then backup full-sign.
+  if (hasSeparateBackupAwm) {
     const halfSignedTx = await userClient.recoveryMultisigUserHalfSign(recoveryBody);
     return backupClient.recoveryMultisig({
       ...recoveryBody,

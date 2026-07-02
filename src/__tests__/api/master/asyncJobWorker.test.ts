@@ -676,36 +676,5 @@ describe('asyncJobWorker', () => {
         /expected txHex or halfSigned/,
       );
     });
-
-    it('uses awmBackupResponse as the final tx for split-AWM two-phase recovery', async () => {
-      const halfSignedHex = 'half-signed-tx-hex';
-      const fullSignedHex = 'full-signed-tx-hex';
-      const job = makeRecoveryJob({
-        awmResponse: awmOk({ txHex: halfSignedHex }),
-        awmBackupResponse: awmOk({ txHex: fullSignedHex }),
-      });
-
-      const updateNock = nock(BRIDGE_URL)
-        .patch(
-          `/job/${job.jobId}`,
-          (body) => body.status === 'complete' && body.result?.txHex === fullSignedHex,
-        )
-        .reply(204);
-
-      await handleMultisigRecoveryOperation(job, bridge, bitgo);
-
-      updateNock.done();
-    });
-
-    it('throws when awmBackupResponse is present but not a valid signed transaction', async () => {
-      const job = makeRecoveryJob({
-        awmResponse: awmOk({ txHex: 'half-signed-tx-hex' }),
-        awmBackupResponse: { status: 200, body: { bad: 'shape' } },
-      });
-
-      await handleMultisigRecoveryOperation(job, bridge, bitgo).should.be.rejectedWith(
-        /expected txHex or halfSigned/,
-      );
-    });
   });
 });

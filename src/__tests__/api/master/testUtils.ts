@@ -104,6 +104,68 @@ export function nockAsyncMultisigRecoveryJob(options: {
   return { bridgeNock, awmRecoveryNock };
 }
 
+export const SPLIT_AWM_USER_URL = 'http://user-awm.invalid';
+export const SPLIT_AWM_BACKUP_URL = 'http://backup-awm.invalid';
+
+export function makeSplitAwmMasterExpressConfig(
+  options: { asyncEnabled?: boolean } = {},
+): MasterExpressConfig {
+  return makeMasterExpressTestConfig(SPLIT_AWM_USER_URL, {
+    asyncEnabled: options.asyncEnabled,
+    overrides: {
+      advancedWalletManagerBackupUrl: SPLIT_AWM_BACKUP_URL,
+      awmBackupServerCaCert: 'dummy-backup-cert',
+      recoveryMode: true,
+    },
+  });
+}
+
+type SplitAwmRecoveryRequestBody = {
+  keyToSign?: string;
+  halfSignedTransaction?: { txHex?: string; halfSigned?: { txHex?: string } };
+};
+
+/** User half-sign then backup full-sign nocks for sync split-AWM recovery. */
+export function nockSplitAwmMultisigRecovery(options: {
+  coin: string;
+  halfSignedTxHex: string;
+  fullSignedTxHex: string;
+  times?: number;
+  userAwmUrl?: string;
+  backupAwmUrl?: string;
+  /** Defaults to `{ txHex: halfSignedTxHex }` (UTXO/external). Pass a rich EVM object when needed. */
+  userHalfSignBody?: unknown;
+  validateBackupBody?: (body: SplitAwmRecoveryRequestBody) => boolean;
+}) {
+  const userUrl = options.userAwmUrl ?? SPLIT_AWM_USER_URL;
+  const backupUrl = options.backupAwmUrl ?? SPLIT_AWM_BACKUP_URL;
+  const times = options.times ?? 1;
+  const userHalfSignBody = options.userHalfSignBody ?? { txHex: options.halfSignedTxHex };
+  const validateBackup =
+    options.validateBackupBody ??
+    ((body: SplitAwmRecoveryRequestBody) =>
+      body.keyToSign === 'backup' && body.halfSignedTransaction?.txHex === options.halfSignedTxHex);
+
+  const userAwmNock = nock(userUrl)
+    .post(`/api/${options.coin}/multisig/recovery`, (body) => body.keyToSign === 'user')
+    .times(times)
+    .reply(200, userHalfSignBody);
+
+  const backupAwmNock = nock(backupUrl)
+    .post(`/api/${options.coin}/multisig/recovery`, validateBackup)
+    .times(times)
+    .reply(200, { txHex: options.fullSignedTxHex });
+
+  return { userAwmNock, backupAwmNock };
+}
+
+/** Bridge job nock that split-AWM sync paths must not reach. */
+export function nockAsyncRecoveryJobBypass(coin: string, bridgeUrl = ASYNC_TEST_BRIDGE_URL) {
+  return nock(bridgeUrl)
+    .post(`/api/${coin}/multisig/recovery`)
+    .reply(202, { jobId: 'should-not-reach-bridge' });
+}
+
 export function makeBridgeJob(
   overrides: Partial<BridgeJobResponse> = {},
   jobId = 'job-123',

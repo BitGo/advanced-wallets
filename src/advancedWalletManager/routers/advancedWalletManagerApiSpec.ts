@@ -77,9 +77,17 @@ const RecoveryMultisigRequest = {
   halfSignedTransaction: optional(t.any),
 };
 
-// Mirrors the SDK's SignedTransaction union; runtime shape varies by coin/phase (handler narrows).
+/** Top-level txHex — UTXO/external/full-signed EVM responses; UTXO `halfSignedTransaction` on backup. */
+export const RecoveryMultisigFlatTxHexCodec = t.type({ txHex: t.string });
+
+/** Nested halfSigned.txHex — EVM user half-sign responses and backup `halfSignedTransaction`. */
+export const RecoveryMultisigEthLikeHalfSignedCodec = t.type({
+  halfSigned: t.type({ txHex: t.string }),
+});
+
+// Coin/phase-specific extras (feeInfo, recipients, etc.) pass through unchecked.
 const RecoveryMultisigResponse: HttpResponse = {
-  200: t.any,
+  200: t.union([RecoveryMultisigFlatTxHexCodec, RecoveryMultisigEthLikeHalfSignedCodec]),
   ...ErrorResponses,
 };
 

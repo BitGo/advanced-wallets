@@ -202,11 +202,8 @@ export async function handleMultisigRecoveryOperation(
   const logPrefix = '[asyncJobWorker:handleMultisigRecoveryOperation]';
   const { jobId, version } = job;
 
-  const isSplitRecovery = job.awmBackupResponse !== undefined;
-  const finalResponse = isSplitRecovery ? job.awmBackupResponse : job.awmResponse;
-  const responseField = isSplitRecovery ? 'awmBackupResponse' : 'awmResponse';
   const signedTx = parseSignedRecoveryTransaction(
-    parseAwmResponseBody(finalResponse, responseField),
+    parseAwmResponseBody(job.awmResponse, 'awmResponse'),
   );
 
   logger.info(`${logPrefix} job ${jobId} recovered - updating job status to complete`);

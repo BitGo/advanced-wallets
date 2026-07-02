@@ -7,7 +7,11 @@ import {
   SignedTransaction,
   TransactionRecipient,
 } from '@bitgo-beta/sdk-core';
-import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
+import {
+  AwmApiSpecRouteRequest,
+  RecoveryMultisigEthLikeHalfSignedCodec,
+  RecoveryMultisigFlatTxHexCodec,
+} from '../routers/advancedWalletManagerApiSpec';
 import { AdvancedWalletManagerConfig, EnvironmentName } from '../../initConfig';
 import logger from '../../shared/logger';
 import { BadRequestError, BitgoApiResponseError } from '../../shared/errors';
@@ -55,15 +59,15 @@ export async function recoveryMultisigTransaction(
     // External signing operates on flat txHex strings. An EVM half-signed tx is a rich object
     // (halfSigned.txHex nested), so reject backup signing with such a payload as misconfiguration
     // rather than silently passing undefined into the key provider.
-    if (keyToSign === 'backup' && baseCoin.isEVM()) {
-      if (
-        !halfSignedTransaction ||
-        typeof (halfSignedTransaction as { txHex?: unknown }).txHex !== 'string'
-      ) {
-        throw new BadRequestError(
-          'External backup signing for EVM coins requires halfSignedTransaction.txHex (a flat half-signed tx)',
-        );
-      }
+    if (
+      keyToSign === 'backup' &&
+      baseCoin.isEVM() &&
+      (!halfSignedTransaction ||
+        typeof (halfSignedTransaction as { txHex?: unknown }).txHex !== 'string')
+    ) {
+      throw new BadRequestError(
+        'External backup signing for EVM coins requires halfSignedTransaction.txHex (a flat half-signed tx)',
+      );
     }
     const keyProvider = new KeyProviderClient(req.config);
     return recoverTransactionExternally({
@@ -97,215 +101,341 @@ export async function recoveryMultisigTransaction(
     throw new Error(errorMsg);
   }
 
-  // The signed transaction format depends on the coin type so we do this check as a guard
-  // If you check the type of coin before and after the "if", you may see "BaseCoin" vs "AbstractEthLikeCoin"
   if (baseCoin.isEVM()) {
-    // Every recovery method on every coin family varies one from another so we need to ensure with a guard.
-    if (isEthLikeCoin(baseCoin)) {
-      const walletKeys = unsignedSweepPrebuildTx.xpubxWithDerivationPath;
-      const pubs = [walletKeys?.user?.xpub, walletKeys?.backup?.xpub, walletKeys?.bitgo?.xpub];
-      const { gasPrice, gasLimit, maxFeePerGas, maxPriorityFeePerGas } =
-        DEFAULT_MUSIG_ETH_GAS_PARAMS;
-
-      try {
-        if (keyToSign === 'backup') {
-          if (!isSignedEthLikeRecoveryTx(halfSignedTransaction)) {
-            throw new BadRequestError(
-              'halfSignedTransaction must be an EVM half-signed recovery tx when keyToSign is "backup"',
-            );
-          }
-          const halfSignedTx = halfSignedTransaction;
-          const { halfSigned } = halfSignedTx;
-          // Cast to BaseCoin for the loose SignTransactionOptions signature; the
-          // AbstractEthLikeNewCoins overload's stricter txPrebuild types don't fit recovery.
-          return await (baseCoin as BaseCoin).signTransaction({
-            isLastSignature: true,
-            prv: backupPrv!,
-            pubs,
-            keyList: walletKeys,
-            recipients: halfSignedTx.recipients ?? [],
-            expireTime: halfSigned?.expireTime,
-            signingKeyNonce: halfSigned?.backupKeyNonce,
-            gasPrice,
-            gasLimit,
-            txPrebuild: {
-              ...(halfSignedTx as Record<string, unknown>),
-              txHex: halfSigned?.txHex,
-              halfSigned,
-              recipients: halfSigned?.recipients ?? [],
-              gasPrice,
-              gasLimit,
-              eip1559: {
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-              },
-              replayProtectionOptions: getReplayProtectionOptions(
-                bitgo.env as EnvironmentName,
-                halfSignedTx?.replayProtectionOptions,
-              ),
-            },
-            walletContractAddress,
-            backupKeyNonce: halfSigned?.backupKeyNonce ?? 0,
-          });
-        }
-
-        checkIfNoRecipients({
-          recipients: unsignedSweepPrebuildTx.recipients,
-          coin: req.decoded.coin,
-        });
-        const halfSignedTxBase = await (baseCoin as BaseCoin).signTransaction({
-          isLastSignature: false,
-          prv: userPrv!,
-          pubs,
-          keyList: walletKeys,
-          recipients: unsignedSweepPrebuildTx.recipients ?? [],
-          expireTime: unsignedSweepPrebuildTx.expireTime,
-          signingKeyNonce: unsignedSweepPrebuildTx.signingKeyNonce,
-          gasPrice,
-          gasLimit,
-          eip1559: {
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-          },
-          replayProtectionOptions: getReplayProtectionOptions(
-            bitgo.env as EnvironmentName,
-            unsignedSweepPrebuildTx.replayProtectionOptions,
-          ),
-          txPrebuild: {
-            ...unsignedSweepPrebuildTx,
-            gasPrice,
-            gasLimit,
-            eip1559: {
-              maxFeePerGas,
-              maxPriorityFeePerGas,
-            },
-            replayProtectionOptions: getReplayProtectionOptions(
-              bitgo.env as EnvironmentName,
-              unsignedSweepPrebuildTx.replayProtectionOptions,
-            ),
-          },
-          walletContractAddress,
-        });
-
-        const halfSignedTx = addEthLikeRecoveryExtras({
-          env: bitgo.env as EnvironmentName,
-          signedTx: halfSignedTxBase as SignedEthLikeRecoveryTx,
-          transaction: unsignedSweepPrebuildTx,
-          isLastSignature: false,
-          replayProtectionOptions: unsignedSweepPrebuildTx.replayProtectionOptions,
-        });
-
-        // User-only: return half-signed tx for the backup AWM to complete.
-        if (keyToSign === 'user') {
-          return halfSignedTx;
-        }
-
-        const { halfSigned } = halfSignedTx;
-        const fullSignedTx = await (baseCoin as BaseCoin).signTransaction({
-          isLastSignature: true,
-          prv: backupPrv!,
-          pubs,
-          keyList: walletKeys,
-          recipients: halfSignedTx.recipients ?? [],
-          expireTime: halfSigned?.expireTime,
-          signingKeyNonce: halfSigned?.backupKeyNonce,
-          gasPrice,
-          gasLimit,
-          txPrebuild: {
-            ...(halfSignedTx as Record<string, unknown>),
-            txHex: halfSigned?.txHex,
-            halfSigned,
-            recipients: halfSigned?.recipients ?? [],
-            gasPrice,
-            gasLimit,
-            eip1559: {
-              maxFeePerGas,
-              maxPriorityFeePerGas,
-            },
-            replayProtectionOptions: getReplayProtectionOptions(
-              bitgo.env as EnvironmentName,
-              halfSignedTx?.replayProtectionOptions,
-            ),
-          },
-          walletContractAddress,
-          backupKeyNonce: halfSigned?.backupKeyNonce ?? 0,
-        });
-
-        return fullSignedTx;
-      } catch (error) {
-        logger.error('error while recovering wallet transaction:', error);
-        throw error;
-      }
-    } else {
-      const errorMsg = 'Unsupported coin type for recovery: ' + req.decoded.coin;
-      logger.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-  } else if (isUtxoCoin(baseCoin)) {
-    const utxoCoin = baseCoin as AbstractUtxoCoin;
-    if (keyToSign !== 'backup' && !isFormattedOfflineVaultTxInfo(unsignedSweepPrebuildTx)) {
-      throw new MethodNotImplementedError('Unknown recovery transaction format');
-    }
-    if (!bitgoPub) {
-      throw new Error('Unable to recover without bitgo public key');
-    }
-    try {
-      const walletPubs = [userPub, backupPub, bitgoPub] as [string, string, string];
-
-      if (keyToSign === 'backup') {
-        if (!isHalfSignedUtxoTransaction(halfSignedTransaction)) {
-          throw new BadRequestError(
-            'halfSignedTransaction must be a UTXO half-signed tx { txHex } when keyToSign is "backup"',
-          );
-        }
-        if (!unsignedSweepPrebuildTx.txInfo) {
-          throw new BadRequestError(
-            'unsignedSweepPrebuildTx.txInfo is required for backup-only UTXO recovery',
-          );
-        }
-        return await utxoCoin.signTransaction({
-          isLastSignature: true,
-          txPrebuild: {
-            txHex: halfSignedTransaction.txHex,
-            txInfo: unsignedSweepPrebuildTx.txInfo,
-          },
-          pubs: walletPubs,
-          prv: backupPrv!,
-        });
-      }
-
-      const halfSigned = (await utxoCoin.signTransaction({
-        isLastSignature: false,
-        txPrebuild: {
-          txHex: unsignedSweepPrebuildTx.txHex,
-          txInfo: unsignedSweepPrebuildTx.txInfo,
-        },
-        allowNonSegwitSigningWithoutPrevTx: true,
-        pubs: walletPubs,
-        prv: userPrv!,
-      })) as HalfSignedUtxoTransaction;
-
-      // User-only: return half-signed tx for the backup AWM to complete.
-      if (keyToSign === 'user') {
-        return halfSigned;
-      }
-
-      return await utxoCoin.signTransaction({
-        isLastSignature: true,
-        txPrebuild: {
-          txHex: halfSigned.txHex,
-          txInfo: unsignedSweepPrebuildTx.txInfo,
-        },
-        pubs: walletPubs,
-        prv: backupPrv!,
-      });
-    } catch (error) {
-      logger.error('error while recovering UTXO recovery transaction:', error);
-      throw error;
-    }
-  } else {
-    throw new MethodNotImplementedError('Unsupported coin type for recovery: ' + baseCoin);
+    return recoverEthLikeMultisigTransaction({
+      baseCoin,
+      env: bitgo.env as EnvironmentName,
+      userPrv,
+      backupPrv,
+      unsignedSweepPrebuildTx,
+      walletContractAddress,
+      keyToSign,
+      halfSignedTransaction,
+      coin,
+    });
   }
+
+  if (isUtxoCoin(baseCoin)) {
+    return recoverUtxoMultisigTransaction({
+      utxoCoin: baseCoin,
+      userPub,
+      backupPub,
+      bitgoPub,
+      userPrv,
+      backupPrv,
+      unsignedSweepPrebuildTx,
+      keyToSign,
+      halfSignedTransaction,
+    });
+  }
+
+  throw new MethodNotImplementedError('Unsupported coin type for recovery: ' + baseCoin);
+}
+
+async function recoverEthLikeMultisigTransaction({
+  baseCoin,
+  env,
+  userPrv,
+  backupPrv,
+  unsignedSweepPrebuildTx,
+  walletContractAddress,
+  keyToSign,
+  halfSignedTransaction,
+  coin,
+}: {
+  baseCoin: BaseCoin;
+  env: EnvironmentName;
+  userPrv?: string;
+  backupPrv?: string;
+  unsignedSweepPrebuildTx: any;
+  walletContractAddress?: string;
+  keyToSign?: 'user' | 'backup';
+  halfSignedTransaction?: SignedTransaction;
+  coin: string;
+}): Promise<SignedTransaction> {
+  if (!isEthLikeCoin(baseCoin)) {
+    throw new MethodNotImplementedError('Unsupported EVM coin family for recovery: ' + coin);
+  }
+
+  const walletKeys = unsignedSweepPrebuildTx.xpubxWithDerivationPath;
+  const pubs = [walletKeys?.user?.xpub, walletKeys?.backup?.xpub, walletKeys?.bitgo?.xpub];
+
+  try {
+    if (keyToSign === 'backup') {
+      if (!isSignedEthLikeRecoveryTx(halfSignedTransaction)) {
+        throw new BadRequestError(
+          'halfSignedTransaction must be an EVM half-signed recovery tx when keyToSign is "backup"',
+        );
+      }
+      return await signEthLikeBackupHalf({
+        baseCoin,
+        backupPrv: backupPrv!,
+        pubs,
+        walletKeys,
+        halfSignedTx: halfSignedTransaction,
+        walletContractAddress,
+        env,
+      });
+    }
+
+    checkIfNoRecipients({ recipients: unsignedSweepPrebuildTx.recipients, coin });
+    const halfSignedTx = await signEthLikeUserHalf({
+      baseCoin,
+      userPrv: userPrv!,
+      pubs,
+      walletKeys,
+      unsignedSweepPrebuildTx,
+      walletContractAddress,
+      env,
+    });
+
+    // User-only: return half-signed tx for the backup AWM to complete.
+    if (keyToSign === 'user') {
+      return halfSignedTx;
+    }
+
+    return await signEthLikeBackupHalf({
+      baseCoin,
+      backupPrv: backupPrv!,
+      pubs,
+      walletKeys,
+      halfSignedTx,
+      walletContractAddress,
+      env,
+    });
+  } catch (error) {
+    logger.error('error while recovering wallet transaction:', error);
+    throw error;
+  }
+}
+
+// Signs the first (user) half of an EVM recovery tx and decorates it with recovery extras
+// (backupKeyNonce, replayProtectionOptions, etc.) needed by the backup AWM's completion step.
+async function signEthLikeUserHalf({
+  baseCoin,
+  userPrv,
+  pubs,
+  walletKeys,
+  unsignedSweepPrebuildTx,
+  walletContractAddress,
+  env,
+}: {
+  baseCoin: BaseCoin;
+  userPrv: string;
+  pubs: (string | undefined)[];
+  walletKeys: unknown;
+  unsignedSweepPrebuildTx: any;
+  walletContractAddress?: string;
+  env: EnvironmentName;
+}): Promise<SignedEthLikeRecoveryTx> {
+  const { gasPrice, gasLimit, maxFeePerGas, maxPriorityFeePerGas } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
+  const replayProtectionOptions = getReplayProtectionOptions(
+    env,
+    unsignedSweepPrebuildTx.replayProtectionOptions,
+  );
+
+  // Cast to BaseCoin for the loose SignTransactionOptions signature; the
+  // AbstractEthLikeNewCoins overload's stricter txPrebuild types don't fit recovery.
+  const halfSignedTxBase = await (baseCoin as BaseCoin).signTransaction({
+    isLastSignature: false,
+    prv: userPrv,
+    pubs,
+    keyList: walletKeys,
+    recipients: unsignedSweepPrebuildTx.recipients ?? [],
+    expireTime: unsignedSweepPrebuildTx.expireTime,
+    signingKeyNonce: unsignedSweepPrebuildTx.signingKeyNonce,
+    gasPrice,
+    gasLimit,
+    eip1559: { maxFeePerGas, maxPriorityFeePerGas },
+    replayProtectionOptions,
+    txPrebuild: {
+      ...unsignedSweepPrebuildTx,
+      gasPrice,
+      gasLimit,
+      eip1559: { maxFeePerGas, maxPriorityFeePerGas },
+      replayProtectionOptions,
+    },
+    walletContractAddress,
+  });
+
+  return addEthLikeRecoveryExtras({
+    env,
+    signedTx: halfSignedTxBase as SignedEthLikeRecoveryTx,
+    transaction: unsignedSweepPrebuildTx,
+    isLastSignature: false,
+    replayProtectionOptions: unsignedSweepPrebuildTx.replayProtectionOptions,
+  });
+}
+
+// Completes an EVM recovery tx with the backup key. Shared by the split-AWM backup-only path
+// (halfSignedTx comes from the request body) and the single-AWM path (halfSignedTx comes from
+// signEthLikeUserHalf above) — both hand off an identical shape to sign.
+async function signEthLikeBackupHalf({
+  baseCoin,
+  backupPrv,
+  pubs,
+  walletKeys,
+  halfSignedTx,
+  walletContractAddress,
+  env,
+}: {
+  baseCoin: BaseCoin;
+  backupPrv: string;
+  pubs: (string | undefined)[];
+  walletKeys: unknown;
+  halfSignedTx: SignedEthLikeRecoveryTx;
+  walletContractAddress?: string;
+  env: EnvironmentName;
+}): Promise<SignedTransaction> {
+  const { gasPrice, gasLimit, maxFeePerGas, maxPriorityFeePerGas } = DEFAULT_MUSIG_ETH_GAS_PARAMS;
+  const { halfSigned } = halfSignedTx;
+
+  return await (baseCoin as BaseCoin).signTransaction({
+    isLastSignature: true,
+    prv: backupPrv,
+    pubs,
+    keyList: walletKeys,
+    recipients: halfSignedTx.recipients ?? [],
+    expireTime: halfSigned?.expireTime,
+    signingKeyNonce: halfSigned?.backupKeyNonce,
+    gasPrice,
+    gasLimit,
+    txPrebuild: {
+      ...(halfSignedTx as Record<string, unknown>),
+      txHex: halfSigned?.txHex,
+      halfSigned,
+      recipients: halfSigned?.recipients ?? [],
+      gasPrice,
+      gasLimit,
+      eip1559: { maxFeePerGas, maxPriorityFeePerGas },
+      replayProtectionOptions: getReplayProtectionOptions(
+        env,
+        halfSignedTx?.replayProtectionOptions,
+      ),
+    },
+    walletContractAddress,
+    backupKeyNonce: halfSigned?.backupKeyNonce ?? 0,
+  });
+}
+
+async function recoverUtxoMultisigTransaction({
+  utxoCoin,
+  userPub,
+  backupPub,
+  bitgoPub,
+  userPrv,
+  backupPrv,
+  unsignedSweepPrebuildTx,
+  keyToSign,
+  halfSignedTransaction,
+}: {
+  utxoCoin: AbstractUtxoCoin;
+  userPub: string;
+  backupPub: string;
+  bitgoPub?: string;
+  userPrv?: string;
+  backupPrv?: string;
+  unsignedSweepPrebuildTx: any;
+  keyToSign?: 'user' | 'backup';
+  halfSignedTransaction?: SignedTransaction;
+}): Promise<SignedTransaction> {
+  if (keyToSign !== 'backup' && !isFormattedOfflineVaultTxInfo(unsignedSweepPrebuildTx)) {
+    throw new MethodNotImplementedError('Unknown recovery transaction format');
+  }
+  if (!bitgoPub) {
+    throw new Error('Unable to recover without bitgo public key');
+  }
+
+  const walletPubs = [userPub, backupPub, bitgoPub] as [string, string, string];
+
+  try {
+    if (keyToSign === 'backup') {
+      if (!isHalfSignedUtxoTransaction(halfSignedTransaction)) {
+        throw new BadRequestError(
+          'halfSignedTransaction must be a UTXO half-signed tx { txHex } when keyToSign is "backup"',
+        );
+      }
+      if (!unsignedSweepPrebuildTx.txInfo) {
+        throw new BadRequestError(
+          'unsignedSweepPrebuildTx.txInfo is required for backup-only UTXO recovery',
+        );
+      }
+      return await signUtxoFullTx({
+        utxoCoin,
+        backupPrv: backupPrv!,
+        walletPubs,
+        txHex: halfSignedTransaction.txHex,
+        txInfo: unsignedSweepPrebuildTx.txInfo,
+      });
+    }
+
+    const halfSigned = await signUtxoHalfTx({
+      utxoCoin,
+      userPrv: userPrv!,
+      walletPubs,
+      unsignedSweepPrebuildTx,
+    });
+
+    // User-only: return half-signed tx for the backup AWM to complete.
+    if (keyToSign === 'user') {
+      return halfSigned;
+    }
+
+    return await signUtxoFullTx({
+      utxoCoin,
+      backupPrv: backupPrv!,
+      walletPubs,
+      txHex: halfSigned.txHex,
+      txInfo: unsignedSweepPrebuildTx.txInfo,
+    });
+  } catch (error) {
+    logger.error('error while recovering UTXO recovery transaction:', error);
+    throw error;
+  }
+}
+
+async function signUtxoHalfTx({
+  utxoCoin,
+  userPrv,
+  walletPubs,
+  unsignedSweepPrebuildTx,
+}: {
+  utxoCoin: AbstractUtxoCoin;
+  userPrv: string;
+  walletPubs: [string, string, string];
+  unsignedSweepPrebuildTx: any;
+}): Promise<HalfSignedUtxoTransaction> {
+  return (await utxoCoin.signTransaction({
+    isLastSignature: false,
+    txPrebuild: {
+      txHex: unsignedSweepPrebuildTx.txHex,
+      txInfo: unsignedSweepPrebuildTx.txInfo,
+    },
+    allowNonSegwitSigningWithoutPrevTx: true,
+    pubs: walletPubs,
+    prv: userPrv,
+  })) as HalfSignedUtxoTransaction;
+}
+
+async function signUtxoFullTx({
+  utxoCoin,
+  backupPrv,
+  walletPubs,
+  txHex,
+  txInfo,
+}: {
+  utxoCoin: AbstractUtxoCoin;
+  backupPrv: string;
+  walletPubs: [string, string, string];
+  txHex: string;
+  txInfo: any;
+}): Promise<SignedTransaction> {
+  return await utxoCoin.signTransaction({
+    isLastSignature: true,
+    txPrebuild: { txHex, txInfo },
+    pubs: walletPubs,
+    prv: backupPrv,
+  });
 }
 
 async function recoverTransactionExternally({
@@ -402,25 +532,11 @@ function checkIfNoRecipients({
   }
 }
 
-// Runtime narrows for the coin-specific half-signed tx shapes (halfSignedTransaction is `any`).
+// Runtime narrows for coin-specific halfSignedTransaction shapes (request is `t.any` at the boundary).
 function isHalfSignedUtxoTransaction(value: unknown): value is HalfSignedUtxoTransaction {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as HalfSignedUtxoTransaction).txHex === 'string'
-  );
+  return RecoveryMultisigFlatTxHexCodec.is(value);
 }
 
 function isSignedEthLikeRecoveryTx(value: unknown): value is SignedEthLikeRecoveryTx {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const halfSigned = (value as { halfSigned?: unknown }).halfSigned;
-  // The backup path reads halfSigned.txHex and optionally expireTime/backupKeyNonce/recipients,
-  // so require halfSigned to be a non-null object with a string txHex.
-  return (
-    typeof halfSigned === 'object' &&
-    halfSigned !== null &&
-    typeof (halfSigned as { txHex?: unknown }).txHex === 'string'
-  );
+  return RecoveryMultisigEthLikeHalfSignedCodec.is(value);
 }

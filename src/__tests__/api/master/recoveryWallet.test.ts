@@ -5,11 +5,13 @@ import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import {
-  ASYNC_TEST_BRIDGE_URL,
   BitGoAPITestHarness,
   DEFAULT_ASYNC_MODE_CONFIG,
   makeMasterExpressTestConfig,
+  makeSplitAwmMasterExpressConfig,
   nockAsyncMultisigRecoveryJob,
+  nockAsyncRecoveryJobBypass,
+  nockSplitAwmMultisigRecovery,
 } from './testUtils';
 
 describe('Recovery Tests', () => {
@@ -820,8 +822,6 @@ describe('Recovery Tests', () => {
 });
 
 describe('Split AWM recovery (separate user and backup AWMs)', () => {
-  const userAwmUrl = 'http://user-awm.invalid';
-  const backupAwmUrl = 'http://backup-awm.invalid';
   const accessToken = 'test-token';
   const coin = 'tbtc';
   const userPub =
@@ -830,6 +830,60 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     'xpub661MyMwAqRbcEnTrcp222pRm7G1ZAbDD3KxXT2XEKRe3jnnvydqnyssewd2eUxgeWr1c1ffHcqqRKB8j3Lw9VR4dvrAhTov4kPKZF5rs6Vr';
   const bitgoPub =
     'xpub661MyMwAqRbcFNUFGFmDcC3Frgtz4FnJqFdCGbzLva2hf5i3ZJuQdsGc3z5FXCVqR9NQ6h2zTyGcQkfFtsLT5St621Fcu1C22kCKhbo4kQy';
+
+  const halfSignedTxHex = 'half-signed-utxo-tx-hex';
+  const fullSignedTxHex =
+    '01000000000101edd7a583fef5aabf265e6dca24452581a3cca2671a1fa6b4e404bccb6ff4c83b0000000000ffffffff01780f0000000000002200202120dcf53e62a4cc9d3843993aa2258bd14fbf911a4ea4cf4f3ac840f41702790400473044022043a9256810ef47ce36a092305c0b1ef675bce53e46418eea8cacbf1643e541d90220450766e048b841dac658d0a2ba992628bfe131dff078c3a574cadf67b4946647014730440220360045a15e459ed44aa3e52b86dd6a16dddaf319821f4dcc15627686f377edd102205cb3d5feab1a773c518d43422801e01dd1bc586bb09f6a9ed23a1fc0cfeeb5310169522103a1c425fd9b169e6ab5ed3de596acb777ccae0cda3d91256238b5e739a3f14aae210222a76697605c890dc4365132f9ae0d351952a1aad7eecf78d9923766dbe74a1e21033b21c0758ffbd446204914fa1d1c5921e9f82c2671dac89737666aa9375973e953ae00000000';
+
+  const utxoRecoveryRequest = {
+    multiSigRecoveryParams: { userPub, backupPub, bitgoPub, walletContractAddress: '' },
+    recoveryDestinationAddress: 'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu',
+    coin,
+    apiKey: 'key',
+    coinSpecificParams: { utxoRecoveryOptions: { scan: 1 } },
+  };
+
+  function nockUtxoRecoveryScan() {
+    const blockchairBase = 'https://api.blockchair.com';
+    const addrWithFunds = 'tb1qs5efv9zqhrc4sne7zphmsxea3cg9m262v6phsqn5dfdwed8ykx4s4wj67d';
+
+    nock(blockchairBase)
+      .get(`/bitcoin/testnet/dashboards/address/${addrWithFunds}?key=key`)
+      .reply(200, {
+        data: { [addrWithFunds]: { address: { transaction_count: 1, balance: 4000 } } },
+      });
+    nock(blockchairBase)
+      .get(`/bitcoin/testnet/dashboards/addresses/${addrWithFunds}?key=key`)
+      .reply(200, {
+        data: {
+          utxo: [
+            {
+              transaction_hash: '3bc8f46fcbbc04e4b4a61f1a67a2cca381254524ca6d5e26bfaaf5fe83a5d7ed',
+              index: 0,
+              recipient: addrWithFunds,
+              value: 4000,
+              block_id: 100,
+              spending_transaction_hash: null,
+              spending_index: null,
+              address: addrWithFunds,
+            },
+          ],
+        },
+      });
+    nock(blockchairBase)
+      .persist()
+      .get(/\/bitcoin\/testnet\/dashboards\/address\/[^?]+\?key=key/)
+      .reply(function (uri) {
+        const match = uri.match(/\/dashboards\/address\/([^?]+)\?/);
+        const addr = match ? decodeURIComponent(match[1]) : 'unknown';
+        return [200, { data: { [addr]: { address: { transaction_count: 0, balance: 0 } } } }];
+      });
+    nock('https://mempool.space').get('/api/v1/fees/recommended').reply(200, {
+      fastestFee: 20,
+      halfHourFee: 10,
+      hourFee: 5,
+    });
+  }
 
   before(() => {
     nock.disableNetConnect();
@@ -842,93 +896,18 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
   });
 
   it('calls user AWM with keyToSign=user then backup AWM with keyToSign=backup for UTXO recovery', async () => {
-    const halfSignedTxHex = 'half-signed-utxo-tx-hex';
-    const fullSignedTxHex =
-      '01000000000101edd7a583fef5aabf265e6dca24452581a3cca2671a1fa6b4e404bccb6ff4c83b0000000000ffffffff01780f0000000000002200202120dcf53e62a4cc9d3843993aa2258bd14fbf911a4ea4cf4f3ac840f41702790400473044022043a9256810ef47ce36a092305c0b1ef675bce53e46418eea8cacbf1643e541d90220450766e048b841dac658d0a2ba992628bfe131dff078c3a574cadf67b4946647014730440220360045a15e459ed44aa3e52b86dd6a16dddaf319821f4dcc15627686f377edd102205cb3d5feab1a773c518d43422801e01dd1bc586bb09f6a9ed23a1fc0cfeeb5310169522103a1c425fd9b169e6ab5ed3de596acb777ccae0cda3d91256238b5e739a3f14aae210222a76697605c890dc4365132f9ae0d351952a1aad7eecf78d9923766dbe74a1e21033b21c0758ffbd446204914fa1d1c5921e9f82c2671dac89737666aa9375973e953ae00000000';
-
-    const blockchairBase = 'https://api.blockchair.com';
-    const addrWithFunds = 'tb1qs5efv9zqhrc4sne7zphmsxea3cg9m262v6phsqn5dfdwed8ykx4s4wj67d';
-
-    nock(blockchairBase)
-      .get(`/bitcoin/testnet/dashboards/address/${addrWithFunds}?key=key`)
-      .reply(200, {
-        data: { [addrWithFunds]: { address: { transaction_count: 1, balance: 4000 } } },
-      });
-    nock(blockchairBase)
-      .get(`/bitcoin/testnet/dashboards/addresses/${addrWithFunds}?key=key`)
-      .reply(200, {
-        data: {
-          utxo: [
-            {
-              transaction_hash: '3bc8f46fcbbc04e4b4a61f1a67a2cca381254524ca6d5e26bfaaf5fe83a5d7ed',
-              index: 0,
-              recipient: addrWithFunds,
-              value: 4000,
-              block_id: 100,
-              spending_transaction_hash: null,
-              spending_index: null,
-              address: addrWithFunds,
-            },
-          ],
-        },
-      });
-    nock(blockchairBase)
-      .persist()
-      .get(/\/bitcoin\/testnet\/dashboards\/address\/[^?]+\?key=key/)
-      .reply(function (uri) {
-        const match = uri.match(/\/dashboards\/address\/([^?]+)\?/);
-        const addr = match ? decodeURIComponent(match[1]) : 'unknown';
-        return [200, { data: { [addr]: { address: { transaction_count: 0, balance: 0 } } } }];
-      });
-    nock('https://mempool.space').get('/api/v1/fees/recommended').reply(200, {
-      fastestFee: 20,
-      halfHourFee: 10,
-      hourFee: 5,
+    nockUtxoRecoveryScan();
+    const { userAwmNock, backupAwmNock } = nockSplitAwmMultisigRecovery({
+      coin,
+      halfSignedTxHex,
+      fullSignedTxHex,
     });
 
-    // User AWM: receives keyToSign=user, returns half-signed tx
-    const userAwmNock = nock(userAwmUrl)
-      .post(`/api/${coin}/multisig/recovery`, (body) => body.keyToSign === 'user')
-      .reply(200, { txHex: halfSignedTxHex });
-
-    // Backup AWM: receives keyToSign=backup and halfSignedTransaction, returns full-signed tx
-    const backupAwmNock = nock(backupAwmUrl)
-      .post(`/api/${coin}/multisig/recovery`, (body) => {
-        return (
-          body.keyToSign === 'backup' &&
-          body.halfSignedTransaction !== undefined &&
-          body.halfSignedTransaction.txHex === halfSignedTxHex
-        );
-      })
-      .reply(200, { txHex: fullSignedTxHex });
-
     const response = await request
-      .agent(
-        expressApp(
-          makeMasterExpressTestConfig(userAwmUrl, {
-            overrides: {
-              advancedWalletManagerBackupUrl: backupAwmUrl,
-              awmBackupServerCaCert: 'dummy-backup-cert',
-              recoveryMode: true,
-            },
-          }),
-        ),
-      )
+      .agent(expressApp(makeSplitAwmMasterExpressConfig()))
       .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        multiSigRecoveryParams: {
-          userPub,
-          backupPub,
-          bitgoPub,
-          walletContractAddress: '',
-        },
-        recoveryDestinationAddress:
-          'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu',
-        coin,
-        apiKey: 'key',
-        coinSpecificParams: { utxoRecoveryOptions: { scan: 1 } },
-      });
+      .send(utxoRecoveryRequest);
 
     response.status.should.equal(200);
     response.body.should.have.property('txHex', fullSignedTxHex);
@@ -937,85 +916,20 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
   });
 
   it('uses the sync split-AWM two-phase path even when async mode is enabled', async () => {
-    const halfSignedTxHex = 'half-signed-utxo-tx-hex';
-    const fullSignedTxHex =
-      '01000000000101edd7a583fef5aabf265e6dca24452581a3cca2671a1fa6b4e404bccb6ff4c83b0000000000ffffffff01780f0000000000002200202120dcf53e62a4cc9d3843993aa2258bd14fbf911a4ea4cf4f3ac840f41702790400473044022043a9256810ef47ce36a092305c0b1ef675bce53e46418eea8cacbf1643e541d90220450766e048b841dac658d0a2ba992628bfe131dff078c3a574cadf67b4946647014730440220360045a15e459ed44aa3e52b86dd6a16dddaf319821f4dcc15627686f377edd102205cb3d5feab1a773c518d43422801e01dd1bc586bb09f6a9ed23a1fc0cfeeb5310169522103a1c425fd9b169e6ab5ed3de596acb777ccae0cda3d91256238b5e739a3f14aae210222a76697605c890dc4365132f9ae0d351952a1aad7eecf78d9923766dbe74a1e21033b21c0758ffbd446204914fa1d1c5921e9f82c2671dac89737666aa9375973e953ae00000000';
-
-    const blockchairBase = 'https://api.blockchair.com';
-    const addrWithFunds = 'tb1qs5efv9zqhrc4sne7zphmsxea3cg9m262v6phsqn5dfdwed8ykx4s4wj67d';
-
-    nock(blockchairBase)
-      .get(`/bitcoin/testnet/dashboards/address/${addrWithFunds}?key=key`)
-      .reply(200, {
-        data: { [addrWithFunds]: { address: { transaction_count: 1, balance: 4000 } } },
-      });
-    nock(blockchairBase)
-      .get(`/bitcoin/testnet/dashboards/addresses/${addrWithFunds}?key=key`)
-      .reply(200, {
-        data: {
-          utxo: [
-            {
-              transaction_hash: '3bc8f46fcbbc04e4b4a61f1a67a2cca381254524ca6d5e26bfaaf5fe83a5d7ed',
-              index: 0,
-              recipient: addrWithFunds,
-              value: 4000,
-              block_id: 100,
-              spending_transaction_hash: null,
-              spending_index: null,
-              address: addrWithFunds,
-            },
-          ],
-        },
-      });
-    nock(blockchairBase)
-      .persist()
-      .get(/\/bitcoin\/testnet\/dashboards\/address\/[^?]+\?key=key/)
-      .reply(function (uri) {
-        const match = uri.match(/\/dashboards\/address\/([^?]+)\?/);
-        const addr = match ? decodeURIComponent(match[1]) : 'unknown';
-        return [200, { data: { [addr]: { address: { transaction_count: 0, balance: 0 } } } }];
-      });
-    nock('https://mempool.space').get('/api/v1/fees/recommended').reply(200, {
-      fastestFee: 20,
-      halfHourFee: 10,
-      hourFee: 5,
+    nockUtxoRecoveryScan();
+    const bridgeNock = nockAsyncRecoveryJobBypass(coin);
+    const { userAwmNock, backupAwmNock } = nockSplitAwmMultisigRecovery({
+      coin,
+      halfSignedTxHex,
+      fullSignedTxHex,
+      validateBackupBody: (body) => body.keyToSign === 'backup',
     });
 
-    // The bridge can't sequence a two-phase recovery, so split-AWM always signs synchronously:
-    // user AWM half-signs, backup AWM full-signs with the half-signed tx. The bridge is NOT called.
-    const bridgeNock = nock(ASYNC_TEST_BRIDGE_URL)
-      .post(`/api/${coin}/multisig/recovery`)
-      .reply(202, { jobId: 'should-not-reach-bridge' });
-    const userAwmNock = nock(userAwmUrl)
-      .post(`/api/${coin}/multisig/recovery`, (body) => body.keyToSign === 'user')
-      .reply(200, { txHex: halfSignedTxHex });
-    const backupAwmNock = nock(backupAwmUrl)
-      .post(`/api/${coin}/multisig/recovery`, (body) => body.keyToSign === 'backup')
-      .reply(200, { txHex: fullSignedTxHex });
-
     const response = await request
-      .agent(
-        expressApp(
-          makeMasterExpressTestConfig(userAwmUrl, {
-            asyncEnabled: true,
-            overrides: {
-              advancedWalletManagerBackupUrl: backupAwmUrl,
-              awmBackupServerCaCert: 'dummy-backup-cert',
-              recoveryMode: true,
-            },
-          }),
-        ),
-      )
+      .agent(expressApp(makeSplitAwmMasterExpressConfig({ asyncEnabled: true })))
       .post(`/api/v1/${coin}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        multiSigRecoveryParams: { userPub, backupPub, bitgoPub, walletContractAddress: '' },
-        recoveryDestinationAddress:
-          'tb1qprdy6jwxrrr2qrwgd2tzl8z99hqp29jn6f3sguxulqm448myj6jsy2nwsu',
-        coin,
-        apiKey: 'key',
-        coinSpecificParams: { utxoRecoveryOptions: { scan: 1 } },
-      });
+      .send(utxoRecoveryRequest);
 
     response.status.should.equal(200);
     response.body.should.have.property('txHex', fullSignedTxHex);
@@ -1061,7 +975,6 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
         result: '0x0000000000000000000000000000000000000000000000000000000000000001',
       });
 
-    // Rich EVM half-signed object the user AWM returns and the backup AWM must receive verbatim.
     const halfSignedObject = {
       halfSigned: {
         txHex: '0xhalfsigned',
@@ -1072,33 +985,18 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
       recipients: [{ address: '0xrecipient', amount: '1000' }],
     };
 
-    const userAwmNock = nock(userAwmUrl)
-      .post(`/api/${ethCoinId}/multisig/recovery`, (body) => body.keyToSign === 'user')
-      .reply(200, halfSignedObject);
-
-    const backupAwmNock = nock(backupAwmUrl)
-      .post(`/api/${ethCoinId}/multisig/recovery`, (body) => {
-        return (
-          body.keyToSign === 'backup' &&
-          body.halfSignedTransaction !== undefined &&
-          body.halfSignedTransaction.halfSigned !== undefined &&
-          body.halfSignedTransaction.halfSigned.txHex === '0xhalfsigned'
-        );
-      })
-      .reply(200, { txHex: '0xfullsigned' });
+    const { userAwmNock, backupAwmNock } = nockSplitAwmMultisigRecovery({
+      coin: ethCoinId,
+      halfSignedTxHex: '0xhalfsigned',
+      fullSignedTxHex: '0xfullsigned',
+      userHalfSignBody: halfSignedObject,
+      validateBackupBody: (body) =>
+        body.keyToSign === 'backup' &&
+        body.halfSignedTransaction?.halfSigned?.txHex === '0xhalfsigned',
+    });
 
     const response = await request
-      .agent(
-        expressApp(
-          makeMasterExpressTestConfig(userAwmUrl, {
-            overrides: {
-              advancedWalletManagerBackupUrl: backupAwmUrl,
-              awmBackupServerCaCert: 'dummy-backup-cert',
-              recoveryMode: true,
-            },
-          }),
-        ),
-      )
+      .agent(expressApp(makeSplitAwmMasterExpressConfig()))
       .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({

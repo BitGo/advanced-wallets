@@ -264,7 +264,7 @@ describe('UTXO recovery — external signing mode', () => {
     backupNock.done();
   });
 
-  it('should return 500 if user sign call fails', async () => {
+  it('surfaces key-provider signing failures as BitgoApiResponseError', async () => {
     nock(keyProviderUrl)
       .post('/sign', (body) => body.source === 'user')
       .reply(500, { message: 'HSM error' });
@@ -278,7 +278,8 @@ describe('UTXO recovery — external signing mode', () => {
       coin,
     });
 
-    response.status.should.equal(500);
+    response.body.error.should.equal('BitGoApiResponseError');
+    response.body.details.should.eql({ keySource: 'user' });
   });
 
   it('keyToSign=user: calls user key provider only and returns a half-signed tx', async () => {

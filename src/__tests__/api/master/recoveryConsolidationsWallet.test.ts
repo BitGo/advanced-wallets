@@ -9,7 +9,10 @@ import {
   BitGoAPITestHarness,
   DEFAULT_ASYNC_MODE_CONFIG,
   makeMasterExpressTestConfig,
+  makeSplitAwmMasterExpressConfig,
   nockAsyncMultisigRecoveryJob,
+  nockAsyncRecoveryJobBypass,
+  nockSplitAwmMultisigRecovery,
 } from './testUtils';
 
 describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
@@ -733,6 +736,76 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       response.body.details.should.containEql(
         'Async mode is not yet supported for TSS/MPC recovery consolidations',
       );
+    });
+  });
+
+  describe('Split AWM (separate user and backup AWMs)', () => {
+    const halfSignedTxHex = 'half-signed-trx-tx';
+    const fullSignedTxHex = 'signed-trx-tx';
+
+    const trxConsolidationRequest = {
+      multisigType: 'onchain' as const,
+      userPub: mockUserPub,
+      backupPub: mockBackupPub,
+      bitgoPub: mockBitgoPub,
+      tokenContractAddress: trxTokenContractAddress,
+      startingScanIndex: 1,
+      endingScanIndex: 3,
+    };
+
+    function nockTrxTwoAddressConsolidationScan() {
+      const tronBalanceWithToken = {
+        data: [{ balance: 200_000_000, trc20: [{ [trxTokenContractAddress]: '1000000' }] }],
+      };
+      nock(tronBase).get(`/v1/accounts/${TRX_ADDR_1}`).reply(200, tronBalanceWithToken);
+      nock(tronBase).post('/wallet/triggersmartcontract').reply(200, { transaction: TRON_MOCK_TX });
+      nock(tronBase).get(`/v1/accounts/${TRX_ADDR_2}`).reply(200, tronBalanceWithToken);
+      nock(tronBase).post('/wallet/triggersmartcontract').reply(200, { transaction: TRON_MOCK_TX });
+    }
+
+    it('calls user AWM with keyToSign=user then backup AWM with keyToSign=backup per tx', async () => {
+      nockTrxTwoAddressConsolidationScan();
+      const { userAwmNock, backupAwmNock } = nockSplitAwmMultisigRecovery({
+        coin: 'trx',
+        halfSignedTxHex,
+        fullSignedTxHex,
+        times: 2,
+      });
+
+      const response = await request
+        .agent(expressApp(makeSplitAwmMasterExpressConfig()))
+        .post('/api/v1/trx/advancedwallet/recoveryconsolidations')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(trxConsolidationRequest);
+
+      response.status.should.equal(200);
+      response.body.signedTxs.should.have.length(2);
+      response.body.signedTxs[0].should.have.property('txHex', fullSignedTxHex);
+      userAwmNock.done();
+      backupAwmNock.done();
+    });
+
+    it('stays sync when async mode is enabled (bridge is not called)', async () => {
+      nockTrxTwoAddressConsolidationScan();
+      const bridgeNock = nockAsyncRecoveryJobBypass('trx');
+      const { userAwmNock, backupAwmNock } = nockSplitAwmMultisigRecovery({
+        coin: 'trx',
+        halfSignedTxHex,
+        fullSignedTxHex,
+        times: 2,
+      });
+
+      const response = await request
+        .agent(expressApp(makeSplitAwmMasterExpressConfig({ asyncEnabled: true })))
+        .post('/api/v1/trx/advancedwallet/recoveryconsolidations')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(trxConsolidationRequest);
+
+      response.status.should.equal(200);
+      response.body.signedTxs.should.have.length(2);
+      userAwmNock.done();
+      backupAwmNock.done();
+      bridgeNock.isDone().should.be.false();
     });
   });
 });
