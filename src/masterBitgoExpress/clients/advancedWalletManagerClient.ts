@@ -104,10 +104,9 @@ export interface RecoveryMultisigOptions {
   bitgoPub?: string;
   unsignedSweepPrebuildTx: RecoveryMultisigUnsignedSweepTx;
   walletContractAddress: string;
-  // When set, only sign with the specified key (user half-sign or backup full-sign).
   keyToSign?: 'user' | 'backup';
-  // Required when keyToSign is 'backup': the half-signed transaction from the user-key phase.
-  halfSignedTransaction?: any;
+  // Required when keyToSign is 'backup'.
+  halfSignedTransaction?: SignedTransaction;
 }
 
 interface SignMpcCommitmentParams {
@@ -402,7 +401,44 @@ export class AdvancedWalletManagerClient {
   }
 
   /**
-   * Recover a multisig transaction
+   * Recover a multisig transaction using only the user key (first signature).
+   * Returns the half-signed transaction object to be passed to recoveryMultisig
+   * on the backup AWM as `halfSignedTransaction`.
+   */
+  async recoveryMultisigUserHalfSign(
+    params: Omit<RecoveryMultisigOptions, 'keyToSign' | 'halfSignedTransaction'>,
+  ): Promise<SignedTransaction> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified to recover a multisig');
+    }
+
+    try {
+      let request = this.apiClient['v1.multisig.recovery'].post({
+        ...params,
+        coin: this.coin,
+        keyToSign: 'user',
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+      logger.info('Recovering multisig (user half-sign) for coin: %s', this.coin);
+      const res = await request.decodeExpecting(200);
+
+      return res.body as SignedTransaction;
+    } catch (error) {
+      logger.error(
+        'Failed to recover multisig (user half-sign): %s',
+        (error as DecodeError).decodedResponse?.body,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Recover a multisig transaction.
+   * When params.keyToSign is 'backup', completes a split recovery started by recoveryMultisigUserHalfSign.
+   * When keyToSign is omitted, signs with both user and backup keys in a single call (single-AWM mode).
    */
   async recoveryMultisig(params: RecoveryMultisigOptions): Promise<SignedTransaction> {
     if (!this.coin) {
@@ -418,7 +454,7 @@ export class AdvancedWalletManagerClient {
       logger.info('Recovering multisig for coin: %s', this.coin);
       const res = await request.decodeExpecting(200);
 
-      return res.body;
+      return res.body as SignedTransaction;
     } catch (error) {
       logger.error('Failed to recover multisig: %s', (error as DecodeError).decodedResponse?.body);
       throw error;

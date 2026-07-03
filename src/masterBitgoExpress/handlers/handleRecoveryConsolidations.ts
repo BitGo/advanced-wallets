@@ -44,7 +44,9 @@ export async function handleRecoveryConsolidations(
 
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
-  const awmClient = req.awmUserClient;
+  const userClient = req.awmUserClient;
+  const backupClient = req.awmBackupClient;
+  const hasSeparateBackupAwm = userClient !== backupClient;
 
   const isMPC = req.decoded.multisigType === 'tss';
   const asyncEnabled = req.config.asyncModeConfig.enabled;
@@ -93,8 +95,8 @@ export async function handleRecoveryConsolidations(
 
   logger.info(`Found ${txs.length} unsigned consolidation transactions`);
 
-  if (asyncEnabled) {
-    // Async mode supports a single recovery build only; multi-tx batches remain sync-only.
+  // Split AWM stays sync: the OSO bridge can't sequence a user half-sign then backup full-sign.
+  if (asyncEnabled && !hasSeparateBackupAwm) {
     if (txs.length !== 1) {
       throw new BadRequestError(
         `Async mode supports a single consolidation recovery only, but built ${txs.length}`,
@@ -114,21 +116,38 @@ export async function handleRecoveryConsolidations(
   const signedTxs = [];
   try {
     for (const tx of txs) {
-      const signedTx = isMPC
-        ? await awmClient.recoveryMPC({
-            userPub,
-            backupPub,
-            apiKey,
-            unsignedSweepPrebuildTx: tx as MPCTx | RecoveryTxRequest,
-            coinSpecificParams: {},
-            walletContractAddress: '',
-          })
-        : await awmClient.recoveryMultisig({
-            userPub,
-            backupPub,
-            unsignedSweepPrebuildTx: tx as RecoveryTransaction,
-            walletContractAddress: '',
-          });
+      let signedTx;
+      if (isMPC) {
+        signedTx = await userClient.recoveryMPC({
+          userPub,
+          backupPub,
+          apiKey,
+          unsignedSweepPrebuildTx: tx as MPCTx | RecoveryTxRequest,
+          coinSpecificParams: {},
+          walletContractAddress: '',
+        });
+      } else if (hasSeparateBackupAwm) {
+        // Split AWM flow (sync): user AWM signs first, backup AWM completes the signature.
+        const recoveryBody = {
+          userPub,
+          backupPub,
+          unsignedSweepPrebuildTx: tx as RecoveryTransaction,
+          walletContractAddress: '',
+        };
+        const halfSignedTx = await userClient.recoveryMultisigUserHalfSign(recoveryBody);
+        signedTx = await backupClient.recoveryMultisig({
+          ...recoveryBody,
+          keyToSign: 'backup',
+          halfSignedTransaction: halfSignedTx,
+        });
+      } else {
+        signedTx = await userClient.recoveryMultisig({
+          userPub,
+          backupPub,
+          unsignedSweepPrebuildTx: tx as RecoveryTransaction,
+          walletContractAddress: '',
+        });
+      }
 
       signedTxs.push(signedTx);
     }

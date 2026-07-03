@@ -193,17 +193,18 @@ export async function handleMultisigSignOperation(
   logger.info(`${logPrefix} job ${jobId} complete`);
 }
 
-/** Completes a `multisig_recovery` job by returning the signed sweep tx from AWM (no WP submit). */
+/** Completes a `multisig_recovery` job with the signed sweep tx from AWM (no WP submit). */
 export async function handleMultisigRecoveryOperation(
   job: BridgeJobResponse,
   bridge: OsoBridgeClient,
   _bitgo: BitGoAPI,
 ): Promise<void> {
   const logPrefix = '[asyncJobWorker:handleMultisigRecoveryOperation]';
+  const { jobId, version } = job;
+
   const signedTx = parseSignedRecoveryTransaction(
     parseAwmResponseBody(job.awmResponse, 'awmResponse'),
   );
-  const { jobId, version } = job;
 
   logger.info(`${logPrefix} job ${jobId} recovered - updating job status to complete`);
   await bridge.updateJob({

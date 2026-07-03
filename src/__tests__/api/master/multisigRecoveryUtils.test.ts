@@ -72,6 +72,39 @@ describe('multisigRecoveryUtils', () => {
       result.should.eql({ jobId, status: 'pending' });
       bridgeNock.done();
     });
+
+    it('defaults to the user source when sources is omitted', async () => {
+      const jobId = 'job-123';
+      const bridgeNock = nock(bridgeUrl)
+        .post(`/api/${coin}/multisig/recovery`)
+        .matchHeader('X-OSO-Source', KeySource.USER)
+        .reply(202, { jobId });
+
+      const result = await submitMultisigRecoveryJob(makeAsyncReq(), coin, recoveryBody);
+      assert(result);
+      result.should.eql({ jobId, status: 'pending' });
+      bridgeNock.done();
+    });
+
+    it('accepts multiple sources when explicitly passed', async () => {
+      const jobId = 'job-456';
+      const bridgeNock = nock(bridgeUrl)
+        .post(`/api/${coin}/multisig/recovery`, (body) => {
+          body.should.eql(recoveryBody);
+          return true;
+        })
+        .matchHeader('X-OSO-Source', `${KeySource.USER},${KeySource.BACKUP}`)
+        .matchHeader('X-OSO-Operation', 'multisig_recovery')
+        .reply(202, { jobId });
+
+      const result = await submitMultisigRecoveryJob(makeAsyncReq(), coin, recoveryBody, [
+        KeySource.USER,
+        KeySource.BACKUP,
+      ]);
+      assert(result);
+      result.should.eql({ jobId, status: 'pending' });
+      bridgeNock.done();
+    });
   });
 
   describe('parseSignedRecoveryTransaction', () => {

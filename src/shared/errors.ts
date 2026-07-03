@@ -12,6 +12,7 @@ export class BitgoApiResponseError extends Error {
 
   constructor(message: string, status = 500, result?: any) {
     super(message);
+    this.name = 'ApiResponseError';
     this.status = status;
     this.result = result;
   }
