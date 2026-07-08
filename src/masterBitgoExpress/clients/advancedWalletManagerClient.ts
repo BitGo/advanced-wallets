@@ -39,6 +39,9 @@ import {
   MpcV2InitializeResponseType,
   MpcV2RecoveryResponseType,
   MpcV2RoundResponseType,
+  EddsaMPCv2KeyGenInitializeResponseType,
+  EddsaMPCv2KeyGenRound1ResponseType,
+  EddsaMPCv2KeyGenFinalizeResponseType,
 } from '../../advancedWalletManager/routers/advancedWalletManagerApiSpec';
 import { FormattedOfflineVaultTxInfo } from '@bitgo-beta/abstract-utxo';
 import { RecoveryTxRequest } from '@bitgo-beta/sdk-core';
@@ -816,6 +819,108 @@ export class AdvancedWalletManagerClient {
     } catch (error) {
       logger.error(
         'Failed to sign MPCv2 round 3: %s',
+        (error as DecodeError).decodedResponse?.body,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize EdDSA MPCv2 key generation
+   */
+  async eddsaMPCv2KeyGenInitialize(params: {
+    source: 'user' | 'backup';
+    enterprise: string;
+    bitgoPublicGpgKey: string;
+  }): Promise<EddsaMPCv2KeyGenInitializeResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified for EdDSA MPCv2 key generation initialize');
+    }
+
+    try {
+      let request = this.apiClient['v1.eddsampcv2.keygen.initialize'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      logger.error(
+        'Failed to initialize EdDSA MPCv2 key generation: %s',
+        (error as DecodeError).decodedResponse?.body,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * EdDSA MPCv2 key generation round 1
+   */
+  async eddsaMPCv2KeyGenRound1(params: {
+    source: 'user' | 'backup';
+    bitgoMsg1: { message: string; signature: string };
+    encryptedState: string;
+    encryptedStateKey: string;
+  }): Promise<EddsaMPCv2KeyGenRound1ResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified for EdDSA MPCv2 key generation round 1');
+    }
+
+    try {
+      let request = this.apiClient['v1.eddsampcv2.keygen.round1'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      logger.error(
+        'Failed EdDSA MPCv2 key generation round 1: %s',
+        (error as DecodeError).decodedResponse?.body,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Finalize EdDSA MPCv2 key generation
+   */
+  async eddsaMPCv2KeyGenFinalize(params: {
+    source: 'user' | 'backup';
+    bitgoMsg2: { message: string; signature: string };
+    commonPublicKeychain: string;
+    encryptedState: string;
+    encryptedStateKey: string;
+  }): Promise<EddsaMPCv2KeyGenFinalizeResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified for EdDSA MPCv2 key generation finalize');
+    }
+
+    try {
+      let request = this.apiClient['v1.eddsampcv2.keygen.finalize'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      logger.error(
+        'Failed to finalize EdDSA MPCv2 key generation: %s',
         (error as DecodeError).decodedResponse?.body,
       );
       throw error;

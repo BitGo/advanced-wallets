@@ -6,7 +6,10 @@ import {
   createAwmClient,
   AdvancedWalletManagerClient,
 } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
-import { createOnchainKeyGenCallback } from '../../../masterBitgoExpress/handlers/walletGenerationCallbacks';
+import {
+  createOnchainKeyGenCallback,
+  createEddsaMPCv2KeyGenCallbacks,
+} from '../../../masterBitgoExpress/handlers/walletGenerationCallbacks';
 import { AppMode, KeySource, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
@@ -148,6 +151,150 @@ describe('walletGenerationCallbacks', () => {
         source: KeySource.BITGO as 'user',
         coin,
       }).should.be.rejectedWith('Unexpected key source for onchain key generation: bitgo');
+    });
+  });
+
+  describe('createEddsaMPCv2KeyGenCallbacks', () => {
+    const enterprise = 'test-enterprise';
+    const bitgoPublicGpgKey = 'test-bitgo-gpg-key';
+
+    beforeEach(() => {
+      const config = makeConfig({ advancedWalletManagerBackupUrl: backupAwmUrl });
+      awmUserClient = createAwmClient(config, coin)!;
+      awmBackupClient = createAwmBackupClient(config, coin)!;
+      assert(awmUserClient);
+      assert(awmBackupClient);
+    });
+
+    it('initializeCallback fans out to user and backup AWM in parallel', async () => {
+      const userInitNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${coin}/eddsampcv2/keygen/initialize`, {
+          source: 'user',
+          enterprise,
+          bitgoPublicGpgKey,
+        })
+        .reply(200, {
+          gpgPublicKey: 'user-gpg-pub',
+          signedMsg1: { message: 'user-msg1', signature: 'user-sig1' },
+          encryptedState: 'user-enc-state',
+          encryptedStateKey: 'user-enc-state-key',
+        });
+
+      const backupInitNock = nock(backupAwmUrl)
+        .post(`/api/${coin}/eddsampcv2/keygen/initialize`, {
+          source: 'backup',
+          enterprise,
+          bitgoPublicGpgKey,
+        })
+        .reply(200, {
+          gpgPublicKey: 'backup-gpg-pub',
+          signedMsg1: { message: 'backup-msg1', signature: 'backup-sig1' },
+          encryptedState: 'backup-enc-state',
+          encryptedStateKey: 'backup-enc-state-key',
+        });
+
+      const callbacks = createEddsaMPCv2KeyGenCallbacks(awmUserClient, awmBackupClient);
+      const result = await callbacks.initializeCallback({ enterprise, bitgoPublicGpgKey });
+
+      result.userGpgPublicKey.should.equal('user-gpg-pub');
+      result.backupGpgPublicKey.should.equal('backup-gpg-pub');
+      result.userSignedMsg1.message.should.equal('user-msg1');
+      result.backupSignedMsg1.message.should.equal('backup-msg1');
+      result.userEncryptedState.should.equal('user-enc-state');
+      result.backupEncryptedState.should.equal('backup-enc-state');
+      userInitNock.done();
+      backupInitNock.done();
+    });
+
+    it('round1Callback fans out to user and backup AWM in parallel', async () => {
+      const bitgoMsg1 = { message: 'bitgo-msg1', signature: 'bitgo-sig1' };
+
+      const userR1Nock = nock(advancedWalletManagerUrl)
+        .post(`/api/${coin}/eddsampcv2/keygen/round1`, {
+          source: 'user',
+          bitgoMsg1,
+          encryptedState: 'user-enc-state',
+          encryptedStateKey: 'user-enc-state-key',
+        })
+        .reply(200, {
+          signedMsg2: { message: 'user-msg2', signature: 'user-sig2' },
+          encryptedState: 'user-enc-state-r1',
+          encryptedStateKey: 'user-enc-state-key-r1',
+        });
+
+      const backupR1Nock = nock(backupAwmUrl)
+        .post(`/api/${coin}/eddsampcv2/keygen/round1`, {
+          source: 'backup',
+          bitgoMsg1,
+          encryptedState: 'backup-enc-state',
+          encryptedStateKey: 'backup-enc-state-key',
+        })
+        .reply(200, {
+          signedMsg2: { message: 'backup-msg2', signature: 'backup-sig2' },
+          encryptedState: 'backup-enc-state-r1',
+          encryptedStateKey: 'backup-enc-state-key-r1',
+        });
+
+      const callbacks = createEddsaMPCv2KeyGenCallbacks(awmUserClient, awmBackupClient);
+      const result = await callbacks.round1Callback({
+        bitgoMsg1,
+        userEncryptedState: 'user-enc-state',
+        userEncryptedStateKey: 'user-enc-state-key',
+        backupEncryptedState: 'backup-enc-state',
+        backupEncryptedStateKey: 'backup-enc-state-key',
+      });
+
+      result.userSignedMsg2.message.should.equal('user-msg2');
+      result.backupSignedMsg2.message.should.equal('backup-msg2');
+      result.userEncryptedState.should.equal('user-enc-state-r1');
+      result.backupEncryptedState.should.equal('backup-enc-state-r1');
+      userR1Nock.done();
+      backupR1Nock.done();
+    });
+
+    it('finalizeCallback fans out to user and backup AWM in parallel', async () => {
+      const bitgoMsg2 = { message: 'bitgo-msg2', signature: 'bitgo-sig2' };
+      const commonPublicKeychain = 'common-keychain-abc123';
+
+      const userFinalizeNock = nock(advancedWalletManagerUrl)
+        .post(`/api/${coin}/eddsampcv2/keygen/finalize`, {
+          source: 'user',
+          bitgoMsg2,
+          commonPublicKeychain,
+          encryptedState: 'user-enc-state',
+          encryptedStateKey: 'user-enc-state-key',
+        })
+        .reply(200, {
+          source: 'user',
+          commonKeychain: commonPublicKeychain,
+        });
+
+      const backupFinalizeNock = nock(backupAwmUrl)
+        .post(`/api/${coin}/eddsampcv2/keygen/finalize`, {
+          source: 'backup',
+          bitgoMsg2,
+          commonPublicKeychain,
+          encryptedState: 'backup-enc-state',
+          encryptedStateKey: 'backup-enc-state-key',
+        })
+        .reply(200, {
+          source: 'backup',
+          commonKeychain: commonPublicKeychain,
+        });
+
+      const callbacks = createEddsaMPCv2KeyGenCallbacks(awmUserClient, awmBackupClient);
+      const result = await callbacks.finalizeCallback({
+        bitgoMsg2,
+        commonPublicKeychain,
+        userEncryptedState: 'user-enc-state',
+        userEncryptedStateKey: 'user-enc-state-key',
+        backupEncryptedState: 'backup-enc-state',
+        backupEncryptedStateKey: 'backup-enc-state-key',
+      });
+
+      result.commonKeychain.should.equal(commonPublicKeychain);
+      userFinalizeNock.done();
+      backupFinalizeNock.done();
     });
   });
 });
