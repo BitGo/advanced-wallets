@@ -310,6 +310,73 @@ const MpcV2RecoveryResponse = {
 const MpcV2RecoveryResponseType = t.type(MpcV2RecoveryResponse);
 export type MpcV2RecoveryResponseType = t.TypeOf<typeof MpcV2RecoveryResponseType>;
 
+// EdDSA MPCv2 key generation types
+const EddsaMPCv2KeyGenSignedMessage = t.type({
+  message: t.string,
+  signature: t.string,
+});
+
+const EddsaMPCv2KeyGenInitializeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  enterprise: t.string,
+  bitgoPublicGpgKey: t.string,
+};
+const EddsaMPCv2KeyGenInitializeRequestType = t.type(EddsaMPCv2KeyGenInitializeRequest);
+export type EddsaMPCv2KeyGenInitializeRequestType = t.TypeOf<
+  typeof EddsaMPCv2KeyGenInitializeRequestType
+>;
+
+const EddsaMPCv2KeyGenInitializeResponse = {
+  gpgPublicKey: t.string,
+  signedMsg1: EddsaMPCv2KeyGenSignedMessage,
+  encryptedState: t.string,
+  encryptedStateKey: t.string,
+};
+const EddsaMPCv2KeyGenInitializeResponseType = t.type(EddsaMPCv2KeyGenInitializeResponse);
+export type EddsaMPCv2KeyGenInitializeResponseType = t.TypeOf<
+  typeof EddsaMPCv2KeyGenInitializeResponseType
+>;
+
+const EddsaMPCv2KeyGenRound1Request = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  bitgoMsg1: EddsaMPCv2KeyGenSignedMessage,
+  encryptedState: t.string,
+  encryptedStateKey: t.string,
+};
+const EddsaMPCv2KeyGenRound1RequestType = t.type(EddsaMPCv2KeyGenRound1Request);
+export type EddsaMPCv2KeyGenRound1RequestType = t.TypeOf<typeof EddsaMPCv2KeyGenRound1RequestType>;
+
+const EddsaMPCv2KeyGenRound1Response = {
+  signedMsg2: EddsaMPCv2KeyGenSignedMessage,
+  encryptedState: t.string,
+  encryptedStateKey: t.string,
+};
+const EddsaMPCv2KeyGenRound1ResponseType = t.type(EddsaMPCv2KeyGenRound1Response);
+export type EddsaMPCv2KeyGenRound1ResponseType = t.TypeOf<
+  typeof EddsaMPCv2KeyGenRound1ResponseType
+>;
+
+const EddsaMPCv2KeyGenFinalizeRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  bitgoMsg2: EddsaMPCv2KeyGenSignedMessage,
+  commonPublicKeychain: t.string,
+  encryptedState: t.string,
+  encryptedStateKey: t.string,
+};
+const EddsaMPCv2KeyGenFinalizeRequestType = t.type(EddsaMPCv2KeyGenFinalizeRequest);
+export type EddsaMPCv2KeyGenFinalizeRequestType = t.TypeOf<
+  typeof EddsaMPCv2KeyGenFinalizeRequestType
+>;
+
+const EddsaMPCv2KeyGenFinalizeResponse = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  commonKeychain: t.string,
+};
+const EddsaMPCv2KeyGenFinalizeResponseType = t.type(EddsaMPCv2KeyGenFinalizeResponse);
+export type EddsaMPCv2KeyGenFinalizeResponseType = t.TypeOf<
+  typeof EddsaMPCv2KeyGenFinalizeResponseType
+>;
+
 // API Specification
 export const AdvancedWalletManagerApiSpec = apiSpec({
   'v1.multisig.sign': {
@@ -481,6 +548,51 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       description: 'Recover a MPC transaction',
     }),
   },
+  'v1.eddsampcv2.keygen.initialize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/eddsampcv2/keygen/initialize',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: EddsaMPCv2KeyGenInitializeRequest,
+      }),
+      response: {
+        200: EddsaMPCv2KeyGenInitializeResponseType,
+        ...ErrorResponses,
+      },
+      description: 'Initialize EdDSA MPCv2 key generation',
+    }),
+  },
+  'v1.eddsampcv2.keygen.round1': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/eddsampcv2/keygen/round1',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: EddsaMPCv2KeyGenRound1Request,
+      }),
+      response: {
+        200: EddsaMPCv2KeyGenRound1ResponseType,
+        ...ErrorResponses,
+      },
+      description: 'EdDSA MPCv2 key generation round 1',
+    }),
+  },
+  'v1.eddsampcv2.keygen.finalize': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/eddsampcv2/keygen/finalize',
+      request: httpRequest({
+        params: { coin: t.string },
+        body: EddsaMPCv2KeyGenFinalizeRequest,
+      }),
+      response: {
+        200: EddsaMPCv2KeyGenFinalizeResponseType,
+        ...ErrorResponses,
+      },
+      description: 'Finalize EdDSA MPCv2 key generation',
+    }),
+  },
 });
 
 export type AkmApiSpecRouteHandler<
@@ -610,6 +722,24 @@ export function createKeyGenRouter(
       const typedReq = req as AwmApiSpecRouteRequest<'v1.mpcv2.recovery', 'post'>;
       const result = await ecdsaMPCv2Recovery(typedReq);
       return Response.ok(result);
+    }),
+  ]);
+
+  router.post('v1.eddsampcv2.keygen.initialize', [
+    responseHandler<AdvancedWalletManagerConfig>(async (_req) => {
+      throw new NotImplementedError('EdDSA MPCv2 key generation initialize not implemented');
+    }),
+  ]);
+
+  router.post('v1.eddsampcv2.keygen.round1', [
+    responseHandler<AdvancedWalletManagerConfig>(async (_req) => {
+      throw new NotImplementedError('EdDSA MPCv2 key generation round1 not implemented');
+    }),
+  ]);
+
+  router.post('v1.eddsampcv2.keygen.finalize', [
+    responseHandler<AdvancedWalletManagerConfig>(async (_req) => {
+      throw new NotImplementedError('EdDSA MPCv2 key generation finalize not implemented');
     }),
   ]);
 
