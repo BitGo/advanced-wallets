@@ -116,3 +116,33 @@ jobs:
             VCS_REF=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  trigger-demo-kms-api-release:
+    name: Trigger demo-kms-api release to GHCR
+    needs: [release, trivy-scan]
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Get GitHub token
+        id: get-github-token
+        uses: BitGo/build-system/get-github-token@v6
+        with:
+          vault-cf-access-client-id: ${{ vars.VAULT_CF_ACCESS_CLIENT_ID }}
+          vault-cf-access-client-secret: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+          repositories: '["demo-kms-api"]'
+
+      - name: Trigger and wait for demo-kms-api release to GHCR
+        run: |
+          set -euo pipefail
+          BEFORE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run "release-to-ghcr.yaml" --repo "BitGo/demo-kms-api" --ref "main"
+          sleep 10
+          RUN_ID=$(gh run list --repo "BitGo/demo-kms-api" --workflow "release-to-ghcr.yaml" --limit 5 --json databaseId,createdAt --jq "[.[] | select(.createdAt >= \"$BEFORE\")] | .[0].databaseId")
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "Could not find the triggered workflow run in BitGo/demo-kms-api"
+            exit 1
+          fi
+          echo "Watching run $RUN_ID in BitGo/demo-kms-api..."
+          gh run watch "$RUN_ID" --repo "BitGo/demo-kms-api" --exit-status
+        env:
+          GH_TOKEN: ${{ steps.get-github-token.outputs.token }}
