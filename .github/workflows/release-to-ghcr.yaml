@@ -9,6 +9,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read  # Needed to resolve private BitGo/build-system action
   contents: write # Needed to create new releases
   packages: write # Needed to push to GHCR
   id-token: write # Needed to create an ephemeral cross-repo token
