@@ -71,6 +71,12 @@ const bumpVersion = async (packageName: BitGoBetaPackageName) => {
       packageJson.resolutions[packageName] = next;
       console.log(`Updating resolution for ${packageName} to ${next}...`);
     }
+
+    // Update overrides if the package is in overrides (npm pins live here post yarn->npm migration)
+    if (packageJson.overrides && packageJson.overrides[packageName]) {
+      packageJson.overrides[packageName] = next;
+      console.log(`Updating override for ${packageName} to ${next}...`);
+    }
   } else {
     console.log(`No suitable version found for ${packageName}, keeping current version`);
   }
