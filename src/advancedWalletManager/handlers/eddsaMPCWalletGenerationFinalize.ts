@@ -35,7 +35,7 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
   // Decrypt the encrypted payload using encryptedDataKey to retrieve the previous state of computation
   const decryptedDataKey = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const previousState = JSON.parse(
-    req.bitgo.decrypt({
+    await req.bitgo.decrypt({
       input: encryptedData,
       password: decryptedDataKey.plaintextKey,
     }),

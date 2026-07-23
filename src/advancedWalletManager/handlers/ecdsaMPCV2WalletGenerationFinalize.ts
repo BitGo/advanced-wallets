@@ -19,7 +19,7 @@ export async function ecdsaMPCv2Finalize(
   // fetch previous state of execution
   const { plaintextKey } = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const state: MpcV2RoundState = JSON.parse(
-    req.bitgo.decrypt({
+    await req.bitgo.decrypt({
       input: encryptedData,
       password: plaintextKey,
     }),

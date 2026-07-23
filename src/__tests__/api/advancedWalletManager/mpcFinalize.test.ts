@@ -48,7 +48,7 @@ describe('MPC Finalize', () => {
 
   beforeEach(() => {
     bitgo = new BitGoAPI({ env: 'test' });
-    sinon.stub(bitgo, 'decrypt').returns(
+    sinon.stub(bitgo, 'decrypt').resolves(
       JSON.stringify({
         sourceGpgPub: USER_GPG_PUB,
         sourceGpgPrv:
@@ -334,7 +334,7 @@ describe('MPC Finalize', () => {
      * We need decrypt() to return backup-party material so the handler uses i=2, not i=1,
      * and builds signing material with userYShare instead of backupYShare.
      */
-    sinon.stub(BitGoAPI.prototype, 'decrypt').returns(
+    sinon.stub(BitGoAPI.prototype, 'decrypt').resolves(
       JSON.stringify({
         sourceGpgPub:
           '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxk8EaIpAwBMFK4EEAAoCAwS6KHj/od9lIxin+1KK7XlZ3Hzs5QKkVmc12ZW1\nvCCTnAju/HZ0s1XV6CRhdrTw6d9MTxG58viqn2Nl7j5Buiq5zVUwODgwNWI1\nZTU4NGI4YmRhMmYyNWJmOTEgPHVzZXItMDg4MDViNWU1ODRiOGJkYTJmMjVi\nZjkxQDA4ODA1YjVlNTg0YjhiZGEyZjI1YmY5MS5jb20+wowEEBMIAD4FgmiK\nQMAECwkHCAmQFvKwNF9M/BIDFQgKBBYAAgECGQECmwMCHgEWIQRyXP44VjLq\nqZqNDT4W8rA0X0z8EgAA8w0BANXiDaOm560leVWjji1QZzigjRyJ/sMhsUBG\ncXRNGpOdAQD0VWVgbXmPiqXOzk9Aqwo4iuxiMpoSjcOGjelJhtiI685TBGiK\nQMASBSuBBAAKAgMEfASPaxeQfF8fbxj+IxA1IvBNUTVnfdavndamohiBY208\nfiyFttYfh6aTww6QqlWzqPXY9kU3/+PkgIhDI/Za2AMBCAfCeAQYEwgAKgWC\naIpAwAmQFvKwNF9M/BICmwwWIQRyXP44VjLqqZqNDT4W8rA0X0z8EgAAov8B\nAM92AiJU5QupKoVPSmNyaHoVSUC1zaFqUub2huTY0lliAQCWhmA0x9ZDWlCs\nB3oLcs3H7MksK2f2DcOkRnTpmEyMLg==\n=4fY3\n-----END PGP PUBLIC KEY BLOCK-----\n',
