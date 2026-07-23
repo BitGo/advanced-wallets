@@ -31,7 +31,7 @@ export async function ecdsaMPCv2Initialize(
 
   try {
     // Encrypt the state with the plaintext key
-    const encryptedData = req.bitgo.encrypt({
+    const encryptedData = await req.bitgo.encrypt({
       input: JSON.stringify(state),
       password: plaintextKey,
     });

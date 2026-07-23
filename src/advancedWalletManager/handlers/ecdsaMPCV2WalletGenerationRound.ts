@@ -40,7 +40,7 @@ export async function ecdsaMPCv2Round(
   // fetch previous state of execution
   const { plaintextKey } = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const state: MpcV2RoundState = JSON.parse(
-    req.bitgo.decrypt({
+    await req.bitgo.decrypt({
       input: encryptedData,
       password: plaintextKey,
     }),
@@ -139,7 +139,7 @@ export async function ecdsaMPCv2Round(
   // re-encrypt state
   let newEncryptedData;
   try {
-    newEncryptedData = req.bitgo.encrypt({
+    newEncryptedData = await req.bitgo.encrypt({
       input: JSON.stringify({
         ...state,
         round: state.round + 1,

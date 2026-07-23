@@ -101,7 +101,7 @@ export async function eddsaInitialize(
   };
   const { plaintextKey, encryptedKey } = await keyProvider.generateDataKey({ keyType: 'AES-256' });
   try {
-    const encryptedPayload = req.bitgo.encrypt({
+    const encryptedPayload = await req.bitgo.encrypt({
       input: JSON.stringify(payload),
       password: plaintextKey,
     });
