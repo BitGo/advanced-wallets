@@ -454,6 +454,97 @@ describe('walletGenerationCallbacks', () => {
         .initializeCallback({ enterprise: 'test-enterprise', bitgoPublicGpgKey: bitgoGpgPub })
         .should.be.rejectedWith('Missing broadcast message in user round 1 response');
     });
+
+    it('should reject when initializeCallback is called more than once', async () => {
+      await initialize();
+
+      await callbacks
+        .initializeCallback({ enterprise: 'test-enterprise', bitgoPublicGpgKey: bitgoGpgPub })
+        .should.be.rejectedWith('initializeCallback called more than once');
+    });
+
+    it('should reject when bitgoMsg1 is not from BitGo', async () => {
+      await initialize();
+
+      await callbacks
+        .round2Callback({
+          sessionId,
+          bitgoMsg1: { ...bitgoMsg1, from: 0 as const },
+          bitgoToUserMsg2: bitgoP2p(0, 2),
+          bitgoToBackupMsg2: bitgoP2p(1, 2),
+          userState: state,
+          backupState: state,
+        })
+        .should.be.rejectedWith('bitgoMsg1 is not from BitGo');
+    });
+
+    it('should reject when bitgoToUserMsg2 is not from BitGo', async () => {
+      await initialize();
+
+      nockRound(advancedWalletManagerUrl, KeySource.USER, 2, {
+        broadcastMessages: {
+          bitgo: formattedBroadcast(bitgoMsg1),
+          counterParty: broadcast('backup-1'),
+        },
+      }).reply(200, {
+        ...state,
+        round: 3,
+        p2pMessages: { bitgo: p2p('user-2-bitgo'), counterParty: p2p('user-2-backup') },
+      });
+      nockRound(backupAwmUrl, KeySource.BACKUP, 2, {
+        broadcastMessages: {
+          bitgo: formattedBroadcast(bitgoMsg1),
+          counterParty: broadcast('user-1'),
+        },
+      }).reply(200, {
+        ...state,
+        round: 3,
+        p2pMessages: { bitgo: p2p('backup-2-bitgo'), counterParty: p2p('backup-2-user') },
+      });
+
+      await callbacks
+        .round2Callback({
+          sessionId,
+          bitgoMsg1,
+          bitgoToUserMsg2: { ...bitgoP2p(0, 2), from: 0 as const },
+          bitgoToBackupMsg2: bitgoP2p(1, 2),
+          userState: state,
+          backupState: state,
+        })
+        .should.be.rejectedWith('bitgoToUserMsg2 is not from BitGo');
+    });
+
+    it('should reject when bitgoToUserMsg3 is not addressed to the user', async () => {
+      await initialize();
+      await round2();
+
+      await callbacks
+        .round3Callback({
+          sessionId,
+          bitgoCommitment2: 'bitgo-commitment-2',
+          bitgoToUserMsg3: { ...bitgoP2p(0, 3), to: 1 as const },
+          bitgoToBackupMsg3: bitgoP2p(1, 3),
+          userState: state,
+          backupState: state,
+        })
+        .should.be.rejectedWith('bitgoToUserMsg3 is not addressed to user');
+    });
+
+    it('should reject when bitgoMsg4 is not from BitGo', async () => {
+      await initialize();
+      await round2();
+      await round3();
+
+      await callbacks
+        .finalizeCallback({
+          sessionId,
+          bitgoMsg4: { ...bitgoMsg4, from: 0 as const },
+          bitgoCommonKeychain: 'commonKeychain',
+          userState: state,
+          backupState: state,
+        })
+        .should.be.rejectedWith('bitgoMsg4 is not from BitGo');
+    });
   });
 
   describe('createEddsaKeyGenCallbacks', () => {
@@ -572,7 +663,8 @@ describe('walletGenerationCallbacks', () => {
       });
 
       result.commonKeychain.should.equal('commonKeychain');
-      result.counterpartyKeyShare!.should.eql(keyShare(KeySource.USER, KeySource.BACKUP));
+      assert(result.counterpartyKeyShare, 'counterpartyKeyShare should be defined');
+      result.counterpartyKeyShare.should.eql(keyShare(KeySource.USER, KeySource.BACKUP));
       finalizeNock.done();
     });
 

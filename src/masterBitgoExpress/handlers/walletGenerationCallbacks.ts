@@ -97,6 +97,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
 
   return {
     initializeCallback: async ({ bitgoPublicGpgKey }) => {
+      assert(!userRound1Broadcast, 'initializeCallback called more than once');
       const userInit = await awmUserClient.initEcdsaMpcV2KeyGenMpcV2({ source: KeySource.USER });
       const backupInit = await awmBackupClient.initEcdsaMpcV2KeyGenMpcV2({
         source: KeySource.BACKUP,
@@ -146,6 +147,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
     }) => {
       assert(userRound1Broadcast, 'round2Callback called before initializeCallback completed');
       assert(backupRound1Broadcast, 'round2Callback called before initializeCallback completed');
+      assert(bitgoMsg1.from === PARTY.BITGO, 'bitgoMsg1 is not from BitGo');
       const bitgoBroadcast = formatBroadcastMessage(bitgoMsg1);
       const [userRound2, backupRound2] = await Promise.all([
         awmUserClient.roundEcdsaMPCv2KeyGen({
@@ -283,6 +285,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
     finalizeCallback: async ({ bitgoMsg4, bitgoCommonKeychain, userState, backupState }) => {
       assert(userRound4Broadcast, 'finalizeCallback called before round3Callback completed');
       assert(backupRound4Broadcast, 'finalizeCallback called before round3Callback completed');
+      assert(bitgoMsg4.from === PARTY.BITGO, 'bitgoMsg4 is not from BitGo');
       const bitgoBroadcast = formatBroadcastMessage(bitgoMsg4);
       const [userFinalize, backupFinalize] = await Promise.all([
         awmUserClient.finalizeEcdsaMPCv2KeyGen({

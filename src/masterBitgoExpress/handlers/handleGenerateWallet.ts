@@ -42,10 +42,12 @@ export async function handleGenerateWallet(
   }
 
   const bitgo = req.bitgo;
-  const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
+  const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
 
   if (isTss && !baseCoin.supportsTss()) {
-    throw new BadRequestError(`MPC wallet generation is not supported for coin ${req.params.coin}`);
+    throw new BadRequestError(
+      `MPC wallet generation is not supported for coin ${req.decoded.coin}`,
+    );
   }
 
   const result = await baseCoin.wallets().generateWalletWithExternalSigner({
@@ -85,7 +87,9 @@ function keyGenCallbacks(
     case 'eddsa':
       return { eddsaCallbacks: createEddsaKeyGenCallbacks(awmUserClient, awmBackupClient) };
     default:
-      throw new BadRequestError(`Unsupported MPC algorithm: ${algorithm}`);
+      throw new BadRequestError(
+        `Unsupported MPC algorithm: ${algorithm}. Supported algorithms: ecdsa, eddsa`,
+      );
   }
 }
 
@@ -100,10 +104,10 @@ async function handleGenerateEvmKeyRingWallet(
   }
 
   const bitgo = req.bitgo;
-  const baseCoin = await coinFactory.getCoin(req.params.coin, bitgo);
+  const baseCoin = await coinFactory.getCoin(req.decoded.coin, bitgo);
   if (!baseCoin.isEVM()) {
     throw new BadRequestError(
-      `EVM keyring wallet generation is not supported for coin ${req.params.coin}`,
+      `EVM keyring wallet generation is not supported for coin ${req.decoded.coin}`,
     );
   }
 
