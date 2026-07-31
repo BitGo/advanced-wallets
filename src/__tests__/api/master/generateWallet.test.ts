@@ -6,7 +6,7 @@ import nock from 'nock';
 import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { Environments } from '@bitgo-beta/sdk-core';
+import { BitgoMpcGpgPubKeys, Environments } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
@@ -63,6 +63,10 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   const eddsaCoin = 'tsol';
   const ecdsaCoin = 'hteth';
   const accessToken = 'test-token';
+
+  // The SDK parses BitGo's GPG keys and rejects anything that is not a known BitGo MPC key
+  const bitgoMpcv1GpgKey = BitgoMpcGpgPubKeys.getBitgoMpcGpgPubKey('test', 'onprem', 'mpcv1');
+  const bitgoMpcv2GpgKey = BitgoMpcGpgPubKeys.getBitgoMpcGpgPubKey('test', 'onprem', 'mpcv2');
 
   // Valid BIP32 extended public keys required by the SDK's isValidPub check
   const validUserPub =
@@ -352,7 +356,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     nock(bitgoApiUrl)
       .persist()
       .get('/api/v1/client/constants')
-      .reply(200, { constants: { mpc: { bitgoPublicKey: 'test-bitgo-public-key' } } });
+      .reply(200, { constants: { mpc: { bitgoPublicKey: bitgoMpcv1GpgKey } } });
     const backupBitgo = new BitGoAPI({ env: 'test' });
     const configWithBackup = makeConfig({ advancedWalletManagerBackupUrl: backupAwmUrl });
 
@@ -369,7 +373,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const userInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
         source: 'user',
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv1GpgKey,
       })
       .reply(200, {
         encryptedDataKey: 'key',
@@ -389,7 +393,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const backupInitNock = nock(backupAwmUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
         source: 'backup',
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv1GpgKey,
         counterPartyGpgPub: 'user-key',
       })
       .reply(200, {
@@ -538,7 +542,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${eddsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'user',
-        type: 'tss',
+        keyType: 'tss',
       })
       .reply(200, {
         id: 'user-key-id',
@@ -602,7 +606,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const addBackupKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${eddsaCoin}/key`, {
         source: 'backup',
-        type: 'tss',
+        keyType: 'tss',
         commonKeychain: 'commonKeychain',
       })
       .reply(200, {
@@ -651,12 +655,12 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     nock(bitgoApiUrl)
       .persist()
       .get('/api/v1/client/constants')
-      .reply(200, { constants: { mpc: { bitgoPublicKey: 'test-bitgo-public-key' } } });
+      .reply(200, { constants: { mpc: { bitgoPublicKey: bitgoMpcv1GpgKey } } });
 
     const userInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
         source: 'user',
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv1GpgKey,
       })
       .reply(200, {
         encryptedDataKey: 'key',
@@ -675,7 +679,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const backupInitNock = nock(advancedWalletManagerUrl)
       .post(`/api/${eddsaCoin}/mpc/key/initialize`, {
         source: 'backup',
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv1GpgKey,
         counterPartyGpgPub: 'user-key',
       })
       .reply(200, {
@@ -822,7 +826,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${eddsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'user',
-        type: 'tss',
+        keyType: 'tss',
       })
       .reply(200, {
         id: 'id',
@@ -884,7 +888,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     const addBackupKeyNock = nock(bitgoApiUrl)
       .post(`/api/v2/${eddsaCoin}/key`, {
         source: 'backup',
-        type: 'tss',
+        keyType: 'tss',
         commonKeychain: 'commonKeychain',
       })
       .reply(200, {
@@ -899,7 +903,6 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         label: 'test_wallet',
         enterprise: 'test_enterprise',
         multisigType: 'tss',
-        coin: eddsaCoin,
         m: 2,
         n: 3,
         keys: ['id', 'id', 'id'],
@@ -990,7 +993,18 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     nock(bitgoApiUrl)
       .persist()
       .get('/api/v1/client/constants')
-      .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: 'test-bitgo-public-key' } } });
+      .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: bitgoMpcv2GpgKey } } });
+    // The SDK resolves BitGo's MPCv2 GPG key and the enterprise's wallet creation settings itself
+    const tssPubkeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${ecdsaCoin}/tss/pubkey`)
+      .query({ enterpriseId: 'test-enterprise' })
+      .reply(200, { mpcv2PublicKey: bitgoMpcv2GpgKey });
+
+    const tssSettingsNock = nock(bitgoApiUrl)
+      .get('/api/v2/tss/settings')
+      .reply(200, {
+        coinSettings: { eth: { walletCreationSettings: { multiSigTypeVersion: 'MPCv2' } } },
+      });
     const backupBitgo = new BitGoAPI({ env: 'test' });
     const configWithBackup = makeConfig({ advancedWalletManagerBackupUrl: backupAwmUrl });
 
@@ -1027,7 +1041,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         encryptedDataKey: 'key',
         encryptedData: 'data',
         round: 1,
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv2GpgKey,
         counterPartyGpgPub: 'test-backup-public-key',
       })
       .reply(200, {
@@ -1046,7 +1060,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         encryptedDataKey: 'key',
         encryptedData: 'data',
         round: 1,
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv2GpgKey,
         counterPartyGpgPub: 'test-user-public-key',
       })
       .reply(200, {
@@ -1527,7 +1541,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${ecdsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'user',
-        type: 'tss',
+        keyType: 'tss',
         isMPCv2: true,
       })
       .reply(200, { id: 'user-key-id', source: 'user', type: 'tss' });
@@ -1536,7 +1550,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${ecdsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'backup',
-        type: 'tss',
+        keyType: 'tss',
         isMPCv2: true,
       })
       .reply(200, { id: 'backup-key-id', source: 'backup', type: 'tss' });
@@ -1545,7 +1559,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${ecdsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'bitgo',
-        type: 'tss',
+        keyType: 'tss',
         isMPCv2: true,
       })
       .reply(200, {
@@ -1595,6 +1609,8 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     backupRound4Nock.done();
     backupFinalizeNock.done();
     // Verify BitGo API calls
+    tssPubkeyNock.done();
+    tssSettingsNock.done();
     bitgoRound1And2Nock.done();
     bitgoRound3Nock.done();
     bitgoRound4Nock.done();
@@ -1608,7 +1624,18 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     nock(bitgoApiUrl)
       .persist()
       .get('/api/v1/client/constants')
-      .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: 'test-bitgo-public-key' } } });
+      .reply(200, { constants: { mpc: { bitgoMPCv2PublicKey: bitgoMpcv2GpgKey } } });
+    // The SDK resolves BitGo's MPCv2 GPG key and the enterprise's wallet creation settings itself
+    const tssPubkeyNock = nock(bitgoApiUrl)
+      .get(`/api/v2/${ecdsaCoin}/tss/pubkey`)
+      .query({ enterpriseId: 'test-enterprise' })
+      .reply(200, { mpcv2PublicKey: bitgoMpcv2GpgKey });
+
+    const tssSettingsNock = nock(bitgoApiUrl)
+      .get('/api/v2/tss/settings')
+      .reply(200, {
+        coinSettings: { eth: { walletCreationSettings: { multiSigTypeVersion: 'MPCv2' } } },
+      });
 
     // init round
     const userInitNock = nock(advancedWalletManagerUrl)
@@ -1637,7 +1664,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         encryptedDataKey: 'key',
         encryptedData: 'data',
         round: 1,
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv2GpgKey,
         counterPartyGpgPub: 'test-backup-public-key',
       })
       .reply(200, {
@@ -1659,7 +1686,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         encryptedDataKey: 'key',
         encryptedData: 'data',
         round: 1,
-        bitgoGpgPub: 'test-bitgo-public-key',
+        bitgoGpgPub: bitgoMpcv2GpgKey,
         counterPartyGpgPub: 'test-user-public-key',
       })
       .reply(200, {
@@ -2143,7 +2170,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${ecdsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'user',
-        type: 'tss',
+        keyType: 'tss',
         isMPCv2: true,
       })
       .reply(200, { id: 'user-key-id', source: 'user', type: 'tss' });
@@ -2152,7 +2179,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${ecdsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'backup',
-        type: 'tss',
+        keyType: 'tss',
         isMPCv2: true,
       })
       .reply(200, { id: 'backup-key-id', source: 'backup', type: 'tss' });
@@ -2161,7 +2188,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
       .post(`/api/v2/${ecdsaCoin}/key`, {
         commonKeychain: 'commonKeychain',
         source: 'bitgo',
-        type: 'tss',
+        keyType: 'tss',
         isMPCv2: true,
       })
       .reply(200, {
@@ -2179,10 +2206,10 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         label: 'test-wallet', // ?
         enterprise: 'test-enterprise',
         multisigType: 'tss',
-        coin: ecdsaCoin,
         m: 2,
         n: 3,
         keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        walletVersion: 5,
         type: 'advanced',
       })
       .reply(200, {
@@ -2254,6 +2281,8 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     backupInitNock.done();
     userRound1Nock.done();
     backupRound1Nock.done();
+    tssPubkeyNock.done();
+    tssSettingsNock.done();
     bitgoRound1And2Nock.done();
     userRound2Nock.done();
     backupRound2Nock.done();
