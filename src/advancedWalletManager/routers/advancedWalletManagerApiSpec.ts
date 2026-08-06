@@ -107,9 +107,11 @@ const RecoveryMpcRequest = {
 export type RecoveryMpcRequest = typeof RecoveryMpcRequest;
 
 const RecoveryMpcResponse: HttpResponse = {
-  200: t.type({
-    txHex: t.string,
-  }), // the full signed tx
+  200: t.exact(
+    t.type({
+      txHex: t.string,
+    }),
+  ), // the full signed tx
   ...ErrorResponses,
 };
 
@@ -198,7 +200,7 @@ const MpcInitializeResponse = {
   bitgoPayload: KeyShareType,
   counterPartyKeyShare: optional(KeyShareType),
 };
-const MpcInitializeResponseType = optionalized(MpcInitializeResponse);
+const MpcInitializeResponseType = t.exact(optionalized(MpcInitializeResponse));
 export type MpcInitializeResponseType = t.TypeOf<typeof MpcInitializeResponseType>;
 
 const BitGoKeychainType = t.type({
@@ -242,7 +244,7 @@ const MpcV2InitializeResponse = {
   encryptedData: t.string,
   encryptedDataKey: t.string,
 };
-const MpcV2InitializeResponseType = t.type(MpcV2InitializeResponse);
+const MpcV2InitializeResponseType = t.exact(t.type(MpcV2InitializeResponse));
 export type MpcV2InitializeResponseType = t.TypeOf<typeof MpcV2InitializeResponseType>;
 
 export type MpcV2RoundState = {
@@ -276,7 +278,7 @@ const MpcV2RoundResponse = {
   broadcastMessage: optional(t.any),
   p2pMessages: optional(MpcV2RoundMessage),
 };
-const MpcV2RoundResponseType = optionalized(MpcV2RoundResponse);
+const MpcV2RoundResponseType = t.exact(optionalized(MpcV2RoundResponse));
 export type MpcV2RoundResponseType = t.TypeOf<typeof MpcV2RoundResponseType>;
 
 const MpcV2FinalizeRequest = {
@@ -293,7 +295,7 @@ const MpcV2FinalizeResponse = {
   commonKeychain: t.string,
   source: t.union([t.literal('user'), t.literal('backup')]),
 };
-const MpcV2FinalizeResponseType = t.type(MpcV2FinalizeResponse);
+const MpcV2FinalizeResponseType = t.exact(t.type(MpcV2FinalizeResponse));
 export type MpcV2FinalizeResponseType = t.TypeOf<typeof MpcV2FinalizeResponseType>;
 
 const MpcV2RecoveryRequest = {
@@ -307,7 +309,7 @@ const MpcV2RecoveryResponse = {
   txHex: t.string,
   stringifiedSignature: t.string,
 };
-const MpcV2RecoveryResponseType = t.type(MpcV2RecoveryResponse);
+const MpcV2RecoveryResponseType = t.exact(t.type(MpcV2RecoveryResponse));
 export type MpcV2RecoveryResponseType = t.TypeOf<typeof MpcV2RecoveryResponseType>;
 
 // API Specification
