@@ -316,7 +316,7 @@ describe('MPC Finalize', () => {
 
     // Assert the response structure
     result.should.have.property('statusCode', 200);
-    result.body.should.have.property('combinedKey');
+    result.body.should.not.have.property('combinedKey');
     result.body.should.have.property('source', 'user');
     result.body.should.have.property(
       'commonKeychain',
@@ -489,7 +489,7 @@ describe('MPC Finalize', () => {
     });
 
     result.should.have.property('statusCode', 200);
-    result.body.should.have.property('combinedKey');
+    result.body.should.not.have.property('combinedKey');
     result.body.should.have.property('source', 'backup');
     result.body.should.have.property(
       'commonKeychain',

@@ -228,7 +228,7 @@ const MpcFinalizeResponse = {
   source: t.union([t.literal('user'), t.literal('backup')]),
   commonKeychain: t.string,
 };
-const MpcFinalizeResponseType = optionalized(MpcFinalizeResponse);
+const MpcFinalizeResponseType = t.exact(optionalized(MpcFinalizeResponse));
 export type MpcFinalizeResponseType = t.TypeOf<typeof MpcFinalizeResponseType>;
 
 const MpcV2InitializeRequest = {
