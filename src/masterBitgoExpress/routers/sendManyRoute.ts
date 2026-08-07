@@ -236,5 +236,5 @@ export const SendManyRoute = httpRoute({
     body: SendManyRequest,
   }),
   response: SendManyResponse,
-  description: 'Send many transactions',
+  description: 'Send a transaction to one or more recipients',
 });
