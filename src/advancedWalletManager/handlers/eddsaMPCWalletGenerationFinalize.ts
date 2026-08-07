@@ -140,7 +140,6 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
     }
 
     return {
-      combinedKey,
       counterpartyKeyShare: sourceToCounterPartyKeyShare,
       source,
       commonKeychain,
