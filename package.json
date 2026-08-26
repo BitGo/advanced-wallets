@@ -210,6 +210,6 @@
     "typescript-cached-transpile": "^0.0.6"
   },
   "engines": {
-    "node": ">=22.1.0"
+    "node": ">=22.12.0"
   }
 }
