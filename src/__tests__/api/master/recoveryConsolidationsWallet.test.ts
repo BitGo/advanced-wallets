@@ -72,7 +72,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
 
   // ── SUI-specific constants ────────────────────────────────────────────────
 
-  const suiRpcBase = 'https://fullnode.testnet.sui.io';
+  const suiRpcBase = 'https://sui-testnet-rpc.publicnode.com';
 
   const suiBitgoKey =
     '3b89eec9d2d2f3b049ecda2e7b5f47827f7927fe6618d6e8b13f64e7c95f4b0' +

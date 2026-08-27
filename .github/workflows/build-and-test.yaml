@@ -6,7 +6,7 @@ on:
       node-version:
         description: 'Node.js version to use'
         type: string
-        default: '22.1.0'
+        default: '22.14.0'
     secrets:
       fossa-api-key:
         description: 'API key used for Fossa scan'

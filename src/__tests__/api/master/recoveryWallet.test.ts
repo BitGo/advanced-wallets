@@ -535,7 +535,7 @@ describe('Recovery Tests', () => {
   describe('Sui coin recovery', () => {
     // Setup mocks for Sui
     const suiCoinId = 'tsui';
-    const suiExplorerUrl = 'https://fullnode.testnet.sui.io';
+    const suiExplorerUrl = 'https://sui-testnet-rpc.publicnode.com';
 
     it('should sign a sui recovery successfully', async () => {
       const suiAccountBalanceNock = nock(suiExplorerUrl)

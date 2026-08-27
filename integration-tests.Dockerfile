@@ -1,5 +1,5 @@
 # Stage 1 — build
-FROM node:22.1.0-alpine@sha256:487dc5d5122d578e13f2231aa4ac0f63068becd921099c4c677c850df93bede8 AS builder
+FROM node:22.14.0-alpine@sha256:9bef0ef1e268f60627da9ba7d7605e8831d5b56ad07487d24d1aa386336d1944 AS builder
 
 ENV NODE_ENV=test \
     TZ=UTC \
@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2 — test runner
-FROM node:22.1.0-alpine@sha256:487dc5d5122d578e13f2231aa4ac0f63068becd921099c4c677c850df93bede8 AS runner
+FROM node:22.14.0-alpine@sha256:9bef0ef1e268f60627da9ba7d7605e8831d5b56ad07487d24d1aa386336d1944 AS runner
 
 ENV NODE_ENV=test \
     TZ=UTC \
