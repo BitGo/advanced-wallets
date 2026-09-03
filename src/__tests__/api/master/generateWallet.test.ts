@@ -1002,6 +1002,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
 
     const tssSettingsNock = nock(bitgoApiUrl)
       .get('/api/v2/tss/settings')
+      .query({ enterprise: 'test-enterprise' })
       .reply(200, {
         coinSettings: { eth: { walletCreationSettings: { multiSigTypeVersion: 'MPCv2' } } },
       });
@@ -1633,6 +1634,7 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
 
     const tssSettingsNock = nock(bitgoApiUrl)
       .get('/api/v2/tss/settings')
+      .query({ enterprise: 'test-enterprise' })
       .reply(200, {
         coinSettings: { eth: { walletCreationSettings: { multiSigTypeVersion: 'MPCv2' } } },
       });
