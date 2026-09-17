@@ -181,7 +181,6 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
     } catch (e) {
       const err = e as Error;
       logger.error('transaction prebuild failed local validation:', err.message);
-      logger.error('transaction prebuild:', JSON.stringify(txPrebuilt, null, 2));
       throw new BadRequestError(`Transaction prebuild failed local validation: ${err.message}`);
     }
 
@@ -204,8 +203,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       return asyncResult;
     }
 
-    logger.info(`Signing with ${req.decoded.source} keychain, pub: ${signBody.pub}`);
-    logger.debug(`Signing keychain: ${JSON.stringify(signingKeychain, null, 2)}`);
+    logger.info(`Signing with ${req.decoded.source} keychain`);
 
     const signedTx = await awmClient.signMultisig(signBody);
     return WP_SUBMIT_HANDLERS.sendMany({
