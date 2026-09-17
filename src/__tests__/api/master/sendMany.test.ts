@@ -13,6 +13,7 @@ import * as utxolib from '@bitgo-beta/utxo-lib';
 import { Tbtc } from '@bitgo-beta/sdk-coin-btc';
 import { Tsol } from '@bitgo-beta/sdk-coin-sol';
 import assert from 'assert';
+import logger from '../../../shared/logger';
 import {
   BitGoAPITestHarness,
   DEFAULT_ASYNC_MODE_CONFIG,
@@ -28,6 +29,23 @@ const tssTxRequestId = 'test-tx-request-id';
 const TBTC_PREBUILD_PSBT_HEX = utxolib.bitgo
   .createPsbtForNetwork({ network: utxolib.networks.testnet })
   .toHex();
+
+function stubSendManyLogs(): Record<'error' | 'warn' | 'info' | 'http' | 'debug', sinon.SinonStub> {
+  return {
+    error: sinon.stub(logger, 'error'),
+    warn: sinon.stub(logger, 'warn'),
+    info: sinon.stub(logger, 'info'),
+    http: sinon.stub(logger, 'http'),
+    debug: sinon.stub(logger, 'debug'),
+  };
+}
+
+function assertNoSensitiveLogs(logs: ReturnType<typeof stubSendManyLogs>) {
+  const loggedArgs = JSON.stringify(Object.values(logs).flatMap((stub) => stub.args));
+  for (const value of ['xpub_user', 'user-key-id', TBTC_PREBUILD_PSBT_HEX, 'txHex', 'txInfo']) {
+    assert(!loggedArgs.includes(value), 'Sensitive transaction or keychain data was logged');
+  }
+}
 
 function stubPrepareBitGoWithConfig(asyncConfig: MasterExpressConfig): BitGoAPI {
   const asyncBitgo = new BitGoAPI({ env: 'test' });
@@ -150,6 +168,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
   describe('SendMany Multisig:', () => {
     const coin = 'tbtc';
     it('should send many transactions by calling the advanced wallet manager service', async () => {
+      const logs = stubSendManyLogs();
       // Mock wallet get request
       const walletGetNock = nock(bitgoApiUrl)
         .get(`/api/v2/${coin}/wallet/${walletId}`)
@@ -242,6 +261,9 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       keychainGetNock.done();
       signNock.done();
       submitNock.done();
+      sinon.assert.calledWithExactly(logs.debug, 'Transaction prebuild verified');
+      sinon.assert.calledWithExactly(logs.info, 'Signing with user keychain');
+      assertNoSensitiveLogs(logs);
     });
 
     it('should send walletPubs (all 3 xpubs) to AWM for UTXO signing', async () => {
@@ -942,6 +964,7 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
   });
 
   it('should fail when transaction verification returns false', async () => {
+    const logs = stubSendManyLogs();
     // Mock wallet get request
     const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)
@@ -992,9 +1015,16 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     keychainGetNock.done();
     prebuildBuildNock.done();
     sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledWithExactly(
+      logs.error,
+      'transaction prebuild failed local validation:',
+      'Transaction prebuild failed local validation',
+    );
+    assertNoSensitiveLogs(logs);
   });
 
   it('should fail when transaction verification throws an error', async () => {
+    const logs = stubSendManyLogs();
     // Mock wallet get request
     const walletGetNock = nock(bitgoApiUrl)
       .get(`/api/v2/${coin}/wallet/${walletId}`)
@@ -1047,6 +1077,12 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
     keychainGetNock.done();
     prebuildBuildNock.done();
     sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledWithExactly(
+      logs.error,
+      'transaction prebuild failed local validation:',
+      'Invalid transaction',
+    );
+    assertNoSensitiveLogs(logs);
   });
 
   it('should handle BitGoApiResponseError correctly', async () => {
