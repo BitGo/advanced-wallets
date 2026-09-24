@@ -205,10 +205,24 @@ These settings are only required when you want to use a **separate AWM instance 
 | Variable             | Description                                         | Default                | Applies To |
 | -------------------- | --------------------------------------------------- | ---------------------- | ---------- |
 | `RECOVERY_MODE`      | Enable recovery mode for wallet recovery operations | `false`                | Both       |
+| `MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS` | Dedicated mTLS client fingerprints authorized for ECDSA MPCv2 share combination | Unset (disabled) | AWM |
+| `MPCV2_RECOVERY_APPROVALS` | JSON array of operator-approved `{ "coin", "pub", "txHexSha256" }` recovery transactions; SHA-256 is over decoded transaction bytes | Unset (disabled) | AWM |
 | `HTTP_LOGFILE`       | Path to HTTP access log file                        | `logs/http-access.log` | Both       |
 | `KEEP_ALIVE_TIMEOUT` | Keep-alive timeout in milliseconds                  | -                      | Both       |
 | `HEADERS_TIMEOUT`    | Headers timeout in milliseconds                     | -                      | Both       |
 | `IPC`                | IPC socket path (alternative to TCP port binding)   | -                      | Both       |
+
+ECDSA MPCv2 recovery requires `RECOVERY_MODE=true` and `TLS_MODE=mtls`. A dedicated
+recovery client's SHA-256 certificate fingerprint (uppercase hex, without colons)
+must be in **both** `MTLS_ALLOWED_CLIENT_FINGERPRINTS` and
+`MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS`. Before sending the recovery
+request, an operator must verify the target wallet's common keychain and the
+exact unsigned transaction (including destination) and approve its SHA-256
+hash in `MPCV2_RECOVERY_APPROVALS`, e.g.
+`[{"coin":"hteth","pub":"<130 hex characters>","txHexSha256":"<64 hex characters>"}]`.
+The hash is of the bytes decoded from `txHex`, not of the UTF-8 hex string.
+Absent authorization or approval, AWM refuses the request before contacting
+either KMS; returned shares must independently match the approved keychain.
 
 ### TLS/mTLS Configuration
 
@@ -218,6 +232,7 @@ These settings are only required when you want to use a **separate AWM instance 
 | ------------------------------- | ------------------------------------- | ------- |
 | `TLS_MODE`                      | TLS mode (`mtls` or `disabled`)       | `mtls`  |
 | `CLIENT_CERT_ALLOW_SELF_SIGNED` | Allow self-signed client certificates | `false` |
+| `MTLS_ALLOWED_CLIENT_FINGERPRINTS` | Allowed client certificate fingerprints | Comma-separated uppercase SHA-256 fingerprints without `sha256:` or colons; surrounding whitespace is ignored |
 
 #### Server Certificates (for incoming connections)
 
@@ -474,10 +489,13 @@ export KEY_PROVIDER_SERVER_CA_CERT_PATH=/secure/certs/key-provider-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:1a2b3c...,sha256:4d5e6f...
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1,B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2
 export BITGO_ENV=prod
 npm start
 ```
+
+The AWM setup above intentionally leaves ECDSA MPCv2 recovery disabled. To enable recovery, also set `RECOVERY_MODE=true`, add the recovery client fingerprint to `MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS`, and configure `MPCV2_RECOVERY_APPROVALS` with the approved coin, 130-hex common keychain, and 64-hex digest before starting AWM.
+
 
 #### 2. Start Master Express (Port 3081)
 
@@ -499,7 +517,7 @@ export AWM_SERVER_CA_CERT_PATH=/secure/certs/awm-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:7g8h9i...,sha256:0j1k2l...
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3,D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4
 npm start
 ```
 
@@ -547,13 +565,13 @@ For local testing, you can generate and use demo certificates with the self-sign
 
 #### Getting Client Certificate Fingerprints
 
-To obtain certificate fingerprints for `MTLS_ALLOWED_CLIENT_FINGERPRINTS`:
+To obtain a certificate fingerprint for the two AWM client allowlists:
 
 ```bash
-openssl x509 -in /path/to/client-cert.crt -noout -fingerprint -sha256 | cut -d'=' -f2
+openssl x509 -in /path/to/client-cert.crt -noout -fingerprint -sha256 | cut -d'=' -f2 | tr -d ':'
 ```
 
-The output format is: `sha256:AB:CD:EF:...` which you can use in the configuration.
+Use the resulting uppercase hex in both allowlists; do not include `sha256:`. The same canonical format applies to `MTLS_ALLOWED_CLIENT_FINGERPRINTS` for incoming mTLS clients.
 
 #### Certificate Requirements for Production
 

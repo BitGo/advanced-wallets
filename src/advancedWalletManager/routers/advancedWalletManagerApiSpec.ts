@@ -18,7 +18,7 @@ import express from 'express';
 import * as t from 'io-ts';
 
 import coinFactory from '../../shared/coinFactory';
-import { ErrorResponses, NotImplementedError } from '../../shared/errors';
+import { ErrorResponses, ForbiddenResponse, NotImplementedError } from '../../shared/errors';
 
 import { postIndependentKey } from '../handlers/postIndependentKey';
 import { recoveryMultisigTransaction } from '../handlers/multisigRecovery';
@@ -479,6 +479,7 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       response: {
         200: MpcV2RecoveryResponseType,
         ...ErrorResponses,
+        ...ForbiddenResponse,
       },
       description: 'Recover a MPC transaction',
     }),

@@ -1,6 +1,6 @@
 import { httpRequest, HttpResponse, httpRoute, optional } from '@api-ts/io-ts-http';
 import * as t from 'io-ts';
-import { ErrorResponses } from '../../shared/errors';
+import { ErrorResponses, ForbiddenResponse } from '../../shared/errors';
 import { AsyncJobResponseCodec } from './generateWalletRoute';
 
 /**
@@ -206,6 +206,7 @@ const RecoveryWalletResponse: HttpResponse = {
   200: RecoveryWalletResponseCodec,
   202: AsyncJobResponseCodec,
   ...ErrorResponses,
+  ...ForbiddenResponse,
 };
 
 /**

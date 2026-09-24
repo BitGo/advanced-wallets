@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { DklsDsg, DklsTypes, DklsUtils } from '@bitgo-beta/sdk-lib-mpc';
 import {
   AwmApiSpecRouteRequest,
@@ -5,14 +6,13 @@ import {
 } from '../routers/advancedWalletManagerApiSpec';
 import { BaseCoin, ECDSAMethodTypes } from '@bitgo-beta/sdk-core';
 import { isCosmosLikeCoin, isEcdsaCoin, isEthLikeCoin } from '../../shared/coinUtils';
-import { BadRequestError, NotImplementedError } from '../../shared/errors';
+import { TlsMode } from '../../shared/types';
+import { BadRequestError, ForbiddenError, NotImplementedError } from '../../shared/errors';
 import logger from '../../shared/logger';
 import coinFactory from '../../shared/coinFactory';
-import { buildBackupKmsConfig, retrieveKeyProviderPrvKey } from './utils/utils';
+import { buildBackupKmsConfig, checkRecoveryMode, retrieveKeyProviderPrvKey } from './utils/utils';
 
-async function getMessageHash(coin: BaseCoin, txHex: string): Promise<Buffer> {
-  const txBuffer = Buffer.from(txHex, 'hex');
-
+async function getMessageHash(coin: BaseCoin, txBuffer: Buffer): Promise<Buffer> {
   if (isEthLikeCoin(coin)) {
     const { TransactionFactory } = await import('@ethereumjs/tx');
     try {
@@ -42,7 +42,35 @@ async function getMessageHash(coin: BaseCoin, txHex: string): Promise<Buffer> {
 export async function ecdsaMPCv2Recovery(
   req: AwmApiSpecRouteRequest<'v1.mpcv2.recovery', 'post'>,
 ): Promise<MpcV2RecoveryResponseType> {
+  checkRecoveryMode(req.config);
+
+  // The general AWM client allowlist does not grant permission to combine both shares.
+  const clientCert = (req as typeof req & { clientCert?: { fingerprint256?: string } }).clientCert;
+  const fingerprint = clientCert?.fingerprint256?.replace(/:/g, '').toUpperCase();
+  if (
+    req.config.tlsMode !== TlsMode.MTLS ||
+    !fingerprint ||
+    !req.config.mpcv2RecoveryAllowedClientFingerprints?.includes(fingerprint)
+  ) {
+    throw new ForbiddenError('Client is not authorized for MPCv2 recovery');
+  }
+
   const { txHex, pub } = req.decoded;
+  if (!/^(?:[0-9a-f]{2})+$/i.test(txHex)) {
+    throw new BadRequestError('Recovery transaction must be non-empty hex bytes');
+  }
+  const txBuffer = Buffer.from(txHex, 'hex');
+  const txHexSha256 = createHash('sha256').update(txBuffer).digest('hex');
+  if (
+    !req.config.mpcv2RecoveryApprovals?.some(
+      (approval) =>
+        approval.coin === req.params.coin &&
+        approval.pub.toLowerCase() === pub.toLowerCase() &&
+        approval.txHexSha256.toLowerCase() === txHexSha256,
+    )
+  ) {
+    throw new ForbiddenError('Wallet and transaction are not approved for MPCv2 recovery');
+  }
   const bitgo = req.bitgo;
   const coin = await coinFactory.getCoin(req.params.coin, bitgo);
 
@@ -52,17 +80,22 @@ export async function ecdsaMPCv2Recovery(
     );
   }
 
+  const txHash = await getMessageHash(coin, txBuffer);
+
   // setup clients and retrieve the keys
   const backupCfg = buildBackupKmsConfig(req.config);
   const userPrv = await retrieveKeyProviderPrvKey({ pub, source: 'user', cfg: req.config });
   const backupPrv = await retrieveKeyProviderPrvKey({ pub, source: 'backup', cfg: backupCfg });
 
-  // construct tx builder
-  const txHash = await getMessageHash(coin, txHex);
-
   // construct buffers
   const userPrvBuffer = Buffer.from(userPrv, 'base64');
   const backupPrvBuffer = Buffer.from(backupPrv, 'base64');
+  if (
+    DklsTypes.getCommonKeychain(userPrvBuffer).toLowerCase() !== pub.toLowerCase() ||
+    DklsTypes.getCommonKeychain(backupPrvBuffer).toLowerCase() !== pub.toLowerCase()
+  ) {
+    throw new BadRequestError('Recovery key shares do not match the approved wallet');
+  }
 
   // construct distributed signature generation sessions
   const userDsg = new DklsDsg.Dsg(userPrvBuffer, 0, 'm/0', txHash);

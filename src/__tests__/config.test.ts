@@ -54,6 +54,8 @@ describe('Configuration', () => {
     delete process.env.AWM_CLIENT_TLS_CERT_PATH;
     delete process.env.KEY_PROVIDER_SERVER_CA_CERT_PATH;
     delete process.env.RECOVERY_MODE;
+    delete process.env.MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS;
+    delete process.env.MPCV2_RECOVERY_APPROVALS;
     delete process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL;
     delete process.env.AWM_BACKUP_SERVER_CA_CERT_PATH;
     delete process.env.AWM_BACKUP_CLIENT_TLS_KEY_PATH;
@@ -146,6 +148,39 @@ describe('Configuration', () => {
       );
       const cfg = initConfig();
       cfg.recoveryMode!.should.be.true();
+    });
+
+    it('loads dedicated MPCv2 recovery identities and transaction approvals', () => {
+      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'disabled';
+      process.env.MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS = 'ab:cd, EF12';
+      const approval = { coin: 'hteth', pub: 'ab'.repeat(65), txHexSha256: 'cd'.repeat(32) };
+      process.env.MPCV2_RECOVERY_APPROVALS = JSON.stringify([approval]);
+
+      const cfg = initConfig();
+      if (!isAdvancedWalletManagerConfig(cfg)) throw new Error('Expected AWM config');
+      cfg.mpcv2RecoveryAllowedClientFingerprints!.should.deepEqual(['ABCD', 'EF12']);
+      cfg.mpcv2RecoveryApprovals!.should.deepEqual([approval]);
+    });
+    it('normalizes both mTLS fingerprint allowlists consistently', () => {
+      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'disabled';
+      process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'sha256:aa:bb, sha256:cc:dd';
+      process.env.MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS = 'sha256:aa:bb, sha256:cc:dd';
+
+      const cfg = initConfig();
+      if (!isAdvancedWalletManagerConfig(cfg)) throw new Error('Expected AWM config');
+      cfg.mtlsAllowedClientFingerprints!.should.deepEqual(['AABB', 'CCDD']);
+      cfg.mpcv2RecoveryAllowedClientFingerprints!.should.deepEqual(['AABB', 'CCDD']);
+    });
+
+    it('rejects malformed MPCv2 recovery approvals instead of enabling an unbounded signer', () => {
+      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'disabled';
+      process.env.MPCV2_RECOVERY_APPROVALS = '[{"coin":"hteth","pub":"abc","txHexSha256":"123"}]';
+      (() => initConfig()).should.throw(/MPCV2_RECOVERY_APPROVALS requires/);
+      process.env.MPCV2_RECOVERY_APPROVALS = '{';
+      (() => initConfig()).should.throw('MPCV2_RECOVERY_APPROVALS must be a JSON array');
     });
 
     it('should read TLS mode from environment variables', () => {
