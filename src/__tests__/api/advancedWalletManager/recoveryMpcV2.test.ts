@@ -2,6 +2,7 @@ import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../.
 import { app as advancedWalletManagerApp } from '../../../advancedWalletManagerApp';
 
 import express from 'express';
+import assert from 'assert';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
@@ -103,7 +104,7 @@ describe('recoveryMpcV2', () => {
     // app setup
     app = advancedWalletManagerApp(cfg);
     server = https.createServer(
-      { cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false },
+      { cert: testCert, key: testKey, ca: testCert, requestCert: true, rejectUnauthorized: true },
       app,
     );
     agent = request.agent(server);
@@ -234,7 +235,7 @@ describe('recoveryMpcV2', () => {
     configStub.returns(dualCfg);
     const dualApp = advancedWalletManagerApp(dualCfg);
     const dualServer = https.createServer(
-      { cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false },
+      { cert: testCert, key: testKey, ca: testCert, requestCert: true, rejectUnauthorized: true },
       dualApp,
     );
     const dualAgent = request.agent(dualServer);
@@ -368,7 +369,7 @@ describe('mpcv2 recovery authorization', () => {
   };
   const app = advancedWalletManagerApp(cfg);
   const server = https.createServer(
-    { cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false },
+    { cert: testCert, key: testKey, ca: testCert, requestCert: true, rejectUnauthorized: true },
     app,
   );
   const agent = request.agent(server);
@@ -383,11 +384,10 @@ describe('mpcv2 recovery authorization', () => {
 
   it('rejects missing mTLS identity even with recovery mode enabled', async () => {
     const keyRequest = nock(keyProviderUrl).get(`/key/${pub}`).query({ source: 'user' }).reply(200);
-    const response = await agent
-      .post('/api/hteth/mpcv2/recovery')
-      .ca(testCert)
-      .send({ pub, txHex });
-    response.status.should.equal(403);
+    await assert.rejects(
+      async () => agent.post('/api/hteth/mpcv2/recovery').ca(testCert).send({ pub, txHex }),
+      /certificate required|socket hang up/i,
+    );
     keyRequest.isDone().should.be.false();
   });
 
