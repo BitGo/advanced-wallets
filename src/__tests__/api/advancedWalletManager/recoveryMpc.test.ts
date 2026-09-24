@@ -177,7 +177,7 @@ describe('recoveryMpc', () => {
         httpLoggerFile: '',
         tlsMode: TlsMode.DISABLED,
         recoveryMode: true,
-      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
+        recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
       };
 
       const dualApp = expressApp(dualCfg);

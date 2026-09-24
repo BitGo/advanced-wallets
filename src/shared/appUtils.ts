@@ -197,18 +197,17 @@ export function createMtlsMiddleware(config: {
 }
 
 export function createRecoveryAuthMiddleware(config: Config): express.RequestHandler {
+  const expected = config.recoveryAuthToken && Buffer.from(config.recoveryAuthToken);
   return (req, res, next) => {
     if (!config.recoveryMode) {
       return next();
     }
     const supplied = req.get('x-recovery-token');
-    const expected = config.recoveryAuthToken;
     if (!supplied || !expected) {
       return res.status(401).json({ error: 'Recovery authorization required' });
     }
     const actual = Buffer.from(supplied);
-    const secret = Buffer.from(expected);
-    if (actual.length !== secret.length || !timingSafeEqual(actual, secret)) {
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
       return res.status(401).json({ error: 'Recovery authorization required' });
     }
     next();
@@ -219,8 +218,11 @@ export function validateRecoveryConfig(config: Config): void {
   if (!config.recoveryMode) {
     return;
   }
-  if (config.tlsMode === TlsMode.DISABLED && !config.ipc &&
-    !['localhost', '127.0.0.1', '::1', '[::1]'].includes(config.bind)) {
+  if (
+    config.tlsMode === TlsMode.DISABLED &&
+    !config.ipc &&
+    !['localhost', '127.0.0.1', '::1', '[::1]'].includes(config.bind)
+  ) {
     throw new Error('RECOVERY_MODE requires mTLS for non-local TCP binding');
   }
   if (!config.recoveryAuthToken || Buffer.byteLength(config.recoveryAuthToken, 'utf8') < 32) {

@@ -778,6 +778,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       const response = await request
         .agent(expressApp(makeSplitAwmMasterExpressConfig()))
         .post('/api/v1/trx/advancedwallet/recoveryconsolidations')
+        .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(trxConsolidationRequest);
 
@@ -801,6 +802,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       const response = await request
         .agent(expressApp(makeSplitAwmMasterExpressConfig({ asyncEnabled: true })))
         .post('/api/v1/trx/advancedwallet/recoveryconsolidations')
+        .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(trxConsolidationRequest);
 

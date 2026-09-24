@@ -124,6 +124,7 @@ describe('recoveryMultisigTransaction', () => {
     configStub.returns(dualCfg);
     const dualApp = advancedWalletManagerApp(dualCfg);
     const dualAgent = request.agent(dualApp);
+    dualAgent.set('x-recovery-token', dualCfg.recoveryAuthToken!);
 
     const mockKmsUserResponse = {
       prv: userPrv,

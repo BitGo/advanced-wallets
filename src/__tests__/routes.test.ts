@@ -40,9 +40,11 @@ describe('Routes', () => {
       recoveryMode: true,
       recoveryAuthToken: token,
     });
-    const mbe = mbeApp(makeMasterExpressTestConfig('http://localhost:3080', {
-      overrides: { recoveryMode: true, recoveryAuthToken: token },
-    }));
+    const mbe = mbeApp(
+      makeMasterExpressTestConfig('http://localhost:3080', {
+        overrides: { recoveryMode: true, recoveryAuthToken: token },
+      }),
+    );
 
     for (const path of [
       '/api/tbtc/multisig/recovery',
@@ -51,8 +53,12 @@ describe('Routes', () => {
     ]) {
       it(`rejects missing and incorrect tokens on AWM ${path}`, async () => {
         (await request(awm).post(path).send({})).status.should.equal(401);
-        (await request(awm).post(path).set('x-recovery-token', 'wrong').send({})).status.should.equal(401);
-        (await request(awm).post(path).set('x-recovery-token', token).send({})).status.should.not.equal(401);
+        (
+          await request(awm).post(path).set('x-recovery-token', 'wrong').send({})
+        ).status.should.equal(401);
+        (
+          await request(awm).post(path).set('x-recovery-token', token).send({})
+        ).status.should.not.equal(401);
       });
     }
 
@@ -61,9 +67,15 @@ describe('Routes', () => {
       '/api/v1/tbtc/advancedwallet/recoveryconsolidations',
     ]) {
       it(`rejects missing and incorrect tokens on MBE ${path}`, async () => {
-        (await request(mbe).post(path).set('Authorization', 'Bearer bitgo-token').send({})).status.should.equal(401);
-        (await request(mbe).post(path).set('x-recovery-token', 'wrong').send({})).status.should.equal(401);
-        (await request(mbe).post(path).set('x-recovery-token', token).send({})).status.should.not.equal(401);
+        (
+          await request(mbe).post(path).set('Authorization', 'Bearer bitgo-token').send({})
+        ).status.should.equal(401);
+        (
+          await request(mbe).post(path).set('x-recovery-token', 'wrong').send({})
+        ).status.should.equal(401);
+        (
+          await request(mbe).post(path).set('x-recovery-token', token).send({})
+        ).status.should.not.equal(401);
       });
     }
   });

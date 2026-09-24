@@ -1,5 +1,5 @@
 # Bootstrap certificates with scripts/bootstrap-compose-certs.sh before starting.
-# Supply KEY_PROVIDER_URL (HTTPS) and ./deploy/certs/key-provider-ca.pem from your key provider.
+# Supply KEY_PROVIDER_URL (HTTPS) and deploy/certs/awm/key-provider-ca.pem from your key provider.
 # Recovery is disabled by default; enable temporarily only with RECOVERY_AUTH_TOKEN set.
 services:
   advanced-wallet-manager:

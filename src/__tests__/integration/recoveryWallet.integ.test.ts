@@ -88,6 +88,19 @@ describe('Recovery wallet: EXTERNAL signing', () => {
     teardownIndexerMocks();
   });
 
+  it('refuses credential-free recovery without contacting the key provider', async () => {
+    const res = await fetch(
+      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/recovery`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recoveryRequestBody),
+      },
+    );
+    res.status.should.equal(401);
+    services.keyProvider.calls.should.have.length(0);
+  });
+
   it('recovers tbtc via external key provider, calling AWM multisig/recovery', async () => {
     const indexer = setupIndexerMocks({
       fundsAddress: ADDR_WITH_FUNDS,

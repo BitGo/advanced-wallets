@@ -10,7 +10,11 @@ import {
   EnvironmentName,
 } from './shared/types';
 import logger from './shared/logger';
-import { validateTlsCertificates, validateMasterExpressConfig, validateRecoveryConfig } from './shared/appUtils';
+import {
+  validateTlsCertificates,
+  validateMasterExpressConfig,
+  validateRecoveryConfig,
+} from './shared/appUtils';
 
 export {
   Config,
@@ -620,9 +624,10 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 export function initConfig(): Config {
   const appMode = determineAppMode();
 
-  const config = appMode === AppMode.ADVANCED_WALLET_MANAGER
-    ? configureAdvancedWalletManagerMode()
-    : configureMasterExpressMode();
+  const config =
+    appMode === AppMode.ADVANCED_WALLET_MANAGER
+      ? configureAdvancedWalletManagerMode()
+      : configureMasterExpressMode();
   validateRecoveryConfig(config);
   return config;
 }

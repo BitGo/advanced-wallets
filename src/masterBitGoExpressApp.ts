@@ -119,7 +119,10 @@ export function app(cfg: MasterExpressConfig): express.Application {
 
   // Authorize recovery before dispatching to handlers, independent of TLS.
   app.post(
-    ['/api/v1/:coin/advancedwallet/recovery', '/api/v1/:coin/advancedwallet/recoveryconsolidations'],
+    [
+      '/api/v1/:coin/advancedwallet/recovery',
+      '/api/v1/:coin/advancedwallet/recoveryconsolidations',
+    ],
     createRecoveryAuthMiddleware(cfg),
   );
 

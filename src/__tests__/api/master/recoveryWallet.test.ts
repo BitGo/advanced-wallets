@@ -909,6 +909,7 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     const response = await request
       .agent(expressApp(makeSplitAwmMasterExpressConfig()))
       .post(`/api/v1/${coin}/advancedwallet/recovery`)
+      .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(utxoRecoveryRequest);
 
@@ -931,6 +932,7 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     const response = await request
       .agent(expressApp(makeSplitAwmMasterExpressConfig({ asyncEnabled: true })))
       .post(`/api/v1/${coin}/advancedwallet/recovery`)
+      .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(utxoRecoveryRequest);
 
@@ -1001,6 +1003,7 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     const response = await request
       .agent(expressApp(makeSplitAwmMasterExpressConfig()))
       .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
+      .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {

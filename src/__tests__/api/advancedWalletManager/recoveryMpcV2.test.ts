@@ -170,6 +170,7 @@ describe('recoveryMpcV2', () => {
     configStub.returns(dualCfg);
     const dualApp = advancedWalletManagerApp(dualCfg);
     const dualAgent = request.agent(dualApp);
+    dualAgent.set('x-recovery-token', dualCfg.recoveryAuthToken!);
 
     // User key served from primary KMS
     const userKmsNock = nock(kmsUrl)
