@@ -8,7 +8,7 @@ import { isCosmosLikeCoin, isEcdsaCoin, isEthLikeCoin } from '../../shared/coinU
 import { BadRequestError, NotImplementedError } from '../../shared/errors';
 import logger from '../../shared/logger';
 import coinFactory from '../../shared/coinFactory';
-import { buildBackupKmsConfig, retrieveKeyProviderPrvKey } from './utils/utils';
+import { buildBackupKmsConfig, checkRecoveryMode, retrieveKeyProviderPrvKey } from './utils/utils';
 
 async function getMessageHash(coin: BaseCoin, txHex: string): Promise<Buffer> {
   const txBuffer = Buffer.from(txHex, 'hex');
@@ -42,6 +42,7 @@ async function getMessageHash(coin: BaseCoin, txHex: string): Promise<Buffer> {
 export async function ecdsaMPCv2Recovery(
   req: AwmApiSpecRouteRequest<'v1.mpcv2.recovery', 'post'>,
 ): Promise<MpcV2RecoveryResponseType> {
+  checkRecoveryMode(req.config);
   const { txHex, pub } = req.decoded;
   const bitgo = req.bitgo;
   const coin = await coinFactory.getCoin(req.params.coin, bitgo);
