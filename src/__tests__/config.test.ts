@@ -162,6 +162,17 @@ describe('Configuration', () => {
       cfg.mpcv2RecoveryAllowedClientFingerprints!.should.deepEqual(['ABCD', 'EF12']);
       cfg.mpcv2RecoveryApprovals!.should.deepEqual([approval]);
     });
+    it('normalizes both mTLS fingerprint allowlists consistently', () => {
+      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'disabled';
+      process.env.MTLS_ALLOWED_CLIENT_FINGERPRINTS = 'sha256:aa:bb, sha256:cc:dd';
+      process.env.MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS = 'sha256:aa:bb, sha256:cc:dd';
+
+      const cfg = initConfig();
+      if (!isAdvancedWalletManagerConfig(cfg)) throw new Error('Expected AWM config');
+      cfg.mtlsAllowedClientFingerprints!.should.deepEqual(['AABB', 'CCDD']);
+      cfg.mpcv2RecoveryAllowedClientFingerprints!.should.deepEqual(['AABB', 'CCDD']);
+    });
 
     it('rejects malformed MPCv2 recovery approvals instead of enabling an unbounded signer', () => {
       process.env.KEY_PROVIDER_URL = 'http://localhost:3000';

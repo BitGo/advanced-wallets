@@ -32,6 +32,18 @@ function readEnvVar(name: string): string | undefined {
   }
 }
 
+function readFingerprintList(name: string): string[] | undefined {
+  return readEnvVar(name)
+    ?.split(',')
+    .map((fingerprint) =>
+      fingerprint
+        .trim()
+        .replace(/^sha256:/i, '')
+        .replace(/:/g, '')
+        .toUpperCase(),
+    );
+}
+
 function readMpcv2RecoveryApprovals(): AdvancedWalletManagerConfig['mpcv2RecoveryApprovals'] {
   const value = readEnvVar('MPCV2_RECOVERY_APPROVALS');
   if (!value) return undefined;
@@ -210,10 +222,10 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     serverTlsCert: readEnvVar('SERVER_TLS_CERT'),
     tlsMode: determineTlsMode(),
     signingMode: determineSigningMode(),
-    mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
-    mpcv2RecoveryAllowedClientFingerprints: readEnvVar('MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS')
-      ?.split(',')
-      .map((fingerprint) => fingerprint.trim().replace(/:/g, '').toUpperCase()),
+    mtlsAllowedClientFingerprints: readFingerprintList('MTLS_ALLOWED_CLIENT_FINGERPRINTS'),
+    mpcv2RecoveryAllowedClientFingerprints: readFingerprintList(
+      'MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS',
+    ),
     mpcv2RecoveryApprovals: readMpcv2RecoveryApprovals(),
     clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
@@ -475,7 +487,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     serverTlsKey: readEnvVar('SERVER_TLS_KEY'),
     serverTlsCert: readEnvVar('SERVER_TLS_CERT'),
     tlsMode,
-    mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
+    mtlsAllowedClientFingerprints: readFingerprintList('MTLS_ALLOWED_CLIENT_FINGERPRINTS'),
     clientCertAllowSelfSigned,
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
     asyncModeConfig: readAsyncModeConfig(isAsyncMode),

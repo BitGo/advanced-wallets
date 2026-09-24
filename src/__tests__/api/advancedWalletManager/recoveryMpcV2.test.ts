@@ -2,7 +2,6 @@ import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../.
 import { app as advancedWalletManagerApp } from '../../../advancedWalletManagerApp';
 
 import express from 'express';
-import assert from 'assert';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
@@ -369,7 +368,7 @@ describe('mpcv2 recovery authorization', () => {
   };
   const app = advancedWalletManagerApp(cfg);
   const server = https.createServer(
-    { cert: testCert, key: testKey, ca: testCert, requestCert: true, rejectUnauthorized: true },
+    { cert: testCert, key: testKey, ca: testCert, requestCert: true, rejectUnauthorized: false },
     app,
   );
   const agent = request.agent(server);
@@ -382,12 +381,14 @@ describe('mpcv2 recovery authorization', () => {
   afterEach(() => nock.cleanAll());
   after(() => server.close());
 
-  it('rejects missing mTLS identity even with recovery mode enabled', async () => {
+  it('rejects missing mTLS identity through the application middleware', async () => {
     const keyRequest = nock(keyProviderUrl).get(`/key/${pub}`).query({ source: 'user' }).reply(200);
-    await assert.rejects(
-      async () => agent.post('/api/hteth/mpcv2/recovery').ca(testCert).send({ pub, txHex }),
-      /certificate required|socket hang up/i,
-    );
+    const response = await agent
+      .post('/api/hteth/mpcv2/recovery')
+      .ca(testCert)
+      .send({ pub, txHex });
+    response.status.should.equal(403);
+    response.body.details.should.equal('Please provide a valid client certificate in your request');
     keyRequest.isDone().should.be.false();
   });
 

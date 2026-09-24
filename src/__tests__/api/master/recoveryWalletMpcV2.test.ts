@@ -106,6 +106,61 @@ describe('MBE mpcv2 recovery', () => {
     etherscanBalanceNock.isDone().should.be.true();
     awmNock.isDone().should.be.true();
   });
+  it('should propagate AWM authorization failures to the recovery caller', async () => {
+    const etherscanTxlistNock = nock('https://api.etherscan.io')
+      .get(
+        `/v2/api?chainid=560048&module=account&action=txlist&address=0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8&apikey=etherscan-api-key`,
+      )
+      .matchHeader('any', () => true)
+      .reply(200, {
+        result: [
+          {
+            from: '0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8',
+          },
+        ],
+      });
+
+    const etherscanBalanceNock = nock('https://api.etherscan.io')
+      .get(
+        `/v2/api?chainid=560048&module=account&action=balance&address=0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8&apikey=etherscan-api-key`,
+      )
+      .matchHeader('any', () => true)
+      .reply(200, {
+        result: '100000000000000000',
+      });
+
+    const awmNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
+      .reply(403, {
+        error: 'ForbiddenError',
+        details: 'Client is not authorized for MPCv2 recovery',
+      });
+
+    const response = await agent
+      .post(`/api/v1/${ethLikeCoin}/advancedwallet/recovery`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        isTssRecovery: true,
+        tssRecoveryParams: {
+          commonKeychain:
+            '03ee2aa7a0951e0ddf5568c9e0008a824b46324900fa50bd62f43dd75705924d1c4dea9e1138b0fd34b77fa5ead28f24d8dcd053b48144915514ef32941f823075',
+        },
+        recoveryDestinationAddress: '0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8',
+        coinSpecificParams: {
+          ecdsaEthLikeRecoverySpecificParams: {
+            walletContractAddress: '0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8',
+            bitgoDestinationAddress: '0x43442e403d64d29c4f64065d0c1a0e8edc03d6c8',
+            apiKey: 'etherscan-api-key',
+          },
+        },
+      });
+
+    response.status.should.equal(403);
+    response.body.should.have.property('details', 'Client is not authorized for MPCv2 recovery');
+    etherscanTxlistNock.isDone().should.be.true();
+    etherscanBalanceNock.isDone().should.be.true();
+    awmNock.isDone().should.be.true();
+  });
 
   it('should recover a SEI (a cosmos-like) wallet by calling the advanced wallet manager service', async () => {
     const seiChainIdNock = nock('https://rest.atlantic-2.seinetwork.io')

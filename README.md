@@ -232,6 +232,7 @@ either KMS; returned shares must independently match the approved keychain.
 | ------------------------------- | ------------------------------------- | ------- |
 | `TLS_MODE`                      | TLS mode (`mtls` or `disabled`)       | `mtls`  |
 | `CLIENT_CERT_ALLOW_SELF_SIGNED` | Allow self-signed client certificates | `false` |
+| `MTLS_ALLOWED_CLIENT_FINGERPRINTS` | Allowed client certificate fingerprints | Comma-separated uppercase SHA-256 fingerprints without `sha256:` or colons; surrounding whitespace is ignored |
 
 #### Server Certificates (for incoming connections)
 
@@ -488,10 +489,13 @@ export KEY_PROVIDER_SERVER_CA_CERT_PATH=/secure/certs/key-provider-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:1a2b3c...,sha256:4d5e6f...
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1,B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2
 export BITGO_ENV=prod
 npm start
 ```
+
+The AWM setup above intentionally leaves ECDSA MPCv2 recovery disabled. To enable recovery, also set `RECOVERY_MODE=true`, add the recovery client fingerprint to `MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS`, and configure `MPCV2_RECOVERY_APPROVALS` with the approved coin, 130-hex common keychain, and 64-hex digest before starting AWM.
+
 
 #### 2. Start Master Express (Port 3081)
 
@@ -513,7 +517,7 @@ export AWM_SERVER_CA_CERT_PATH=/secure/certs/awm-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:7g8h9i...,sha256:0j1k2l...
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3,D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4D4
 npm start
 ```
 
@@ -567,7 +571,7 @@ To obtain a certificate fingerprint for the two AWM client allowlists:
 openssl x509 -in /path/to/client-cert.crt -noout -fingerprint -sha256 | cut -d'=' -f2 | tr -d ':'
 ```
 
-Use the resulting uppercase hex in both allowlists; do not include `sha256:`.
+Use the resulting uppercase hex in both allowlists; do not include `sha256:`. The same canonical format applies to `MTLS_ALLOWED_CLIENT_FINGERPRINTS` for incoming mTLS clients.
 
 #### Certificate Requirements for Production
 
