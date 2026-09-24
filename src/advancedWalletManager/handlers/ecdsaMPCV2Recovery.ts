@@ -12,9 +12,7 @@ import logger from '../../shared/logger';
 import coinFactory from '../../shared/coinFactory';
 import { buildBackupKmsConfig, checkRecoveryMode, retrieveKeyProviderPrvKey } from './utils/utils';
 
-async function getMessageHash(coin: BaseCoin, txHex: string): Promise<Buffer> {
-  const txBuffer = Buffer.from(txHex, 'hex');
-
+async function getMessageHash(coin: BaseCoin, txBuffer: Buffer): Promise<Buffer> {
   if (isEthLikeCoin(coin)) {
     const { TransactionFactory } = await import('@ethereumjs/tx');
     try {
@@ -61,7 +59,8 @@ export async function ecdsaMPCv2Recovery(
   if (!/^(?:[0-9a-f]{2})+$/i.test(txHex)) {
     throw new BadRequestError('Recovery transaction must be non-empty hex bytes');
   }
-  const txHexSha256 = createHash('sha256').update(Buffer.from(txHex, 'hex')).digest('hex');
+  const txBuffer = Buffer.from(txHex, 'hex');
+  const txHexSha256 = createHash('sha256').update(txBuffer).digest('hex');
   if (
     !req.config.mpcv2RecoveryApprovals?.some(
       (approval) =>
@@ -81,7 +80,7 @@ export async function ecdsaMPCv2Recovery(
     );
   }
 
-  const txHash = await getMessageHash(coin, txHex);
+  const txHash = await getMessageHash(coin, txBuffer);
 
   // setup clients and retrieve the keys
   const backupCfg = buildBackupKmsConfig(req.config);

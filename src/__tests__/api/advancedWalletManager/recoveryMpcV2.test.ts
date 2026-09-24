@@ -102,7 +102,10 @@ describe('recoveryMpcV2', () => {
 
     // app setup
     app = advancedWalletManagerApp(cfg);
-    server = https.createServer({ cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false }, app);
+    server = https.createServer(
+      { cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false },
+      app,
+    );
     agent = request.agent(server);
   });
 
@@ -137,7 +140,9 @@ describe('recoveryMpcV2', () => {
 
     const ethLikeSignatureResponse = await agent
       .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
-      .cert(testCert).key(testKey).ca(testCert)
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(input);
 
@@ -154,7 +159,9 @@ describe('recoveryMpcV2', () => {
 
     const cosmosLikeSignatureResponse = await agent
       .post(`/api/${cosmosLikeCoin}/mpcv2/recovery`)
-      .cert(testCert).key(testKey).ca(testCert)
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(input);
 
@@ -189,7 +196,9 @@ describe('recoveryMpcV2', () => {
 
     const response = await agent
       .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
-      .cert(testCert).key(testKey).ca(testCert)
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
       .send(input);
 
     response.status.should.equal(400);
@@ -224,7 +233,10 @@ describe('recoveryMpcV2', () => {
     };
     configStub.returns(dualCfg);
     const dualApp = advancedWalletManagerApp(dualCfg);
-    const dualServer = https.createServer({ cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false }, dualApp);
+    const dualServer = https.createServer(
+      { cert: testCert, key: testKey, requestCert: true, rejectUnauthorized: false },
+      dualApp,
+    );
     const dualAgent = request.agent(dualServer);
 
     // User key served from primary KMS
@@ -243,7 +255,9 @@ describe('recoveryMpcV2', () => {
 
     const response = await dualAgent
       .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
-      .cert(testCert).key(testKey).ca(testCert)
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(input);
 
@@ -269,7 +283,9 @@ describe('recoveryMpcV2', () => {
 
     const signatureResponse = await agent
       .post(`/api/${ethLikeCoin}/mpcv2/recovery`)
-      .cert(testCert).key(testKey).ca(testCert)
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
       .set('Authorization', `Bearer ${accessToken}`)
       .send(input);
 
@@ -304,9 +320,14 @@ describe('mpcv2 recovery with recovery mode disabled', () => {
       .get(`/key/${pub}`)
       .query({ source: 'user' })
       .reply(200, { prv: 'synthetic-private-share' });
-    const response = await request.agent(advancedWalletManagerApp(config))
+    const response = await request
+      .agent(advancedWalletManagerApp(config))
       .post('/api/hteth/mpcv2/recovery')
-      .send({ pub, txHex: '02f6824268018502540be4008504a817c80083030d409443442e403d64d29c4f64065d0c1a0e8edc03d6c88801550f7dca700000823078c0' });
+      .send({
+        pub,
+        txHex:
+          '02f6824268018502540be4008504a817c80083030d409443442e403d64d29c4f64065d0c1a0e8edc03d6c88801550f7dca700000823078c0',
+      });
 
     response.status.should.equal(500);
     response.body.details.should.equal(
@@ -337,11 +358,13 @@ describe('mpcv2 recovery authorization', () => {
     recoveryMode: true,
     mtlsAllowedClientFingerprints: [fingerprint],
     mpcv2RecoveryAllowedClientFingerprints: [fingerprint],
-    mpcv2RecoveryApprovals: [{
-      coin: 'hteth',
-      pub,
-      txHexSha256: createHash('sha256').update(Buffer.from(txHex, 'hex')).digest('hex'),
-    }],
+    mpcv2RecoveryApprovals: [
+      {
+        coin: 'hteth',
+        pub,
+        txHexSha256: createHash('sha256').update(Buffer.from(txHex, 'hex')).digest('hex'),
+      },
+    ],
   };
   const app = advancedWalletManagerApp(cfg);
   const server = https.createServer(
@@ -360,8 +383,10 @@ describe('mpcv2 recovery authorization', () => {
 
   it('rejects missing mTLS identity even with recovery mode enabled', async () => {
     const keyRequest = nock(keyProviderUrl).get(`/key/${pub}`).query({ source: 'user' }).reply(200);
-    const response = await agent.post('/api/hteth/mpcv2/recovery')
-      .ca(testCert).send({ pub, txHex });
+    const response = await agent
+      .post('/api/hteth/mpcv2/recovery')
+      .ca(testCert)
+      .send({ pub, txHex });
     response.status.should.equal(403);
     keyRequest.isDone().should.be.false();
   });
@@ -370,8 +395,12 @@ describe('mpcv2 recovery authorization', () => {
     cfg.mpcv2RecoveryAllowedClientFingerprints = [];
     const keyRequest = nock(keyProviderUrl).get(`/key/${pub}`).query({ source: 'user' }).reply(200);
     try {
-      const response = await agent.post('/api/hteth/mpcv2/recovery')
-        .cert(testCert).key(testKey).ca(testCert).send({ pub, txHex });
+      const response = await agent
+        .post('/api/hteth/mpcv2/recovery')
+        .cert(testCert)
+        .key(testKey)
+        .ca(testCert)
+        .send({ pub, txHex });
       response.status.should.equal(403);
       response.body.details.should.equal('Client is not authorized for MPCv2 recovery');
       keyRequest.isDone().should.be.false();
@@ -385,10 +414,16 @@ describe('mpcv2 recovery authorization', () => {
     cfg.mpcv2RecoveryApprovals = undefined;
     const keyRequest = nock(keyProviderUrl).get(`/key/${pub}`).query({ source: 'user' }).reply(200);
     try {
-      const response = await agent.post('/api/hteth/mpcv2/recovery')
-        .cert(testCert).key(testKey).ca(testCert).send({ pub, txHex });
+      const response = await agent
+        .post('/api/hteth/mpcv2/recovery')
+        .cert(testCert)
+        .key(testKey)
+        .ca(testCert)
+        .send({ pub, txHex });
       response.status.should.equal(403);
-      response.body.details.should.equal('Wallet and transaction are not approved for MPCv2 recovery');
+      response.body.details.should.equal(
+        'Wallet and transaction are not approved for MPCv2 recovery',
+      );
       keyRequest.isDone().should.be.false();
     } finally {
       cfg.mpcv2RecoveryApprovals = approvals;
@@ -397,19 +432,34 @@ describe('mpcv2 recovery authorization', () => {
 
   it('rejects an unapproved transaction before key lookup', async () => {
     const keyRequest = nock(keyProviderUrl).get(`/key/${pub}`).query({ source: 'user' }).reply(200);
-    const response = await agent.post('/api/hteth/mpcv2/recovery')
-      .cert(testCert).key(testKey).ca(testCert).send({ pub, txHex: 'deadbeee' });
+    const response = await agent
+      .post('/api/hteth/mpcv2/recovery')
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
+      .send({ pub, txHex: 'deadbeee' });
     response.status.should.equal(403);
-    response.body.details.should.equal('Wallet and transaction are not approved for MPCv2 recovery');
+    response.body.details.should.equal(
+      'Wallet and transaction are not approved for MPCv2 recovery',
+    );
     keyRequest.isDone().should.be.false();
   });
 
   it('rejects a wallet not on the approved list before key lookup', async () => {
-    const keyRequest = nock(keyProviderUrl).get('/key/other-wallet').query({ source: 'user' }).reply(200);
-    const response = await agent.post('/api/hteth/mpcv2/recovery')
-      .cert(testCert).key(testKey).ca(testCert).send({ pub: 'other-wallet', txHex });
+    const keyRequest = nock(keyProviderUrl)
+      .get('/key/other-wallet')
+      .query({ source: 'user' })
+      .reply(200);
+    const response = await agent
+      .post('/api/hteth/mpcv2/recovery')
+      .cert(testCert)
+      .key(testKey)
+      .ca(testCert)
+      .send({ pub: 'other-wallet', txHex });
     response.status.should.equal(403);
-    response.body.details.should.equal('Wallet and transaction are not approved for MPCv2 recovery');
+    response.body.details.should.equal(
+      'Wallet and transaction are not approved for MPCv2 recovery',
+    );
     keyRequest.isDone().should.be.false();
   });
 });

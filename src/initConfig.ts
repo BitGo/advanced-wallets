@@ -56,7 +56,9 @@ function readMpcv2RecoveryApprovals(): AdvancedWalletManagerConfig['mpcv2Recover
         /^[0-9a-f]{64}$/i.test(entry.txHexSha256),
     )
   ) {
-    throw new Error('MPCV2_RECOVERY_APPROVALS requires coin, 130-hex pub, and 64-hex txHexSha256 per entry');
+    throw new Error(
+      'MPCV2_RECOVERY_APPROVALS requires coin, 130-hex pub, and 64-hex txHexSha256 per entry',
+    );
   }
   return parsed;
 }
@@ -209,9 +211,9 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     tlsMode: determineTlsMode(),
     signingMode: determineSigningMode(),
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
-    mpcv2RecoveryAllowedClientFingerprints: readEnvVar(
-      'MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS',
-    )?.split(',').map((fingerprint) => fingerprint.trim().replace(/:/g, '').toUpperCase()),
+    mpcv2RecoveryAllowedClientFingerprints: readEnvVar('MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS')
+      ?.split(',')
+      .map((fingerprint) => fingerprint.trim().replace(/:/g, '').toUpperCase()),
     mpcv2RecoveryApprovals: readMpcv2RecoveryApprovals(),
     clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
