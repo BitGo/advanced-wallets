@@ -16,6 +16,12 @@ export enum KeySource {
 
 export type UserOrBackupKey = KeySource.USER | KeySource.BACKUP;
 
+export interface MpcV2RecoveryApproval {
+  coin: string;
+  pub: string;
+  txHexSha256: string;
+}
+
 export enum AppMode {
   ADVANCED_WALLET_MANAGER = 'advanced-wallet-manager',
   MASTER_EXPRESS = 'master-express',
@@ -65,6 +71,10 @@ export interface AdvancedWalletManagerConfig extends BaseConfig {
   serverTlsCert?: string;
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
+  // Only these mTLS identities may combine MPCv2 user and backup shares.
+  mpcv2RecoveryAllowedClientFingerprints?: string[];
+  // Operator-approved wallet keychains and exact unsigned transaction digests.
+  mpcv2RecoveryApprovals?: MpcV2RecoveryApproval[];
   clientCertAllowSelfSigned?: boolean;
   signingMode: SigningMode;
 }

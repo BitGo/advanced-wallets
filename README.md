@@ -205,10 +205,24 @@ These settings are only required when you want to use a **separate AWM instance 
 | Variable             | Description                                         | Default                | Applies To |
 | -------------------- | --------------------------------------------------- | ---------------------- | ---------- |
 | `RECOVERY_MODE`      | Enable recovery mode for wallet recovery operations | `false`                | Both       |
+| `MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS` | Dedicated mTLS client fingerprints authorized for ECDSA MPCv2 share combination | Unset (disabled) | AWM |
+| `MPCV2_RECOVERY_APPROVALS` | JSON array of operator-approved `{ "coin", "pub", "txHexSha256" }` recovery transactions; SHA-256 is over decoded transaction bytes | Unset (disabled) | AWM |
 | `HTTP_LOGFILE`       | Path to HTTP access log file                        | `logs/http-access.log` | Both       |
 | `KEEP_ALIVE_TIMEOUT` | Keep-alive timeout in milliseconds                  | -                      | Both       |
 | `HEADERS_TIMEOUT`    | Headers timeout in milliseconds                     | -                      | Both       |
 | `IPC`                | IPC socket path (alternative to TCP port binding)   | -                      | Both       |
+
+ECDSA MPCv2 recovery requires `RECOVERY_MODE=true` and `TLS_MODE=mtls`. A dedicated
+recovery client's SHA-256 certificate fingerprint (uppercase hex, without colons)
+must be in **both** `MTLS_ALLOWED_CLIENT_FINGERPRINTS` and
+`MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS`. Before sending the recovery
+request, an operator must verify the target wallet's common keychain and the
+exact unsigned transaction (including destination) and approve its SHA-256
+hash in `MPCV2_RECOVERY_APPROVALS`, e.g.
+`[{"coin":"hteth","pub":"<130 hex characters>","txHexSha256":"<64 hex characters>"}]`.
+The hash is of the bytes decoded from `txHex`, not of the UTF-8 hex string.
+Absent authorization or approval, AWM refuses the request before contacting
+either KMS; returned shares must independently match the approved keychain.
 
 ### TLS/mTLS Configuration
 
@@ -547,13 +561,13 @@ For local testing, you can generate and use demo certificates with the self-sign
 
 #### Getting Client Certificate Fingerprints
 
-To obtain certificate fingerprints for `MTLS_ALLOWED_CLIENT_FINGERPRINTS`:
+To obtain a certificate fingerprint for the two AWM client allowlists:
 
 ```bash
-openssl x509 -in /path/to/client-cert.crt -noout -fingerprint -sha256 | cut -d'=' -f2
+openssl x509 -in /path/to/client-cert.crt -noout -fingerprint -sha256 | cut -d'=' -f2 | tr -d ':'
 ```
 
-The output format is: `sha256:AB:CD:EF:...` which you can use in the configuration.
+Use the resulting uppercase hex in both allowlists; do not include `sha256:`.
 
 #### Certificate Requirements for Production
 

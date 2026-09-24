@@ -113,6 +113,7 @@ const ErrorResponse = t.type({
   details: t.string,
 });
 export const BadRequestResponse = { 400: ErrorResponse };
+export const ForbiddenResponse = { 403: ErrorResponse };
 export const NotFoundResponse = { 404: ErrorResponse };
 export const ConflictErrorResponse = { 409: ErrorResponse };
 export const UnprocessableEntityResponse = { 422: ErrorResponse };

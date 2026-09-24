@@ -32,6 +32,35 @@ function readEnvVar(name: string): string | undefined {
   }
 }
 
+function readMpcv2RecoveryApprovals(): AdvancedWalletManagerConfig['mpcv2RecoveryApprovals'] {
+  const value = readEnvVar('MPCV2_RECOVERY_APPROVALS');
+  if (!value) return undefined;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error('MPCV2_RECOVERY_APPROVALS must be a JSON array');
+  }
+  if (
+    !Array.isArray(parsed) ||
+    !parsed.every(
+      (entry) =>
+        entry !== null &&
+        typeof entry === 'object' &&
+        typeof entry.coin === 'string' &&
+        entry.coin.length > 0 &&
+        typeof entry.pub === 'string' &&
+        /^[0-9a-f]{130}$/i.test(entry.pub) &&
+        typeof entry.txHexSha256 === 'string' &&
+        /^[0-9a-f]{64}$/i.test(entry.txHexSha256),
+    )
+  ) {
+    throw new Error('MPCV2_RECOVERY_APPROVALS requires coin, 130-hex pub, and 64-hex txHexSha256 per entry');
+  }
+  return parsed;
+}
+
 function readCertFile(filePath: string, label: string): string {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -180,6 +209,10 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     tlsMode: determineTlsMode(),
     signingMode: determineSigningMode(),
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
+    mpcv2RecoveryAllowedClientFingerprints: readEnvVar(
+      'MPCV2_RECOVERY_ALLOWED_CLIENT_FINGERPRINTS',
+    )?.split(',').map((fingerprint) => fingerprint.trim().replace(/:/g, '').toUpperCase()),
+    mpcv2RecoveryApprovals: readMpcv2RecoveryApprovals(),
     clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
   };
@@ -229,6 +262,8 @@ function mergeAkmConfigs(
     tlsMode: get('tlsMode'),
     signingMode: get('signingMode'),
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
+    mpcv2RecoveryAllowedClientFingerprints: get('mpcv2RecoveryAllowedClientFingerprints'),
+    mpcv2RecoveryApprovals: get('mpcv2RecoveryApprovals'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
   };
