@@ -29,12 +29,11 @@ import { RecoveryMultisigUnsignedSweepTx } from '../clients/advancedWalletManage
 import { MasterApiSpecRouteRequest, ScriptType2Of3 } from '../routers/masterBitGoExpressApiSpec';
 import { CoinSpecificParams, CoinSpecificParamsUnion } from '../routers/recoveryRoute';
 import { recoverEddsaWallets } from './recoveryEddsa';
-import { EnvironmentName, MasterExpressConfig } from '../../shared/types';
+import { EnvironmentName } from '../../shared/types';
 import { recoverEcdsaMpcV2Params, recoverEcdsaMPCv2Wallets } from './recoveryEcdsa';
 import logger from '../../shared/logger';
 import { BadRequestError, NotImplementedError, ValidationError } from '../../shared/errors';
 import { CoinFamily } from '@bitgo-beta/statics';
-import { checkRecoveryMode } from './utils/utils';
 import { AsyncJobResponse } from '../clients/bridgeClient.types';
 import { MultisigRecoveryBody, submitMultisigRecoveryJob } from './utils/multisigRecoveryUtils';
 
@@ -250,8 +249,6 @@ async function handleUtxoLikeRecovery(
 export async function handleRecoveryWallet(
   req: MasterApiSpecRouteRequest<'v1.wallet.recovery', 'post'>,
 ) {
-  checkRecoveryMode(req.config as MasterExpressConfig);
-
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
   const { recoveryDestinationAddress, coinSpecificParams } = req.decoded;

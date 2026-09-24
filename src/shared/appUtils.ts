@@ -196,11 +196,17 @@ export function createMtlsMiddleware(config: {
   };
 }
 
+const recoveryModeDisabledDetails =
+  'Recovery operations are not enabled. The server must be in recovery mode to perform this action.';
+
 export function createRecoveryAuthMiddleware(config: Config): express.RequestHandler {
   const expected = config.recoveryAuthToken && Buffer.from(config.recoveryAuthToken);
   return (req, res, next) => {
     if (!config.recoveryMode) {
-      return next();
+      return res.status(500).json({
+        error: 'Error',
+        details: recoveryModeDisabledDetails,
+      });
     }
     const supplied = req.get('x-recovery-token');
     if (!supplied || !expected) {
