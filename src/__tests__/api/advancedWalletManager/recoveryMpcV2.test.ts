@@ -74,6 +74,7 @@ describe('recoveryMpcV2', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
+      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     };
 
     configStub = sandbox.stub(configModule, 'initConfig').returns(cfg);
@@ -81,6 +82,7 @@ describe('recoveryMpcV2', () => {
     // app setup
     app = advancedWalletManagerApp(cfg);
     agent = request.agent(app);
+    agent.set('x-recovery-token', cfg.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -168,6 +170,7 @@ describe('recoveryMpcV2', () => {
     configStub.returns(dualCfg);
     const dualApp = advancedWalletManagerApp(dualCfg);
     const dualAgent = request.agent(dualApp);
+    dualAgent.set('x-recovery-token', dualCfg.recoveryAuthToken!);
 
     // User key served from primary KMS
     const userKmsNock = nock(kmsUrl)
@@ -225,5 +228,43 @@ describe('recoveryMpcV2', () => {
     signatureResponse.body.details.should.startWith(
       'Failed to construct eth transaction from message hex',
     );
+  });
+});
+
+describe('mpcv2 recovery with recovery mode disabled', () => {
+  it('rejects before retrieving either private share', async () => {
+    const keyProviderUrl = 'http://key-provider.invalid';
+    const config: AdvancedWalletManagerConfig = {
+      appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
+      port: 0,
+      bind: 'localhost',
+      timeout: 60000,
+      httpLoggerFile: '',
+      keyProviderUrl,
+      tlsMode: TlsMode.DISABLED,
+      clientCertAllowSelfSigned: true,
+      recoveryMode: false,
+    };
+    const pub = 'synthetic-common-keychain';
+    const keyRequest = nock(keyProviderUrl)
+      .get(`/key/${pub}`)
+      .query({ source: 'user' })
+      .reply(200, { prv: 'synthetic-private-share' });
+
+    const response = await request
+      .agent(advancedWalletManagerApp(config))
+      .post('/api/hteth/mpcv2/recovery')
+      .send({
+        pub,
+        txHex:
+          '02f6824268018502540be4008504a817c80083030d409443442e403d64d29c4f64065d0c1a0e8edc03d6c88801550f7dca700000823078c0',
+      });
+
+    response.status.should.equal(500);
+    response.body.details.should.equal(
+      'Recovery operations are not enabled. The server must be in recovery mode to perform this action.',
+    );
+    keyRequest.isDone().should.be.false();
   });
 });

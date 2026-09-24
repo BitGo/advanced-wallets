@@ -28,10 +28,12 @@ describe('recoveryMpc', () => {
       tlsMode: TlsMode.DISABLED,
 
       recoveryMode: true,
+      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     };
 
     const app = expressApp(config);
     agent = request.agent(app);
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -175,10 +177,12 @@ describe('recoveryMpc', () => {
         httpLoggerFile: '',
         tlsMode: TlsMode.DISABLED,
         recoveryMode: true,
+        recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
       };
 
       const dualApp = expressApp(dualCfg);
       const dualAgent = request.agent(dualApp);
+      dualAgent.set('x-recovery-token', dualCfg.recoveryAuthToken!);
 
       // User key served from primary KMS
       const userKmsNock = nock(primaryKmsUrl)

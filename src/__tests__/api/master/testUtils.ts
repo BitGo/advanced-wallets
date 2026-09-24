@@ -37,6 +37,7 @@ export function makeMasterExpressTestConfig(
     awmServerCaCert: 'test-cert',
     tlsMode: TlsMode.DISABLED,
     clientCertAllowSelfSigned: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     asyncModeConfig: options.asyncEnabled
       ? {
           enabled: true,

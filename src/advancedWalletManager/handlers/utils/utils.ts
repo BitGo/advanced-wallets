@@ -157,14 +157,6 @@ export function isNonBitgoKeySource(source: string): source is KeySource.USER | 
   return source === KeySource.USER || source === KeySource.BACKUP;
 }
 
-export function checkRecoveryMode(config: AdvancedWalletManagerConfig) {
-  if (!config.recoveryMode) {
-    throw new Error(
-      'Recovery operations are not enabled. The server must be in recovery mode to perform this action.',
-    );
-  }
-}
-
 export async function verifyWalletSignatures({
   bitgo,
   coin,
