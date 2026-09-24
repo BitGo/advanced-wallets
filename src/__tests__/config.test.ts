@@ -54,6 +54,7 @@ describe('Configuration', () => {
     delete process.env.AWM_CLIENT_TLS_CERT_PATH;
     delete process.env.KEY_PROVIDER_SERVER_CA_CERT_PATH;
     delete process.env.RECOVERY_MODE;
+    delete process.env.RECOVERY_AUTH_TOKEN;
     delete process.env.ADVANCED_WALLET_MANAGER_BACKUP_URL;
     delete process.env.AWM_BACKUP_SERVER_CA_CERT_PATH;
     delete process.env.AWM_BACKUP_CLIENT_TLS_KEY_PATH;
@@ -140,12 +141,29 @@ describe('Configuration', () => {
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
       process.env.KEY_PROVIDER_CLIENT_TLS_CERT = mockClientTlsCert;
       process.env.RECOVERY_MODE = 'true';
+      process.env.RECOVERY_AUTH_TOKEN = 'test-recovery-token-at-least-32-characters';
       process.env.KEY_PROVIDER_SERVER_CA_CERT_PATH = path.resolve(
         __dirname,
         'mocks/certs/test-ssl-cert.pem',
       );
       const cfg = initConfig();
       cfg.recoveryMode!.should.be.true();
+    });
+
+    it('rejects recovery without a strong token or with unauthenticated non-local binding', () => {
+      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.TLS_MODE = 'disabled';
+      process.env.RECOVERY_MODE = 'true';
+      (() => initConfig()).should.throw(/RECOVERY_AUTH_TOKEN/);
+      process.env.RECOVERY_AUTH_TOKEN = 'short';
+      (() => initConfig()).should.throw(/RECOVERY_AUTH_TOKEN/);
+      process.env.RECOVERY_AUTH_TOKEN = 'test-recovery-token-at-least-32-characters';
+      process.env.BIND = '0.0.0.0';
+      (() => initConfig()).should.throw(/requires mTLS for non-local TCP binding/);
+      process.env.BIND = '::';
+      (() => initConfig()).should.throw(/requires mTLS for non-local TCP binding/);
+      process.env.BIND = '127.0.0.1';
+      initConfig().recoveryMode!.should.be.true();
     });
 
     it('should read TLS mode from environment variables', () => {
@@ -368,6 +386,17 @@ describe('Configuration', () => {
         cfg.authVersion!.should.equal(3);
         cfg.customBitcoinNetwork!.should.equal('testnet');
       }
+    });
+
+    it('rejects recovery without a token or with unauthenticated non-local binding', () => {
+      process.env.TLS_MODE = 'disabled';
+      process.env.RECOVERY_MODE = 'true';
+      (() => initConfig()).should.throw(/RECOVERY_AUTH_TOKEN/);
+      process.env.RECOVERY_AUTH_TOKEN = 'test-recovery-token-at-least-32-characters';
+      process.env.BIND = '0.0.0.0';
+      (() => initConfig()).should.throw(/requires mTLS for non-local TCP binding/);
+      process.env.BIND = 'localhost';
+      initConfig().recoveryMode!.should.be.true();
     });
 
     it('should handle TLS mode disabled configuration', () => {

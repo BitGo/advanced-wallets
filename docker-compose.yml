@@ -1,119 +1,74 @@
-version: '3.8'
-
+# Bootstrap certificates with scripts/bootstrap-compose-certs.sh before starting.
+# Supply KEY_PROVIDER_URL (HTTPS) and ./deploy/certs/key-provider-ca.pem from your key provider.
+# Recovery is disabled by default; enable temporarily only with RECOVERY_AUTH_TOKEN set.
 services:
-  # Service for advanced-wallet-manager (AWM)
   advanced-wallet-manager:
-    build: . # Build from the Dockerfile inside the repo
-    container_name: advanced-wallet-manager
+    build: .
+    user: "${COMPOSE_UID:?Run scripts/bootstrap-compose-certs.sh}:${COMPOSE_GID:?Run scripts/bootstrap-compose-certs.sh}"
     networks:
-      - my-internal-network # Only part of the internal network
+      - my-internal-network
     environment:
-      # Application mode (required)
       - APP_MODE=advanced-wallet-manager
-
-      # Network settings
       - ADVANCED_WALLET_MANAGER_PORT=3080
-      - BIND=0.0.0.0
+      - BIND=0.0.0.0 # Container-only listener; no host port published
+      - TLS_MODE=mtls
+      - SERVER_TLS_KEY_PATH=/app/certs/awm-server.key
+      - SERVER_TLS_CERT_PATH=/app/certs/awm-server.crt
+      - MTLS_ALLOWED_CLIENT_FINGERPRINTS=${AWM_ALLOWED_CLIENT_FINGERPRINTS:?Run scripts/bootstrap-compose-certs.sh and supply --env-file deploy/certs/fingerprints.env}
+      - KEY_PROVIDER_URL=${KEY_PROVIDER_URL:?Set an HTTPS key provider URL}
+      - KEY_PROVIDER_SERVER_CA_CERT_PATH=/app/certs/key-provider-ca.pem
+      - KEY_PROVIDER_CLIENT_TLS_KEY_PATH=/app/certs/awm-key-provider-client.key
+      - KEY_PROVIDER_CLIENT_TLS_CERT_PATH=/app/certs/awm-key-provider-client.crt
       - TIMEOUT=305000
       - KEEP_ALIVE_TIMEOUT=65000
       - HEADERS_TIMEOUT=66000
-
-      # TLS settings
-      - TLS_MODE=disabled
-      - CLIENT_CERT_ALLOW_SELF_SIGNED=true
-
-      # Key provider settings (required)
-      - KEY_PROVIDER_URL=http://172.20.0.1:3000 # UPDATE TO YOUR OWN key provider URL
-      - KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=true
-
-      # Optional key provider TLS settings (uncomment if using mTLS with key provider)
-      # - KEY_PROVIDER_SERVER_CA_CERT_PATH=/path/to/key-provider-ca-cert.pem
-      # - KEY_PROVIDER_CLIENT_TLS_KEY_PATH=/path/to/key-provider-client-key.pem
-      # - KEY_PROVIDER_CLIENT_TLS_CERT_PATH=/path/to/key-provider-client-cert.pem
-      # - KEY_PROVIDER_CLIENT_TLS_KEY=<key-content>
-      # - KEY_PROVIDER_CLIENT_TLS_CERT=<cert-content>
-
-      # Optional server TLS settings (uncomment if using mTLS)
-      # - SERVER_TLS_KEY_PATH=/path/to/server-key.pem
-      # - SERVER_TLS_CERT_PATH=/path/to/server-cert.pem
-      # - SERVER_TLS_KEY=<key-content>
-      # - SERVER_TLS_CERT=<cert-content>
-      # - MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123,DEF456
-
-      # Logging and debug
       - HTTP_LOGFILE=logs/http-access.log
-      - RECOVERY_MODE=true
-      # Default to local signing mode 
+      - RECOVERY_MODE=${RECOVERY_MODE:-false}
+      - RECOVERY_AUTH_TOKEN=${RECOVERY_AUTH_TOKEN:-}
       - NODE_ENV=production
       - LOG_LEVEL=info
     restart: always
-    ports: [] # No public ports exposed
     volumes:
-      - ./logs:/app/logs # Mount logs directory
+      - ./logs:/app/logs
+      - ./deploy/certs/awm:/app/certs:ro
 
-  # Service for master-bitgo-express (MBE) - both internal and publicly accessible
   master-bitgo-express:
-    build: . # Build from the Dockerfile inside the repo
-    container_name: master-bitgo-express
+    build: .
+    user: "${COMPOSE_UID:?Run scripts/bootstrap-compose-certs.sh}:${COMPOSE_GID:?Run scripts/bootstrap-compose-certs.sh}"
     networks:
-      - my-internal-network # Connect to the internal network for internal communication
-      - my-public-network # Connect to the public network for external access
+      - my-internal-network
+      - my-public-network # Outbound BitGo API access; no host port published
     environment:
-      # Application mode (required)
       - APP_MODE=master-express
-
-      # Network settings
       - MASTER_EXPRESS_PORT=3081
-      - BIND=0.0.0.0
+      - BIND=0.0.0.0 # Container-only listener; no host port published
+      - TLS_MODE=mtls
+      - SERVER_TLS_KEY_PATH=/app/certs/mbe-server.key
+      - SERVER_TLS_CERT_PATH=/app/certs/mbe-server.crt
+      - MTLS_ALLOWED_CLIENT_FINGERPRINTS=${MBE_ALLOWED_CLIENT_FINGERPRINTS:?Run scripts/bootstrap-compose-certs.sh and supply --env-file deploy/certs/fingerprints.env}
+      - ADVANCED_WALLET_MANAGER_URL=https://advanced-wallet-manager:3080
+      - AWM_SERVER_CA_CERT_PATH=/app/certs/ca.crt
+      - AWM_CLIENT_TLS_KEY_PATH=/app/certs/mbe-awm-client.key
+      - AWM_CLIENT_TLS_CERT_PATH=/app/certs/mbe-awm-client.crt
+      - BITGO_ENV=test # Change to prod for production
+      - BITGO_DISABLE_ENV_CHECK=false
+      - BITGO_AUTH_VERSION=2
       - TIMEOUT=305000
       - KEEP_ALIVE_TIMEOUT=65000
       - HEADERS_TIMEOUT=66000
-
-      # BitGo API settings
-      - BITGO_ENV=test
-      - BITGO_DISABLE_ENV_CHECK=true
-      - BITGO_AUTH_VERSION=2
-      # - BITGO_CUSTOM_ROOT_URI=https://custom-bitgo-api.com
-      # - BITGO_CUSTOM_BITCOIN_NETWORK=testnet
-
-      # Advanced Wallet Manager connection (required)
-      - ADVANCED_WALLET_MANAGER_URL=http://advanced-wallet-manager:3080
-      - AWM_SERVER_CERT_ALLOW_SELF_SIGNED=true
-
-      # Optional AWM TLS settings (uncomment if using mTLS with AWM)
-      # - AWM_SERVER_CA_CERT_PATH=/path/to/awm-ca-cert.pem
-      # - AWM_CLIENT_TLS_KEY_PATH=/path/to/awm-client-key.pem
-      # - AWM_CLIENT_TLS_CERT_PATH=/path/to/awm-client-cert.pem
-      # - AWM_CLIENT_TLS_KEY=<key-content>
-      # - AWM_CLIENT_TLS_CERT=<cert-content>
-
-      # TLS settings
-      - TLS_MODE=disabled
-      - CLIENT_CERT_ALLOW_SELF_SIGNED=true
-
-      # Optional server TLS settings (uncomment if using mTLS)
-      # - SERVER_TLS_KEY_PATH=/path/to/server-key.pem
-      # - SERVER_TLS_CERT_PATH=/path/to/server-cert.pem
-      # - SERVER_TLS_KEY=<key-content>
-      # - SERVER_TLS_CERT=<cert-content>
-      # - MTLS_ALLOWED_CLIENT_FINGERPRINTS=ABC123,DEF456
-
-      # Logging and debug
       - HTTP_LOGFILE=logs/http-access.log
-      - RECOVERY_MODE=true
+      - RECOVERY_MODE=${RECOVERY_MODE:-false}
+      - RECOVERY_AUTH_TOKEN=${RECOVERY_AUTH_TOKEN:-}
       - NODE_ENV=production
       - LOG_LEVEL=info
     restart: always
-    ports:
-      - '3081:3081' # Expose MBE publicly on port 3081
     volumes:
-      - ./logs:/app/logs # Mount logs directory
+      - ./logs:/app/logs
+      - ./deploy/certs/mbe:/app/certs:ro
 
-# Networks section
 networks:
   my-internal-network:
-    driver: bridge # Internal communication network, no access to the internet
-    internal: true # Ensures this network is not accessible from outside
-
+    driver: bridge
+    internal: true
   my-public-network:
-    driver: bridge # Public network, allowing external access to MBE
+    driver: bridge

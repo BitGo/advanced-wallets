@@ -12,7 +12,7 @@ Key features include:
 - **Complete Infrastructure Control** - Host and manage all components in your own secure environment.
 - **KMS/HSM Integration** - Bring your own KMS or HSM by implementing the provided [advanced wallets key provider API interface specification](./key-provider-api-spec.yaml). Reference implementations available for [AWS HSM](./demo-key-provider-script/aws-interface.md) and [Dinamo HSM](./demo-key-provider-script/dinamo-interface.md).
 - **Network Isolation** - Advanced Wallet Manager operates in a completely isolated network segment with no external internet access.
-- **mTLS Security** - Optional mutual TLS with client certificate validation for secure inter-service communications.
+- **mTLS Security** - Mutual TLS with client certificate validation for secure inter-service communications (required for network-accessible recovery).
 - **Flexible Configuration** - Environment-based setup with file or variable-based certificates.
 
 ## Table of Contents
@@ -154,7 +154,7 @@ curl -X POST http://localhost:3081/advancedwallet/ping
 curl -X POST http://localhost:3081/ping/advancedWalletManager
 ```
 
-> **Note:** You should only use `TLS_MODE=disabled` for local development and testing. Always use mTLS in production environments. For information about configuring mTLS in production, see the [Production Setup](#production-setup) section.
+> **Note:** You should only use `TLS_MODE=disabled` for local development and testing. Never enable recovery on a non-local unauthenticated listener. Always use mTLS in production environments. For information about configuring mTLS in production, see the [Production Setup](#production-setup) section.
 
 ## Configuration
 
@@ -204,7 +204,8 @@ These settings are only required when you want to use a **separate AWM instance 
 
 | Variable             | Description                                         | Default                | Applies To |
 | -------------------- | --------------------------------------------------- | ---------------------- | ---------- |
-| `RECOVERY_MODE`      | Enable recovery mode for wallet recovery operations | `false`                | Both       |
+| `RECOVERY_MODE`      | Enable recovery temporarily; disable immediately after use | `false`                | Both       |
+| `RECOVERY_AUTH_TOKEN` | Shared high-entropy secret (at least 32 bytes) required on both services while recovery is enabled | - | Both |
 | `HTTP_LOGFILE`       | Path to HTTP access log file                        | `logs/http-access.log` | Both       |
 | `KEEP_ALIVE_TIMEOUT` | Keep-alive timeout in milliseconds                  | -                      | Both       |
 | `HEADERS_TIMEOUT`    | Headers timeout in milliseconds                     | -                      | Both       |
@@ -359,7 +360,7 @@ The application includes a Docker Compose configuration that runs both Advanced 
 The Docker Compose setup creates two isolated services:
 
 - **Advanced Wallet Manager (AWM)**: Runs in an isolated internal network with no external access for maximum security.
-- **Master BitGo Express (MBE)**: Connects to both internal network (for AWM communication) and public network (for external API access).
+- **Master BitGo Express (MBE)**: Connects to the internal network for AWM communication and an outbound network for BitGo API access. No ports are published to the host.
 - **Network Isolation**: AWM is completely isolated from external networks and only accessible through MBE.
 
 ### Network Configuration
@@ -373,33 +374,29 @@ The setup creates two distinct networks:
    - No external internet access for security
 
 2. **my-public-network**:
-   - Public bridge network
-   - Used for external access to MBE APIs
-   - Connected to host networking
+   - Outbound bridge network for MBE's BitGo API calls; it does not publish MBE to the host.
+   - Only attach trusted containers: containers on the same Docker network can reach each other's listeners.
 
 ### Prerequisites
 
-1. **Install Docker and Docker Compose**
-2. **Ensure your key provider API implementation is running** on your host machine (typically on port 3000)
-
-### Quick Start
-
-#### 1. Start Services
+1. Install Docker Compose and OpenSSL.
+2. Configure a reachable **HTTPS** key provider. Its CA certificate must be available as `deploy/certs/awm/key-provider-ca.pem`; the key provider must trust the generated AWM client certificate (or replace the bootstrap credentials with your own). Do not use the sample `demo.key`, `demo.crt`, or checked-in test certificates in a deployment.
+3. Generate distinct service and client certificates for **local evaluation only**. The bootstrap CA is a 30-day local CA: use your organization's PKI and a trusted key provider in production. Keep `deploy/ca` and `deploy/clients` private and off container volumes.
 
 ```bash
-# Navigate to project directory
-cd advanced-wallet
-
-# Start both services in background
-docker-compose up -d
+./scripts/bootstrap-compose-certs.sh
+# Install the CA cert used by the key provider to sign its HTTPS server certificate:
+cp /secure/path/to/key-provider-ca.pem deploy/certs/awm/key-provider-ca.pem
+export KEY_PROVIDER_URL=https://your-key-provider:3000
+# fingerprints.env pins the MBE client on AWM and your external client on MBE.
+docker compose --env-file deploy/certs/fingerprints.env up -d --build
 ```
 
-#### 2. Stop Services
+The compose file uses mTLS for MBE → AWM and for each inbound connection. It does **not** publish port 3081; to reach MBE, provision a separately secured client path and allowlisted mTLS client, or connect from a trusted private network. The generated `deploy/clients/mbe-client.{crt,key}` are for local evaluation only. `BIND=0.0.0.0` listens inside each container, **not** on a host port. Keep the internal network exclusive to trusted services, and never expose AWM directly. For production set `BITGO_ENV=prod` and replace all bootstrap certificates with certificates issued by your PKI.
 
-```bash
-# Stop and remove containers
-docker-compose down
-```
+**Recovery procedure:** generate a random secret (`openssl rand -hex 32`), provide it as `RECOVERY_AUTH_TOKEN` and set `RECOVERY_MODE=true` on **both** services for the recovery window only. Set `X-Recovery-Token: <secret>` on requests to `/advancedwallet/recovery` and `/advancedwallet/recoveryconsolidations`; MBE forwards the configured secret to AWM recovery endpoints. `Authorization: Bearer ...` is the separate BitGo API token and does not authorize recovery. The token is required even with mTLS; never send it over a network without TLS. Recovery requests can return fully signed transactions from xpubs/commonKeychain alone: treat those public key materials as sensitive and rotate the recovery secret after use. Disable `RECOVERY_MODE` immediately after recovery and restart both services. Recovery with TLS disabled is only allowed on a loopback listener.
+
+Stop the stack with `docker compose --env-file deploy/certs/fingerprints.env down`.
 
 ## API Endpoints
 
@@ -474,7 +471,7 @@ export KEY_PROVIDER_SERVER_CA_CERT_PATH=/secure/certs/key-provider-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:1a2b3c...,sha256:4d5e6f...
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=<uppercase-hex-sha256-fingerprint-of-MBE-client>
 export BITGO_ENV=prod
 npm start
 ```
@@ -499,7 +496,7 @@ export AWM_SERVER_CA_CERT_PATH=/secure/certs/awm-ca.crt
 # Security settings - production-grade
 export CLIENT_CERT_ALLOW_SELF_SIGNED=false
 export AWM_SERVER_CERT_ALLOW_SELF_SIGNED=false
-export MTLS_ALLOWED_CLIENT_FINGERPRINTS=sha256:7g8h9i...,sha256:0j1k2l...
+export MTLS_ALLOWED_CLIENT_FINGERPRINTS=<uppercase-hex-sha256-fingerprint-of-approved-client>
 npm start
 ```
 

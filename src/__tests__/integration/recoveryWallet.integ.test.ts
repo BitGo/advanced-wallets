@@ -100,7 +100,11 @@ describe('Recovery wallet: EXTERNAL signing', () => {
       `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/recovery`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+          'x-recovery-token': 'test-recovery-token-at-least-32-characters',
+        },
         body: JSON.stringify(recoveryRequestBody),
       },
     );
@@ -202,7 +206,11 @@ describe('Recovery wallet: LOCAL signing', () => {
       `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/recovery`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+          'x-recovery-token': 'test-recovery-token-at-least-32-characters',
+        },
         body: JSON.stringify(recoveryRequestBody),
       },
     );

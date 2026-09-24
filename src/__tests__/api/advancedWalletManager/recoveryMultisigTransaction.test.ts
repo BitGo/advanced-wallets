@@ -27,6 +27,7 @@ describe('UTXO recovery', () => {
     clientCertAllowSelfSigned: true,
     keyProviderUrl: 'key-provider.example.com',
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
   };
 
   beforeEach(() => {
@@ -71,6 +72,7 @@ describe('UTXO recovery', () => {
     // Create app after middleware is stubbed
     const app = expressApp(config);
     agent = request.agent(app);
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -164,6 +166,7 @@ describe('UTXO recovery — external signing mode', () => {
     clientCertAllowSelfSigned: true,
     keyProviderUrl,
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
   };
 
   const utxoCoinStub = {
@@ -188,6 +191,7 @@ describe('UTXO recovery — external signing mode', () => {
 
     const app = expressApp(config);
     agent = request.agent(app);
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -360,6 +364,7 @@ describe('EVM recovery — external signing mode', () => {
     clientCertAllowSelfSigned: true,
     keyProviderUrl,
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
   };
 
   const evmCoinStub = {
@@ -383,6 +388,7 @@ describe('EVM recovery — external signing mode', () => {
     sinon.stub(coinFactory, 'getCoin').resolves(evmCoinStub);
 
     agent = request.agent(expressApp(config));
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -496,6 +502,7 @@ describe('UTXO recovery — local signing with keyToSign', () => {
     clientCertAllowSelfSigned: true,
     keyProviderUrl: 'key-provider.example.com',
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
   };
 
   beforeEach(() => {
@@ -523,6 +530,7 @@ describe('UTXO recovery — local signing with keyToSign', () => {
     retrieveStub.withArgs({ pub: backupPub, source: 'backup', cfg: config }).resolves(backupPrv);
 
     agent = request.agent(expressApp(config));
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -633,6 +641,7 @@ describe('EVM recovery — local signing with keyToSign (two-phase)', () => {
     clientCertAllowSelfSigned: true,
     keyProviderUrl: 'key-provider.example.com',
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
   };
 
   beforeEach(() => {
@@ -660,6 +669,7 @@ describe('EVM recovery — local signing with keyToSign (two-phase)', () => {
     retrieveStub.withArgs({ pub: backupPub, source: 'backup', cfg: config }).resolves(backupPrv);
 
     agent = request.agent(expressApp(config));
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {

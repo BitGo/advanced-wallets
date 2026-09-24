@@ -194,6 +194,7 @@ export class AdvancedWalletManagerClient {
   private readonly awmServerCertAllowSelfSigned: boolean;
   private readonly coin?: string;
   private readonly tlsMode: TlsMode;
+  private readonly recoveryAuthToken?: string;
 
   private readonly apiClient: ApiClient<superagent.Request, typeof AdvancedWalletManagerApiSpec>;
 
@@ -217,6 +218,7 @@ export class AdvancedWalletManagerClient {
     this.awmServerCertAllowSelfSigned = cfg.awmServerCertAllowSelfSigned ?? false;
     this.coin = coin;
     this.tlsMode = cfg.tlsMode;
+    this.recoveryAuthToken = cfg.recoveryAuthToken;
 
     // Create a request factory with TLS configuration
     const requestFactory = superagentRequestFactory(superagent, this.baseUrl);
@@ -277,6 +279,9 @@ export class AdvancedWalletManagerClient {
         request = request.agent(this.createHttpsAgent());
       }
 
+      if (this.recoveryAuthToken) {
+        request.set('x-recovery-token', this.recoveryAuthToken);
+      }
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error) {
@@ -422,6 +427,9 @@ export class AdvancedWalletManagerClient {
       if (this.tlsMode === TlsMode.MTLS) {
         request = request.agent(this.createHttpsAgent());
       }
+      if (this.recoveryAuthToken) {
+        request.set('x-recovery-token', this.recoveryAuthToken);
+      }
       logger.info('Recovering multisig (user half-sign) for coin: %s', this.coin);
       const res = await request.decodeExpecting(200);
 
@@ -450,6 +458,9 @@ export class AdvancedWalletManagerClient {
 
       if (this.tlsMode === TlsMode.MTLS) {
         request = request.agent(this.createHttpsAgent());
+      }
+      if (this.recoveryAuthToken) {
+        request.set('x-recovery-token', this.recoveryAuthToken);
       }
       logger.info('Recovering multisig for coin: %s', this.coin);
       const res = await request.decodeExpecting(200);
@@ -841,6 +852,9 @@ export class AdvancedWalletManagerClient {
         request = request.agent(this.createHttpsAgent());
       }
 
+      if (this.recoveryAuthToken) {
+        request.set('x-recovery-token', this.recoveryAuthToken);
+      }
       const response = await request.decodeExpecting(200);
       return response.body;
     } catch (error: any) {

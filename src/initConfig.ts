@@ -10,7 +10,7 @@ import {
   EnvironmentName,
 } from './shared/types';
 import logger from './shared/logger';
-import { validateTlsCertificates, validateMasterExpressConfig } from './shared/appUtils';
+import { validateTlsCertificates, validateMasterExpressConfig, validateRecoveryConfig } from './shared/appUtils';
 
 export {
   Config,
@@ -182,6 +182,7 @@ function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> 
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     clientCertAllowSelfSigned: readEnvVar('CLIENT_CERT_ALLOW_SELF_SIGNED') === 'true',
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
+    recoveryAuthToken: readEnvVar('RECOVERY_AUTH_TOKEN'),
   };
 }
 
@@ -231,6 +232,7 @@ function mergeAkmConfigs(
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
+    recoveryAuthToken: get('recoveryAuthToken'),
   };
 }
 
@@ -441,6 +443,7 @@ function masterExpressEnvConfig(): Partial<MasterExpressConfig> {
     mtlsAllowedClientFingerprints: readEnvVar('MTLS_ALLOWED_CLIENT_FINGERPRINTS')?.split(','),
     clientCertAllowSelfSigned,
     recoveryMode: readEnvVar('RECOVERY_MODE') === 'true',
+    recoveryAuthToken: readEnvVar('RECOVERY_AUTH_TOKEN'),
     asyncModeConfig: readAsyncModeConfig(isAsyncMode),
     bitgoAccessToken: readEnvVar('BITGO_ACCESS_TOKEN'),
   };
@@ -495,6 +498,7 @@ function mergeMasterExpressConfigs(
     mtlsAllowedClientFingerprints: get('mtlsAllowedClientFingerprints'),
     clientCertAllowSelfSigned: get('clientCertAllowSelfSigned'),
     recoveryMode: get('recoveryMode'),
+    recoveryAuthToken: get('recoveryAuthToken'),
     asyncModeConfig: get('asyncModeConfig'),
     bitgoAccessToken: get('bitgoAccessToken'),
   };
@@ -616,13 +620,11 @@ export function configureMasterExpressMode(): MasterExpressConfig {
 export function initConfig(): Config {
   const appMode = determineAppMode();
 
-  if (appMode === AppMode.ADVANCED_WALLET_MANAGER) {
-    return configureAdvancedWalletManagerMode();
-  } else if (appMode === AppMode.MASTER_EXPRESS) {
-    return configureMasterExpressMode();
-  } else {
-    throw new Error(`Unknown app mode: ${appMode}`);
-  }
+  const config = appMode === AppMode.ADVANCED_WALLET_MANAGER
+    ? configureAdvancedWalletManagerMode()
+    : configureMasterExpressMode();
+  validateRecoveryConfig(config);
+  return config;
 }
 
 // Type guards for working with the union type

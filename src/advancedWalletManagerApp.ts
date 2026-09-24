@@ -19,6 +19,8 @@ import {
   configureServerTimeouts,
   prepareIpc,
   createMtlsMiddleware,
+  createRecoveryAuthMiddleware,
+  validateRecoveryConfig,
 } from './shared/appUtils';
 import logger from './shared/logger';
 
@@ -106,6 +108,7 @@ export function createBaseUri(config: AdvancedWalletManagerConfig): string {
  * Create and configure the express application
  */
 export function app(cfg: AdvancedWalletManagerConfig): express.Application {
+  validateRecoveryConfig(cfg);
   logger.info('App is initializing');
 
   const app = express();
@@ -123,6 +126,12 @@ export function app(cfg: AdvancedWalletManagerConfig): express.Application {
   if (cfg.tlsMode === TlsMode.MTLS) {
     app.use(createMtlsMiddleware(cfg));
   }
+
+  // Authorize recovery before dispatching to signing handlers, even without TLS.
+  app.post(
+    ['/api/:coin/multisig/recovery', '/api/:coin/mpc/recovery', '/api/:coin/mpcv2/recovery'],
+    createRecoveryAuthMiddleware(cfg),
+  );
 
   // Setup routes
   setupRoutes(app, cfg);

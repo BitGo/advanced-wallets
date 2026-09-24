@@ -8,7 +8,7 @@ import { app as expressApp } from '../../../advancedWalletManagerApp';
 import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../../../shared/types';
 
 describe('EdDSA Recovery Signing', () => {
-  let agent: supertest.SuperTest<supertest.Test>;
+  let agent: supertest.SuperAgentTest;
   const config: AdvancedWalletManagerConfig = {
     keyProviderUrl: 'http://localhost:3000',
     appMode: AppMode.ADVANCED_WALLET_MANAGER,
@@ -20,6 +20,7 @@ describe('EdDSA Recovery Signing', () => {
     tlsMode: TlsMode.DISABLED,
     clientCertAllowSelfSigned: true,
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
   };
 
   const commonKeychain =
@@ -85,7 +86,8 @@ describe('EdDSA Recovery Signing', () => {
   beforeEach(() => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
-    agent = supertest(expressApp(config));
+    agent = supertest.agent(expressApp(config));
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
