@@ -40,18 +40,16 @@ export class KeyProviderClient extends BaseHttpClient {
     const urlObj = new URL(cfg.keyProviderUrl);
     let agent: https.Agent | undefined;
 
-    if (cfg.tlsMode === TlsMode.MTLS) {
-      urlObj.protocol = 'https:';
-      if (cfg.keyProviderServerCaCert || cfg.keyProviderServerCertAllowSelfSigned) {
-        agent = new https.Agent({
-          ca: cfg.keyProviderServerCaCert,
-          cert: cfg.keyProviderClientTlsCert,
-          key: cfg.keyProviderClientTlsKey,
-          rejectUnauthorized: !cfg.keyProviderServerCertAllowSelfSigned,
-        });
-      }
-    } else {
-      urlObj.protocol = 'http:';
+    if (
+      cfg.tlsMode === TlsMode.MTLS &&
+      (cfg.keyProviderServerCaCert || cfg.keyProviderServerCertAllowSelfSigned)
+    ) {
+      agent = new https.Agent({
+        ca: cfg.keyProviderServerCaCert,
+        cert: cfg.keyProviderClientTlsCert,
+        key: cfg.keyProviderClientTlsKey,
+        rejectUnauthorized: !cfg.keyProviderServerCertAllowSelfSigned,
+      });
     }
 
     super(urlObj.toString(), cfg.timeout, agent);

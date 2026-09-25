@@ -224,3 +224,28 @@ describe('KeyProviderClient.sign', () => {
     });
   });
 });
+
+describe('KeyProviderClient URL scheme', () => {
+  afterEach(() => nock.cleanAll());
+
+  it('should not downgrade an https:// URL when TLS is disabled', async () => {
+    const keyProviderUrl = 'https://key-provider.invalid:8443';
+    const params = { coin: 'hteth', source: 'user' as const, type: 'independent' as const };
+    const mockResponse = { pub: 'xpub661MyMwAq', ...params };
+    const client = new KeyProviderClient({
+      appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
+      port: 0,
+      bind: 'localhost',
+      timeout: 60000,
+      httpLoggerFile: '',
+      keyProviderUrl,
+      tlsMode: TlsMode.DISABLED,
+      clientCertAllowSelfSigned: true,
+    });
+
+    const httpsNock = nock(keyProviderUrl).post('/key/generate').reply(200, mockResponse);
+    await client.generateKey(params);
+    httpsNock.done();
+  });
+});
