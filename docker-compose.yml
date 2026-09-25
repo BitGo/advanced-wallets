@@ -24,6 +24,7 @@ services:
 
       # Key provider settings (required)
       - KEY_PROVIDER_URL=http://172.20.0.1:3000 # UPDATE TO YOUR OWN key provider URL
+      - ALLOW_PLAINTEXT_KEY_PROVIDER=true # Development only: permits http:// KEY_PROVIDER_URL with TLS_MODE=disabled
       - KEY_PROVIDER_SERVER_CERT_ALLOW_SELF_SIGNED=true
 
       # Optional key provider TLS settings (uncomment if using mTLS with key provider)

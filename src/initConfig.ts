@@ -136,6 +136,33 @@ function determineTlsMode(): TlsMode {
   throw new Error(`Invalid TLS_MODE: ${tlsMode}. Must be either "disabled" or "mtls"`);
 }
 
+function validateKeyProviderUrl(url: string, envVar: string, tlsMode: TlsMode): void {
+  let protocol: string;
+  try {
+    protocol = new URL(url).protocol;
+  } catch {
+    throw new Error(`${envVar} is not a valid URL: ${url}`);
+  }
+
+  if (protocol === 'https:') {
+    return;
+  }
+  if (protocol !== 'http:') {
+    throw new Error(`${envVar} must use http:// or https://, got: ${url}`);
+  }
+  if (tlsMode === TlsMode.MTLS) {
+    throw new Error(`${envVar} must use https:// when TLS_MODE is mtls, got: ${url}`);
+  }
+  if (readEnvVar('ALLOW_PLAINTEXT_KEY_PROVIDER') !== 'true') {
+    throw new Error(
+      `${envVar} uses plaintext http://, which exposes private keys in transit. Use https:// or set ALLOW_PLAINTEXT_KEY_PROVIDER=true (development only).`,
+    );
+  }
+  logger.warn(
+    `⚠️ ${envVar} uses plaintext http:// (${url}); private keys will be sent unencrypted. Never set ALLOW_PLAINTEXT_KEY_PROVIDER=true in production.`,
+  );
+}
+
 function advancedWalletManagerEnvConfig(): Partial<AdvancedWalletManagerConfig> {
   const keyProviderUrl = readEnvVar('KEY_PROVIDER_URL');
 
@@ -237,6 +264,11 @@ function mergeAkmConfigs(
 function configureAdvancedWalletManagerMode(): AdvancedWalletManagerConfig {
   const env = advancedWalletManagerEnvConfig();
   let config = mergeAkmConfigs(env);
+
+  validateKeyProviderUrl(config.keyProviderUrl, 'KEY_PROVIDER_URL', config.tlsMode);
+  if (config.backupKmsUrl) {
+    validateKeyProviderUrl(config.backupKmsUrl, 'BACKUP_KMS_URL', config.tlsMode);
+  }
 
   // Certificate Loading Section
   logger.info('=== Certificate Loading ===');

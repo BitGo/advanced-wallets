@@ -125,6 +125,7 @@ BITGO_ENV=test \
 APP_MODE=advanced-wallet-manager \
 ADVANCED_WALLET_MANAGER_PORT=3080 \
 KEY_PROVIDER_URL=http://localhost:3000 \
+ALLOW_PLAINTEXT_KEY_PROVIDER=true \
 npm start
 ```
 
@@ -175,8 +176,11 @@ curl -X POST http://localhost:3081/ping/advancedWalletManager
 | `ADVANCED_WALLET_MANAGER_PORT` | Port to listen on                  | `3080`  | ❌       |
 | `KEY_PROVIDER_URL`             | URL to your key provider API implementation | -       | ✅       |
 | `SIGNING_MODE`                 | Delegates key generation and signing to key provider (`local` or `external`) | `local` | ❌       |
+| `ALLOW_PLAINTEXT_KEY_PROVIDER` | Allow an `http://` `KEY_PROVIDER_URL`/`BACKUP_KMS_URL` when `TLS_MODE=disabled`. **Development only** — private keys are sent unencrypted | `false` | ❌       |
 
 > **Note:** The `KEY_PROVIDER_URL` points to your implementation of the key provider API interface. You must implement this interface to connect your KMS/HSM. See [Prerequisites](#prerequisites) for the specification and examples.
+>
+> The URL scheme is honored as configured and must be `http://` or `https://`. `https://` is required when `TLS_MODE=mtls`; `http://` is rejected unless `ALLOW_PLAINTEXT_KEY_PROVIDER=true`.
 
 ### Master Express Settings
 
@@ -305,7 +309,7 @@ podman run -d \
   -e TLS_MODE=mtls \
   -e SERVER_TLS_KEY_PATH=/app/certs/advanced-wallet-manager-key.pem \
   -e SERVER_TLS_CERT_PATH=/app/certs/advanced-wallet-manager-cert.pem \
-  -e KEY_PROVIDER_URL=host.containers.internal:3000 \
+  -e KEY_PROVIDER_URL=https://host.containers.internal:3000 \
   -e NODE_ENV=development \
   -e CLIENT_CERT_ALLOW_SELF_SIGNED=true \
   advanced-wallet-manager
