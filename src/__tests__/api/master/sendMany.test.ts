@@ -663,18 +663,17 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/sendMany', () => {
       const signMpcRShareNockAwm = nock(advancedWalletManagerUrl)
         .post(`/api/${coin}/mpc/sign/r`)
         .reply(200, {
-          rShare: {
-            rShares: [
-              { r: 'r-share', R: 'R-share' },
-              { r: 'r-share-2', R: 'R-share-2' },
-              { r: 'r-share-3', R: 'R-share-3' },
-              { r: 'r-share-4', R: 'R-share-4', i: 3, j: 1 },
-            ],
-          },
+          rShare: { i: 3, j: 1, r: 'r-share', R: 'R-share', commitment: 'commitment' },
         });
 
       const signMpcGShareNockAwm = nock(advancedWalletManagerUrl)
-        .post(`/api/${coin}/mpc/sign/g`)
+        .post(`/api/${coin}/mpc/sign/g`, (body) => {
+          return (
+            body.encryptedUserToBitgoRShare?.share === 'encrypted-user-to-bitgo-r-share' &&
+            body.encryptedDataKey === 'test-encrypted-data-key' &&
+            body.userToBitgoRShare === undefined
+          );
+        })
         .reply(200, {
           gShare: { r: 'r', gamma: 'gamma', i: 1, j: 3, n: 4 },
         });
