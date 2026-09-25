@@ -11,6 +11,7 @@ import {
   CustomCommitmentGeneratingFunction,
   CustomRShareGeneratingFunction,
   CustomGShareGeneratingFunction,
+  ShareKeyPosition,
 } from '@bitgo-beta/sdk-core';
 import {
   AdvancedWalletManagerClient,
@@ -64,12 +65,15 @@ export function createEddsaCustomSigningFunctions(
       source,
       pub: commonKeychain,
     });
-    return { rShare: response.rShare };
+    const rShare: SignShare = {
+      xShare: { i: ShareKeyPosition.USER, y: '', u: '', r: '', R: '' },
+      rShares: { [ShareKeyPosition.BITGO]: { ...response.rShare, u: '' } },
+    };
+    return { rShare };
   };
 
   const customGShareGenerator: CustomGShareGeneratingFunction = async (params: {
     txRequest: TxRequest;
-    userToBitgoRShare: SignShare;
     bitgoToUserRShare: SignatureShareRecord;
     bitgoToUserCommitment: CommitmentShareRecord;
   }) => {
@@ -79,7 +83,8 @@ export function createEddsaCustomSigningFunctions(
     const response = await awmClient.signMpcGShare({
       txRequest: params.txRequest,
       bitgoToUserRShare: params.bitgoToUserRShare,
-      userToBitgoRShare: params.userToBitgoRShare,
+      encryptedUserToBitgoRShare: commitmentResponse.encryptedUserToBitgoRShare,
+      encryptedDataKey: commitmentResponse.encryptedDataKey,
       bitgoToUserCommitment: params.bitgoToUserCommitment,
       source,
       pub: commonKeychain,
