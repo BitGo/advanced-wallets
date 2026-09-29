@@ -1,4 +1,7 @@
-import { AwmApiSpecRouteRequest } from '../routers/advancedWalletManagerApiSpec';
+import {
+  AwmApiSpecRouteRequest,
+  EddsaUserToBitgoRShare,
+} from '../routers/advancedWalletManagerApiSpec';
 import { decryptDataKey, generateDataKey, retrieveKeyProviderPrvKey } from './utils/utils';
 import logger from '../../shared/logger';
 import {
@@ -8,6 +11,7 @@ import {
   EddsaUtils,
   EncryptedSignerShareRecord,
   GShare,
+  ShareKeyPosition,
   SignatureShareRecord,
   SignShare,
   TxRequest,
@@ -67,7 +71,6 @@ interface EddsaSigningParams {
   prv: string;
   encryptedDataKey?: string;
   bitgoToUserRShare?: SignatureShareRecord;
-  userToBitgoRShare?: SignShare;
   encryptedUserToBitgoRShare?: EncryptedSignerShareRecord;
   bitgoToUserCommitment?: CommitmentShareRecord;
   bitgoPublicGpgKey?: string;
@@ -112,7 +115,6 @@ export async function signMpcTransaction(req: AwmApiSpecRouteRequest<'v1.mpc.sig
         prv,
         encryptedDataKey,
         bitgoToUserRShare: req.decoded.bitgoToUserRShare,
-        userToBitgoRShare: req.decoded.userToBitgoRShare,
         encryptedUserToBitgoRShare: req.decoded.encryptedUserToBitgoRShare,
         bitgoToUserCommitment: req.decoded.bitgoToUserCommitment,
         bitgoPublicGpgKey: req.decoded.bitgoPublicGpgKey,
@@ -146,7 +148,7 @@ async function handleEddsaSigning(
   userToBitgoCommitment?: CommitmentShareRecord;
   encryptedSignerShare?: EncryptedSignerShareRecord;
   encryptedUserToBitgoRShare?: EncryptedSignerShareRecord;
-  rShare?: SignShare;
+  rShare?: EddsaUserToBitgoRShare;
   gShare?: GShare;
   encryptedDataKey?: string;
 }> {
@@ -157,7 +159,6 @@ async function handleEddsaSigning(
     prv,
     encryptedDataKey,
     bitgoToUserRShare,
-    userToBitgoRShare,
     encryptedUserToBitgoRShare,
     bitgoToUserCommitment,
     bitgoPublicGpgKey,
@@ -184,32 +185,32 @@ async function handleEddsaSigning(
       };
     }
     case ShareType.R: {
-      if (!encryptedUserToBitgoRShare) {
-        throw new Error('encryptedUserToBitgoRShare is required for R share generation');
-      }
-      if (!encryptedDataKey) {
-        throw new Error(
-          'encryptedDataKey from commitment share generation round is required for R share generation',
-        );
-      }
-      const plaintextDataKey = await decryptDataKey({ encryptedDataKey, cfg });
-      const rShareParams: RShareParams = {
+      const userSignShare = await decryptUserSignShare(eddsaUtils, cfg, {
+        shareType: ShareType.R,
         txRequest,
-        walletPassphrase: plaintextDataKey,
+        encryptedDataKey,
         encryptedUserToBitgoRShare,
-      };
-      return await eddsaUtils.createRShareFromTxRequest(rShareParams);
+      });
+      const rShare = userSignShare.rShares[ShareKeyPosition.BITGO];
+      if (!rShare) {
+        throw new Error('Unable to find userToBitgo rShare in userSignShare');
+      }
+      const { i, j, r, R, commitment } = rShare;
+      return { rShare: { i, j, r, R, commitment } };
     }
     case ShareType.G: {
       if (!bitgoToUserRShare) {
         throw new Error('bitgoToUserRShare is required for G share generation');
       }
-      if (!userToBitgoRShare) {
-        throw new Error('userToBitgoRShare is required for G share generation');
-      }
       if (!bitgoToUserCommitment) {
         throw new Error('bitgoToUserCommitment is required for G share generation');
       }
+      const userToBitgoRShare = await decryptUserSignShare(eddsaUtils, cfg, {
+        shareType: ShareType.G,
+        txRequest,
+        encryptedDataKey,
+        encryptedUserToBitgoRShare,
+      });
       const gShareParams: GShareParams = {
         txRequest,
         prv,
@@ -225,6 +226,36 @@ async function handleEddsaSigning(
         `Share type ${shareType} not supported for EDDSA, only commitment, G and R share generation is supported.`,
       );
   }
+}
+
+async function decryptUserSignShare(
+  eddsaUtils: EddsaUtils,
+  cfg: AdvancedWalletManagerConfig,
+  params: {
+    shareType: ShareType;
+    txRequest: TxRequest;
+    encryptedDataKey?: string;
+    encryptedUserToBitgoRShare?: EncryptedSignerShareRecord;
+  },
+): Promise<SignShare> {
+  const { txRequest, encryptedDataKey, encryptedUserToBitgoRShare } = params;
+  const shareType = params.shareType.toUpperCase();
+  if (!encryptedUserToBitgoRShare) {
+    throw new Error(`encryptedUserToBitgoRShare is required for ${shareType} share generation`);
+  }
+  if (!encryptedDataKey) {
+    throw new Error(
+      `encryptedDataKey from commitment share generation round is required for ${shareType} share generation`,
+    );
+  }
+  const plaintextDataKey = await decryptDataKey({ encryptedDataKey, cfg });
+  const rShareParams: RShareParams = {
+    txRequest,
+    walletPassphrase: plaintextDataKey,
+    encryptedUserToBitgoRShare,
+  };
+  const { rShare } = await eddsaUtils.createRShareFromTxRequest(rShareParams);
+  return rShare;
 }
 
 async function handleEcdsaMpcV2Signing(

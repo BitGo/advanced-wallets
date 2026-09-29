@@ -23,6 +23,8 @@ describe('Configuration', () => {
     delete process.env.APP_MODE;
     delete process.env.BITGO_APP_MODE;
     delete process.env.KEY_PROVIDER_URL;
+    delete process.env.ALLOW_PLAINTEXT_KEY_PROVIDER;
+    delete process.env.BACKUP_KMS_URL;
     delete process.env.ADVANCED_WALLET_MANAGER_URL;
     delete process.env.AWM_SERVER_CA_CERT_PATH;
     delete process.env.TLS_MODE;
@@ -91,7 +93,7 @@ describe('Configuration', () => {
     });
 
     it('should use default configuration when minimal environment variables are set', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
@@ -107,7 +109,7 @@ describe('Configuration', () => {
         cfg.bind.should.equal('localhost');
         cfg.tlsMode.should.equal(TlsMode.MTLS);
         cfg.timeout.should.equal(305 * 1000);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
         cfg.serverTlsKey!.should.equal(mockTlsKey);
         cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
@@ -115,7 +117,7 @@ describe('Configuration', () => {
 
     it('should read port from environment variable', () => {
       process.env.ADVANCED_WALLET_MANAGER_PORT = '4000';
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
@@ -128,14 +130,14 @@ describe('Configuration', () => {
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.port.should.equal(4000);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
         cfg.serverTlsKey!.should.equal(mockTlsKey);
         cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
     });
 
     it('should read the recovery mode from the env', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
@@ -153,6 +155,7 @@ describe('Configuration', () => {
     it('rejects recovery without a strong token or with unauthenticated non-local binding', () => {
       process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
       process.env.TLS_MODE = 'disabled';
+      process.env.ALLOW_PLAINTEXT_KEY_PROVIDER = 'true';
       process.env.RECOVERY_MODE = 'true';
       (() => initConfig()).should.throw(/RECOVERY_AUTH_TOKEN/);
       process.env.RECOVERY_AUTH_TOKEN = 'short';
@@ -167,7 +170,7 @@ describe('Configuration', () => {
     });
 
     it('should read TLS mode from environment variables', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
@@ -183,7 +186,7 @@ describe('Configuration', () => {
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
       }
 
       // Test with mTLS explicitly enabled
@@ -192,7 +195,7 @@ describe('Configuration', () => {
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
         cfg.serverTlsKey!.should.equal(mockTlsKey);
         cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
@@ -209,14 +212,14 @@ describe('Configuration', () => {
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.MTLS);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
         cfg.serverTlsKey!.should.equal(mockTlsKey);
         cfg.serverTlsCert!.should.equal(mockTlsCert);
       }
     });
 
     it('should read SIGNING_MODE from environment variables', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.TLS_MODE = 'disabled';
 
       // unset defaults to LOCAL
@@ -245,7 +248,7 @@ describe('Configuration', () => {
     });
 
     it('should read mTLS settings from environment variables', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
@@ -260,7 +263,7 @@ describe('Configuration', () => {
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.mtlsAllowedClientFingerprints!.should.deepEqual(['ABC123', 'DEF456']);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
         cfg.serverTlsKey!.should.equal(mockTlsKey);
         cfg.serverTlsCert!.should.equal(mockTlsCert);
         cfg.keyProviderServerCaCertPath!.should.equal(
@@ -284,7 +287,7 @@ describe('Configuration', () => {
     });
 
     it('should succeed when TLS certificates are not set for disabled TLS mode', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.TLS_MODE = 'disabled';
       delete process.env.SERVER_TLS_KEY;
       delete process.env.SERVER_TLS_CERT;
@@ -293,12 +296,12 @@ describe('Configuration', () => {
       isAdvancedWalletManagerConfig(cfg).should.be.true();
       if (isAdvancedWalletManagerConfig(cfg)) {
         cfg.tlsMode.should.equal(TlsMode.DISABLED);
-        cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        cfg.keyProviderUrl.should.equal('https://localhost:3000');
       }
     });
 
     it('should throw error when TLS certificates are not set for MTLS mode', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.TLS_MODE = 'mtls';
       delete process.env.SERVER_TLS_KEY;
       delete process.env.SERVER_TLS_CERT;
@@ -306,7 +309,7 @@ describe('Configuration', () => {
     });
 
     it('should read HTTP_LOGFILE into httpLoggerFile in Advanced wallet manager mode', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.SERVER_TLS_KEY = mockTlsKey;
       process.env.SERVER_TLS_CERT = mockTlsCert;
       process.env.KEY_PROVIDER_CLIENT_TLS_KEY = mockClientTlsKey;
@@ -324,12 +327,72 @@ describe('Configuration', () => {
     });
 
     it('should throw error when KEY_PROVIDER_SERVER_CA_CERT_PATH is not set for MTLS mode', () => {
-      process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+      process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
       process.env.TLS_MODE = 'mtls';
       delete process.env.KEY_PROVIDER_SERVER_CA_CERT_PATH;
       (() => initConfig()).should.throw(
         'KEY_PROVIDER_SERVER_CA_CERT_PATH is required when TLS mode is MTLS',
       );
+    });
+
+    describe('KEY_PROVIDER_URL scheme validation', () => {
+      it('should throw when KEY_PROVIDER_URL uses http:// in MTLS mode', () => {
+        process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+        process.env.TLS_MODE = 'mtls';
+        (() => initConfig()).should.throw(
+          'KEY_PROVIDER_URL must use https:// when TLS_MODE is mtls, got: http://localhost:3000',
+        );
+      });
+
+      it('should throw when KEY_PROVIDER_URL uses http:// in disabled mode without override', () => {
+        process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+        process.env.TLS_MODE = 'disabled';
+        (() => initConfig()).should.throw(/KEY_PROVIDER_URL uses plaintext http:\/\//);
+      });
+
+      it('should allow http:// in disabled mode when ALLOW_PLAINTEXT_KEY_PROVIDER=true', () => {
+        process.env.KEY_PROVIDER_URL = 'http://localhost:3000';
+        process.env.TLS_MODE = 'disabled';
+        process.env.ALLOW_PLAINTEXT_KEY_PROVIDER = 'true';
+        const cfg = initConfig();
+        isAdvancedWalletManagerConfig(cfg).should.be.true();
+        if (isAdvancedWalletManagerConfig(cfg)) {
+          cfg.keyProviderUrl.should.equal('http://localhost:3000');
+        }
+      });
+
+      it('should throw when KEY_PROVIDER_URL has no http(s) scheme', () => {
+        process.env.KEY_PROVIDER_URL = 'localhost:3000';
+        process.env.TLS_MODE = 'disabled';
+        (() => initConfig()).should.throw(
+          'KEY_PROVIDER_URL must use http:// or https://, got: localhost:3000',
+        );
+      });
+
+      it('should throw when KEY_PROVIDER_URL is not a valid URL', () => {
+        process.env.KEY_PROVIDER_URL = 'not a url';
+        process.env.TLS_MODE = 'disabled';
+        (() => initConfig()).should.throw('KEY_PROVIDER_URL is not a valid URL: not a url');
+      });
+
+      it('should throw when BACKUP_KMS_URL uses http:// without override', () => {
+        process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
+        process.env.BACKUP_KMS_URL = 'http://localhost:3001';
+        process.env.TLS_MODE = 'disabled';
+        (() => initConfig()).should.throw(/BACKUP_KMS_URL uses plaintext http:\/\//);
+      });
+
+      it('should allow http:// BACKUP_KMS_URL when ALLOW_PLAINTEXT_KEY_PROVIDER=true', () => {
+        process.env.KEY_PROVIDER_URL = 'https://localhost:3000';
+        process.env.BACKUP_KMS_URL = 'http://localhost:3001';
+        process.env.TLS_MODE = 'disabled';
+        process.env.ALLOW_PLAINTEXT_KEY_PROVIDER = 'true';
+        const cfg = initConfig();
+        isAdvancedWalletManagerConfig(cfg).should.be.true();
+        if (isAdvancedWalletManagerConfig(cfg)) {
+          cfg.backupKmsUrl!.should.equal('http://localhost:3001');
+        }
+      });
     });
   });
 

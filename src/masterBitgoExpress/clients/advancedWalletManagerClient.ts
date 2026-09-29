@@ -14,7 +14,6 @@ import {
   MPCTxs,
   SignatureShareRecord,
   SignedTransaction,
-  SignShare,
   TransactionPrebuild,
   TxRequest,
 } from '@bitgo-beta/sdk-core';
@@ -32,6 +31,7 @@ import { AdvancedWalletManagerApiSpec } from '../../advancedWalletManager/router
 import { PingResponseType, VersionResponseType } from '../../types/health';
 import { extractTransactionRequestInfo } from '../../shared/transactionUtils';
 import {
+  EddsaUserToBitgoRShare,
   KeyShareType,
   MpcFinalizeResponseType,
   MpcInitializeResponseType,
@@ -123,22 +123,24 @@ export interface SignMpcCommitmentResponse {
   encryptedDataKey: string;
 }
 
-interface SignMpcRShareParams {
+type EddsaMpcCommitmentSigningState = Pick<
+  SignMpcCommitmentResponse,
+  'encryptedUserToBitgoRShare' | 'encryptedDataKey'
+>;
+
+interface SignMpcRShareParams extends EddsaMpcCommitmentSigningState {
   txRequest: TxRequest;
-  encryptedUserToBitgoRShare: EncryptedSignerShareRecord;
-  encryptedDataKey: string;
   source: 'user' | 'backup';
   pub: string;
 }
 
 interface SignMpcRShareResponse {
-  rShare: SignShare;
+  rShare: EddsaUserToBitgoRShare;
 }
 
-interface SignMpcGShareParams {
+interface SignMpcGShareParams extends EddsaMpcCommitmentSigningState {
   txRequest: TxRequest;
   bitgoToUserRShare: SignatureShareRecord;
-  userToBitgoRShare: SignShare;
   bitgoToUserCommitment: CommitmentShareRecord;
   source: 'user' | 'backup';
   pub: string;

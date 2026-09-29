@@ -22,6 +22,7 @@ services:
       - TIMEOUT=305000
       - KEEP_ALIVE_TIMEOUT=65000
       - HEADERS_TIMEOUT=66000
+
       - HTTP_LOGFILE=logs/http-access.log
       - RECOVERY_MODE=${RECOVERY_MODE:-false}
       - RECOVERY_AUTH_TOKEN=${RECOVERY_AUTH_TOKEN:-}

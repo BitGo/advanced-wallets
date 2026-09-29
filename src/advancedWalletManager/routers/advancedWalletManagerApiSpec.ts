@@ -121,7 +121,6 @@ const SignMpcRequest = {
   pub: t.string,
   txRequest: t.any,
   bitgoToUserRShare: t.union([t.undefined, t.any]),
-  userToBitgoRShare: t.union([t.undefined, t.any]),
   encryptedUserToBitgoRShare: t.union([t.undefined, t.any]),
   bitgoToUserCommitment: t.union([t.undefined, t.any]),
   bitgoPublicGpgKey: t.union([t.undefined, t.string]),
@@ -132,6 +131,15 @@ const SignMpcRequest = {
   encryptedRound1Session: t.union([t.undefined, t.string]),
   encryptedRound2Session: t.union([t.undefined, t.string]),
 };
+
+export const EddsaUserToBitgoRShare = t.type({
+  i: t.number,
+  j: t.number,
+  r: t.string,
+  R: t.string,
+  commitment: t.string,
+});
+export type EddsaUserToBitgoRShare = t.TypeOf<typeof EddsaUserToBitgoRShare>;
 
 // Response type for /mpc/sign endpoint
 const SignMpcResponse: HttpResponse = {
@@ -146,7 +154,7 @@ const SignMpcResponse: HttpResponse = {
     }),
     // EDDSA R share response
     t.type({
-      rShare: t.any,
+      rShare: EddsaUserToBitgoRShare,
     }),
     // EDDSA G share response
     t.type({

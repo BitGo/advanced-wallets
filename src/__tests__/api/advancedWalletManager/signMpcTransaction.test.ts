@@ -186,13 +186,13 @@ describe('signMpcTransaction', () => {
         .send(rInput);
 
       rResponse.status.should.equal(200);
-      rResponse.body.should.have.property('rShare');
+      rResponse.body.rShare.should.have.only.keys('i', 'j', 'r', 'R', 'commitment');
+      rResponse.body.rShare.i.should.equal(3);
+      rResponse.body.rShare.j.should.equal(1);
 
       rKeyProviderNock.done();
       decryptDataKeyNock.done();
 
-      // Continue with G share test using the returned rShare
-      const rShare = rResponse.body.rShare;
       const derivationPath = 'm/0';
       const tMessage = 'testMessage';
 
@@ -227,7 +227,8 @@ describe('signMpcTransaction', () => {
         source: 'user',
         pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
         txRequest: mockTxRequest,
-        userToBitgoRShare: rShare,
+        encryptedUserToBitgoRShare,
+        encryptedDataKey,
         bitgoToUserRShare: signatureShareRec,
         bitgoToUserCommitment: bitgoToUserCommitmentShare,
       };
@@ -237,6 +238,10 @@ describe('signMpcTransaction', () => {
         .get(`/key/${gInput.pub}`)
         .query({ source: 'user' })
         .reply(200, mockKeyProviderResponse);
+
+      const gDecryptDataKeyNock = nock(keyProviderUrl)
+        .post('/decryptDataKey')
+        .reply(200, mockDecryptedDataKeyResponse);
 
       const gResponse = await agent
         .post(`/api/${coin}/mpc/sign/g`)
@@ -251,6 +256,33 @@ describe('signMpcTransaction', () => {
       gResponse.body.gShare.should.have.property('R');
 
       gKeyProviderNock.done();
+      gDecryptDataKeyNock.done();
+    });
+
+    it('should fail G share generation without the encrypted commitment round state', async () => {
+      const input = {
+        source: 'user',
+        pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
+        txRequest: mockTxRequest,
+        bitgoToUserRShare: { from: 'bitgo', to: 'user', share: 'r-share' },
+        bitgoToUserCommitment: { from: 'bitgo', to: 'user', share: 'commitment' },
+      };
+
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${input.pub}`)
+        .query({ source: 'user' })
+        .reply(200, { prv: 'mock-prv', pub: input.pub, source: 'user', type: 'independent' });
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/g`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(input);
+
+      response.status.should.equal(500);
+      response.body.details.should.equal(
+        'encryptedUserToBitgoRShare is required for G share generation',
+      );
+      keyProviderNock.done();
     });
 
     it('should fail when key provider returns no private key', async () => {
