@@ -42,6 +42,7 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
       httpLoggerFile: '',
       keyProviderUrl: `http://${LOCALHOST}:${keyProvider.port}`,
       recoveryMode,
+      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     }),
   );
   const awmPort = await listen(awmServer);
@@ -59,6 +60,7 @@ export async function startServices(opts: StartServicesOptions = {}): Promise<In
     awmServerCertAllowSelfSigned: true,
     customRootUri: `http://${LOCALHOST}:${bitgo.port}`,
     recoveryMode,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     bitgoAccessToken: 'test-access-token',
     asyncModeConfig: bridge
       ? {

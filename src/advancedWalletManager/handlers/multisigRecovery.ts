@@ -12,7 +12,7 @@ import {
   RecoveryMultisigEthLikeHalfSignedCodec,
   RecoveryMultisigFlatTxHexCodec,
 } from '../routers/advancedWalletManagerApiSpec';
-import { AdvancedWalletManagerConfig, EnvironmentName } from '../../initConfig';
+import { EnvironmentName } from '../../initConfig';
 import logger from '../../shared/logger';
 import { BadRequestError, BitgoApiResponseError } from '../../shared/errors';
 import { isEthLikeCoin, isFormattedOfflineVaultTxInfo, isUtxoCoin } from '../../shared/coinUtils';
@@ -22,11 +22,7 @@ import {
   getReplayProtectionOptions,
 } from '../../shared/recoveryUtils';
 import { SignedEthLikeRecoveryTx } from '../../types/transaction';
-import {
-  checkRecoveryMode,
-  retrieveKeyProviderPrvKey,
-  isExternalSigningEnabledForCoin,
-} from './utils/utils';
+import { retrieveKeyProviderPrvKey, isExternalSigningEnabledForCoin } from './utils/utils';
 import coinFactory from '../../shared/coinFactory';
 import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { SignResponse } from '../keyProviderClient/types/sign';
@@ -35,8 +31,6 @@ import { KeySource } from '../../shared/types';
 export async function recoveryMultisigTransaction(
   req: AwmApiSpecRouteRequest<'v1.multisig.recovery', 'post'>,
 ): Promise<SignedTransaction> {
-  checkRecoveryMode(req.config as AdvancedWalletManagerConfig);
-
   const {
     userPub,
     backupPub,

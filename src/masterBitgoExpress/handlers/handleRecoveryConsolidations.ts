@@ -20,8 +20,6 @@ import type { Ada, Tada } from '@bitgo-beta/sdk-coin-ada';
 import type { Dot, Tdot } from '@bitgo-beta/sdk-coin-dot';
 import type { Tao, Ttao } from '@bitgo-beta/sdk-coin-tao';
 import coinFactory from '../../shared/coinFactory';
-import { checkRecoveryMode } from './utils/utils';
-import { MasterExpressConfig } from '../../shared/types';
 import { BadRequestError } from '../../shared/errors';
 import { orThrow } from '../../shared/utils';
 import { submitMultisigRecoveryJob } from './utils/multisigRecoveryUtils';
@@ -40,8 +38,6 @@ type RecoveryConsolidationResult = {
 export async function handleRecoveryConsolidations(
   req: MasterApiSpecRouteRequest<'v1.wallet.recoveryConsolidations', 'post'>,
 ) {
-  checkRecoveryMode(req.config as MasterExpressConfig);
-
   const bitgo = req.bitgo;
   const coin = req.decoded.coin;
   const userClient = req.awmUserClient;

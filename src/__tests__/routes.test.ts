@@ -3,6 +3,9 @@ import 'should';
 import request from 'supertest';
 import express from 'express';
 import { AppMode, TlsMode, SigningMode } from '../shared/types';
+import { app as awmApp } from '../advancedWalletManagerApp';
+import { app as mbeApp } from '../masterBitGoExpressApp';
+import { makeMasterExpressTestConfig } from './api/master/testUtils';
 import { setupRoutes } from '../advancedWalletManager/routers/advancedWalletManager';
 
 describe('Routes', () => {
@@ -21,6 +24,108 @@ describe('Routes', () => {
       port: 3000,
       bind: 'localhost',
     });
+  });
+
+  describe('Recovery authorization without TLS', () => {
+    const token = 'test-recovery-token-at-least-32-characters';
+    const awm = awmApp({
+      appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
+      keyProviderUrl: 'http://localhost:3000',
+      bind: 'localhost',
+      port: 0,
+      timeout: 5000,
+      httpLoggerFile: '',
+      tlsMode: TlsMode.DISABLED,
+      recoveryMode: true,
+      recoveryAuthToken: token,
+    });
+    const mbe = mbeApp(
+      makeMasterExpressTestConfig('http://localhost:3080', {
+        overrides: { recoveryMode: true, recoveryAuthToken: token },
+      }),
+    );
+
+    for (const path of [
+      '/api/tbtc/multisig/recovery',
+      '/api/tbtc/mpc/recovery',
+      '/api/tbtc/mpcv2/recovery',
+    ]) {
+      it(`rejects missing and incorrect tokens on AWM ${path}`, async () => {
+        (await request(awm).post(path).send({})).status.should.equal(401);
+        (
+          await request(awm).post(path).set('x-recovery-token', 'wrong').send({})
+        ).status.should.equal(401);
+        (
+          await request(awm).post(path).set('x-recovery-token', token).send({})
+        ).status.should.not.equal(401);
+      });
+    }
+
+    for (const path of [
+      '/api/v1/tbtc/advancedwallet/recovery',
+      '/api/v1/tbtc/advancedwallet/recoveryconsolidations',
+    ]) {
+      it(`rejects missing and incorrect tokens on MBE ${path}`, async () => {
+        (
+          await request(mbe).post(path).set('Authorization', 'Bearer bitgo-token').send({})
+        ).status.should.equal(401);
+        (
+          await request(mbe).post(path).set('x-recovery-token', 'wrong').send({})
+        ).status.should.equal(401);
+        (
+          await request(mbe).post(path).set('x-recovery-token', token).send({})
+        ).status.should.not.equal(401);
+      });
+    }
+
+    const disabledAwm = awmApp({
+      appMode: AppMode.ADVANCED_WALLET_MANAGER,
+      signingMode: SigningMode.LOCAL,
+      keyProviderUrl: 'http://localhost:3000',
+      bind: 'localhost',
+      port: 0,
+      timeout: 5000,
+      httpLoggerFile: '',
+      tlsMode: TlsMode.DISABLED,
+      recoveryMode: false,
+    });
+    const disabledMbe = mbeApp(
+      makeMasterExpressTestConfig('http://localhost:3080', {
+        overrides: { recoveryMode: false },
+      }),
+    );
+    const recoveryModeDisabledMessage =
+      'Recovery operations are not enabled. The server must be in recovery mode to perform this action.';
+
+    for (const path of [
+      '/api/tbtc/multisig/recovery',
+      '/api/tbtc/mpc/recovery',
+      '/api/tbtc/mpcv2/recovery',
+    ]) {
+      it(`rejects disabled AWM recovery before route handling for ${path}`, async () => {
+        const response = await request(disabledAwm)
+          .post(path)
+          .set('x-recovery-token', token)
+          .send({});
+        response.status.should.equal(500);
+        response.body.should.have.property('details', recoveryModeDisabledMessage);
+      });
+    }
+
+    for (const path of [
+      '/api/v1/tbtc/advancedwallet/recovery',
+      '/api/v1/tbtc/advancedwallet/recoveryconsolidations',
+    ]) {
+      it(`rejects disabled MBE recovery before route handling for ${path}`, async () => {
+        const response = await request(disabledMbe)
+          .post(path)
+          .set('x-recovery-token', token)
+          .send({});
+        response.status.should.equal(500);
+        response.body.should.have.property('details', recoveryModeDisabledMessage);
+      });
+    }
   });
 
   describe('Health Check Routes', () => {

@@ -151,10 +151,12 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
+      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
       asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
     const app = expressApp(config);
     agent = request.agent(app);
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -638,6 +640,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
         overrides: { recoveryMode: true },
       });
       asyncAgent = request.agent(expressApp(asyncConfig));
+      asyncAgent.set('x-recovery-token', asyncConfig.recoveryAuthToken!);
     });
 
     it('should return 202 + jobId for a single-tx onchain consolidation recovery', async () => {
@@ -775,6 +778,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       const response = await request
         .agent(expressApp(makeSplitAwmMasterExpressConfig()))
         .post('/api/v1/trx/advancedwallet/recoveryconsolidations')
+        .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(trxConsolidationRequest);
 
@@ -798,6 +802,7 @@ describe('POST /api/v1/:coin/advancedwallet/recoveryconsolidations', () => {
       const response = await request
         .agent(expressApp(makeSplitAwmMasterExpressConfig({ asyncEnabled: true })))
         .post('/api/v1/trx/advancedwallet/recoveryconsolidations')
+        .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(trxConsolidationRequest);
 

@@ -32,11 +32,13 @@ describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
+      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
       asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
     };
 
     const app = expressApp(config);
     agent = request.agent(app);
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {

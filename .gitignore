@@ -5,6 +5,9 @@ coverage/
 logs/
 tsconfig.tsbuildinfo
 out/
+deploy/ca/
+deploy/certs/
+deploy/clients/
 .vscode/
 *.iml
 .nyc_output/

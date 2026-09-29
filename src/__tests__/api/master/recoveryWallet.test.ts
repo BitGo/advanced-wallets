@@ -32,6 +32,7 @@ describe('Recovery Tests', () => {
     tlsMode: TlsMode.DISABLED,
     clientCertAllowSelfSigned: true,
     recoveryMode: true,
+    recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     asyncModeConfig: DEFAULT_ASYNC_MODE_CONFIG,
   };
 
@@ -41,6 +42,7 @@ describe('Recovery Tests', () => {
 
     const app = expressApp(config);
     agent = request.agent(app);
+    agent.set('x-recovery-token', config.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -634,6 +636,7 @@ describe('Recovery Tests', () => {
 
     before(() => {
       asyncAgent = request.agent(expressApp(asyncConfig));
+      asyncAgent.set('x-recovery-token', asyncConfig.recoveryAuthToken!);
     });
 
     it('should return 202 + jobId for UTXO multisig recovery, submitting to the bridge not AWM', async () => {
@@ -906,6 +909,7 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     const response = await request
       .agent(expressApp(makeSplitAwmMasterExpressConfig()))
       .post(`/api/v1/${coin}/advancedwallet/recovery`)
+      .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(utxoRecoveryRequest);
 
@@ -928,6 +932,7 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     const response = await request
       .agent(expressApp(makeSplitAwmMasterExpressConfig({ asyncEnabled: true })))
       .post(`/api/v1/${coin}/advancedwallet/recovery`)
+      .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(utxoRecoveryRequest);
 
@@ -998,6 +1003,7 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
     const response = await request
       .agent(expressApp(makeSplitAwmMasterExpressConfig()))
       .post(`/api/v1/${ethCoinId}/advancedwallet/recovery`)
+      .set('x-recovery-token', 'test-recovery-token-at-least-32-characters')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         multiSigRecoveryParams: {

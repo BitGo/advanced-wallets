@@ -43,6 +43,7 @@ describe('recoveryMultisigTransaction', () => {
       tlsMode: TlsMode.DISABLED,
       clientCertAllowSelfSigned: true,
       recoveryMode: true,
+      recoveryAuthToken: 'test-recovery-token-at-least-32-characters',
     };
 
     configStub = sandbox.stub(configModule, 'initConfig').returns(cfg);
@@ -50,6 +51,7 @@ describe('recoveryMultisigTransaction', () => {
     // app setup
     app = advancedWalletManagerApp(cfg);
     agent = request.agent(app);
+    agent.set('x-recovery-token', cfg.recoveryAuthToken!);
   });
 
   afterEach(() => {
@@ -122,6 +124,7 @@ describe('recoveryMultisigTransaction', () => {
     configStub.returns(dualCfg);
     const dualApp = advancedWalletManagerApp(dualCfg);
     const dualAgent = request.agent(dualApp);
+    dualAgent.set('x-recovery-token', dualCfg.recoveryAuthToken!);
 
     const mockKmsUserResponse = {
       prv: userPrv,

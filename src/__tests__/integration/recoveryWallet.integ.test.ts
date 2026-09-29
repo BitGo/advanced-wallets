@@ -88,6 +88,19 @@ describe('Recovery wallet: EXTERNAL signing', () => {
     teardownIndexerMocks();
   });
 
+  it('refuses credential-free recovery without contacting the key provider', async () => {
+    const res = await fetch(
+      `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/recovery`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recoveryRequestBody),
+      },
+    );
+    res.status.should.equal(401);
+    services.keyProvider.calls.should.have.length(0);
+  });
+
   it('recovers tbtc via external key provider, calling AWM multisig/recovery', async () => {
     const indexer = setupIndexerMocks({
       fundsAddress: ADDR_WITH_FUNDS,
@@ -100,7 +113,11 @@ describe('Recovery wallet: EXTERNAL signing', () => {
       `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/recovery`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+          'x-recovery-token': 'test-recovery-token-at-least-32-characters',
+        },
         body: JSON.stringify(recoveryRequestBody),
       },
     );
@@ -202,7 +219,11 @@ describe('Recovery wallet: LOCAL signing', () => {
       `http://${LOCALHOST}:${services.mbePort}/api/v1/tbtc/advancedwallet/recovery`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+          'x-recovery-token': 'test-recovery-token-at-least-32-characters',
+        },
         body: JSON.stringify(recoveryRequestBody),
       },
     );

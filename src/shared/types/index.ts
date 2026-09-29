@@ -33,6 +33,7 @@ export interface BaseConfig {
   headersTimeout?: number;
   httpLoggerFile: string;
   recoveryMode?: boolean;
+  recoveryAuthToken?: string;
 }
 
 // Advanced wallet manager mode specific configuration
@@ -111,7 +112,6 @@ export interface MasterExpressConfig extends BaseConfig {
   tlsMode: TlsMode;
   mtlsAllowedClientFingerprints?: string[];
   clientCertAllowSelfSigned?: boolean;
-  recoveryMode?: boolean;
   asyncModeConfig: AsyncModeConfig;
   bitgoAccessToken?: string;
 }

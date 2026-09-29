@@ -4,6 +4,7 @@ import https from 'https';
 import http from 'http';
 import morgan from 'morgan';
 import fs from 'fs';
+import { timingSafeEqual } from 'crypto';
 import timeout from 'connect-timeout';
 import bodyParser from 'body-parser';
 import pjson from '../../package.json';
@@ -193,6 +194,46 @@ export function createMtlsMiddleware(config: {
     }
     next();
   };
+}
+
+const recoveryModeDisabledDetails =
+  'Recovery operations are not enabled. The server must be in recovery mode to perform this action.';
+
+export function createRecoveryAuthMiddleware(config: Config): express.RequestHandler {
+  const expected = config.recoveryAuthToken && Buffer.from(config.recoveryAuthToken);
+  return (req, res, next) => {
+    if (!config.recoveryMode) {
+      return res.status(500).json({
+        error: 'Error',
+        details: recoveryModeDisabledDetails,
+      });
+    }
+    const supplied = req.get('x-recovery-token');
+    if (!supplied || !expected) {
+      return res.status(401).json({ error: 'Recovery authorization required' });
+    }
+    const actual = Buffer.from(supplied);
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      return res.status(401).json({ error: 'Recovery authorization required' });
+    }
+    next();
+  };
+}
+
+export function validateRecoveryConfig(config: Config): void {
+  if (!config.recoveryMode) {
+    return;
+  }
+  if (
+    config.tlsMode === TlsMode.DISABLED &&
+    !config.ipc &&
+    !['localhost', '127.0.0.1', '::1', '[::1]'].includes(config.bind)
+  ) {
+    throw new Error('RECOVERY_MODE requires mTLS for non-local TCP binding');
+  }
+  if (!config.recoveryAuthToken || Buffer.byteLength(config.recoveryAuthToken, 'utf8') < 32) {
+    throw new Error('RECOVERY_AUTH_TOKEN must be at least 32 bytes when RECOVERY_MODE is enabled');
+  }
 }
 
 export function validateTlsCertificates(config: Config) {

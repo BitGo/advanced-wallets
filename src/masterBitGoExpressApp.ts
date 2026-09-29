@@ -13,6 +13,8 @@ import {
   configureServerTimeouts,
   prepareIpc,
   createMtlsMiddleware,
+  createRecoveryAuthMiddleware,
+  validateRecoveryConfig,
 } from './shared/appUtils';
 import logger from './shared/logger';
 import { setupRoutes } from './masterBitgoExpress/routers/masterBitGoExpress';
@@ -102,6 +104,7 @@ export function createBaseUri(config: MasterExpressConfig): string {
  * Create and configure the express application for master express mode
  */
 export function app(cfg: MasterExpressConfig): express.Application {
+  validateRecoveryConfig(cfg);
   logger.info('Master express app is initializing');
 
   const app = express();
@@ -113,6 +116,15 @@ export function app(cfg: MasterExpressConfig): express.Application {
   if (cfg.tlsMode === TlsMode.MTLS) {
     app.use(createMtlsMiddleware(cfg));
   }
+
+  // Authorize recovery before dispatching to handlers, independent of TLS.
+  app.post(
+    [
+      '/api/v1/:coin/advancedwallet/recovery',
+      '/api/v1/:coin/advancedwallet/recoveryconsolidations',
+    ],
+    createRecoveryAuthMiddleware(cfg),
+  );
 
   // Setup master express routes
   setupRoutes(app, cfg);

@@ -3,7 +3,6 @@ import { BaseCoin } from '@bitgo-beta/sdk-core';
 import { CustomSigningFunction, RequestTracer, KeyIndices, Wallet } from '@bitgo-beta/sdk-core';
 import coinFactory from '../../../shared/coinFactory';
 import { AdvancedWalletManagerClient } from '../../clients/advancedWalletManagerClient';
-import { MasterExpressConfig } from '../../../shared/types';
 
 /**
  * Fetch wallet and signing keychain, with validation for source and pubkey.
@@ -104,12 +103,4 @@ export function makeCustomSigningFunction({
       walletPubs,
     });
   };
-}
-
-export function checkRecoveryMode(config: MasterExpressConfig) {
-  if (!config.recoveryMode) {
-    throw new Error(
-      'Recovery operations are not enabled. The server must be in recovery mode to perform this action.',
-    );
-  }
 }
