@@ -7,7 +7,10 @@ import logger from '../../shared/logger';
 import { responseHandler } from '../../shared/middleware';
 import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
 import { PingResponseType } from '../../types/health';
-import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
+import {
+  customDecodeErrorFormatter,
+  customEncodeErrorFormatter,
+} from '../../shared/errorFormatters';
 
 // Response type for /ping/advancedWalletManager endpoint
 const PingAwmResponse: HttpResponse = {
@@ -49,6 +52,7 @@ export function createAdvancedWalletManagerHealthRouter(
 ): WrappedRouter<typeof AdvancedWalletManagerHealthSpec> {
   const router = createRouter(AdvancedWalletManagerHealthSpec, {
     decodeErrorFormatter: customDecodeErrorFormatter,
+    encodeErrorFormatter: customEncodeErrorFormatter,
   });
 
   // Create an instance of awmClient

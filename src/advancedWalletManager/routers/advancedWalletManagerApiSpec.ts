@@ -35,7 +35,10 @@ import { ecdsaMPCv2Finalize } from '../handlers/ecdsaMPCV2WalletGenerationFinali
 import { ecdsaMPCv2Recovery } from '../handlers/ecdsaMPCV2Recovery';
 import { signEddsaRecoveryTransaction } from '../handlers/eddsaMPCRecovery';
 import { isEddsaCoin } from '../../shared/coinUtils';
-import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
+import {
+  customDecodeErrorFormatter,
+  customEncodeErrorFormatter,
+} from '../../shared/errorFormatters';
 
 // Request type for /key/independent endpoint
 const IndependentKeyRequest = {
@@ -512,6 +515,7 @@ export function createKeyGenRouter(
 ): WrappedRouter<typeof AdvancedWalletManagerApiSpec> {
   const router = createRouter(AdvancedWalletManagerApiSpec, {
     decodeErrorFormatter: customDecodeErrorFormatter,
+    encodeErrorFormatter: customEncodeErrorFormatter,
   });
   // Add middleware
   router.use(express.json());
