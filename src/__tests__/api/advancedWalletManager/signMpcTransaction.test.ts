@@ -10,7 +10,7 @@ import * as configModule from '../../../initConfig';
 import { Ed25519BIP32, Eddsa, SignatureShareType } from '@bitgo-beta/sdk-core';
 import { TxRequest } from '@bitgo/public-types';
 import { DklsUtils, DklsDsg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
-import { EddsaMPCv2Utils } from '@bitgo-beta/sdk-core';
+import { EcdsaMPCv2Utils, EddsaMPCv2Utils } from '@bitgo-beta/sdk-core';
 import assert from 'assert';
 import { signBitgoMPCv2Round1, signBitgoMPCv2Round2, signBitgoMPCv2Round3 } from './ecdsaUtils';
 import { Hash } from 'crypto';
@@ -867,6 +867,97 @@ describe('signMpcTransaction', () => {
       response.body.details.should.equal('bitgoGpgPubKey is required for MPCv2 Round 3');
 
       keyProviderNock.done();
+    });
+
+    it('should accept curveType eddsa on mpcv2round1', async () => {
+      const mockDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+        encryptedKey: 'mock-encrypted-data-key',
+      };
+
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+      const dataKeyNock = nock(keyProviderUrl)
+        .post('/generateDataKey')
+        .reply(200, mockDataKeyResponse);
+
+      round1ShareStub.resolves(mockEddsaMPCv2Round1Response);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round1`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+          curveType: 'eddsa',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('signatureShareRound1');
+
+      keyProviderNock.done();
+      dataKeyNock.done();
+    });
+  });
+
+  describe('MPCv2 curveType compatibility', () => {
+    let round1ShareStub: sinon.SinonStub;
+
+    beforeEach(() => {
+      round1ShareStub = sinon.stub(EcdsaMPCv2Utils.prototype, 'createOfflineRound1Share');
+    });
+
+    afterEach(() => {
+      round1ShareStub.restore();
+    });
+
+    it('should accept curveType ecdsa on hteth mpcv2round1', async () => {
+      const mockKeyProviderResponse = {
+        prv: 'mock-ecdsa-private-key',
+        pub: 'mock-ecdsa-public-key',
+        source: 'user',
+        type: 'independent',
+      };
+      const mockDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+        encryptedKey: 'mock-encrypted-data-key',
+      };
+      const mockEcdsaMPCv2Round1Response = {
+        signatureShareRound1: { from: 'user', to: 'bitgo', payload: 'mock-round1-payload' },
+        userGpgPubKey: 'mock-ecdsa-user-gpg-pub-key',
+        encryptedRound1Session: 'mock-ecdsa-encrypted-round1-session',
+        encryptedUserGpgPrvKey: 'mock-ecdsa-encrypted-user-gpg-prv-key',
+      };
+
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+      const dataKeyNock = nock(keyProviderUrl)
+        .post('/generateDataKey')
+        .reply(200, mockDataKeyResponse);
+
+      round1ShareStub.resolves(mockEcdsaMPCv2Round1Response);
+
+      const response = await agent
+        .post(`/api/hteth/mpc/sign/mpcv2round1`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+          bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
+          curveType: 'ecdsa',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('signatureShareRound1');
+
+      keyProviderNock.done();
+      dataKeyNock.done();
     });
   });
 });
