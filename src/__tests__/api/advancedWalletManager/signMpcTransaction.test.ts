@@ -10,6 +10,7 @@ import * as configModule from '../../../initConfig';
 import { Ed25519BIP32, Eddsa, SignatureShareType } from '@bitgo-beta/sdk-core';
 import { TxRequest } from '@bitgo/public-types';
 import { DklsUtils, DklsDsg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
+import { EddsaMPCv2Utils } from '@bitgo-beta/sdk-core';
 import assert from 'assert';
 import { signBitgoMPCv2Round1, signBitgoMPCv2Round2, signBitgoMPCv2Round3 } from './ecdsaUtils';
 import { Hash } from 'crypto';
@@ -665,6 +666,207 @@ describe('signMpcTransaction', () => {
 
       response.status.should.equal(400);
       response.body.should.have.property('error');
+    });
+  });
+
+  describe('EdDSA MPCv2 Signing Integration Tests', () => {
+    const coin = 'tsol'; // Use tsol for EdDSA testing
+
+    let round1ShareStub: sinon.SinonStub;
+    let round2ShareStub: sinon.SinonStub;
+    let round3ShareStub: sinon.SinonStub;
+
+    const mockEddsaMPCv2Round1Response = {
+      signatureShareRound1: { from: 'user', to: 'bitgo', payload: 'mock-round1-payload' },
+      userGpgPubKey: 'mock-eddsa-user-gpg-pub-key',
+      encryptedRound1Session: 'mock-eddsa-encrypted-round1-session',
+      encryptedUserGpgPrvKey: 'mock-eddsa-encrypted-user-gpg-prv-key',
+    };
+    const mockEddsaMPCv2Round2Response = {
+      signatureShareRound2: { from: 'user', to: 'bitgo', payload: 'mock-round2-payload' },
+      encryptedRound2Session: 'mock-eddsa-encrypted-round2-session',
+    };
+    const mockEddsaMPCv2Round3Response = {
+      signatureShareRound3: { from: 'user', to: 'bitgo', payload: 'mock-round3-payload' },
+    };
+
+    const mockKeyProviderResponse = {
+      prv: 'mock-eddsa-private-key',
+      pub: 'mock-eddsa-public-key',
+      source: 'user',
+      type: 'independent',
+    };
+
+    beforeEach(() => {
+      round1ShareStub = sinon.stub(EddsaMPCv2Utils.prototype, 'createOfflineRound1Share');
+      round2ShareStub = sinon.stub(EddsaMPCv2Utils.prototype, 'createOfflineRound2Share');
+      round3ShareStub = sinon.stub(EddsaMPCv2Utils.prototype, 'createOfflineRound3Share');
+    });
+
+    afterEach(() => {
+      round1ShareStub.restore();
+      round2ShareStub.restore();
+      round3ShareStub.restore();
+    });
+
+    it('should successfully complete MPCv2 Round 1', async () => {
+      const mockDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+        encryptedKey: 'mock-encrypted-data-key',
+      };
+
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+      const dataKeyNock = nock(keyProviderUrl)
+        .post('/generateDataKey')
+        .reply(200, mockDataKeyResponse);
+
+      round1ShareStub.resolves(mockEddsaMPCv2Round1Response);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round1`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('signatureShareRound1');
+      response.body.should.have.property('userGpgPubKey');
+      response.body.should.have.property('encryptedRound1Session');
+      response.body.should.have.property('encryptedUserGpgPrvKey');
+      response.body.should.have.property('encryptedDataKey');
+      response.body.encryptedDataKey.should.equal(mockDataKeyResponse.encryptedKey);
+
+      keyProviderNock.done();
+      dataKeyNock.done();
+      sinon.assert.calledOnce(round1ShareStub);
+    });
+
+    it('should successfully complete MPCv2 Round 2', async () => {
+      const mockDecryptedDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+      };
+
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+      const decryptDataKeyNock = nock(keyProviderUrl)
+        .post('/decryptDataKey')
+        .reply(200, mockDecryptedDataKeyResponse);
+
+      round2ShareStub.resolves(mockEddsaMPCv2Round2Response);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round2`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+          bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
+          encryptedDataKey: 'mock-encrypted-data-key',
+          encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
+          encryptedRound1Session: 'mock-encrypted-round1-session',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('signatureShareRound2');
+      response.body.should.have.property('encryptedRound2Session');
+
+      keyProviderNock.done();
+      decryptDataKeyNock.done();
+      sinon.assert.calledOnce(round2ShareStub);
+    });
+
+    it('should successfully complete MPCv2 Round 3', async () => {
+      const mockDecryptedDataKeyResponse = {
+        plaintextKey: 'mock-plaintext-data-key',
+      };
+
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+      const decryptDataKeyNock = nock(keyProviderUrl)
+        .post('/decryptDataKey')
+        .reply(200, mockDecryptedDataKeyResponse);
+
+      round3ShareStub.resolves(mockEddsaMPCv2Round3Response);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round3`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+          bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
+          encryptedDataKey: 'mock-encrypted-data-key',
+          encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
+          encryptedRound2Session: 'mock-encrypted-round2-session',
+        });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('signatureShareRound3');
+
+      keyProviderNock.done();
+      decryptDataKeyNock.done();
+      sinon.assert.calledOnce(round3ShareStub);
+    });
+
+    it('should fail when required fields are missing for Round 2', async () => {
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round2`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+          // Missing encryptedDataKey, bitgoPublicGpgKey, encryptedUserGpgPrvKey, encryptedRound1Session
+        });
+
+      response.status.should.equal(500);
+      response.body.should.have.property('error');
+      response.body.details.should.equal(
+        'encryptedDataKey from Round 1 is required for MPCv2 Round 2',
+      );
+
+      keyProviderNock.done();
+    });
+
+    it('should fail when required fields are missing for Round 3', async () => {
+      const keyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${mockKeyProviderResponse.pub}`)
+        .query({ source: 'user' })
+        .reply(200, mockKeyProviderResponse);
+
+      const response = await agent
+        .post(`/api/${coin}/mpc/sign/mpcv2round3`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          source: 'user',
+          pub: mockKeyProviderResponse.pub,
+          txRequest: mockTxRequest,
+          encryptedDataKey: 'mock-encrypted-data-key',
+          // Missing bitgoPublicGpgKey, encryptedUserGpgPrvKey, encryptedRound2Session
+        });
+
+      response.status.should.equal(500);
+      response.body.should.have.property('error');
+      response.body.details.should.equal('bitgoGpgPubKey is required for MPCv2 Round 3');
+
+      keyProviderNock.done();
     });
   });
 });
