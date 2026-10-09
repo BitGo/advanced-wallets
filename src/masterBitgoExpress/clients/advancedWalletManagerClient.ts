@@ -151,8 +151,10 @@ interface SignMpcGShareResponse {
 }
 
 // ECDSA MPCv2 interfaces
+// MPCv2 interfaces (ECDSA and EdDSA)
 interface SignMpcV2Round1Params {
   txRequest: TxRequest;
+  curveType?: 'eddsa' | 'ecdsa';
 }
 
 export interface SignMpcV2Round1Response {
@@ -169,6 +171,7 @@ interface SignMpcV2Round2Params {
   encryptedRound1Session: string;
   encryptedDataKey: string;
   bitgoPublicGpgKey: string;
+  curveType?: 'eddsa' | 'ecdsa';
 }
 
 export interface SignMpcV2Round2Response {
@@ -182,6 +185,7 @@ interface SignMpcV2Round3Params {
   encryptedRound2Session: string;
   encryptedDataKey: string;
   bitgoPublicGpgKey: string;
+  curveType?: 'eddsa' | 'ecdsa';
 }
 
 export interface SignMpcV2Round3Response {
