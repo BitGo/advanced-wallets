@@ -1,0 +1,12 @@
+# Backstage catalog descriptor. Update this file to enrich your service's entry in the developer portal.
+# Full field reference: https://backstage.io/docs/features/software-catalog/descriptor-format/
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: advanced-wallets
+  annotations:
+    github.com/project-slug: BitGo/advanced-wallets
+spec:
+  type: service
+  lifecycle: production
+  owner: group:wallet-core
