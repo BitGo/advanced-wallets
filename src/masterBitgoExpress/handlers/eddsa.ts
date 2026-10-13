@@ -1,5 +1,7 @@
 import {
   BitGoBase,
+  EddsaMPCv2Utils,
+  RequestType,
   Wallet,
   IRequestTracer,
   EddsaUtils,
@@ -197,5 +199,33 @@ export async function handleEddsaSigning(
     customRShareGenerator,
     customGShareGenerator,
     reqId,
+  );
+}
+
+export async function signAndSendEddsaMPCv2FromTxRequest(
+  bitgo: BitGoBase,
+  wallet: Wallet,
+  txRequest: TxRequest,
+  awmClient: AdvancedWalletManagerClient,
+  source: 'user' | 'backup',
+  commonKeychain: string,
+  reqId: IRequestTracer,
+): Promise<TxRequest> {
+  const eddsaMPCv2Utils = new EddsaMPCv2Utils(bitgo, wallet.baseCoin, wallet);
+
+  // Use the shared custom signing functions
+  const {
+    customEddsaMPCv2Round1Generator,
+    customEddsaMPCv2Round2Generator,
+    customEddsaMPCv2Round3Generator,
+  } = createEddsaMPCv2CustomSigners(awmClient, source, commonKeychain);
+
+  // This also sends the TxRequest for broadcast
+  return await eddsaMPCv2Utils.signEddsaMPCv2TssUsingExternalSigner(
+    { txRequest, reqId },
+    customEddsaMPCv2Round1Generator,
+    customEddsaMPCv2Round2Generator,
+    customEddsaMPCv2Round3Generator,
+    RequestType.tx,
   );
 }

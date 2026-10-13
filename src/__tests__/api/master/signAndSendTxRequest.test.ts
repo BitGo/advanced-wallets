@@ -331,4 +331,80 @@ describe('POST /api/v1/:coin/advancedwallet/:walletId/txrequest/:txRequestId/sig
       signMpcGShareNockAwm.done();
     });
   });
+
+  describe('EdDSA MPCv2 Sign and Send:', () => {
+    const eddsaCoin = 'tsol'; // Use tsol for EdDSA testing
+
+    it('should successfully sign and send EdDSA MPCv2 transaction with user key', async () => {
+      const walletNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${eddsaCoin}/wallet/${walletId}`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: walletId,
+          type: 'advanced',
+          keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+          multisigType: 'tss',
+          multisigTypeVersion: 'MPCv2',
+          coin: eddsaCoin,
+        });
+
+      const keychainNock = nock(bitgoApiUrl)
+        .get(`/api/v2/${eddsaCoin}/key/user-key-id`)
+        .matchHeader('any', () => true)
+        .reply(200, {
+          id: 'user-key-id',
+          pub: 'xpub_user',
+          commonKeychain: 'common-keychain-123',
+          source: 'user',
+        });
+
+      const getTxRequestNock = nock(bitgoApiUrl)
+        .get(`/api/v2/wallet/${walletId}/txrequests`)
+        .query({ txRequestIds: txRequestId, latest: true })
+        .matchHeader('any', () => true)
+        .reply(200, { txRequests: [buildEcdsaMpcv2TxRequest('pendingUserSignature')] });
+
+      const signedTxRequest = buildEcdsaMpcv2TxRequest('signed', {
+        extra: {
+          transactions: [
+            {
+              unsignedTx: { derivationPath: 'm/0', signableHex: 'testMessage' },
+              state: 'signed',
+              signedTx: { id: 'test-tx-id', tx: 'signed-transaction-hex' },
+            },
+          ],
+        },
+      });
+      const nocks = nockEcdsaMpcv2SigningFlow({
+        coin: eddsaCoin,
+        bitgoApiUrl,
+        advancedWalletManagerUrl,
+        sendResponse: signedTxRequest,
+        includeBitgoKeychainNock: true,
+        expectedCurveType: 'eddsa',
+      });
+
+      const response = await agent
+        .post(
+          `/api/v1/${eddsaCoin}/advancedwallet/${walletId}/txrequest/${txRequestId}/signAndSend`,
+        )
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ source: 'user', commonKeychain: 'common-keychain-123' });
+
+      response.status.should.equal(200);
+      response.body.should.have.property('txid', 'test-tx-id');
+      response.body.should.have.property('tx', 'signed-transaction-hex');
+
+      walletNock.done();
+      keychainNock.done();
+      getTxRequestNock.done();
+      nocks.round1SignNock.done();
+      nocks.round2SignNock.done();
+      nocks.round3SignNock.done();
+      nocks.sendTxNock.done();
+      nocks.awmRound1Nock.done();
+      nocks.awmRound2Nock.done();
+      nocks.awmRound3Nock.done();
+    });
+  });
 });
