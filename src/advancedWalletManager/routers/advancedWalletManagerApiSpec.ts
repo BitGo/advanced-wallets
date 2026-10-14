@@ -33,6 +33,7 @@ import { ecdsaMPCv2Initialize } from '../handlers/ecdsaMPCV2WalletGenerationInit
 import { ecdsaMPCv2Round } from '../handlers/ecdsaMPCV2WalletGenerationRound';
 import { ecdsaMPCv2Finalize } from '../handlers/ecdsaMPCV2WalletGenerationFinalize';
 import { ecdsaMPCv2Recovery } from '../handlers/ecdsaMPCV2Recovery';
+import { eddsaMPCv2KeyGen } from '../handlers/eddsaMPCV2WalletGeneration';
 import { signEddsaRecoveryTransaction } from '../handlers/eddsaMPCRecovery';
 import { isEddsaCoin } from '../../shared/coinUtils';
 import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
@@ -320,6 +321,42 @@ const MpcV2RecoveryResponse = {
 const MpcV2RecoveryResponseType = t.exact(t.type(MpcV2RecoveryResponse));
 export type MpcV2RecoveryResponseType = t.TypeOf<typeof MpcV2RecoveryResponseType>;
 
+const EddsaMPCv2SignedMessage = t.type({
+  message: t.string,
+  signature: t.string,
+});
+
+const EddsaMPCv2KeyGenRequest = {
+  source: t.union([t.literal('user'), t.literal('backup')]),
+  encryptedDataKey: optional(t.string),
+  encryptedUserGpgPrvKey: optional(t.string),
+  bitgoGpgPubKey: optional(t.string),
+  counterPartyGpgPubKey: optional(t.string),
+  encryptedRound1Session: optional(t.string),
+  encryptedRound2Session: optional(t.string),
+  bitgoMsg1: optional(EddsaMPCv2SignedMessage),
+  counterPartyMsg1: optional(EddsaMPCv2SignedMessage),
+  bitgoMsg2: optional(EddsaMPCv2SignedMessage),
+  counterPartyMsg2: optional(EddsaMPCv2SignedMessage),
+  bitgoCommonKeychain: optional(t.string),
+};
+const EddsaMPCv2KeyGenRequestType = t.type(EddsaMPCv2KeyGenRequest);
+export type EddsaMPCv2KeyGenRequestType = t.TypeOf<typeof EddsaMPCv2KeyGenRequestType>;
+
+const EddsaMPCv2KeyGenResponse = {
+  gpgPub: optional(t.string),
+  encryptedUserGpgPrvKey: optional(t.string),
+  encryptedDataKey: optional(t.string),
+  signedMsg1: optional(EddsaMPCv2SignedMessage),
+  encryptedRound1Session: optional(t.string),
+  signedMsg2: optional(EddsaMPCv2SignedMessage),
+  encryptedRound2Session: optional(t.string),
+  commonKeychain: optional(t.string),
+  source: optional(t.union([t.literal('user'), t.literal('backup')])),
+};
+const EddsaMPCv2KeyGenResponseType = t.exact(optionalized(EddsaMPCv2KeyGenResponse));
+export type EddsaMPCv2KeyGenResponseType = t.TypeOf<typeof EddsaMPCv2KeyGenResponseType>;
+
 // API Specification
 export const AdvancedWalletManagerApiSpec = apiSpec({
   'v1.multisig.sign': {
@@ -491,6 +528,29 @@ export const AdvancedWalletManagerApiSpec = apiSpec({
       description: 'Recover a MPC transaction',
     }),
   },
+  'v1.eddsampcv2.keygen': {
+    post: httpRoute({
+      method: 'POST',
+      path: '/api/{coin}/eddsampcv2/keygen/{shareType}',
+      request: httpRequest({
+        params: {
+          coin: t.string,
+          shareType: t.union([
+            t.literal('initialize'),
+            t.literal('round1'),
+            t.literal('round2'),
+            t.literal('finalize'),
+          ]),
+        },
+        body: EddsaMPCv2KeyGenRequest,
+      }),
+      response: {
+        200: EddsaMPCv2KeyGenResponseType,
+        ...ErrorResponses,
+      },
+      description: 'Perform an EdDSA MPCv2 key generation share',
+    }),
+  },
 });
 
 export type AkmApiSpecRouteHandler<
@@ -619,6 +679,13 @@ export function createKeyGenRouter(
     responseHandler<AdvancedWalletManagerConfig>(async (req) => {
       const typedReq = req as AwmApiSpecRouteRequest<'v1.mpcv2.recovery', 'post'>;
       const result = await ecdsaMPCv2Recovery(typedReq);
+      return Response.ok(result);
+    }),
+  ]);
+  router.post('v1.eddsampcv2.keygen', [
+    responseHandler<AdvancedWalletManagerConfig>(async (req) => {
+      const typedReq = req as AwmApiSpecRouteRequest<'v1.eddsampcv2.keygen', 'post'>;
+      const result = await eddsaMPCv2KeyGen(typedReq);
       return Response.ok(result);
     }),
   ]);
