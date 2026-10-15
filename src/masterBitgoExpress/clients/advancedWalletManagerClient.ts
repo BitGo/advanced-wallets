@@ -31,6 +31,7 @@ import { AdvancedWalletManagerApiSpec } from '../../advancedWalletManager/router
 import { PingResponseType, VersionResponseType } from '../../types/health';
 import { extractTransactionRequestInfo } from '../../shared/transactionUtils';
 import {
+  EddsaMPCv2KeyGenResponseType,
   EddsaUserToBitgoRShare,
   KeyShareType,
   MpcFinalizeResponseType,
@@ -724,6 +725,52 @@ export class AdvancedWalletManagerClient {
     } catch (error) {
       logger.error(
         'Failed to finalize MPCv2 key generation: %s',
+        (error as DecodeError).decodedResponse?.body,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * EdDSA MPCv2 key generation share — single method parameterized by shareType, mirroring the
+   * AWM route POST /api/{coin}/eddsampcv2/keygen/{shareType}. The orchestrator (WCI-895 callback
+   * factory) calls it once per share type: initialize, round1, round2, finalize.
+   */
+  async eddsaMPCv2KeyGen(params: {
+    shareType: 'initialize' | 'round1' | 'round2' | 'finalize';
+    source: 'user' | 'backup';
+    encryptedDataKey?: string;
+    encryptedUserGpgPrvKey?: string;
+    bitgoGpgPubKey?: string;
+    counterPartyGpgPubKey?: string;
+    encryptedRound1Session?: string;
+    encryptedRound2Session?: string;
+    bitgoMsg1?: { message: string; signature: string };
+    counterPartyMsg1?: { message: string; signature: string };
+    bitgoMsg2?: { message: string; signature: string };
+    counterPartyMsg2?: { message: string; signature: string };
+    bitgoCommonKeychain?: string;
+  }): Promise<EddsaMPCv2KeyGenResponseType> {
+    if (!this.coin) {
+      throw new Error('Coin must be specified for EdDSA MPCv2 key generation');
+    }
+
+    try {
+      let request = this.apiClient['v1.eddsampcv2.keygen'].post({
+        coin: this.coin,
+        ...params,
+      });
+
+      if (this.tlsMode === TlsMode.MTLS) {
+        request = request.agent(this.createHttpsAgent());
+      }
+
+      const response = await request.decodeExpecting(200);
+      return response.body;
+    } catch (error) {
+      logger.error(
+        'Failed to execute EdDSA MPCv2 key generation share %s: %s',
+        params.shareType,
         (error as DecodeError).decodedResponse?.body,
       );
       throw error;
