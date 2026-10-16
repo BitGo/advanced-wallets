@@ -126,7 +126,10 @@ const SignMpcRequest = {
   bitgoPublicGpgKey: t.union([t.undefined, t.string]),
   encryptedDataKey: t.union([t.undefined, t.string]),
 
-  // ECDSA MPCv2 specific fields
+  // Curve type hint for MPCv2 signing (optional, backward compatible)
+  curveType: t.union([t.undefined, t.literal('eddsa'), t.literal('ecdsa')]),
+
+  // MPCv2 specific fields (ECDSA and EdDSA)
   encryptedUserGpgPrvKey: t.union([t.undefined, t.string]),
   encryptedRound1Session: t.union([t.undefined, t.string]),
   encryptedRound2Session: t.union([t.undefined, t.string]),
