@@ -318,6 +318,8 @@ export interface NockEcdsaMpcv2SigningFlowOptions {
   includeBitgoKeychainNock?: boolean;
   /** Base tx request for BitGo sign round replies. */
   pendingTxRequest?: ReturnType<typeof buildEcdsaMpcv2TxRequest>;
+  /** When set, the AWM round nocks only match request bodies carrying this curveType. */
+  expectedCurveType?: 'eddsa' | 'ecdsa';
 }
 
 /**
@@ -328,6 +330,9 @@ export function nockEcdsaMpcv2SigningFlow(options: NockEcdsaMpcv2SigningFlowOpti
   const txRequestId = options.txRequestId ?? DEFAULT_ECDSA_MPCV2_TX_REQUEST_ID;
   const userGpgPubKey = options.userGpgPubKey ?? 'user-gpg-pub-key';
   const commonKeychain = options.commonKeychain ?? 'common-keychain-123';
+  const curveTypeFilter = options.expectedCurveType
+    ? (body: Record<string, unknown>) => body.curveType === options.expectedCurveType
+    : undefined;
 
   const { round1SignatureShare, round2SignatureShare, round3SignatureShare } =
     createEcdsaMpcv2SignatureShares();
@@ -390,7 +395,7 @@ export function nockEcdsaMpcv2SigningFlow(options: NockEcdsaMpcv2SigningFlowOpti
     .reply(200, options.sendResponse);
 
   const awmRound1Nock = nock(options.advancedWalletManagerUrl)
-    .post(`/api/${options.coin}/mpc/sign/mpcv2round1`)
+    .post(`/api/${options.coin}/mpc/sign/mpcv2round1`, curveTypeFilter)
     .reply(200, {
       signatureShareRound1: round1SignatureShare,
       userGpgPubKey,
@@ -400,14 +405,14 @@ export function nockEcdsaMpcv2SigningFlow(options: NockEcdsaMpcv2SigningFlowOpti
     });
 
   const awmRound2Nock = nock(options.advancedWalletManagerUrl)
-    .post(`/api/${options.coin}/mpc/sign/mpcv2round2`)
+    .post(`/api/${options.coin}/mpc/sign/mpcv2round2`, curveTypeFilter)
     .reply(200, {
       signatureShareRound2: round2SignatureShare,
       encryptedRound2Session: 'encrypted-round2-session',
     });
 
   const awmRound3Nock = nock(options.advancedWalletManagerUrl)
-    .post(`/api/${options.coin}/mpc/sign/mpcv2round3`)
+    .post(`/api/${options.coin}/mpc/sign/mpcv2round3`, curveTypeFilter)
     .reply(200, { signatureShareRound3: round3SignatureShare });
 
   return {
