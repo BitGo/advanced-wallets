@@ -2,6 +2,8 @@ import 'should';
 import * as request from 'supertest';
 import nock from 'nock';
 import sinon from 'sinon';
+import { BigNumber } from 'bignumber.js';
+import { Utils as SuiUtils } from '@bitgo-beta/sdk-coin-sui';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import {
@@ -537,64 +539,26 @@ describe('Recovery Tests', () => {
   describe('Sui coin recovery', () => {
     // Setup mocks for Sui
     const suiCoinId = 'tsui';
-    const suiExplorerUrl = 'https://sui-testnet-rpc.publicnode.com';
+    const suiBalance = '1000000000';
 
     it('should sign a sui recovery successfully', async () => {
-      const suiAccountBalanceNock = nock(suiExplorerUrl)
-        .post('/')
-        .matchHeader('any', () => true)
-        .reply(200, {
-          result: {
-            coinType: '0x2::sui::SUI',
-            coinObjectCount: 1,
-            totalBalance: '1000000000',
-            lockedBalance: {},
-          },
-        });
-
-      const suiInputCoinsNock = nock(suiExplorerUrl)
-        .post('/')
-        .matchHeader('any', () => true)
-        .reply(200, {
-          result: {
-            data: [
-              {
-                coinType: '0x2::sui::SUI',
-                coinObjectId: '0x1a4951d0006f16326d5b74df71b5c81450b4cc74d9f1c357e6e1665d5ca9a067',
-                version: '349180327',
-                digest: 'F1vZCzDD36oKjqMWu9mPo57g1SfznFQnbHLNf436efGx',
-                balance: '1000000000',
-                previousTransaction: '9Wnh785m4DLCZfQSrSou6HrNr8kTygDxDBuAnnPZ9rFE',
-              },
-            ],
-            hasNextPage: false,
-          },
-        });
-
-      const suiFeeEstimateNock = nock(suiExplorerUrl)
-        .post('/')
-        .matchHeader('any', () => true)
-        .reply(200, {
-          result: {
-            effects: {
-              messageVersion: 'v1',
-              status: { status: 'success' },
-              executedEpoch: '823',
-              gasUsed: {
-                computationCost: '1000000',
-                storageCost: '1976000',
-                storageRebate: '978120',
-                nonRefundableStorageFee: '9880',
-              },
-              modifiedAtVersions: [[Object]],
-              transactionDigest: 'CDKmL6HU1HEa8SHevU9bgtapWjPoa5i1tykpu6Ut9pvb',
-              created: [[Object]],
-              mutated: [[Object]],
-              gasObject: { owner: [Object], reference: [Object] },
-              dependencies: ['9Wnh785m4DLCZfQSrSou6HrNr8kTygDxDBuAnnPZ9rFE'],
-            },
-          },
-        });
+      // The SDK talks to the Sui fullnode over gRPC, which nock cannot intercept.
+      const getBalanceStub = sinon.stub(SuiUtils.default, 'getBalance').resolves({
+        totalBalance: suiBalance,
+        coinObjectBalance: suiBalance,
+        fundsInAddressBalance: '0',
+      });
+      const getInputCoinsStub = sinon.stub(SuiUtils.default, 'getInputCoins').resolves([
+        {
+          objectId: `0x${'11'.repeat(32)}`,
+          version: '349180327',
+          digest: 'F1vZCzDD36oKjqMWu9mPo57g1SfznFQnbHLNf436efGx',
+          balance: new BigNumber(suiBalance),
+        },
+      ]);
+      const getFeeEstimateStub = sinon
+        .stub(SuiUtils.default, 'getFeeEstimate')
+        .resolves(new BigNumber('1998000'));
 
       const awmNock = nock(advancedWalletManagerUrl)
         .post(`/api/${suiCoinId}/mpc/recovery`)
@@ -619,9 +583,9 @@ describe('Recovery Tests', () => {
       response.status.should.equal(200);
       response.body.should.have.property('txHex');
 
-      suiAccountBalanceNock.isDone().should.be.true();
-      suiInputCoinsNock.isDone().should.be.true();
-      suiFeeEstimateNock.isDone().should.be.true();
+      sinon.assert.calledOnce(getBalanceStub);
+      sinon.assert.calledOnce(getInputCoinsStub);
+      sinon.assert.calledOnce(getFeeEstimateStub);
       awmNock.isDone().should.be.true();
     });
   });
