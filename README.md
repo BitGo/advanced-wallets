@@ -50,7 +50,7 @@ When a backup AWM URL **is** provided, dedicated mTLS certificates for the backu
 
 ### Prerequisites
 
-- **Node.js** 22.1.0 or higher.
+- **Node.js** 22.23.4 or higher.
 - **npm** or **yarn** package manager.
 - **OpenSSL** for certificate generation.
 - **Docker** and **Docker Compose** for containerized deployment (or you can use **Podman** as alternative to Docker).
