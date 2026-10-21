@@ -1,10 +1,11 @@
 # syntax=docker/dockerfile:1.4
 
 # Build stage
-# Using node:22.14.0-alpine with OpenSSL 3.3.3+ to address CVE-2024-6119
+# Using node:22.23.4-alpine — supported Node 22.x floor carrying the
+# October 2026 security release fixes
 # Pinned to AMD64-specific SHA256 digest for supply chain security and deterministic builds
-# To update: docker pull --platform linux/amd64 node:22.14.0-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:22.14.0-alpine
-FROM node:22.14.0-alpine@sha256:9bef0ef1e268f60627da9ba7d7605e8831d5b56ad07487d24d1aa386336d1944 AS builder
+# To update: docker pull --platform linux/amd64 node:22.23.4-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:22.23.4-alpine
+FROM node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc AS builder
 
 # Set build-time variables for reproducibility
 ARG NODE_ENV=development
@@ -15,7 +16,7 @@ ARG PORT=3081
 
 # Set environment variables
 ENV NODE_ENV=${NODE_ENV} \
-    NODE_VERSION=22.14.0
+    NODE_VERSION=22.23.4
 
 # Set build-time labels
 LABEL org.opencontainers.image.created=${BUILD_DATE} \
@@ -54,9 +55,10 @@ COPY . .
 RUN npm run build
 
 # Production stage
-# Using node:22.14.0-alpine with OpenSSL 3.3.3+ to address CVE-2024-6119
+# Using node:22.23.4-alpine — supported Node 22.x floor carrying the
+# October 2026 security release fixes
 # Pinned to AMD64-specific SHA256 digest for supply chain security and deterministic builds
-FROM node:22.14.0-alpine@sha256:9bef0ef1e268f60627da9ba7d7605e8831d5b56ad07487d24d1aa386336d1944 AS production
+FROM node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc AS production
 
 # Declare build arguments in production stage
 ARG PORT=3081
