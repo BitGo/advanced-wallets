@@ -1,12 +1,32 @@
 import 'should';
 
+import nock from 'nock';
+import * as sinon from 'sinon';
 import { TxRequest } from '@bitgo-beta/sdk-core';
+import {
+  Environments,
+  IRequestTracer,
+  openpgpUtils,
+  RequestTracer,
+  Wallet,
+} from '@bitgo-beta/sdk-core';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import {
   AdvancedWalletManagerClient,
   SignMpcV2Round1Response,
   SignMpcV2Round2Response,
 } from '../../../masterBitgoExpress/clients/advancedWalletManagerClient';
-import { createEddsaMPCv2CustomSigners } from '../../../masterBitgoExpress/handlers/eddsa';
+import {
+  createEddsaMPCv2CustomSigners,
+  signAndSendEddsaMPCv2FromTxRequest,
+} from '../../../masterBitgoExpress/handlers/eddsa';
+import { createMPCSendParamsWithCustomSigningFns } from '../../../masterBitgoExpress/handlers/handleSendMany';
+import coinFactory from '../../../shared/coinFactory';
+import {
+  BitGoAPITestHarness,
+  buildEcdsaMpcv2TxRequest,
+  nockEcdsaMpcv2SigningFlow,
+} from './testUtils';
 
 describe('createEddsaMPCv2CustomSigners', () => {
   const source = 'user' as const;
@@ -96,8 +116,8 @@ describe('createEddsaMPCv2CustomSigners', () => {
     const response = await customEddsaMPCv2Round2Generator({
       txRequest: txRequestFixture,
       bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
-      encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
-      encryptedRound1Session: 'mock-encrypted-round1-session',
+      encryptedUserGpgPrvKey: 'caller-encrypted-user-gpg-prv-key',
+      encryptedRound1Session: 'caller-encrypted-round1-session',
     });
 
     response.should.equal(mockRound2Response);
@@ -130,14 +150,14 @@ describe('createEddsaMPCv2CustomSigners', () => {
     await customEddsaMPCv2Round2Generator({
       txRequest: txRequestFixture,
       bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
-      encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
-      encryptedRound1Session: 'mock-encrypted-round1-session',
+      encryptedUserGpgPrvKey: 'caller-encrypted-user-gpg-prv-key',
+      encryptedRound1Session: 'caller-encrypted-round1-session',
     });
     const response = await customEddsaMPCv2Round3Generator({
       txRequest: txRequestFixture,
       bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
-      encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
-      encryptedRound2Session: 'mock-encrypted-round2-session',
+      encryptedUserGpgPrvKey: 'caller-encrypted-user-gpg-prv-key',
+      encryptedRound2Session: 'caller-encrypted-round2-session',
     });
 
     response.should.equal(mockRound3Response);
@@ -168,8 +188,8 @@ describe('createEddsaMPCv2CustomSigners', () => {
     await customEddsaMPCv2Round2Generator({
       txRequest: txRequestFixture,
       bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
-      encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
-      encryptedRound1Session: 'mock-encrypted-round1-session',
+      encryptedUserGpgPrvKey: 'caller-encrypted-user-gpg-prv-key',
+      encryptedRound1Session: 'caller-encrypted-round1-session',
     }).should.be.rejectedWith('Round 1 must be completed before Round 2');
     awmCalls.should.have.length(0);
   });
@@ -182,9 +202,161 @@ describe('createEddsaMPCv2CustomSigners', () => {
     await customEddsaMPCv2Round3Generator({
       txRequest: txRequestFixture,
       bitgoPublicGpgKey: 'mock-bitgo-gpg-key',
-      encryptedUserGpgPrvKey: 'mock-encrypted-user-gpg-prv-key',
-      encryptedRound2Session: 'mock-encrypted-round2-session',
+      encryptedUserGpgPrvKey: 'caller-encrypted-user-gpg-prv-key',
+      encryptedRound2Session: 'caller-encrypted-round2-session',
     }).should.be.rejectedWith('Round 2 must be completed before Round 3');
     awmCalls.should.have.length(1);
+  });
+});
+describe('signAndSendEddsaMPCv2FromTxRequest', () => {
+  let bitgo: BitGoAPI;
+  let wallet: Wallet;
+  let awmClient: AdvancedWalletManagerClient;
+  let reqId: IRequestTracer;
+  const bitgoApiUrl = Environments.local.uri;
+  const advancedWalletManagerUrl = 'http://advancedwalletmanager.invalid';
+  const coin = 'tsol'; // Use tsol for EdDSA testing
+
+  before(() => {
+    nock.disableNetConnect();
+  });
+
+  beforeEach(() => {
+    bitgo = new BitGoAPI({ env: 'local' });
+    wallet = {
+      id: () => 'test-wallet-id',
+      baseCoin: {
+        getMPCAlgorithm: () => 'eddsa',
+      },
+      multisigTypeVersion: () => 'MPCv2',
+    } as unknown as Wallet;
+    awmClient = new AdvancedWalletManagerClient(
+      {
+        advancedWalletManagerUrl,
+        awmServerCaCert: 'dummy-cert',
+        tlsMode: 'disabled',
+        clientCertAllowSelfSigned: true,
+      } as unknown as ConstructorParameters<typeof AdvancedWalletManagerClient>[0],
+      coin,
+    );
+    reqId = new RequestTracer();
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+    sinon.restore();
+    BitGoAPITestHarness.clearConstantsCache();
+  });
+
+  after(() => {
+    nock.enableNetConnect();
+  });
+
+  it('should successfully sign an EdDSA MPCv2 transaction', async () => {
+    const txRequestData = buildEcdsaMpcv2TxRequest('pendingUserSignature');
+    const txRequest = txRequestData as TxRequest;
+
+    const bitgoEddsaMpcv2Key = await openpgpUtils.generateGPGKeyPair('ed25519');
+
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v1/client/constants')
+      .reply(200, {
+        constants: {
+          mpc: {
+            bitgoEddsaMpcv2PublicKey: bitgoEddsaMpcv2Key.publicKey,
+            bitgoPublicKey: bitgoEddsaMpcv2Key.publicKey,
+          },
+        },
+      });
+
+    const sendResponse = { ...txRequestData, state: 'signed' };
+    const nocks = nockEcdsaMpcv2SigningFlow({
+      coin,
+      bitgoApiUrl,
+      advancedWalletManagerUrl,
+      sendResponse,
+      expectedCurveType: 'eddsa',
+    });
+
+    const result = await signAndSendEddsaMPCv2FromTxRequest(
+      bitgo,
+      wallet,
+      txRequest,
+      awmClient,
+      'user',
+      'mock-common-keychain',
+      reqId,
+    );
+
+    result.should.eql(sendResponse);
+
+    nocks.round1SignNock.done();
+    nocks.round2SignNock.done();
+    nocks.round3SignNock.done();
+    nocks.sendTxNock.done();
+    nocks.awmRound1Nock.done();
+    nocks.awmRound2Nock.done();
+    nocks.awmRound3Nock.done();
+  });
+});
+
+describe('createMPCSendParamsWithCustomSigningFns EdDSA dispatch', () => {
+  const coin = 'tsol';
+
+  function makeReq(decoded: Record<string, unknown>) {
+    return {
+      params: { coin },
+      decoded,
+      bitgo: {} as never,
+    } as unknown as Parameters<typeof createMPCSendParamsWithCustomSigningFns>[0];
+  }
+
+  afterEach(() => {
+    sinon.restore();
+  });
+
+  it('returns MPCv2 signing functions for an EdDSA MPCv2 wallet', async () => {
+    sinon.stub(coinFactory, 'getCoin').resolves({
+      getMPCAlgorithm: () => 'eddsa',
+    } as never);
+    const wallet = { multisigTypeVersion: () => 'MPCv2' } as unknown as Wallet;
+    const awmClientStub = {} as unknown as AdvancedWalletManagerClient;
+
+    const params = await createMPCSendParamsWithCustomSigningFns(
+      makeReq({ recipients: [] }),
+      wallet,
+      awmClientStub,
+      { source: 'user', commonKeychain: 'mock-common-keychain' } as never,
+    );
+
+    params.should.have.property('customEddsaMPCv2SigningRound1GenerationFunction');
+    params.should.have.property('customEddsaMPCv2SigningRound2GenerationFunction');
+    params.should.have.property('customEddsaMPCv2SigningRound3GenerationFunction');
+    params.should.not.have.property('customCommitmentGeneratingFunction');
+    params.should.not.have.property('customRShareGeneratingFunction');
+    params.should.not.have.property('customGShareGeneratingFunction');
+  });
+
+  it('returns MPCv1 signing functions for an EdDSA MPCv1 wallet', async () => {
+    sinon.stub(coinFactory, 'getCoin').resolves({
+      getMPCAlgorithm: () => 'eddsa',
+    } as never);
+    const wallet = {} as unknown as Wallet;
+    const awmClientStub = {} as unknown as AdvancedWalletManagerClient;
+
+    const params = await createMPCSendParamsWithCustomSigningFns(
+      makeReq({ recipients: [] }),
+      wallet,
+      awmClientStub,
+      { source: 'user', commonKeychain: 'mock-common-keychain' } as never,
+    );
+
+    params.should.have.property('customCommitmentGeneratingFunction');
+    params.should.have.property('customRShareGeneratingFunction');
+    params.should.have.property('customGShareGeneratingFunction');
+    params.should.not.have.property('customEddsaMPCv2SigningRound1GenerationFunction');
+    params.should.not.have.property('customEddsaMPCv2SigningRound2GenerationFunction');
+    params.should.not.have.property('customEddsaMPCv2SigningRound3GenerationFunction');
   });
 });

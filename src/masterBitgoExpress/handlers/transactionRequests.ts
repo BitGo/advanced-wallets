@@ -7,7 +7,7 @@ import {
   Wallet,
 } from '@bitgo-beta/sdk-core';
 import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
-import { handleEddsaSigning } from './eddsa';
+import { handleEddsaSigning, signAndSendEddsaMPCv2FromTxRequest } from './eddsa';
 import { signAndSendEcdsaMPCv2FromTxRequest } from './ecdsa';
 
 /**
@@ -36,14 +36,26 @@ export async function signAndSendTxRequests(
   const mpcAlgorithm = wallet.baseCoin.getMPCAlgorithm();
 
   if (mpcAlgorithm === 'eddsa') {
-    signedTxRequest = await handleEddsaSigning(
-      bitgo,
-      wallet,
-      txRequest,
-      awmClient,
-      signingKeychain.commonKeychain,
-      reqId,
-    );
+    if (wallet.multisigTypeVersion?.() === 'MPCv2') {
+      signedTxRequest = await signAndSendEddsaMPCv2FromTxRequest(
+        bitgo,
+        wallet,
+        txRequest,
+        awmClient,
+        signingKeychain.source as 'user' | 'backup',
+        signingKeychain.commonKeychain,
+        reqId,
+      );
+    } else {
+      signedTxRequest = await handleEddsaSigning(
+        bitgo,
+        wallet,
+        txRequest,
+        awmClient,
+        signingKeychain.commonKeychain,
+        reqId,
+      );
+    }
   } else if (mpcAlgorithm === 'ecdsa') {
     signedTxRequest = await signAndSendEcdsaMPCv2FromTxRequest(
       bitgo,

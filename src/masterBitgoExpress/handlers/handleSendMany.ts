@@ -1,5 +1,6 @@
 import {
   RequestTracer,
+  Wallet,
   PrebuildTransactionOptions,
   Memo,
   KeyIndices,
@@ -10,7 +11,7 @@ import logger from '../../shared/logger';
 import { MasterApiSpecRouteRequest } from '../routers/masterBitGoExpressApiSpec';
 import { createEcdsaMPCv2CustomSigners } from './ecdsa';
 import { AdvancedWalletManagerClient } from '../clients/advancedWalletManagerClient';
-import { createEddsaCustomSigningFunctions } from './eddsa';
+import { createEddsaCustomSigningFunctions, createEddsaMPCv2CustomSigners } from './eddsa';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import coinFactory from '../../shared/coinFactory';
 import { getWalletPubs } from './utils/utils';
@@ -32,10 +33,12 @@ interface Recipient {
 }
 
 /**
- * Creates TSS send parameters for ECDSA MPCv2 signing with custom functions
+ * Creates TSS send parameters for MPC signing with custom functions (ECDSA MPCv2,
+ * EdDSA MPCv1 and EdDSA MPCv2 depending on the wallet's mpc algorithm and multisigTypeVersion)
  */
-async function createMPCSendParamsWithCustomSigningFns(
+export async function createMPCSendParamsWithCustomSigningFns(
   req: MasterApiSpecRouteRequest<'v1.wallet.sendMany', 'post'>,
+  wallet: Wallet,
   awmClient: AdvancedWalletManagerClient,
   signingKeychain: Keychain,
 ): Promise<SendManyOptions> {
@@ -59,6 +62,20 @@ async function createMPCSendParamsWithCustomSigningFns(
       customMPCv2SigningRound3GenerationFunction: customMPCv2Round3Generator,
     };
   } else if (mpcAlgorithm === 'eddsa') {
+    if (wallet.multisigTypeVersion?.() === 'MPCv2') {
+      const {
+        customEddsaMPCv2Round1Generator,
+        customEddsaMPCv2Round2Generator,
+        customEddsaMPCv2Round3Generator,
+      } = createEddsaMPCv2CustomSigners(awmClient, source, commonKeychain);
+
+      return {
+        ...(req.decoded as SendManyOptions),
+        customEddsaMPCv2SigningRound1GenerationFunction: customEddsaMPCv2Round1Generator,
+        customEddsaMPCv2SigningRound2GenerationFunction: customEddsaMPCv2Round2Generator,
+        customEddsaMPCv2SigningRound3GenerationFunction: customEddsaMPCv2Round3Generator,
+      };
+    }
     const { customCommitmentGenerator, customRShareGenerator, customGShareGenerator } =
       createEddsaCustomSigningFunctions(awmClient, source, commonKeychain);
 
@@ -143,6 +160,7 @@ export async function handleSendMany(req: MasterApiSpecRouteRequest<'v1.wallet.s
       }
       const mpcSendParams = await createMPCSendParamsWithCustomSigningFns(
         req,
+        wallet,
         awmClient,
         signingKeychain,
       );
