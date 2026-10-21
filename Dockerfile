@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.4
 
 # Build stage
-# Using node:22.23.4-alpine (October 2026 Node.js security release)
+# Using node:24.22.1-alpine (October 2026 Node.js security release)
 # Pinned to AMD64-specific SHA256 digest for supply chain security and deterministic builds
-# To update: docker pull --platform linux/amd64 node:22.23.4-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:22.23.4-alpine
-FROM node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc AS builder
+# To update: docker pull --platform linux/amd64 node:24.22.1-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:24.22.1-alpine
+FROM node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d AS builder
 
 # Set build-time variables for reproducibility
 ARG NODE_ENV=development
@@ -15,7 +15,7 @@ ARG PORT=3081
 
 # Set environment variables
 ENV NODE_ENV=${NODE_ENV} \
-    NODE_VERSION=22.23.4
+    NODE_VERSION=24.22.1
 
 # Set build-time labels
 LABEL org.opencontainers.image.created=${BUILD_DATE} \
@@ -54,9 +54,9 @@ COPY . .
 RUN npm run build
 
 # Production stage
-# Using node:22.23.4-alpine (October 2026 Node.js security release)
+# Using node:24.22.1-alpine (October 2026 Node.js security release)
 # Pinned to AMD64-specific SHA256 digest for supply chain security and deterministic builds
-FROM node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc AS production
+FROM node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d AS production
 
 # Declare build arguments in production stage
 ARG PORT=3081
