@@ -6,7 +6,7 @@ import nock from 'nock';
 import sinon from 'sinon';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
-import { BitgoMpcGpgPubKeys, Environments } from '@bitgo-beta/sdk-core';
+import { BitgoMpcGpgPubKeys, Environments, Wallets } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
 import { BitGoRequest } from '../../../types/request';
@@ -348,6 +348,13 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   });
 
   it('should generate a TSS MPC v1 (EdDSA) wallet with separate backup AWM', async () => {
+    // No MPCv2 setting for the family: the server still wants MPCv1
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v2/tss/settings')
+      .query(true)
+      .reply(200, { coinSettings: {} });
+
     const backupAwmUrl = 'http://backup-awm.invalid';
 
     sinon.restore();
@@ -652,6 +659,13 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
   });
 
   it('should generate a TSS MPC v1 wallet by calling the advanced wallet manager service', async () => {
+    // No MPCv2 setting for the family: the server still wants MPCv1
+    nock(bitgoApiUrl)
+      .persist()
+      .get('/api/v2/tss/settings')
+      .query(true)
+      .reply(200, { coinSettings: {} });
+
     nock(bitgoApiUrl)
       .persist()
       .get('/api/v1/client/constants')
@@ -2328,6 +2342,80 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
         'advancedWalletManagerUrl and awmServerCaCert are required',
       );
     }
+  });
+
+  describe('EdDSA key generation routing by the tss settings multiSigTypeVersion', () => {
+    let generateStub: sinon.SinonStub;
+    let routingAgent: request.SuperAgentTest;
+
+    beforeEach(() => {
+      sinon.restore();
+      const configWithBackup = makeConfig({
+        advancedWalletManagerBackupUrl: 'http://backup-awm.invalid',
+      });
+      sinon.stub(middleware, 'prepareBitGo').callsFake(() => (req, res, next) => {
+        (req as BitGoRequest<MasterExpressConfig>).bitgo = bitgo;
+        (req as BitGoRequest<MasterExpressConfig>).config = configWithBackup;
+        next();
+      });
+      routingAgent = request.agent(expressApp(configWithBackup));
+      generateStub = sinon
+        .stub(Wallets.prototype, 'generateWalletWithExternalSigner')
+        .resolves({ wallet: { toJSON: () => ({ id: 'wallet-id' }) } } as never);
+    });
+
+    const mockTssSettings = (family: string, walletCreationSettings: object) =>
+      nock(bitgoApiUrl)
+        .get('/api/v2/tss/settings')
+        .query({ enterprise: 'test_enterprise' })
+        .reply(200, { coinSettings: { [family]: { walletCreationSettings } } });
+
+    // Only the options handed to the SDK are asserted: the stubbed result is not a full wallet
+    // response, so the route's response encoding is expected to fail after the SDK call.
+    const generate = (c = eddsaCoin) =>
+      routingAgent
+        .post(`/api/v1/${c}/advancedwallet/generate`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ label: 'test_wallet', enterprise: 'test_enterprise', multisigType: 'tss' });
+
+    it('uses the EdDSA MPCv2 callbacks when the setting is MPCv2', async () => {
+      mockTssSettings('sol', { multiSigTypeVersion: 'MPCv2' });
+      await generate();
+
+      generateStub.calledOnce.should.be.true();
+      const options = generateStub.firstCall.args[0];
+      options.eddsaMPCv2Callbacks.should.have.keys(
+        'initializeCallback',
+        'round1Callback',
+        'round2Callback',
+        'finalizeCallback',
+      );
+      options.should.not.have.property('eddsaCallbacks');
+    });
+
+    it('keeps the EdDSA MPCv1 callbacks when the setting is absent', async () => {
+      mockTssSettings('sol', {});
+      await generate();
+
+      const options = generateStub.firstCall.args[0];
+      options.should.have.property('eddsaCallbacks');
+      options.should.not.have.property('eddsaMPCv2Callbacks');
+    });
+
+    it('uses the setting of the coin family only', async () => {
+      mockTssSettings('eth', { multiSigTypeVersion: 'MPCv2' });
+      await generate();
+
+      generateStub.firstCall.args[0].should.have.property('eddsaCallbacks');
+    });
+
+    it('does not read the setting for ECDSA key generation', async () => {
+      await generate(ecdsaCoin);
+
+      const options = generateStub.firstCall.args[0];
+      options.should.have.property('ecdsaMPCv2Callbacks');
+      options.should.not.have.property('eddsaMPCv2Callbacks');
+    });
   });
 
   it('should fail when multisig type is invalid / not provided', async () => {
