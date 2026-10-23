@@ -24,7 +24,7 @@ FROM node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3
 # Node 24 sizes its default heap from container memory and ts-node compilation
 # exhausts it, getting the suite OOM-killed; an explicit cap keeps GC working.
 ENV NODE_ENV=test \
-    NODE_OPTIONS=--max-old-space-size=3072 \
+    NODE_OPTIONS=--max-old-space-size=4096 \
     TZ=UTC \
     LANG=C.UTF-8
 
