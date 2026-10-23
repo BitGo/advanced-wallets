@@ -1,9 +1,10 @@
 import assert from 'assert';
-import { DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
+import { DklsTypes, MPSTypes } from '@bitgo-beta/sdk-lib-mpc';
 import {
   CreateKeychainCallback,
   EcdsaMPCv2KeyGenCallbacks,
   EddsaKeyGenCallbacks,
+  EddsaMPCv2KeyGenCallbacks,
 } from '@bitgo-beta/sdk-core';
 import { KeySource } from '../../shared/types';
 import {
@@ -98,13 +99,13 @@ export function createEcdsaMPCv2KeyGenCallbacks(
   return {
     initializeCallback: async ({ bitgoPublicGpgKey }) => {
       assert(!userRound1Broadcast, 'initializeCallback called more than once');
-      const userInit = await awmUserClient.initEcdsaMpcV2KeyGenMpcV2({ source: KeySource.USER });
-      const backupInit = await awmBackupClient.initEcdsaMpcV2KeyGenMpcV2({
+      const userInit = await awmUserClient.initMpcV2KeyGen({ source: KeySource.USER });
+      const backupInit = await awmBackupClient.initMpcV2KeyGen({
         source: KeySource.BACKUP,
       });
 
       const [userRound1, backupRound1] = await Promise.all([
-        awmUserClient.roundEcdsaMPCv2KeyGen({
+        awmUserClient.roundMpcV2KeyGen({
           source: KeySource.USER,
           encryptedData: userInit.encryptedData,
           encryptedDataKey: userInit.encryptedDataKey,
@@ -112,7 +113,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
           bitgoGpgPub: bitgoPublicGpgKey,
           counterPartyGpgPub: backupInit.gpgPub,
         }),
-        awmBackupClient.roundEcdsaMPCv2KeyGen({
+        awmBackupClient.roundMpcV2KeyGen({
           source: KeySource.BACKUP,
           encryptedData: backupInit.encryptedData,
           encryptedDataKey: backupInit.encryptedDataKey,
@@ -150,13 +151,13 @@ export function createEcdsaMPCv2KeyGenCallbacks(
       assert(bitgoMsg1.from === PARTY.BITGO, 'bitgoMsg1 is not from BitGo');
       const bitgoBroadcast = formatBroadcastMessage(bitgoMsg1);
       const [userRound2, backupRound2] = await Promise.all([
-        awmUserClient.roundEcdsaMPCv2KeyGen({
+        awmUserClient.roundMpcV2KeyGen({
           source: KeySource.USER,
           ...userState,
           round: 2,
           broadcastMessages: { bitgo: bitgoBroadcast, counterParty: backupRound1Broadcast },
         }),
-        awmBackupClient.roundEcdsaMPCv2KeyGen({
+        awmBackupClient.roundMpcV2KeyGen({
           source: KeySource.BACKUP,
           ...backupState,
           round: 2,
@@ -185,7 +186,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
       assert(bitgoToBackupMsg2.to === PARTY.BACKUP, 'bitgoToBackupMsg2 is not addressed to backup');
 
       const [userRound3, backupRound3] = await Promise.all([
-        awmUserClient.roundEcdsaMPCv2KeyGen({
+        awmUserClient.roundMpcV2KeyGen({
           source: KeySource.USER,
           ...toMpcState(userRound2),
           round: 3,
@@ -194,7 +195,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
             counterParty: backupRound2CounterPartyP2p,
           },
         }),
-        awmBackupClient.roundEcdsaMPCv2KeyGen({
+        awmBackupClient.roundMpcV2KeyGen({
           source: KeySource.BACKUP,
           ...toMpcState(backupRound2),
           round: 3,
@@ -248,7 +249,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
       assert(bitgoToBackupMsg3.from === PARTY.BITGO, 'bitgoToBackupMsg3 is not from BitGo');
       assert(bitgoToBackupMsg3.to === PARTY.BACKUP, 'bitgoToBackupMsg3 is not addressed to backup');
       const [userRound4, backupRound4] = await Promise.all([
-        awmUserClient.roundEcdsaMPCv2KeyGen({
+        awmUserClient.roundMpcV2KeyGen({
           source: KeySource.USER,
           ...userState,
           round: 4,
@@ -257,7 +258,7 @@ export function createEcdsaMPCv2KeyGenCallbacks(
             counterParty: backupRound3CounterPartyP2p,
           },
         }),
-        awmBackupClient.roundEcdsaMPCv2KeyGen({
+        awmBackupClient.roundMpcV2KeyGen({
           source: KeySource.BACKUP,
           ...backupState,
           round: 4,
@@ -288,13 +289,13 @@ export function createEcdsaMPCv2KeyGenCallbacks(
       assert(bitgoMsg4.from === PARTY.BITGO, 'bitgoMsg4 is not from BitGo');
       const bitgoBroadcast = formatBroadcastMessage(bitgoMsg4);
       const [userFinalize, backupFinalize] = await Promise.all([
-        awmUserClient.finalizeEcdsaMPCv2KeyGen({
+        awmUserClient.finalizeMpcV2KeyGen({
           source: KeySource.USER,
           ...userState,
           broadcastMessages: { bitgo: bitgoBroadcast, counterParty: backupRound4Broadcast },
           bitgoCommonKeychain,
         }),
-        awmBackupClient.finalizeEcdsaMPCv2KeyGen({
+        awmBackupClient.finalizeMpcV2KeyGen({
           source: KeySource.BACKUP,
           ...backupState,
           broadcastMessages: { bitgo: bitgoBroadcast, counterParty: userRound4Broadcast },
@@ -412,6 +413,154 @@ export function createEddsaKeyGenCallbacks(
         commonKeychain: response.commonKeychain,
         counterpartyKeyShare: response.counterpartyKeyShare,
       };
+    },
+  };
+}
+
+/**
+ * Creates EdDSA MPCv2 key generation callbacks for the SDK external signer flow.
+ *
+ * Each callback drives both the user and the backup AWM through the shared
+ * v1.mpcv2 routes (the AWM route handlers dispatch on curve type). The counterparty
+ * round-2 signed messages — which finalize needs but the SDK does not pass into
+ * finalizeCallback — are carried in this closure.
+ */
+export function createEddsaMPCv2KeyGenCallbacks(
+  awmUserClient: AdvancedWalletManagerClient,
+  awmBackupClient: AdvancedWalletManagerClient,
+): EddsaMPCv2KeyGenCallbacks {
+  let initialized = false;
+  let userSignedMsg2: MPSTypes.MPSSignedMessage | undefined;
+  let backupSignedMsg2: MPSTypes.MPSSignedMessage | undefined;
+
+  return {
+    initializeCallback: async () => {
+      assert(!initialized, 'initializeCallback called more than once');
+      initialized = true;
+      const [userInit, backupInit] = await Promise.all([
+        awmUserClient.initMpcV2KeyGen({ source: KeySource.USER }),
+        awmBackupClient.initMpcV2KeyGen({ source: KeySource.BACKUP }),
+      ]);
+      return {
+        userGpgPublicKey: userInit.gpgPub,
+        backupGpgPublicKey: backupInit.gpgPub,
+        userState: {
+          encryptedData: userInit.encryptedData,
+          encryptedDataKey: userInit.encryptedDataKey,
+        },
+        backupState: {
+          encryptedData: backupInit.encryptedData,
+          encryptedDataKey: backupInit.encryptedDataKey,
+        },
+      };
+    },
+
+    round1Callback: async ({
+      bitgoPublicGpgKey,
+      userGpgPublicKey,
+      backupGpgPublicKey,
+      userState,
+      backupState,
+    }) => {
+      const [userRound1, backupRound1] = await Promise.all([
+        awmUserClient.roundMpcV2KeyGen({
+          source: KeySource.USER,
+          ...userState,
+          round: 1,
+          bitgoGpgPub: bitgoPublicGpgKey,
+          counterPartyGpgPub: backupGpgPublicKey,
+        }),
+        awmBackupClient.roundMpcV2KeyGen({
+          source: KeySource.BACKUP,
+          ...backupState,
+          round: 1,
+          bitgoGpgPub: bitgoPublicGpgKey,
+          counterPartyGpgPub: userGpgPublicKey,
+        }),
+      ]);
+      assert(userRound1.signedMsg, 'Missing signed message in user round 1 response');
+      assert(backupRound1.signedMsg, 'Missing signed message in backup round 1 response');
+      return {
+        userSignedMsg1: userRound1.signedMsg,
+        backupSignedMsg1: backupRound1.signedMsg,
+        userState: {
+          encryptedData: userRound1.encryptedData,
+          encryptedDataKey: userRound1.encryptedDataKey,
+        },
+        backupState: {
+          encryptedData: backupRound1.encryptedData,
+          encryptedDataKey: backupRound1.encryptedDataKey,
+        },
+      };
+    },
+
+    round2Callback: async ({
+      bitgoMsg1,
+      userSignedMsg1,
+      backupSignedMsg1,
+      userState,
+      backupState,
+    }) => {
+      const [userRound2, backupRound2] = await Promise.all([
+        awmUserClient.roundMpcV2KeyGen({
+          source: KeySource.USER,
+          ...userState,
+          round: 2,
+          bitgoMsg: bitgoMsg1,
+          counterPartyMsg: backupSignedMsg1,
+        }),
+        awmBackupClient.roundMpcV2KeyGen({
+          source: KeySource.BACKUP,
+          ...backupState,
+          round: 2,
+          bitgoMsg: bitgoMsg1,
+          counterPartyMsg: userSignedMsg1,
+        }),
+      ]);
+      assert(userRound2.signedMsg, 'Missing signed message in user round 2 response');
+      assert(backupRound2.signedMsg, 'Missing signed message in backup round 2 response');
+      userSignedMsg2 = userRound2.signedMsg;
+      backupSignedMsg2 = backupRound2.signedMsg;
+      return {
+        userSignedMsg2,
+        backupSignedMsg2,
+        userState: {
+          encryptedData: userRound2.encryptedData,
+          encryptedDataKey: userRound2.encryptedDataKey,
+        },
+        backupState: {
+          encryptedData: backupRound2.encryptedData,
+          encryptedDataKey: backupRound2.encryptedDataKey,
+        },
+      };
+    },
+
+    finalizeCallback: async ({ bitgoMsg2, bitgoCommonKeychain, userState, backupState }) => {
+      assert(
+        userSignedMsg2 && backupSignedMsg2,
+        'finalizeCallback called before round2Callback completed',
+      );
+      const [userFinalize, backupFinalize] = await Promise.all([
+        awmUserClient.finalizeMpcV2KeyGen({
+          source: KeySource.USER,
+          ...userState,
+          bitgoMsg: bitgoMsg2,
+          counterPartyMsg: backupSignedMsg2,
+          bitgoCommonKeychain,
+        }),
+        awmBackupClient.finalizeMpcV2KeyGen({
+          source: KeySource.BACKUP,
+          ...backupState,
+          bitgoMsg: bitgoMsg2,
+          counterPartyMsg: userSignedMsg2,
+          bitgoCommonKeychain,
+        }),
+      ]);
+      assert(
+        userFinalize.commonKeychain === backupFinalize.commonKeychain,
+        'User and backup common keychains do not match',
+      );
+      return { commonKeychain: userFinalize.commonKeychain };
     },
   };
 }

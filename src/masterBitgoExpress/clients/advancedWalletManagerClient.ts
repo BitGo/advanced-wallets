@@ -1,3 +1,4 @@
+import { MPSTypes } from '@bitgo-beta/sdk-lib-mpc';
 import { z } from 'zod';
 import assert from 'assert';
 import https from 'https';
@@ -629,7 +630,7 @@ export class AdvancedWalletManagerClient {
   /**
    * Initialize MPCv2 key generation
    */
-  async initEcdsaMpcV2KeyGenMpcV2(params: {
+  async initMpcV2KeyGen(params: {
     source: 'user' | 'backup';
   }): Promise<MpcV2InitializeResponseType> {
     if (!this.coin) {
@@ -639,7 +640,7 @@ export class AdvancedWalletManagerClient {
     try {
       let request = this.apiClient['v1.mpcv2.initialize'].post({
         coin: this.coin,
-        source: params.source,
+        ...params,
       });
 
       if (this.tlsMode === TlsMode.MTLS) {
@@ -658,17 +659,19 @@ export class AdvancedWalletManagerClient {
   }
 
   /**
-   * Execute a round in the MPCv2 protocol
+   * Execute a round in the MPCv2 protocol.
    */
-  async roundEcdsaMPCv2KeyGen(params: {
+  async roundMpcV2KeyGen(params: {
     source: 'user' | 'backup';
     encryptedData: string;
     encryptedDataKey: string;
     round: number;
     bitgoGpgPub?: string;
     counterPartyGpgPub?: string;
-    broadcastMessages?: { bitgo: any; counterParty: any };
-    p2pMessages?: { bitgo: any; counterParty: any };
+    broadcastMessages?: { bitgo: unknown; counterParty: unknown };
+    p2pMessages?: { bitgo: unknown; counterParty: unknown };
+    bitgoMsg?: MPSTypes.MPSSignedMessage;
+    counterPartyMsg?: MPSTypes.MPSSignedMessage;
   }): Promise<MpcV2RoundResponseType> {
     if (!this.coin) {
       throw new Error('Coin must be specified for MPCv2 round');
@@ -696,14 +699,16 @@ export class AdvancedWalletManagerClient {
   }
 
   /**
-   * Finalize MPCv2 key generation
+   * Finalize MPCv2 key generation.
    */
-  async finalizeEcdsaMPCv2KeyGen(params: {
+  async finalizeMpcV2KeyGen(params: {
     source: 'user' | 'backup';
     encryptedData: string;
     encryptedDataKey: string;
-    broadcastMessages: { bitgo: any; counterParty: any };
+    broadcastMessages?: { bitgo: unknown; counterParty: unknown };
     bitgoCommonKeychain: string;
+    bitgoMsg?: MPSTypes.MPSSignedMessage;
+    counterPartyMsg?: MPSTypes.MPSSignedMessage;
   }): Promise<MpcV2FinalizeResponseType> {
     if (!this.coin) {
       throw new Error('Coin must be specified to finalize MPCv2 key generation');
