@@ -1,5 +1,5 @@
 # Stage 1 — build
-FROM node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc AS builder
+FROM node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d AS builder
 
 ENV NODE_ENV=test \
     TZ=UTC \
@@ -19,9 +19,12 @@ COPY . .
 RUN npm run build
 
 # Stage 2 — test runner
-FROM node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc AS runner
+FROM node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d AS runner
 
+# Node 24 sizes its default heap from container memory and ts-node compilation
+# exhausts it, getting the suite OOM-killed; an explicit cap keeps GC working.
 ENV NODE_ENV=test \
+    NODE_OPTIONS=--max-old-space-size=4096 \
     TZ=UTC \
     LANG=C.UTF-8
 
