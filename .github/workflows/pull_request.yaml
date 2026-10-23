@@ -110,6 +110,8 @@ jobs:
         with:
           context: .
           push: false
+          platforms: linux/amd64
+          load: true
           tags: |
             ghcr.io/bitgo/advanced-wallets:${{ github.sha }}
           build-args: |
@@ -118,3 +120,72 @@ jobs:
             VCS_REF=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Smoke test image
+        run: |
+          set -euo pipefail
+
+          IMAGE="ghcr.io/bitgo/advanced-wallets:${GITHUB_SHA}"
+          NETWORK="advanced-wallets-smoke-${GITHUB_RUN_ID}"
+          AWM_CONTAINER="advanced-wallets-smoke-awm-${GITHUB_RUN_ID}"
+          MBE_CONTAINER="advanced-wallets-smoke-mbe-${GITHUB_RUN_ID}"
+          FAILED="false"
+
+          cleanup() {
+            if [ "${FAILED}" = "true" ]; then
+              echo "::group::AWM container logs"
+              docker logs "${AWM_CONTAINER}" || true
+              echo "::endgroup::"
+              echo "::group::Master Express container logs"
+              docker logs "${MBE_CONTAINER}" || true
+              echo "::endgroup::"
+            fi
+            docker rm -f "${AWM_CONTAINER}" >/dev/null 2>&1 || true
+            docker rm -f "${MBE_CONTAINER}" >/dev/null 2>&1 || true
+            docker network rm "${NETWORK}" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker network create "${NETWORK}"
+
+          docker run -d --name "${AWM_CONTAINER}" \
+            --network "${NETWORK}" \
+            --network-alias advanced-wallet-manager \
+            -p 127.0.0.1:13080:3080 \
+            -e APP_MODE=advanced-wallet-manager \
+            -e ADVANCED_WALLET_MANAGER_PORT=3080 \
+            -e BIND=0.0.0.0 \
+            -e TLS_MODE=disabled \
+            -e KEY_PROVIDER_URL=https://key-provider.invalid \
+            "${IMAGE}"
+
+          docker run -d --name "${MBE_CONTAINER}" \
+            --network "${NETWORK}" \
+            -p 127.0.0.1:13081:3081 \
+            -e APP_MODE=master-express \
+            -e MASTER_EXPRESS_PORT=3081 \
+            -e BIND=0.0.0.0 \
+            -e TLS_MODE=disabled \
+            -e ADVANCED_WALLET_MANAGER_URL=http://advanced-wallet-manager:3080 \
+            "${IMAGE}"
+
+          wait_for() {
+            local url="${1}"
+            local status="none"
+            for _ in $(seq 1 30); do
+              if status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${url}")" && [ "${status}" = "200" ]; then
+                echo "${url} -> 200"
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Timed out waiting for POST ${url} (last status: ${status})"
+            FAILED="true"
+            return 1
+          }
+
+          wait_for "http://127.0.0.1:13080/ping"
+          wait_for "http://127.0.0.1:13081/advancedwallet/ping"
+          wait_for "http://127.0.0.1:13081/ping/advancedWalletManager"
+
+          echo "Production image smoke checks passed for both application modes."
