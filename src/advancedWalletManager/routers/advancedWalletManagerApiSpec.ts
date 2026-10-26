@@ -34,6 +34,11 @@ import { ecdsaMPCv2Round } from '../handlers/ecdsaMPCV2WalletGenerationRound';
 import { ecdsaMPCv2Finalize } from '../handlers/ecdsaMPCV2WalletGenerationFinalize';
 import { ecdsaMPCv2Recovery } from '../handlers/ecdsaMPCV2Recovery';
 import { signEddsaRecoveryTransaction } from '../handlers/eddsaMPCRecovery';
+import {
+  eddsaMPCv2Initialize,
+  eddsaMPCv2Round,
+  eddsaMPCv2Finalize,
+} from '../handlers/eddsaMPCV2WalletGeneration';
 import { isEddsaCoin } from '../../shared/coinUtils';
 import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
 
@@ -269,6 +274,8 @@ const MpcV2RoundMessage = t.type({
   bitgo: t.any,
   counterParty: t.any,
 });
+const MPSSignedMessage = t.type({ message: t.string, signature: t.string });
+
 const MpcV2RoundRequest = {
   source: t.union([t.literal('user'), t.literal('backup')]),
   encryptedData: t.string,
@@ -278,7 +285,15 @@ const MpcV2RoundRequest = {
   counterPartyGpgPub: optional(t.string),
   broadcastMessages: optional(MpcV2RoundMessage),
   p2pMessages: optional(MpcV2RoundMessage),
+  // EdDSA only
+  bitgoMsg: optional(MPSSignedMessage),
+  counterPartyMsg: optional(MPSSignedMessage),
 };
+// Strict EdDSA shapes, decoded by the EdDSA handlers (the route props above keep these optional).
+export const EddsaMpcV2RoundBody = t.union([
+  t.type({ round: t.literal(1), bitgoGpgPub: t.string, counterPartyGpgPub: t.string }),
+  t.type({ round: t.literal(2), bitgoMsg: MPSSignedMessage, counterPartyMsg: MPSSignedMessage }),
+]);
 const MpcV2RoundRequestType = t.type(MpcV2RoundRequest);
 export type MpcV2RoundRequestType = t.TypeOf<typeof MpcV2RoundRequestType>;
 
@@ -288,6 +303,7 @@ const MpcV2RoundResponse = {
   round: t.number,
   broadcastMessage: optional(t.any),
   p2pMessages: optional(MpcV2RoundMessage),
+  signedMsg: optional(MPSSignedMessage), // EdDSA only
 };
 const MpcV2RoundResponseType = t.exact(optionalized(MpcV2RoundResponse));
 export type MpcV2RoundResponseType = t.TypeOf<typeof MpcV2RoundResponseType>;
@@ -296,9 +312,16 @@ const MpcV2FinalizeRequest = {
   source: t.union([t.literal('user'), t.literal('backup')]),
   encryptedData: t.string,
   encryptedDataKey: t.string,
-  broadcastMessages: MpcV2RoundMessage,
+  broadcastMessages: optional(MpcV2RoundMessage), // ECDSA only
   bitgoCommonKeychain: t.string,
+  // EdDSA only
+  bitgoMsg: optional(MPSSignedMessage),
+  counterPartyMsg: optional(MPSSignedMessage),
 };
+export const EddsaMpcV2FinalizeBody = t.type({
+  bitgoMsg: MPSSignedMessage,
+  counterPartyMsg: MPSSignedMessage,
+});
 const MpcV2FinalizeRequestType = t.type(MpcV2FinalizeRequest);
 export type MpcV2FinalizeRequestType = t.TypeOf<typeof MpcV2FinalizeRequestType>;
 
@@ -597,7 +620,10 @@ export function createKeyGenRouter(
   router.post('v1.mpcv2.initialize', [
     responseHandler<AdvancedWalletManagerConfig>(async (req) => {
       const typedReq = req as AwmApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>;
-      const result = await ecdsaMPCv2Initialize(typedReq);
+      const coin = await coinFactory.getCoin(typedReq.decoded.coin, typedReq.bitgo);
+      const result = isEddsaCoin(coin)
+        ? await eddsaMPCv2Initialize(typedReq)
+        : await ecdsaMPCv2Initialize(typedReq);
       return Response.ok(result);
     }),
   ]);
@@ -605,7 +631,10 @@ export function createKeyGenRouter(
   router.post('v1.mpcv2.round', [
     responseHandler<AdvancedWalletManagerConfig>(async (req) => {
       const typedReq = req as AwmApiSpecRouteRequest<'v1.mpcv2.round', 'post'>;
-      const result = await ecdsaMPCv2Round(typedReq);
+      const coin = await coinFactory.getCoin(typedReq.decoded.coin, typedReq.bitgo);
+      const result = isEddsaCoin(coin)
+        ? await eddsaMPCv2Round(typedReq)
+        : await ecdsaMPCv2Round(typedReq);
       return Response.ok(result);
     }),
   ]);
@@ -613,7 +642,10 @@ export function createKeyGenRouter(
   router.post('v1.mpcv2.finalize', [
     responseHandler<AdvancedWalletManagerConfig>(async (req) => {
       const typedReq = req as AwmApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>;
-      const result = await ecdsaMPCv2Finalize(typedReq);
+      const coin = await coinFactory.getCoin(typedReq.decoded.coin, typedReq.bitgo);
+      const result = isEddsaCoin(coin)
+        ? await eddsaMPCv2Finalize(typedReq)
+        : await ecdsaMPCv2Finalize(typedReq);
       return Response.ok(result);
     }),
   ]);
