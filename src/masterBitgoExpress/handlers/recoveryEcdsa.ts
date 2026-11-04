@@ -32,6 +32,10 @@ export async function recoverEcdsaMPCv2Wallets(
     if (!params.ethLikeParams) {
       throw new Error('Eth like recovery params are required for Ecdsa MPCv2 recovery');
     }
+    if (!params.ethLikeParams.userKey) {
+      throw new Error('userKey is required in eth like recovery params for Ecdsa MPCv2 recovery');
+    }
+    userKey = params.ethLikeParams.userKey;
     const recoveryResponse = await baseCoin.recover(params.ethLikeParams);
 
     // Sanity check: Eth like coins should return a single transaction
@@ -40,7 +44,6 @@ export async function recoverEcdsaMPCv2Wallets(
     }
 
     unsignedTx = recoveryResponse.txRequests[0].transactions[0].unsignedTx;
-    userKey = params.ethLikeParams.userKey;
   } else if (isCosmosLikeCoin(baseCoin)) {
     // create cosmos-like unsigned recovery
     if (!params.cosmosLikeParams) {

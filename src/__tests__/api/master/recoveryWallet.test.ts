@@ -9,10 +9,12 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import {
   BitGoAPITestHarness,
   DEFAULT_ASYNC_MODE_CONFIG,
+  ETH_TEST_USER_SIGNER_ADDRESS,
   makeMasterExpressTestConfig,
   makeSplitAwmMasterExpressConfig,
   nockAsyncMultisigRecoveryJob,
   nockAsyncRecoveryJobBypass,
+  nockEthWalletIsSigner,
   nockSplitAwmMultisigRecovery,
 } from './testUtils';
 
@@ -291,6 +293,14 @@ describe('Recovery Tests', () => {
         )
         .reply(200, { result: '1000000000000000000' });
 
+      const signerNocks = nockEthWalletIsSigner({
+        etherscanBase,
+        chainid,
+        apiKey,
+        walletContractAddress,
+        signerAddresses: [ETH_TEST_USER_SIGNER_ADDRESS, backupKeyAddress],
+      });
+
       const sequenceIdNock = nock(etherscanBase)
         .get(
           `/v2/api?chainid=${chainid}&module=proxy&action=eth_call&to=${walletContractAddress}&data=a0b7967b&tag=latest&apikey=${apiKey}`,
@@ -335,6 +345,7 @@ describe('Recovery Tests', () => {
       backupBalanceNock.isDone().should.be.true();
       walletBalanceNock.isDone().should.be.true();
       sequenceIdNock.isDone().should.be.true();
+      signerNocks.forEach((signerNock) => signerNock.isDone().should.be.true());
       recoveryNock.done();
     });
 
@@ -728,6 +739,14 @@ describe('Recovery Tests', () => {
           result: '0x0000000000000000000000000000000000000000000000000000000000000001',
         });
 
+      nockEthWalletIsSigner({
+        etherscanBase,
+        chainid,
+        apiKey,
+        walletContractAddress,
+        signerAddresses: [ETH_TEST_USER_SIGNER_ADDRESS, backupKeyAddress],
+      });
+
       let capturedBody: Record<string, unknown> | undefined;
       const { bridgeNock, awmRecoveryNock } = nockAsyncMultisigRecoveryJob({
         coin: ethCoinId,
@@ -943,6 +962,14 @@ describe('Split AWM recovery (separate user and backup AWMs)', () => {
       .reply(200, {
         result: '0x0000000000000000000000000000000000000000000000000000000000000001',
       });
+
+    nockEthWalletIsSigner({
+      etherscanBase,
+      chainid,
+      apiKey,
+      walletContractAddress,
+      signerAddresses: [ETH_TEST_USER_SIGNER_ADDRESS, backupKeyAddress],
+    });
 
     const halfSignedObject = {
       halfSigned: {

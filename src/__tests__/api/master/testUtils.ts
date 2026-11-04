@@ -160,6 +160,34 @@ export function nockSplitAwmMultisigRecovery(options: {
   return { userAwmNock, backupAwmNock };
 }
 
+const ETH_IS_SIGNER_SELECTOR = '7df73e27';
+const ETH_ABI_TRUE = `0x${'0'.repeat(63)}1`;
+
+/** Address of the key behind the `ethUserPub` xpub used by the EVM recovery tests. */
+export const ETH_TEST_USER_SIGNER_ADDRESS = '0x6df6065fdc0e24b7bc15e939a681e8f2ae0f9a3b';
+
+/**
+ * Etherscan eth_call nocks for the SDK's recovery signer-membership check
+ * (`isSigner(address)` on the wallet contract), one per signer address.
+ */
+export function nockEthWalletIsSigner(options: {
+  etherscanBase: string;
+  chainid: string;
+  apiKey: string;
+  walletContractAddress: string;
+  signerAddresses: string[];
+}) {
+  const { etherscanBase, chainid, apiKey, walletContractAddress, signerAddresses } = options;
+  return signerAddresses.map((signerAddress) => {
+    const paddedAddress = signerAddress.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    return nock(etherscanBase)
+      .get(
+        `/v2/api?chainid=${chainid}&module=proxy&action=eth_call&to=${walletContractAddress}&data=${ETH_IS_SIGNER_SELECTOR}${paddedAddress}&tag=latest&apikey=${apiKey}`,
+      )
+      .reply(200, { result: ETH_ABI_TRUE });
+  });
+}
+
 /** Bridge job nock that split-AWM sync paths must not reach. */
 export function nockAsyncRecoveryJobBypass(coin: string, bridgeUrl = ASYNC_TEST_BRIDGE_URL) {
   return nock(bridgeUrl)
