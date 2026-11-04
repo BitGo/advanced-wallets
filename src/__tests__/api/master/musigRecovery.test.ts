@@ -6,7 +6,12 @@ import * as request from 'supertest';
 import { app as expressApp } from '../../../masterBitGoExpressApp';
 import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { data as ethRecoveryData } from '../../mocks/ethRecoveryMusigMockData';
-import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
+import {
+  BitGoAPITestHarness,
+  DEFAULT_ASYNC_MODE_CONFIG,
+  ETH_TEST_USER_SIGNER_ADDRESS,
+  nockEthWalletIsSigner,
+} from './testUtils';
 
 describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
   let agent: request.SuperAgentTest;
@@ -73,6 +78,14 @@ describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
       )
       .reply(200, { result: '1000000000000000000' });
 
+    const signerNocks = nockEthWalletIsSigner({
+      etherscanBase,
+      chainid,
+      apiKey,
+      walletContractAddress: ethRecoveryData.walletContractAddress,
+      signerAddresses: [ETH_TEST_USER_SIGNER_ADDRESS, backupKeyAddress],
+    });
+
     const sequenceIdNock = nock(etherscanBase)
       .get(
         `/v2/api?chainid=${chainid}&module=proxy&action=eth_call&to=${ethRecoveryData.walletContractAddress}&data=a0b7967b&tag=latest&apikey=${apiKey}`,
@@ -115,6 +128,7 @@ describe('POST /api/v1/:coin/advancedwallet/recovery', () => {
     backupBalanceNock.isDone().should.be.true();
     walletBalanceNock.isDone().should.be.true();
     sequenceIdNock.isDone().should.be.true();
+    signerNocks.forEach((signerNock) => signerNock.isDone().should.be.true());
     eveRecoverWalletNock.done();
   });
 
