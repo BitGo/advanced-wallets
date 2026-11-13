@@ -27,3 +27,4 @@ CVE-2020-10663  # rubygem-json 1.8.2
 CVE-2022-31163  # rubygem-tzinfo 1.2.2
 CVE-2026-33176  # rubygem-activesupport 4.2.1 in js-xdr/Gemfile.lock — Ruby gem not executed in Node.js runtime
 GHSA-8474-xrp6-wh69  # rubygem-activesupport 4.2.1 in js-xdr/Gemfile.lock — Ruby gem not executed in Node.js runtime
+CVE-2026-126080  # rubygem-activesupport 4.2.1 in js-xdr/Gemfile.lock, Ruby gem not executed in Node.js runtime
