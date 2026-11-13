@@ -15,6 +15,14 @@ import assert from 'assert';
 import { signBitgoMPCv2Round1, signBitgoMPCv2Round2, signBitgoMPCv2Round3 } from './ecdsaUtils';
 import { Hash } from 'crypto';
 import createKeccakHash from 'keccak';
+import { BitGoAPI } from '@bitgo-beta/sdk-api';
+import {
+  buildStateBindingAdata,
+  getSignableBindingParts,
+  sealStateBlob,
+  STATE_BINDING_DOMAIN,
+  STATE_BINDING_MISMATCH_ERROR,
+} from '../../../advancedWalletManager/handlers/utils/stateBinding';
 import { bitgoGpgKey } from '../../mocks/gpgKeys';
 
 describe('signMpcTransaction', () => {
@@ -258,6 +266,149 @@ describe('signMpcTransaction', () => {
 
       gKeyProviderNock.done();
       gDecryptDataKeyNock.done();
+    });
+
+    it('should reject an R-share blob replayed from the keygen flow', async () => {
+      // A keygen state blob sealed under the same KMS data key, bound to the
+      // keygen flow. Replaying it into the signing R round must be rejected
+      // before any plaintext is returned.
+      const keygenBlob = await sealStateBlob(new BitGoAPI({ env: 'test' }), {
+        plaintextKey: 'mock-plaintext-data-key',
+        plaintext: JSON.stringify({
+          sourceGpgPub: 'source-gpg-pub',
+          sourceGpgPrv: 'source-gpg-prv',
+          sourcePrivateShare: 'source-private-share',
+        }),
+        adata: buildStateBindingAdata(STATE_BINDING_DOMAIN.EDDSA_KEYGEN_INIT, {
+          source: 'user',
+        }),
+      });
+      const rInput = {
+        source: 'user',
+        pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
+        txRequest: mockTxRequest,
+        encryptedUserToBitgoRShare: {
+          from: 'user',
+          to: 'bitgo',
+          type: 'encryptedSignerShare',
+          share: keygenBlob,
+        },
+        encryptedDataKey: 'mock-encrypted-data-key',
+      };
+
+      const rKeyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${rInput.pub}`)
+        .query({ source: 'user' })
+        .reply(200, { prv: 'mock-prv', pub: rInput.pub, source: 'user', type: 'independent' });
+      const decryptDataKeyNock = nock(keyProviderUrl)
+        .post('/decryptDataKey')
+        .reply(200, { plaintextKey: 'mock-plaintext-data-key' });
+
+      const rResponse = await agent
+        .post(`/api/${coin}/mpc/sign/r`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(rInput);
+
+      rResponse.status.should.equal(400);
+      rResponse.body.should.not.have.property('rShare');
+      rResponse.body.details.should.equal(STATE_BINDING_MISMATCH_ERROR);
+      rKeyProviderNock.done();
+      decryptDataKeyNock.done();
+    });
+
+    it('should reject an R-share blob with no context binding', async () => {
+      // A legacy envelope encrypted under the data key without associated data.
+      const unboundBlob = await new BitGoAPI({ env: 'test' }).encrypt({
+        input: 'state sealed before blobs carried a binding',
+        password: 'mock-plaintext-data-key',
+        encryptionVersion: 1,
+      });
+      const rInput = {
+        source: 'user',
+        pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
+        txRequest: mockTxRequest,
+        encryptedUserToBitgoRShare: {
+          from: 'user',
+          to: 'bitgo',
+          type: 'encryptedSignerShare',
+          share: unboundBlob,
+        },
+        encryptedDataKey: 'mock-encrypted-data-key',
+      };
+
+      const rKeyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${rInput.pub}`)
+        .query({ source: 'user' })
+        .reply(200, { prv: 'mock-prv', pub: rInput.pub, source: 'user', type: 'independent' });
+      const decryptDataKeyNock = nock(keyProviderUrl)
+        .post('/decryptDataKey')
+        .reply(200, { plaintextKey: 'mock-plaintext-data-key' });
+
+      const rResponse = await agent
+        .post(`/api/${coin}/mpc/sign/r`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(rInput);
+
+      rResponse.status.should.equal(400);
+      rResponse.body.should.not.have.property('rShare');
+      rResponse.body.details.should.equal(STATE_BINDING_MISMATCH_ERROR);
+      rKeyProviderNock.done();
+      decryptDataKeyNock.done();
+    });
+
+    it('should reject an R-share blob bound to a different signing session', async () => {
+      // Sealed with the signing domain, but for a different signable payload.
+      const otherTxRequest = {
+        ...mockTxRequest,
+        transactions: [
+          {
+            unsignedTx: {
+              derivationPath: 'm/0',
+              signableHex: 'a-different-signable',
+            },
+          },
+        ],
+      } as typeof mockTxRequest;
+      const otherSessionBlob = await sealStateBlob(new BitGoAPI({ env: 'test' }), {
+        plaintextKey: 'mock-plaintext-data-key',
+        plaintext: 'sign share for another signable',
+        adata: buildStateBindingAdata(STATE_BINDING_DOMAIN.EDDSA_SIGN_R_SHARE, {
+          source: 'user',
+          pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
+          ...getSignableBindingParts(otherTxRequest as unknown as TxRequest),
+        }),
+      });
+      const rInput = {
+        source: 'user',
+        pub: 'DSqMPMsMAbEJVNuPKv1ZFdzt6YvJaDPDddfeW7ajtqds',
+        txRequest: mockTxRequest,
+        encryptedUserToBitgoRShare: {
+          from: 'user',
+          to: 'bitgo',
+          type: 'encryptedSignerShare',
+          share: otherSessionBlob,
+        },
+        encryptedDataKey: 'mock-encrypted-data-key',
+      };
+
+      const rKeyProviderNock = nock(keyProviderUrl)
+        .get(`/key/${rInput.pub}`)
+        .query({ source: 'user' })
+        .reply(200, { prv: 'mock-prv', pub: rInput.pub, source: 'user', type: 'independent' });
+      const decryptDataKeyNock = nock(keyProviderUrl)
+        .post('/decryptDataKey')
+        .reply(200, { plaintextKey: 'mock-plaintext-data-key' });
+
+      const rResponse = await agent
+        .post(`/api/${coin}/mpc/sign/r`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(rInput);
+
+      rResponse.status.should.equal(400);
+      rResponse.body.should.not.have.property('rShare');
+      rResponse.body.details.should.equal(STATE_BINDING_MISMATCH_ERROR);
+      rKeyProviderNock.done();
+      decryptDataKeyNock.done();
     });
 
     it('should fail G share generation without the encrypted commitment round state', async () => {

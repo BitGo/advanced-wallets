@@ -10,6 +10,7 @@ import * as configModule from '../../../initConfig';
 import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import { DklsComms, DklsDkg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
+import { STATE_BINDING_MISMATCH_ERROR } from '../../../advancedWalletManager/handlers/utils/stateBinding';
 
 describe('postMpcV2Key', () => {
   let cfg: AdvancedWalletManagerConfig;
@@ -534,8 +535,10 @@ describe('postMpcV2Key', () => {
         },
       });
 
-    skipRoundResponse.status.should.equal(422);
-    skipRoundResponse.body.should.have.property('details', 'Round mismatch: expected 2, got 3');
+    // the round-1 state is sealed for round 2; the binding check rejects the
+    // out-of-sequence replay before the state's own round comparison runs
+    skipRoundResponse.status.should.equal(400);
+    skipRoundResponse.body.should.have.property('details', STATE_BINDING_MISMATCH_ERROR);
 
     // repeating round 1
     const repeatRoundResponse = await agent
@@ -550,8 +553,8 @@ describe('postMpcV2Key', () => {
         counterPartyGpgPub: backupInitResponse.body.gpgPub,
       });
 
-    repeatRoundResponse.status.should.equal(422);
-    repeatRoundResponse.body.should.have.property('details', 'Round mismatch: expected 2, got 1');
+    repeatRoundResponse.status.should.equal(400);
+    repeatRoundResponse.body.should.have.property('details', STATE_BINDING_MISMATCH_ERROR);
   });
 
   it('should throw error if broadcastMessages or p2pMessages does not contain all required messages', async () => {
@@ -723,5 +726,34 @@ describe('postMpcV2Key', () => {
       'details',
       'p2pMessages did not contain all required messages',
     );
+  });
+
+  it('should reject a keygen state blob replayed for the other source', async () => {
+    const userInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'user' });
+
+    const backupInitResponse = await agent
+      .post(`/api/${coin}/mpcv2/initialize`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ source: 'backup' });
+
+    // The user's initialize state is sealed for source 'user'; replaying it
+    // against a backup round request must be rejected before decryption.
+    const response = await agent
+      .post(`/api/${coin}/mpcv2/round`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        source: 'backup',
+        encryptedData: userInitResponse.body.encryptedData,
+        encryptedDataKey: userInitResponse.body.encryptedDataKey,
+        round: 1,
+        bitgoGpgPub: userInitResponse.body.gpgPub,
+        counterPartyGpgPub: backupInitResponse.body.gpgPub,
+      });
+
+    response.status.should.equal(400);
+    response.body.should.have.property('details', STATE_BINDING_MISMATCH_ERROR);
   });
 });

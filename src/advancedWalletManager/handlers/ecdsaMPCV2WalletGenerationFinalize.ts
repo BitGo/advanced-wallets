@@ -6,6 +6,7 @@ import {
 } from '../routers/advancedWalletManagerApiSpec';
 import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import assert from 'assert';
+import { buildStateBindingAdata, openStateBlob, STATE_BINDING_DOMAIN } from './utils/stateBinding';
 
 export async function ecdsaMPCv2Finalize(
   req: AwmApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>,
@@ -16,12 +17,18 @@ export async function ecdsaMPCv2Finalize(
   // setup clients
   const keyProvider = new KeyProviderClient(req.config);
 
-  // fetch previous state of execution
+  // fetch previous state of execution. The state must be bound to this keygen
+  // flow, source, and finalize stage; blobs replayed from any other flow or
+  // round slot are rejected before decryption.
   const { plaintextKey } = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const state: MpcV2RoundState = JSON.parse(
-    await req.bitgo.decrypt({
-      input: encryptedData,
-      password: plaintextKey,
+    await openStateBlob(req.bitgo, {
+      plaintextKey,
+      ciphertext: encryptedData,
+      expectedAdata: buildStateBindingAdata(STATE_BINDING_DOMAIN.ECDSA_MPCV2_KEYGEN, {
+        source,
+        round: 'finalize',
+      }),
     }),
   );
   if (!state.bitgoGpgPub || !state.counterPartyGpgPub) {

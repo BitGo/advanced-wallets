@@ -9,6 +9,7 @@ import {
 } from '../routers/advancedWalletManagerApiSpec';
 import { gpgEncrypt } from './utils/utils';
 import { BadRequestError } from '../../shared/errors';
+import { buildStateBindingAdata, sealStateBlob, STATE_BINDING_DOMAIN } from './utils/stateBinding';
 
 const debugLogger = debug('bitgo:awm:mpcInitialize');
 
@@ -17,6 +18,7 @@ export async function eddsaInitialize(
 ) {
   // request parsing. counterPartyGpgPub can be undefined
   const { source, bitgoGpgPub, counterPartyGpgPub }: MpcInitializeRequestType = req.decoded;
+  const { coin } = req.decoded;
   if (source === 'backup' && !counterPartyGpgPub) {
     throw new BadRequestError('gpgKey is required on backup key share generation');
   }
@@ -101,9 +103,12 @@ export async function eddsaInitialize(
   };
   const { plaintextKey, encryptedKey } = await keyProvider.generateDataKey({ keyType: 'AES-256' });
   try {
-    const encryptedPayload = await req.bitgo.encrypt({
-      input: JSON.stringify(payload),
-      password: plaintextKey,
+    // Bind the keygen state to its flow, source, and coin so it cannot be
+    // replayed into any other decrypt path (e.g. the signing rounds).
+    const encryptedPayload = await sealStateBlob(req.bitgo, {
+      plaintextKey,
+      plaintext: JSON.stringify(payload),
+      adata: buildStateBindingAdata(STATE_BINDING_DOMAIN.EDDSA_KEYGEN_INIT, { source, coin }),
     });
     return {
       encryptedDataKey: encryptedKey,
