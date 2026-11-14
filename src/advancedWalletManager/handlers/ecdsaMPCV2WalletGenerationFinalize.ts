@@ -6,12 +6,17 @@ import {
 } from '../routers/advancedWalletManagerApiSpec';
 import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import assert from 'assert';
+import { BadRequestError } from '../../shared/errors';
 
 export async function ecdsaMPCv2Finalize(
   req: AwmApiSpecRouteRequest<'v1.mpcv2.finalize', 'post'>,
 ): Promise<MpcV2FinalizeResponseType> {
   const { source, encryptedData, encryptedDataKey, broadcastMessages, bitgoCommonKeychain } =
     req.decoded;
+
+  if (!broadcastMessages) {
+    throw new BadRequestError('broadcastMessages are required for ECDSA MPCv2 finalize');
+  }
 
   // setup clients
   const keyProvider = new KeyProviderClient(req.config);
