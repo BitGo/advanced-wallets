@@ -7,6 +7,7 @@ import {
 } from '../routers/advancedWalletManagerApiSpec';
 import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import { eddsaKeyCombine, gpgDecrypt, gpgEncrypt, verifyWalletSignatures } from './utils/utils';
+import { buildStateBindingAdata, openStateBlob, STATE_BINDING_DOMAIN } from './utils/stateBinding';
 import coinFactory from '../../shared/coinFactory';
 
 const debugLogger = debug('bitgo:advancedWalletManager:mpcFinalize');
@@ -32,15 +33,20 @@ export async function eddsaFinalize(req: AwmApiSpecRouteRequest<'v1.mpc.key.fina
   const counterPartyIndex = source === 'user' ? 2 : 1;
   const bitgoIndex = 3;
 
-  // Decrypt the encrypted payload using encryptedDataKey to retrieve the previous state of computation
+  // Decrypt the encrypted payload using encryptedDataKey to retrieve the previous state of computation.
+  // The state must be bound to this keygen flow and source; blobs replayed from
+  // any other flow are rejected before decryption.
   const decryptedDataKey = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const previousState = JSON.parse(
-    await req.bitgo.decrypt({
-      input: encryptedData,
-      password: decryptedDataKey.plaintextKey,
+    await openStateBlob(req.bitgo, {
+      plaintextKey: decryptedDataKey.plaintextKey,
+      ciphertext: encryptedData,
+      expectedAdata: buildStateBindingAdata(STATE_BINDING_DOMAIN.EDDSA_KEYGEN_INIT, {
+        source,
+        coin,
+      }),
     }),
   );
-
   const { sourceGpgPub, sourceGpgPrv, sourcePrivateShare } = previousState;
   let sourceToCounterPartyKeyShare = previousState.counterPartyKeyShare;
 

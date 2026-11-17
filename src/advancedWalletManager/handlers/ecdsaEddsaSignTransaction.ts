@@ -3,6 +3,13 @@ import {
   EddsaUserToBitgoRShare,
 } from '../routers/advancedWalletManagerApiSpec';
 import { decryptDataKey, generateDataKey, retrieveKeyProviderPrvKey } from './utils/utils';
+import {
+  buildStateBindingAdata,
+  getSignableBindingParts,
+  openStateBlob,
+  sealStateBlob,
+  STATE_BINDING_DOMAIN,
+} from './utils/stateBinding';
 import logger from '../../shared/logger';
 import {
   BaseCoin,
@@ -70,6 +77,8 @@ interface EddsaSigningParams {
   shareType: string;
   txRequest: TxRequest;
   prv: string;
+  pub: string;
+  source: string;
   encryptedDataKey?: string;
   bitgoToUserRShare?: SignatureShareRecord;
   encryptedUserToBitgoRShare?: EncryptedSignerShareRecord;
@@ -128,6 +137,8 @@ export async function signMpcTransaction(req: AwmApiSpecRouteRequest<'v1.mpc.sig
         shareType,
         txRequest: req.decoded.txRequest,
         prv,
+        pub,
+        source,
         encryptedDataKey,
         bitgoToUserRShare: req.decoded.bitgoToUserRShare,
         encryptedUserToBitgoRShare: req.decoded.encryptedUserToBitgoRShare,
@@ -176,6 +187,8 @@ async function handleEddsaSigning(
     shareType,
     txRequest,
     prv,
+    pub,
+    source,
     encryptedDataKey,
     bitgoToUserRShare,
     encryptedUserToBitgoRShare,
@@ -198,17 +211,36 @@ async function handleEddsaSigning(
         walletPassphrase: dataKey.plaintextKey,
         bitgoGpgPubKey: bitgoPublicGpgKey,
       };
+      const commitment = await eddsaUtils.createCommitmentShareFromTxRequest(commitmentParams);
+      // Bind the R-share envelope to this wallet and signing session so the R
+      // and G rounds reject blobs replayed from any other flow.
+      const adata = buildStateBindingAdata(STATE_BINDING_DOMAIN.EDDSA_SIGN_R_SHARE, {
+        source,
+        pub,
+        ...getSignableBindingParts(txRequest),
+      });
       return {
-        ...(await eddsaUtils.createCommitmentShareFromTxRequest(commitmentParams)),
+        userToBitgoCommitment: commitment.userToBitgoCommitment,
+        encryptedSignerShare: commitment.encryptedSignerShare,
+        encryptedUserToBitgoRShare: {
+          ...commitment.encryptedUserToBitgoRShare,
+          share: await sealStateBlob(bitgo, {
+            plaintextKey: dataKey.plaintextKey,
+            plaintext: commitment.encryptedUserToBitgoRShare.share,
+            adata,
+          }),
+        },
         encryptedDataKey: dataKey.encryptedKey,
       };
     }
     case ShareType.R: {
-      const userSignShare = await decryptUserSignShare(eddsaUtils, cfg, {
+      const userSignShare = await decryptUserSignShare(eddsaUtils, bitgo, cfg, {
         shareType: ShareType.R,
         txRequest,
         encryptedDataKey,
         encryptedUserToBitgoRShare,
+        pub,
+        source,
       });
       const rShare = userSignShare.rShares[ShareKeyPosition.BITGO];
       if (!rShare) {
@@ -224,11 +256,13 @@ async function handleEddsaSigning(
       if (!bitgoToUserCommitment) {
         throw new Error('bitgoToUserCommitment is required for G share generation');
       }
-      const userToBitgoRShare = await decryptUserSignShare(eddsaUtils, cfg, {
+      const userToBitgoRShare = await decryptUserSignShare(eddsaUtils, bitgo, cfg, {
         shareType: ShareType.G,
         txRequest,
         encryptedDataKey,
         encryptedUserToBitgoRShare,
+        pub,
+        source,
       });
       const gShareParams: GShareParams = {
         txRequest,
@@ -249,15 +283,18 @@ async function handleEddsaSigning(
 
 async function decryptUserSignShare(
   eddsaUtils: EddsaUtils,
+  bitgo: BitGoAPI,
   cfg: AdvancedWalletManagerConfig,
   params: {
     shareType: ShareType;
     txRequest: TxRequest;
     encryptedDataKey?: string;
     encryptedUserToBitgoRShare?: EncryptedSignerShareRecord;
+    pub: string;
+    source: string;
   },
 ): Promise<SignShare> {
-  const { txRequest, encryptedDataKey, encryptedUserToBitgoRShare } = params;
+  const { txRequest, encryptedDataKey, encryptedUserToBitgoRShare, pub, source } = params;
   const shareType = params.shareType.toUpperCase();
   if (!encryptedUserToBitgoRShare) {
     throw new Error(`encryptedUserToBitgoRShare is required for ${shareType} share generation`);
@@ -268,10 +305,22 @@ async function decryptUserSignShare(
     );
   }
   const plaintextDataKey = await decryptDataKey({ encryptedDataKey, cfg });
+  // Verify the blob was sealed by the commitment round for this wallet and
+  // signable before handing the inner envelope to the SDK for decryption.
+  const expectedAdata = buildStateBindingAdata(STATE_BINDING_DOMAIN.EDDSA_SIGN_R_SHARE, {
+    source,
+    pub,
+    ...getSignableBindingParts(txRequest),
+  });
+  const boundShare = await openStateBlob(bitgo, {
+    plaintextKey: plaintextDataKey,
+    ciphertext: encryptedUserToBitgoRShare.share,
+    expectedAdata,
+  });
   const rShareParams: RShareParams = {
     txRequest,
     walletPassphrase: plaintextDataKey,
-    encryptedUserToBitgoRShare,
+    encryptedUserToBitgoRShare: { ...encryptedUserToBitgoRShare, share: boundShare },
   };
   const { rShare } = await eddsaUtils.createRShareFromTxRequest(rShareParams);
   return rShare;

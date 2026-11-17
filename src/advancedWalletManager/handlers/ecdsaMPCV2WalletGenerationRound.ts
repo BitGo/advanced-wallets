@@ -8,6 +8,12 @@ import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/
 import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import logger from '../../shared/logger';
 import { BadRequestError, ValidationError } from '../../shared/errors';
+import {
+  buildStateBindingAdata,
+  openStateBlob,
+  sealStateBlob,
+  STATE_BINDING_DOMAIN,
+} from './utils/stateBinding';
 
 export async function ecdsaMPCv2Round(
   req: AwmApiSpecRouteRequest<'v1.mpcv2.round', 'post'>,
@@ -37,12 +43,18 @@ export async function ecdsaMPCv2Round(
     throw new BadRequestError('p2pMessages did not contain all required messages');
   }
 
-  // fetch previous state of execution
+  // fetch previous state of execution. The state must be bound to this keygen
+  // flow and source; blobs replayed from any other flow are rejected before
+  // decryption.
   const { plaintextKey } = await keyProvider.decryptDataKey({ encryptedKey: encryptedDataKey });
   const state: MpcV2RoundState = JSON.parse(
-    await req.bitgo.decrypt({
-      input: encryptedData,
-      password: plaintextKey,
+    await openStateBlob(req.bitgo, {
+      plaintextKey,
+      ciphertext: encryptedData,
+      expectedAdata: buildStateBindingAdata(STATE_BINDING_DOMAIN.ECDSA_MPCV2_KEYGEN, {
+        source,
+        round: String(round),
+      }),
     }),
   );
 
@@ -136,16 +148,20 @@ export async function ecdsaMPCv2Round(
     [sourceGpgPrv],
   );
 
-  // re-encrypt state
+  // re-encrypt state, preserving the flow, source, and next-consuming-stage binding
   let newEncryptedData;
   try {
-    newEncryptedData = await req.bitgo.encrypt({
-      input: JSON.stringify({
+    newEncryptedData = await sealStateBlob(req.bitgo, {
+      plaintextKey,
+      plaintext: JSON.stringify({
         ...state,
         round: state.round + 1,
         sessionData: session.getSessionData(),
       }),
-      password: plaintextKey,
+      adata: buildStateBindingAdata(STATE_BINDING_DOMAIN.ECDSA_MPCV2_KEYGEN, {
+        source,
+        round: state.round === 4 ? 'finalize' : String(state.round + 1),
+      }),
     });
   } catch (error) {
     logger.error('Encryption error details:', error);

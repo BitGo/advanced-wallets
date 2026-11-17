@@ -7,6 +7,7 @@ import { KeyProviderClient } from '../keyProviderClient/keyProviderClient';
 import * as bitgoSdk from '@bitgo-beta/sdk-core';
 import logger from '../../shared/logger';
 import { MPCv2PartiesEnum } from '@bitgo-beta/sdk-core/dist/src/bitgo/utils/tss/ecdsa';
+import { buildStateBindingAdata, sealStateBlob, STATE_BINDING_DOMAIN } from './utils/stateBinding';
 
 export async function ecdsaMPCv2Initialize(
   req: AwmApiSpecRouteRequest<'v1.mpcv2.initialize', 'post'>,
@@ -30,10 +31,15 @@ export async function ecdsaMPCv2Initialize(
   };
 
   try {
-    // Encrypt the state with the plaintext key
-    const encryptedData = await req.bitgo.encrypt({
-      input: JSON.stringify(state),
-      password: plaintextKey,
+    // Bind the keygen state to its flow, source, and consuming round so it
+    // cannot be replayed into any other decrypt path or round slot.
+    const encryptedData = await sealStateBlob(req.bitgo, {
+      plaintextKey,
+      plaintext: JSON.stringify(state),
+      adata: buildStateBindingAdata(STATE_BINDING_DOMAIN.ECDSA_MPCV2_KEYGEN, {
+        source,
+        round: '1',
+      }),
     });
 
     return {
