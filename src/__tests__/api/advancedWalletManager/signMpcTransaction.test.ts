@@ -7,7 +7,7 @@ import { AppMode, AdvancedWalletManagerConfig, TlsMode, SigningMode } from '../.
 import express from 'express';
 import * as sinon from 'sinon';
 import * as configModule from '../../../initConfig';
-import { Ed25519BIP32, Eddsa, SignatureShareType } from '@bitgo-beta/sdk-core';
+import { BitgoMpcGpgPubKeys, Ed25519BIP32, Eddsa, SignatureShareType } from '@bitgo-beta/sdk-core';
 import { TxRequest } from '@bitgo/public-types';
 import { DklsUtils, DklsDsg, DklsTypes } from '@bitgo-beta/sdk-lib-mpc';
 import { EcdsaMPCv2Utils, EddsaMPCv2Utils } from '@bitgo-beta/sdk-core';
@@ -495,6 +495,19 @@ describe('signMpcTransaction', () => {
 
   describe('ECDSA MPCv2 Signing Integration Tests', () => {
     const coin = 'hteth'; // Use hteth for ECDSA testing
+
+    // sdk-core now requires the BitGo GPG key in the MPCv2 offline signing rounds to be
+    // one of BitGo's published keys, so register the mock key for the duration of these tests.
+    const mpcv2TestKeys = BitgoMpcGpgPubKeys.bitgoMpcGpgPubKeys.mpcv2.onprem;
+    const originalMpcv2TestKey = mpcv2TestKeys.test;
+
+    before(() => {
+      mpcv2TestKeys.test = bitgoGpgKey.public;
+    });
+
+    after(() => {
+      mpcv2TestKeys.test = originalMpcv2TestKey;
+    });
 
     it('should successfully complete all MPCv2 rounds', async () => {
       const walletID = '62fe536a6b4cf70007acb48c0e7bb0b0';
