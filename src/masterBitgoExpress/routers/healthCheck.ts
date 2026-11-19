@@ -4,7 +4,10 @@ import { Response } from '@api-ts/response';
 import pjson from '../../../package.json';
 import { responseHandler } from '../../shared/middleware';
 import { PingResponseType, VersionResponseType } from '../../types/health';
-import { customDecodeErrorFormatter } from '../../shared/errorFormatters';
+import {
+  customDecodeErrorFormatter,
+  customEncodeErrorFormatter,
+} from '../../shared/errorFormatters';
 
 // API Response types
 const PingResponse: HttpResponse = {
@@ -63,6 +66,7 @@ export function createHealthCheckRouter(
 ): WrappedRouter<typeof HealthCheckApiSpec> {
   const router = createRouter(HealthCheckApiSpec, {
     decodeErrorFormatter: customDecodeErrorFormatter,
+    encodeErrorFormatter: customEncodeErrorFormatter,
   });
 
   // Ping endpoint handler

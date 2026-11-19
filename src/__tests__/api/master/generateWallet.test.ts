@@ -9,6 +9,7 @@ import { AppMode, MasterExpressConfig, TlsMode } from '../../../shared/types';
 import { BitgoMpcGpgPubKeys, Environments } from '@bitgo-beta/sdk-core';
 import { BitGoAPI } from '@bitgo-beta/sdk-api';
 import * as middleware from '../../../shared/middleware';
+import logger from '../../../shared/logger';
 import { BitGoRequest } from '../../../types/request';
 import { BitGoAPITestHarness, DEFAULT_ASYNC_MODE_CONFIG } from './testUtils';
 
@@ -338,6 +339,118 @@ describe('POST /api/v1/:coin/advancedwallet/generate', () => {
     response.body.should.have.propertyByPath('userKeychain', 'pub').eql(validUserPub);
     response.body.should.have.propertyByPath('backupKeychain', 'pub').eql(validBackupPub);
     response.body.should.have.propertyByPath('bitgoKeychain', 'pub').eql('xpub_bitgo');
+
+    userKeychainNock.done();
+    backupKeychainNock.done();
+    bitgoAddUserKeyNock.done();
+    bitgoAddBackupKeyNock.done();
+    bitgoAddBitGoKeyNock.done();
+    bitgoAddWalletNock.done();
+  });
+
+  it('returns a descriptive 500 error body when the wallet/add response violates the response schema', async () => {
+    // WCN-2395 leaves the wallet creator at view-only, and the wallet/add response can
+    // come back without fields MBE declares as required. The wallet is still created on
+    // the backend, but the response payload fails its io-ts codec check in sendEncoded().
+    // typed-express-router's default encodeErrorFormatter would swallow the validation
+    // error and reply with a bare HTTP 500 and an empty JSON body.
+    const loggerErrorSpy = sinon.spy(logger, 'error');
+
+    const userKeychainNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/key/independent`, {
+        source: 'user',
+      })
+      .reply(200, {
+        pub: validUserPub,
+        source: 'user',
+        type: 'independent',
+      });
+
+    const backupKeychainNock = nock(advancedWalletManagerUrl)
+      .post(`/api/${coin}/key/independent`, {
+        source: 'backup',
+      })
+      .reply(200, {
+        pub: validBackupPub,
+        source: 'backup',
+        type: 'independent',
+      });
+
+    const bitgoAddUserKeyNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/key`, {
+        pub: validUserPub,
+        keyType: 'independent',
+        source: 'user',
+      })
+      .matchHeader('any', () => true)
+      .reply(200, { id: 'user-key-id', pub: validUserPub, source: 'user', type: 'independent' });
+
+    const bitgoAddBackupKeyNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/key`, {
+        pub: validBackupPub,
+        keyType: 'independent',
+        source: 'backup',
+      })
+      .matchHeader('any', () => true)
+      .reply(200, {
+        id: 'backup-key-id',
+        pub: validBackupPub,
+        source: 'backup',
+        type: 'independent',
+      });
+
+    const bitgoAddBitGoKeyNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/key`, {
+        source: 'bitgo',
+        enterprise: 'test_enterprise',
+      })
+      .reply(200, {
+        id: 'bitgo-key-id',
+        pub: 'xpub_bitgo',
+        source: 'bitgo',
+        type: 'independent',
+        isBitGo: true,
+        isTrust: false,
+        hsmType: 'institutional',
+      });
+
+    // JSON.stringify drops undefined properties, so the wallet/add response omits
+    // the required `users` field, violating MBE's GenerateWalletResponse schema
+    const schemaViolatingWallet = mockWalletResponse('new-wallet-id', coin, {
+      users: undefined,
+    });
+
+    const bitgoAddWalletNock = nock(bitgoApiUrl)
+      .post(`/api/v2/${coin}/wallet/add`, {
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        m: 2,
+        n: 3,
+        keys: ['user-key-id', 'backup-key-id', 'bitgo-key-id'],
+        type: 'advanced',
+      })
+      .matchHeader('any', () => true)
+      .reply(200, schemaViolatingWallet);
+
+    const response = await agent
+      .post(`/api/v1/${coin}/advancedwallet/generate`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        label: 'test_wallet',
+        enterprise: 'test_enterprise',
+        multisigType: 'onchain',
+      });
+
+    // The response is rejected (500) because the payload does not match the declared
+    // schema, but the error must be descriptive instead of an empty body.
+    response.status.should.equal(500);
+    response.body.error.should.equal('Internal Server Error');
+    response.body.details.should.containEql('response does not match expected type');
+
+    // The real validation error is logged server-side for debugging.
+    assert.equal(loggerErrorSpy.callCount, 1);
+    loggerErrorSpy.firstCall.args[0].should.containEql('Failed to encode API response');
+    loggerErrorSpy.firstCall.args[0].should.containEql(`/api/v1/${coin}/advancedwallet/generate`);
 
     userKeychainNock.done();
     backupKeychainNock.done();
